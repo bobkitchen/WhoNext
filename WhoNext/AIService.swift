@@ -27,7 +27,13 @@ class AIService {
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         
         var messages: [[String: String]] = [
-            ["role": "system", "content": "You are a helpful assistant focused on relationship management and conversation tracking."]
+            ["role": "system", "content": """
+            You are a helpful assistant focused on relationship management and conversation tracking. \
+            You have access to data about people, their roles, last contact dates, and conversation history. \
+            When answering questions, use the provided context to give specific, data-driven responses. \
+            If the context contains relevant information, reference it directly. \
+            If you don't have certain information in the context, acknowledge that and suggest how the user could track or add that information.
+            """]
         ]
         
         if let context = context {
