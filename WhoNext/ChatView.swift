@@ -24,11 +24,18 @@ struct ChatView: View {
     @State private var isLoading: Bool = false
     @State private var errorMessage: String?
     @State private var showError: Bool = false
-    @State private var scrollToBottom = false
     @FocusState private var isFocused: Bool
     
     var body: some View {
         VStack(spacing: 0) {
+            // Title
+            Text("Insights")
+                .font(.system(size: 28, weight: .semibold, design: .rounded))
+                .foregroundStyle(.primary)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal)
+                .padding(.bottom, 4)
+            
             // Messages List
             ScrollViewReader { proxy in
                 ScrollView {
@@ -36,12 +43,24 @@ struct ChatView: View {
                         ForEach(messages) { message in
                             MessageBubble(message: message)
                                 .id(message.id)
+                                .transition(.asymmetric(
+                                    insertion: .scale(scale: 0.9).combined(with: .opacity).animation(.spring()),
+                                    removal: .opacity.animation(.easeOut(duration: 0.2))
+                                ))
+                        }
+                        
+                        if isLoading {
+                            HStack {
+                                TypingIndicator()
+                                Spacer()
+                            }
+                            .padding(.horizontal)
+                            .transition(.opacity)
                         }
                     }
                     .padding()
                 }
                 .onChange(of: messages.count) { _, _ in
-                    // Scroll to the last message with animation
                     withAnimation {
                         if let lastMessage = messages.last {
                             proxy.scrollTo(lastMessage.id, anchor: .bottom)
@@ -59,11 +78,25 @@ struct ChatView: View {
                         .padding(.horizontal)
                 }
                 
-                HStack {
+                HStack(spacing: 12) {
                     TextField("Type your message...", text: $inputText)
-                        .textFieldStyle(RoundedBorderTextFieldStyle())
-                        .disabled(isLoading)
+                        .textFieldStyle(CustomTextFieldStyle())
                         .focused($isFocused)
+                        .disabled(isLoading)
+                        .overlay(
+                            HStack {
+                                Spacer()
+                                if !inputText.isEmpty {
+                                    Button(action: { inputText = "" }) {
+                                        Image(systemName: "xmark.circle.fill")
+                                            .foregroundStyle(.secondary)
+                                            .imageScale(.small)
+                                    }
+                                    .buttonStyle(.plain)
+                                    .padding(.trailing, 8)
+                                }
+                            }
+                        )
                         .onSubmit {
                             guard !inputText.isEmpty && !isLoading else { return }
                             Task {
@@ -79,11 +112,15 @@ struct ChatView: View {
                         if isLoading {
                             ProgressView()
                                 .progressViewStyle(CircularProgressViewStyle())
+                                .scaleEffect(0.8)
                         } else {
                             Image(systemName: "arrow.up.circle.fill")
                                 .font(.title2)
+                                .symbolRenderingMode(.hierarchical)
+                                .foregroundStyle(.blue)
                         }
                     }
+                    .buttonStyle(.plain)
                     .disabled(inputText.isEmpty || isLoading)
                 }
                 .padding()
@@ -96,7 +133,7 @@ struct ChatView: View {
             Text(errorMessage ?? "An unknown error occurred")
         }
         .onAppear {
-            isFocused = true // Focus the text field when view appears
+            isFocused = true
         }
     }
     
@@ -112,12 +149,11 @@ struct ChatView: View {
         errorMessage = nil
         
         do {
-            // Create context about the data
             let context = generateContext()
             let response = try await AIService.shared.sendMessage(messageToSend, context: context)
             let aiMessage = ChatMessage(content: response, isUser: false, timestamp: Date())
             messages.append(aiMessage)
-            isFocused = true // Refocus the text field after receiving response
+            isFocused = true
         } catch {
             errorMessage = error.localizedDescription
             showError = true
@@ -170,18 +206,87 @@ struct MessageBubble: View {
             VStack(alignment: message.isUser ? .trailing : .leading, spacing: 4) {
                 Text(message.content)
                     .padding(12)
-                    .background(message.isUser ? Color.blue : Color.gray.opacity(0.2))
+                    .background(
+                        Group {
+                            if message.isUser {
+                                LinearGradient(colors: [.blue, .blue.opacity(0.8)], startPoint: .topLeading, endPoint: .bottomTrailing)
+                            } else {
+                                Color(NSColor.controlBackgroundColor)
+                            }
+                        }
+                    )
                     .foregroundColor(message.isUser ? .white : .primary)
-                    .cornerRadius(16)
+                    .clipShape(BubbleShape(isUser: message.isUser))
                 
-                Text(message.timestamp.formatted(date: .omitted, time: .shortened))
-                    .font(.caption2)
-                    .foregroundColor(.secondary)
+                HStack(spacing: 4) {
+                    if !message.isUser {
+                        Image(systemName: "brain.head.profile")
+                            .foregroundStyle(.secondary)
+                            .font(.caption2)
+                    }
+                    Text(message.timestamp.formatted(date: .omitted, time: .shortened))
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                }
             }
             
             if !message.isUser {
                 Spacer()
             }
         }
+    }
+}
+
+struct BubbleShape: Shape {
+    let isUser: Bool
+    
+    func path(in rect: CGRect) -> Path {
+        let radius: CGFloat = 16
+        var path = Path()
+        
+        let topLeft = CGPoint(x: rect.minX, y: rect.minY)
+        let topRight = CGPoint(x: rect.maxX, y: rect.minY)
+        let bottomLeft = CGPoint(x: rect.minX, y: rect.maxY)
+        let bottomRight = CGPoint(x: rect.maxX, y: rect.maxY)
+        
+        path.move(to: CGPoint(x: topLeft.x + radius, y: topLeft.y))
+        
+        // Top edge
+        path.addLine(to: CGPoint(x: topRight.x - radius, y: topRight.y))
+        path.addArc(center: CGPoint(x: topRight.x - radius, y: topRight.y + radius),
+                   radius: radius,
+                   startAngle: Angle(degrees: -90),
+                   endAngle: Angle(degrees: 0),
+                   clockwise: false)
+        
+        // Right edge
+        path.addLine(to: CGPoint(x: bottomRight.x, y: bottomRight.y - radius))
+        path.addArc(center: CGPoint(x: bottomRight.x - radius, y: bottomRight.y - radius),
+                   radius: radius,
+                   startAngle: Angle(degrees: 0),
+                   endAngle: Angle(degrees: 90),
+                   clockwise: false)
+        
+        // Bottom edge
+        if isUser {
+            path.addLine(to: CGPoint(x: bottomLeft.x + radius, y: bottomLeft.y))
+            path.addArc(center: CGPoint(x: bottomLeft.x + radius, y: bottomLeft.y - radius),
+                       radius: radius,
+                       startAngle: Angle(degrees: 90),
+                       endAngle: Angle(degrees: 180),
+                       clockwise: false)
+        } else {
+            path.addLine(to: CGPoint(x: bottomLeft.x, y: bottomLeft.y))
+        }
+        
+        // Left edge
+        path.addLine(to: CGPoint(x: topLeft.x, y: topLeft.y + radius))
+        path.addArc(center: CGPoint(x: topLeft.x + radius, y: topLeft.y + radius),
+                   radius: radius,
+                   startAngle: Angle(degrees: 180),
+                   endAngle: Angle(degrees: 270),
+                   clockwise: false)
+        
+        return path
     }
 } 

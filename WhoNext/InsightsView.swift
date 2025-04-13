@@ -34,28 +34,42 @@ struct InsightsView: View {
     @State private var showingCalendar: Person? = nil
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 20) {
-            Text("Insights")
-                .font(.largeTitle)
-                .bold()
-            
+        VStack(alignment: .leading, spacing: 24) {
             // Chat Interface
             ChatView()
                 .frame(height: 300)
+                .cardStyle()
             
             // Suggested People Section
-            if suggestedPeople.isEmpty {
-                Text("No suggestions available yet.")
-                    .foregroundColor(.secondary)
-            } else {
-                VStack(alignment: .leading, spacing: 12) {
-                    Text("Suggested People to Talk To Next")
-                        .font(.title2)
-                        .bold()
-                    
-                    HStack(spacing: 12) {
+            VStack(alignment: .leading, spacing: 16) {
+                Text("Follow-up Needed")
+                    .font(.system(size: 20, weight: .semibold, design: .rounded))
+                    .foregroundStyle(.primary)
+                
+                if suggestedPeople.isEmpty {
+                    Text("No follow-ups needed")
+                        .foregroundStyle(.secondary)
+                        .frame(maxWidth: .infinity, alignment: .center)
+                        .padding()
+                        .cardStyle()
+                } else {
+                    LazyVGrid(columns: [
+                        GridItem(.flexible()),
+                        GridItem(.flexible())
+                    ], spacing: 16) {
                         ForEach(suggestedPeople, id: \.self) { person in
-                            PersonCardView(person: person, showingCalendar: $showingCalendar)
+                            PersonCardView(
+                                person: person,
+                                isFollowUp: true,
+                                onDismiss: {
+                                    // Update the last contact date to dismiss the follow-up
+                                    let conversation = Conversation(context: viewContext)
+                                    conversation.date = Date()
+                                    conversation.person = person
+                                    conversation.uuid = UUID()
+                                    try? viewContext.save()
+                                }
+                            )
                         }
                     }
                 }
@@ -63,19 +77,21 @@ struct InsightsView: View {
             
             // Coming Up Tomorrow Section
             if !comingUpTomorrow.isEmpty {
-                VStack(alignment: .leading, spacing: 12) {
+                VStack(alignment: .leading, spacing: 16) {
                     Text("Coming Up Tomorrow")
-                        .font(.title2)
-                        .bold()
+                        .font(.system(size: 20, weight: .semibold, design: .rounded))
+                        .foregroundStyle(.primary)
                     
-                    HStack(spacing: 12) {
+                    LazyVGrid(columns: [
+                        GridItem(.flexible()),
+                        GridItem(.flexible())
+                    ], spacing: 16) {
                         ForEach(comingUpTomorrow, id: \.self) { person in
-                            Button(action: {
-                                openConversationWindow(for: person)
-                            }) {
-                                PersonCardView(person: person, showingCalendar: $showingCalendar)
-                            }
-                            .buttonStyle(PlainButtonStyle())
+                            PersonCardView(
+                                person: person,
+                                isFollowUp: false,
+                                onDismiss: {}
+                            )
                         }
                     }
                 }
@@ -83,7 +99,8 @@ struct InsightsView: View {
             
             Spacer()
         }
-        .padding()
+        .padding(24)
+        .background(Color(NSColor.windowBackgroundColor))
     }
     
     private func openConversationWindow(for person: Person) {
@@ -113,13 +130,15 @@ struct InsightsView: View {
 
 struct PersonCardView: View {
     let person: Person
-    @Binding var showingCalendar: Person?
+    let isFollowUp: Bool
+    let onDismiss: () -> Void
     
     @Environment(\.managedObjectContext) private var viewContext
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            HStack(spacing: 8) {
+        VStack(alignment: .leading, spacing: 12) {
+            // Header with avatar and name
+            HStack(spacing: 12) {
                 Circle()
                     .fill(Color.blue.opacity(0.7))
                     .frame(width: 36, height: 36)
@@ -135,8 +154,22 @@ struct PersonCardView: View {
                             .foregroundColor(.secondary)
                     }
                 }
+                
+                Spacer()
+                
+                if isFollowUp {
+                    Button(action: onDismiss) {
+                        Image(systemName: "xmark.circle.fill")
+                            .foregroundStyle(.secondary)
+                            .imageScale(.large)
+                    }
+                    .buttonStyle(.plain)
+                }
             }
             
+            Spacer()
+            
+            // Contact info
             if let lastDate = person.lastContactDate {
                 Text("Last contacted on \(lastDate.formatted(date: .abbreviated, time: .omitted))")
                     .font(.caption2)
@@ -148,41 +181,16 @@ struct PersonCardView: View {
             }
             
             if let scheduled = person.scheduledConversationDate {
-                Text("📅 Scheduled for \(scheduled.formatted(date: .abbreviated, time: .omitted))")
+                Text("Meeting scheduled for \(scheduled.formatted(date: .abbreviated, time: .shortened))")
                     .font(.caption2)
                     .foregroundColor(.blue)
             }
-            
-            Button("📅 Schedule") {
-                showingCalendar = person
-            }
-            .font(.caption2)
-            .popover(item: $showingCalendar) { person in
-                VStack {
-                    DatePicker(
-                        "Schedule Date",
-                        selection: Binding(
-                            get: { person.scheduledConversationDate ?? Date() },
-                            set: { newDate in
-                                person.scheduledConversationDate = newDate
-                                try? viewContext.save()
-                                showingCalendar = nil
-                            }
-                        ),
-                        displayedComponents: .date
-                    )
-                    .datePickerStyle(.graphical)
-                    .labelsHidden()
-                }
-                .frame(width: 220)
-                .padding(12)
-            }
         }
         .padding()
-        .frame(width: 220, alignment: .leading)
+        .frame(width: 300, height: 120)
         .background(Color(NSColor.controlBackgroundColor))
         .cornerRadius(12)
-        .shadow(radius: 1)
+        .shadow(color: .black.opacity(0.05), radius: 4)
     }
 }
 
