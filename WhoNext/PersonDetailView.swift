@@ -62,6 +62,11 @@ struct PersonDetailView: View {
                                 }
                                 .font(.subheadline)
                                 .pickerStyle(.menu)
+                                Toggle("Direct Report", isOn: .init(
+                                    get: { person.isDirectReport },
+                                    set: { person.isDirectReport = $0 }
+                                ))
+                                .font(.subheadline)
                             } else {
                                 Text(person.name ?? "No Name")
                                     .font(.title2.bold())
@@ -70,6 +75,11 @@ struct PersonDetailView: View {
                                 Text("Time Zone: \(person.timezone ?? "No Time Zone")")
                                     .font(.subheadline)
                                     .foregroundColor(.secondary)
+                                if person.isDirectReport {
+                                    Text("Direct Report")
+                                        .font(.subheadline)
+                                        .foregroundColor(.secondary)
+                                }
                             }
                         }
 

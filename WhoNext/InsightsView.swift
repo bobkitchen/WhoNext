@@ -14,7 +14,7 @@ struct InsightsView: View {
     
     private var suggestedPeople: [Person] {
         people
-            .filter { $0.name != nil }
+            .filter { $0.name != nil && !$0.isDirectReport }
             .sorted {
                 ($0.lastContactDate ?? .distantPast) < ($1.lastContactDate ?? .distantPast)
             }

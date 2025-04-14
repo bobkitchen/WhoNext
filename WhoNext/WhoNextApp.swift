@@ -21,6 +21,7 @@ struct WhoNextApp: App {
 
         Settings {
             SettingsView()
+                .environment(\.managedObjectContext, persistenceController.container.viewContext)
         }
     }
 }

@@ -4,6 +4,7 @@ import CoreData
 struct PeopleListView: View {
     @Binding var selectedPerson: Person?
     @State private var hoveredPersonID: NSManagedObjectID?
+    @Environment(\.managedObjectContext) private var viewContext
 
     @FetchRequest(
         sortDescriptors: [NSSortDescriptor(keyPath: \Person.name, ascending: true)],
@@ -42,6 +43,16 @@ struct PeopleListView: View {
                             }
 
                             Spacer()
+                            
+                            if isHovered {
+                                Button(action: {
+                                    deletePerson(person)
+                                }) {
+                                    Image(systemName: "trash")
+                                        .foregroundColor(.red)
+                                }
+                                .buttonStyle(.plain)
+                            }
                         }
                         .padding()
                         .background(Color(NSColor.controlBackgroundColor))
@@ -67,5 +78,15 @@ struct PeopleListView: View {
             .map { String($0.prefix(1)) }
 
         return components.joined().uppercased()
+    }
+    
+    private func deletePerson(_ person: Person) {
+        withAnimation {
+            if selectedPerson == person {
+                selectedPerson = nil
+            }
+            viewContext.delete(person)
+            try? viewContext.save()
+        }
     }
 }

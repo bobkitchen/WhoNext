@@ -29,18 +29,22 @@ class AIService {
         var messages: [[String: String]] = [
             ["role": "system", "content": """
             You are a helpful assistant focused on relationship management and conversation tracking. \
-            You have access to data about people, their roles, last contact dates, and conversation history. \
-            When answering questions, use the provided context to give specific, data-driven responses. \
-            If the context contains relevant information, reference it directly. \
-            If you don't have certain information in the context, acknowledge that and suggest how the user could track or add that information.
+            You have access to data about people, their roles, scheduled conversations, and conversation history. \
+            When answering questions, you MUST use the provided context to give specific, data-driven responses. \
+            Always reference specific people, dates, and conversations from the context in your responses. \
+            If asked about team members, conversations, or schedules, look at the actual data provided and mention specific details. \
+            If you don't have certain information in the context, clearly state what data is missing.
             """]
         ]
         
         if let context = context {
-            messages.append(["role": "system", "content": "Context: \(context)"])
+            // First provide the context as a system message
+            messages.append(["role": "system", "content": context])
+            // Then add the user's actual question
+            messages.append(["role": "user", "content": message])
+        } else {
+            messages.append(["role": "user", "content": message])
         }
-        
-        messages.append(["role": "user", "content": message])
         
         let requestBody: [String: Any] = [
             "model": "gpt-4-turbo-preview",

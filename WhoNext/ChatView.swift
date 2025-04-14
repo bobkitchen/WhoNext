@@ -163,31 +163,40 @@ struct ChatView: View {
     }
     
     private func generateContext() -> String {
-        var context = "Current data in the system:\n"
+        var context = "Team Members and Conversations:\n\n"
         
-        // Add information about people
-        context += "\nPeople (\(people.count) total):\n"
         for person in people {
-            context += "- \(person.name ?? "Unknown")"
-            if let role = person.role {
-                context += " (\(role))"
+            context += "Person: \(person.name ?? "Unknown")\n"
+            context += "Role: \(person.role ?? "Unknown")\n"
+            context += "Direct Report: \(person.isDirectReport)\n"
+            if let timezone = person.timezone {
+                context += "Timezone: \(timezone)\n"
             }
-            if let lastContact = person.lastContactDate {
-                context += ", Last contacted: \(lastContact.formatted())"
+            if let nextConversation = person.scheduledConversationDate {
+                context += "Next Scheduled Conversation: \(nextConversation)\n"
             }
-            if let scheduled = person.scheduledConversationDate {
-                context += ", Next scheduled: \(scheduled.formatted())"
-            }
-            context += "\n"
             
-            // Add recent conversations
-            let conversations = person.conversationsArray.prefix(3)
+            let conversations = person.conversations as? Set<Conversation> ?? []
+            context += "Number of Past Conversations: \(conversations.count)\n"
+            
             if !conversations.isEmpty {
-                context += "  Recent conversations:\n"
-                for conversation in conversations {
-                    context += "  - \(conversation.date?.formatted() ?? "Unknown date"): \(conversation.notes?.prefix(100) ?? "No notes")\n"
+                context += "Recent Conversations:\n"
+                let sortedConversations = conversations.sorted { 
+                    ($0.date ?? Date.distantPast) > ($1.date ?? Date.distantPast)
+                }
+                for conversation in sortedConversations.prefix(3) {
+                    if let date = conversation.date {
+                        context += "- Date: \(date)\n"
+                        if let summary = conversation.summary {
+                            context += "  Summary: \(summary)\n"
+                        }
+                        if let notes = conversation.notes {
+                            context += "  Notes: \(notes)\n"
+                        }
+                    }
                 }
             }
+            context += "\n"
         }
         
         return context
