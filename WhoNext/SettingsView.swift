@@ -146,7 +146,7 @@ struct SettingsView: View {
                     
                     // Parse headers
                     let headers = rows[0].components(separatedBy: ",")
-                        .map { $0.trimmingCharacters(in: .whitespaces).lowercased() }
+                        .map { $0.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() }
                     print("Headers: \(headers)")
                     
                     // Find required column indices
@@ -172,7 +172,7 @@ struct SettingsView: View {
                     // Fetch existing people for duplicate checking
                     let fetchRequest = Person.fetchRequest()
                     let existingPeople = try viewContext.fetch(fetchRequest)
-                    let existingNames = Set(existingPeople.compactMap { $0.name?.lowercased() })
+                    let existingNames = Set(existingPeople.compactMap { ($0 as? Person)?.name?.lowercased() })
                     
                     var importedCount = 0
                     var skippedCount = 0
@@ -180,7 +180,7 @@ struct SettingsView: View {
                     // Process each line
                     for row in rows.dropFirst() where !row.isEmpty {
                         let columns = row.components(separatedBy: ",")
-                            .map { $0.trimmingCharacters(in: .whitespaces) }
+                            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
                         
                         guard columns.count >= max(nameIdx, roleIdx) + 1 else {
                             print("Row has missing fields: \(columns)")

@@ -33,7 +33,7 @@ struct ConversationDetailView: View {
                         RoundedRectangle(cornerRadius: 10)
                             .stroke(Color.gray.opacity(0.3), lineWidth: 1)
                     )
-                    .onChange(of: updatedNotes) { newValue in
+                    .onChange(of: updatedNotes) { _, newValue in
                         conversation.notes = newValue
                         try? viewContext.save()
                     }
@@ -55,18 +55,14 @@ struct ConversationDetailView: View {
         .padding(24)
         .frame(minWidth: 500, minHeight: 400)
         .onAppear {
+            isEditing = isInitiallyEditing
             updatedNotes = conversation.notes ?? ""
-            if isInitiallyEditing {
-                isEditing = true
-            }
         }
     }
 
     private func formattedDate(_ date: Date?) -> String {
-        guard let date = date else { return "Unknown date" }
-        let formatter = DateFormatter()
-        formatter.dateStyle = .medium
-        return formatter.string(from: date)
+        guard let date = date else { return "Unknown" }
+        return date.formatted(date: .abbreviated, time: .omitted)
     }
 
     static func formattedWindowTitle(for conversation: Conversation, person: Person) -> String {

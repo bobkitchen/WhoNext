@@ -7,16 +7,41 @@ struct InsightsView: View {
     
     @Environment(\.managedObjectContext) private var viewContext
     @FetchRequest(
-        sortDescriptors: [],
+        sortDescriptors: [NSSortDescriptor(keyPath: \Person.name, ascending: true)],
+        predicate: nil,
         animation: .default
-    )
-    private var people: FetchedResults<Person>
+    ) private var people: FetchedResults<Person>
+    
+    @AppStorage("dismissedPeople") private var dismissedPeopleData: Data = Data()
+    @State private var dismissedPeople: [UUID: Date] = [:]
     
     private var suggestedPeople: [Person] {
-        people
-            .filter { $0.name != nil && !$0.isDirectReport }
-            .sorted {
-                ($0.lastContactDate ?? .distantPast) < ($1.lastContactDate ?? .distantPast)
+        let calendar = Calendar.current
+        let oneMonthAgo = calendar.date(byAdding: .month, value: -1, to: Date()) ?? Date()
+        
+        // Get all non-direct reports, sorted alphabetically
+        let nonDirectReports = people
+            .filter { person in
+                guard let name = person.name, !name.isEmpty else { return false }
+                guard !person.isDirectReport else { return false }
+                
+                // Check if person was dismissed within the last month
+                if let id = person.identifier,
+                   let dismissedDate = dismissedPeople[id],
+                   dismissedDate > oneMonthAgo {
+                    return false
+                }
+                
+                return true
+            }
+            .sorted { ($0.name ?? "") < ($1.name ?? "") }
+        
+        // Sort by last contact date, putting people we haven't met with first
+        return nonDirectReports
+            .sorted { 
+                let date1 = $0.lastContactDate ?? .distantPast
+                let date2 = $1.lastContactDate ?? .distantPast
+                return date1 < date2
             }
             .prefix(2)
             .map { $0 }
@@ -57,17 +82,17 @@ struct InsightsView: View {
                         GridItem(.flexible()),
                         GridItem(.flexible())
                     ], spacing: 16) {
-                        ForEach(suggestedPeople, id: \.self) { person in
+                        ForEach(suggestedPeople) { person in
                             PersonCardView(
                                 person: person,
                                 isFollowUp: true,
                                 onDismiss: {
-                                    // Update the last contact date to dismiss the follow-up
-                                    let conversation = Conversation(context: viewContext)
-                                    conversation.date = Date()
-                                    conversation.person = person
-                                    conversation.uuid = UUID()
-                                    try? viewContext.save()
+                                    if let id = person.identifier {
+                                        dismissedPeople[id] = Date()
+                                        if let encoded = try? JSONEncoder().encode(dismissedPeople) {
+                                            dismissedPeopleData = encoded
+                                        }
+                                    }
                                 }
                             )
                         }
@@ -86,11 +111,11 @@ struct InsightsView: View {
                         GridItem(.flexible()),
                         GridItem(.flexible())
                     ], spacing: 16) {
-                        ForEach(comingUpTomorrow, id: \.self) { person in
+                        ForEach(comingUpTomorrow) { person in
                             PersonCardView(
                                 person: person,
                                 isFollowUp: false,
-                                onDismiss: {}
+                                onDismiss: nil
                             )
                         }
                     }
@@ -101,6 +126,11 @@ struct InsightsView: View {
         }
         .padding(24)
         .background(Color(NSColor.windowBackgroundColor))
+        .onAppear {
+            if let decoded = try? JSONDecoder().decode([UUID: Date].self, from: dismissedPeopleData) {
+                dismissedPeople = decoded
+            }
+        }
     }
     
     private func openConversationWindow(for person: Person) {
@@ -131,7 +161,7 @@ struct InsightsView: View {
 struct PersonCardView: View {
     let person: Person
     let isFollowUp: Bool
-    let onDismiss: () -> Void
+    let onDismiss: (() -> Void)?
     
     @Environment(\.managedObjectContext) private var viewContext
     
@@ -157,8 +187,8 @@ struct PersonCardView: View {
                 
                 Spacer()
                 
-                if isFollowUp {
-                    Button(action: onDismiss) {
+                if isFollowUp, let dismiss = onDismiss {
+                    Button(action: dismiss) {
                         Image(systemName: "xmark.circle.fill")
                             .foregroundStyle(.secondary)
                             .imageScale(.large)
@@ -191,68 +221,5 @@ struct PersonCardView: View {
         .background(Color(NSColor.controlBackgroundColor))
         .cornerRadius(12)
         .shadow(color: .black.opacity(0.05), radius: 4)
-    }
-}
-
-struct OpenAIResponse: Decodable {
-    struct Choice: Decodable {
-        struct Message: Decodable {
-            var role: String
-            var content: String
-            var refusal: String?
-            var annotations: [String]?
-        }
-        var index: Int
-        var message: Message
-        var logprobs: String?
-        var finish_reason: String
-    }
-    
-    struct UsageDetails: Decodable {
-        var cached_tokens: Int?
-        var audio_tokens: Int?
-    }
-    
-    struct CompletionDetails: Decodable {
-        var reasoning_tokens: Int?
-        var audio_tokens: Int?
-        var accepted_prediction_tokens: Int?
-        var rejected_prediction_tokens: Int?
-    }
-    
-    struct Usage: Decodable {
-        var prompt_tokens: Int
-        var completion_tokens: Int
-        var total_tokens: Int
-        var prompt_tokens_details: UsageDetails?
-        var completion_tokens_details: CompletionDetails?
-    }
-    
-    var id: String
-    var object: String
-    var created: Int
-    var model: String
-    var choices: [Choice]
-    var usage: Usage
-    var service_tier: String?
-    var system_fingerprint: String?
-}
-
-extension Person {
-    var conversationsArray: [Conversation] {
-        let set = conversations as? Set<Conversation> ?? []
-        return set.sorted { ($0.date ?? .distantPast) > ($1.date ?? .distantPast) }
-    }
-    
-    var lastContactDate: Date? {
-        conversationsArray.first?.date
-    }
-}
-
-extension Person {
-    var initials: String {
-        let components = (name ?? "").split(separator: " ")
-        let initials = components.prefix(2).map { String($0.prefix(1)) }
-        return initials.joined()
     }
 }

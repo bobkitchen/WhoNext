@@ -1,30 +1,43 @@
 import Foundation
 
+struct OpenAIResponse: Decodable {
+    struct Choice: Decodable {
+        struct Message: Decodable {
+            var role: String
+            var content: String
+        }
+        var index: Int
+        var message: Message
+        var finish_reason: String
+    }
+    var id: String
+    var object: String
+    var created: Int
+    var model: String
+    var choices: [Choice]
+    var usage: Usage
+}
+
+struct Usage: Decodable {
+    var prompt_tokens: Int
+    var completion_tokens: Int
+    var total_tokens: Int
+}
+
 class AIService {
     static let shared = AIService()
     
-    private let apiKey: String
+    private var apiKey: String {
+        UserDefaults.standard.string(forKey: "openaiApiKey") ?? ""
+    }
     private let baseURL = "https://api.openai.com/v1/chat/completions"
     
-    private init() {
-        // Get API key from environment variable or configuration
-        if let key = ProcessInfo.processInfo.environment["OPENAI_API_KEY"] {
-            self.apiKey = key
-        } else {
-            // Fallback to UserDefaults for development
-            self.apiKey = UserDefaults.standard.string(forKey: "OpenAIAPIKey") ?? ""
-        }
-    }
+    init() { }
     
     func sendMessage(_ message: String, context: String? = nil) async throws -> String {
         guard !apiKey.isEmpty else {
             throw AIError.missingAPIKey
         }
-        
-        var request = URLRequest(url: URL(string: baseURL)!)
-        request.httpMethod = "POST"
-        request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         
         var messages: [[String: String]] = [
             ["role": "system", "content": """
@@ -40,11 +53,15 @@ class AIService {
         if let context = context {
             // First provide the context as a system message
             messages.append(["role": "system", "content": context])
-            // Then add the user's actual question
-            messages.append(["role": "user", "content": message])
-        } else {
-            messages.append(["role": "user", "content": message])
         }
+        
+        // Then add the user's actual question
+        messages.append(["role": "user", "content": message])
+        
+        var request = URLRequest(url: URL(string: "https://api.openai.com/v1/chat/completions")!)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
         
         let requestBody: [String: Any] = [
             "model": "gpt-4-turbo-preview",
@@ -66,8 +83,8 @@ class AIService {
             return decodedResponse.choices.first?.message.content ?? "No response content."
         } else {
             let errorResponse = try? JSONSerialization.jsonObject(with: data) as? [String: Any]
-            let errorMessage = errorResponse?["error"] as? [String: Any] ?? [:]
-            throw AIError.apiError(message: errorMessage["message"] as? String ?? "Unknown API error")
+            let errorMessage = (errorResponse?["error"] as? [String: Any])?["message"] as? String
+            throw AIError.apiError(message: errorMessage ?? "Unknown API error")
         }
     }
 }
