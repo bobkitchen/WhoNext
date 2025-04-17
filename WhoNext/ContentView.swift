@@ -3,6 +3,8 @@ import CoreData
 
 struct ContentView: View {
     @StateObject private var appState = AppState()
+    @Environment(\.managedObjectContext) private var viewContext
+    @State private var searchText = ""
 
     var body: some View {
         NavigationStack {
@@ -31,7 +33,7 @@ struct ContentView: View {
                     )
                 }
             }
-            .navigationTitle("") 
+            .navigationTitle("")
             .toolbar {
                 ToolbarItemGroup(placement: .navigation) {
                     Button(action: {
@@ -48,10 +50,20 @@ struct ContentView: View {
                             .foregroundColor(appState.selectedTab == .people ? .accentColor : .primary)
                     }
                 }
+                
                 ToolbarItem(placement: .principal) {
                     Text("WhoNext")
                         .font(.headline)
                         .foregroundColor(.secondary)
+                }
+                
+                ToolbarItem(placement: .automatic) {
+                    SearchBar(searchText: $searchText) { person in
+                        // Switch to people tab and select the person
+                        appState.selectedTab = .people
+                        appState.selectedPerson = person
+                        appState.selectedPersonID = person.identifier
+                    }
                 }
             }
         }
