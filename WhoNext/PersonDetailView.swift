@@ -4,16 +4,16 @@ import MarkdownUI
 import UniformTypeIdentifiers
 
 struct PersonDetailView: View {
-    @ObservedObject var person: Person
+    let person: Person
     @Environment(\.managedObjectContext) private var viewContext
-
-    @State private var selectedConversation: Conversation?
-    @State private var isPresentingDetail = false
     @State private var isEditing = false
-    @State private var updatedName: String = ""
-    @State private var updatedRole: String = ""
-    @State private var updatedTimezone: String = ""
-    @State private var updatedNotes: String = ""
+    
+    // State for edit mode
+    @State private var editingName = ""
+    @State private var editingRole = ""
+    @State private var editingTimezone = ""
+    @State private var editingNotes = ""
+    @State private var isDirectReport = false
 
     var sortedConversations: [Conversation] {
         let set = person.conversations as? Set<Conversation> ?? []
@@ -21,207 +21,176 @@ struct PersonDetailView: View {
     }
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 24) {
-
-                // MARK: - Header Card
-                VStack(alignment: .leading, spacing: 12) {
-                    HStack(alignment: .top, spacing: 16) {
-                        VStack(spacing: 8) {
-                            if let imageData = person.photo, let nsImage = NSImage(data: imageData) {
-                                Image(nsImage: nsImage)
-                                    .resizable()
-                                    .frame(width: 60, height: 60)
-                                    .clipShape(Circle())
-                                    .overlay(Circle().stroke(Color.primary.opacity(0.2), lineWidth: 1))
-                            } else {
-                                Circle()
-                                    .fill(Color.blue)
-                                    .frame(width: 60, height: 60)
-                                    .overlay(Text(initials(from: person.name)).foregroundColor(.white))
-                            }
-
-                            if isEditing {
-                                Button("Change Photo") {
-                                    selectNewPhoto()
-                                }
-                                .font(.caption)
-                            }
+        VStack(alignment: .leading, spacing: 24) {
+            // Header
+            HStack(alignment: .top, spacing: 16) {
+                // Avatar
+                ZStack {
+                    Circle()
+                        .fill(Color(nsColor: .systemGray).opacity(0.15))
+                        .frame(width: 64, height: 64)
+                    
+                    Text(person.initials)
+                        .font(.system(size: 24, weight: .medium, design: .rounded))
+                        .foregroundColor(.secondary)
+                }
+                
+                VStack(alignment: .leading, spacing: 6) {
+                    if isEditing {
+                        TextField("Name", text: $editingName)
+                            .font(.system(size: 20, weight: .semibold))
+                            .textFieldStyle(.plain)
+                        
+                        TextField("Role", text: $editingRole)
+                            .font(.system(size: 14))
+                            .foregroundColor(.secondary)
+                            .textFieldStyle(.plain)
+                        
+                        TextField("Timezone", text: $editingTimezone)
+                            .font(.system(size: 13))
+                            .foregroundColor(.secondary)
+                            .textFieldStyle(.plain)
+                            .padding(.top, 2)
+                        
+                        Toggle("Direct Report", isOn: $isDirectReport)
+                            .font(.system(size: 13))
+                            .toggleStyle(.checkbox)
+                            .padding(.top, 4)
+                    } else {
+                        Text(person.name ?? "")
+                            .font(.system(size: 20, weight: .semibold))
+                        
+                        if let role = person.role {
+                            Text(role)
+                                .font(.system(size: 14))
+                                .foregroundColor(.secondary)
                         }
-
-                        VStack(alignment: .leading, spacing: 4) {
-                            if isEditing {
-                                TextField("Name", text: $updatedName)
-                                    .font(.title2.bold())
-                                TextField("Role", text: $updatedRole)
-                                    .font(.body)
-                                Picker("Time Zone", selection: $updatedTimezone) {
-                                    ForEach(TimeZone.knownTimeZoneIdentifiers, id: \.self) { id in
-                                        Text(id).tag(id)
-                                    }
-                                }
-                                .font(.subheadline)
-                                .pickerStyle(.menu)
-                                Toggle("Direct Report", isOn: .init(
-                                    get: { person.isDirectReport },
-                                    set: { person.isDirectReport = $0 }
-                                ))
-                                .font(.subheadline)
-                            } else {
-                                Text(person.name ?? "No Name")
-                                    .font(.title2.bold())
-                                Text("Role: \(person.role ?? "No Role")")
-                                    .font(.body)
-                                Text("Time Zone: \(person.timezone ?? "No Time Zone")")
-                                    .font(.subheadline)
-                                    .foregroundColor(.secondary)
-                                if person.isDirectReport {
-                                    Text("Direct Report")
-                                        .font(.subheadline)
-                                        .foregroundColor(.secondary)
-                                }
-                            }
+                        
+                        if let timezone = person.timezone {
+                            Text(timezone)
+                                .font(.system(size: 13))
+                                .foregroundColor(.secondary)
+                                .padding(.top, 2)
                         }
-
-                        Spacer()
-
-                        Button(action: {
-                            if isEditing {
-                                person.name = updatedName
-                                person.role = updatedRole
-                                person.timezone = updatedTimezone
-                                person.notes = updatedNotes
-                                do {
-                                    try viewContext.save()
-                                } catch {
-                                    print("Failed to save person details: \(error)")
-                                }
-                            }
-                            isEditing.toggle()
-                        }) {
-                            Text(isEditing ? "Save" : "Edit")
-                                .fontWeight(.semibold)
-                                .padding(.horizontal, 12)
-                                .padding(.vertical, 6)
+                        
+                        if person.isDirectReport {
+                            Text("Direct Report")
+                                .font(.system(size: 13))
+                                .foregroundColor(.secondary)
+                                .padding(.top, 4)
                         }
-                        .buttonStyle(.borderedProminent)
-                        .controlSize(.small)
                     }
                 }
-                .padding(EdgeInsets(top: 16, leading: 16, bottom: 12, trailing: 16))
-                .background(
-                    RoundedRectangle(cornerRadius: 12)
-                        .fill(Color(NSColor.windowBackgroundColor))
-                        .shadow(color: .black.opacity(0.05), radius: 3, x: 0, y: 2)
-                )
-                .padding(.horizontal, 4)
-
-                // MARK: - Notes Section
-                if isEditing {
-                    VStack(alignment: .leading, spacing: 6) {
-                        Text("Notes")
-                            .font(.subheadline)
-                            .foregroundColor(.secondary)
-                        TextEditor(text: $updatedNotes)
-                            .frame(height: 100)
-                            .overlay(RoundedRectangle(cornerRadius: 8)
-                                .stroke(Color.gray.opacity(0.3), lineWidth: 1))
+                
+                Spacer()
+                
+                Button(action: { 
+                    if isEditing {
+                        saveChanges()
                     }
-                    .padding(.horizontal)
-                } else if let notes = person.notes, !notes.isEmpty {
-                    VStack(alignment: .leading, spacing: 6) {
-                        Text("Notes")
-                            .font(.subheadline)
-                            .foregroundColor(.secondary)
-                        Markdown(notes)
-                            .font(.body)
-                    }
-                    .padding(.horizontal)
+                    isEditing.toggle()
+                }) {
+                    Text(isEditing ? "Save" : "Edit")
+                        .font(.system(size: 13, weight: .medium))
                 }
-
-                // MARK: - Conversations Header
+                .buttonStyle(.plain)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 6)
+                .background(Color(nsColor: .controlBackgroundColor))
+                .cornerRadius(6)
+            }
+            
+            // Notes Section (when editing)
+            if isEditing {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Notes")
+                        .font(.system(size: 15, weight: .semibold))
+                    
+                    TextEditor(text: $editingNotes)
+                        .font(.system(size: 13))
+                        .frame(height: 100)
+                        .padding(8)
+                        .background(Color(nsColor: .textBackgroundColor))
+                        .cornerRadius(6)
+                }
+            } else if let notes = person.notes, !notes.isEmpty {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Notes")
+                        .font(.system(size: 15, weight: .semibold))
+                    
+                    Text(notes)
+                        .font(.system(size: 13))
+                        .foregroundColor(.secondary)
+                }
+            }
+            
+            // Conversations Section
+            VStack(alignment: .leading, spacing: 16) {
                 HStack {
                     Text("Conversations")
-                        .font(.title2.bold())
+                        .font(.system(size: 15, weight: .semibold))
+                    
                     Spacer()
-                    Button(action: {
-                        let newConversation = Conversation(context: viewContext)
-                        newConversation.date = Date()
-                        newConversation.notes = "New conversation started."
-                        newConversation.uuid = UUID() // Ensure this line is present before saving
-                        newConversation.person = person
-
-                        do {
-                            try viewContext.save()
-                            openConversationWindow(for: newConversation)
-                        } catch {
-                            print("Failed to create new conversation: \(error)")
+                    
+                    Button(action: createNewConversation) {
+                        HStack(spacing: 4) {
+                            Image(systemName: "plus")
+                                .font(.system(size: 12, weight: .semibold))
+                            Text("New")
+                                .font(.system(size: 13, weight: .medium))
                         }
-                    }) {
-                        Text("New")
-                            .fontWeight(.semibold)
-                            .padding(.horizontal, 12)
-                            .padding(.vertical, 6)
                     }
-                    .buttonStyle(.borderedProminent)
-                    .controlSize(.small)
+                    .buttonStyle(.plain)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 5)
+                    .background(Color(nsColor: .controlBackgroundColor))
+                    .cornerRadius(6)
                 }
-                .padding(.horizontal)
-
-                // MARK: - Conversations List
+                
                 if sortedConversations.isEmpty {
                     Text("No conversations yet.")
+                        .font(.system(size: 13))
                         .foregroundColor(.secondary)
-                        .padding(.horizontal)
-                } else {
-                    LazyVGrid(columns: [GridItem(.adaptive(minimum: 160), spacing: 16)], spacing: 16) {
-                        ForEach(sortedConversations, id: \.uuid) { conversation in
-                            Button(action: {
-                                openConversationWindow(for: conversation)
-                            }) {
-                                VStack(alignment: .leading, spacing: 6) {
-                                    Text(formattedDate(conversation.date))
-                                        .font(.caption)
-                                        .foregroundColor(.secondary)
-                                    if let preview = conversation.notes, !preview.isEmpty {
-                                        Text(previewText(from: preview))
-                                            .font(.caption)
-                                            .lineSpacing(2)
-                                            .lineLimit(3)
-                                            .foregroundColor(.primary)
-                                    } else {
-                                        Text("No notes yet")
-                                            .font(.caption)
-                                            .foregroundColor(.gray)
-                                    }
-                                }
-                                .padding()
-                                .frame(width: 160, height: 160, alignment: .topLeading)
-                                .background(
-                                    RoundedRectangle(cornerRadius: 12)
-                                        .fill(Color(NSColor.controlBackgroundColor))
-                                        .shadow(color: .black.opacity(0.05), radius: 3, x: 0, y: 2)
-                                )
-                            }
-                            .buttonStyle(PlainButtonStyle())
-                        }
-                    }
-                    .padding(.horizontal)
-                    .frame(minHeight: 200)
+                        .frame(maxWidth: .infinity, alignment: .center)
+                        .padding(.vertical, 20)
+                        .background(Color(nsColor: .controlBackgroundColor).opacity(0.5))
+                        .cornerRadius(8)
                 }
-
-                Spacer()
             }
-            .padding(.top)
+            
+            Spacer()
         }
-        .padding(.horizontal)
-        .frame(maxWidth: .infinity, alignment: .topLeading)
+        .padding(20)
+        .frame(minWidth: 300, maxWidth: .infinity, maxHeight: .infinity)
+        .background(Color(nsColor: .windowBackgroundColor))
         .onAppear {
-            updatedName = person.name ?? ""
-            updatedRole = person.role ?? ""
-            updatedTimezone = person.timezone ?? ""
-            updatedNotes = person.notes ?? ""
+            editingName = person.name ?? ""
+            editingRole = person.role ?? ""
+            editingTimezone = person.timezone ?? ""
+            editingNotes = person.notes ?? ""
+            isDirectReport = person.isDirectReport
         }
+    }
+    
+    private func saveChanges() {
+        person.name = editingName
+        person.role = editingRole
+        person.timezone = editingTimezone
+        person.notes = editingNotes
+        person.isDirectReport = isDirectReport
+        
+        try? viewContext.save()
+    }
+    
+    private func createNewConversation() {
+        let conversation = Conversation(context: viewContext)
+        conversation.date = Date()
+        conversation.person = person
+        conversation.uuid = UUID()
+        conversation.notes = ""
+        
+        try? viewContext.save()
+        openConversationWindow(for: conversation)
     }
 
     private func formattedDate(_ date: Date?) -> String {
@@ -277,7 +246,7 @@ struct PersonDetailView: View {
             backing: .buffered,
             defer: false
         )
-        window.title = ConversationDetailView.formattedWindowTitle(for: conversation, person: person)
+        window.title = "Conversation with \(person.name ?? "Unknown")"
         window.isReleasedWhenClosed = false
         window.contentView = NSHostingView(
             rootView: ConversationDetailView(conversation: conversation)

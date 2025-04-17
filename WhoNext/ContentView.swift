@@ -8,12 +8,16 @@ struct ContentView: View {
         NavigationStack {
             VStack {
                 if appState.selectedTab == .people {
-                    HStack {
+                    HStack(spacing: 0) {
                         PeopleListView(
                             selectedPerson: $appState.selectedPerson
                         )
+                        .frame(width: 300)
+                        .frame(maxHeight: .infinity)
+                        
                         if let person = appState.selectedPerson {
                             PersonDetailView(person: person)
+                                .frame(maxWidth: .infinity)
                         } else {
                             Text("Select a person")
                                 .foregroundStyle(.secondary)

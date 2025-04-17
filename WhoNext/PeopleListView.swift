@@ -7,20 +7,63 @@ struct PeopleListView: View {
 
     @FetchRequest(
         sortDescriptors: [NSSortDescriptor(keyPath: \Person.name, ascending: true)],
-        animation: .default
+        animation: nil
     ) private var people: FetchedResults<Person>
 
     var body: some View {
         List {
             ForEach(people) { person in
-                PersonRowView(
-                    person: person,
-                    onSelect: { selectedPerson = person },
-                    onDelete: { deletePerson(person) }
-                )
+                HStack(spacing: 16) {
+                    // Avatar
+                    ZStack {
+                        Circle()
+                            .fill(Color(nsColor: .systemGray).opacity(0.2))
+                            .frame(width: 40, height: 40)
+                        
+                        Text(person.initials)
+                            .font(.system(size: 14, weight: .medium, design: .rounded))
+                            .foregroundColor(.secondary)
+                    }
+                    
+                    // Name and Role
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(person.name ?? "Unnamed")
+                            .font(.system(size: 15, weight: .semibold, design: .default))
+                            .foregroundColor(.primary)
+
+                        if let role = person.role, !role.isEmpty {
+                            Text(role)
+                                .font(.system(size: 13, weight: .regular, design: .default))
+                                .foregroundColor(.secondary)
+                        }
+                    }
+                    
+                    Spacer()
+                    
+                    // Delete Button
+                    Button(action: { deletePerson(person) }) {
+                        Image(systemName: "trash")
+                            .font(.system(size: 13))
+                            .foregroundColor(.secondary)
+                            .opacity(0.7)
+                    }
+                    .buttonStyle(.plain)
+                    .help("Delete \(person.name ?? "person")")
+                }
+                .padding(.vertical, 4)
+                .padding(.horizontal, 16)
+                .contentShape(Rectangle())
+                .onTapGesture {
+                    // Defer selection to prevent jumping
+                    DispatchQueue.main.async {
+                        selectedPerson = person
+                    }
+                }
+                .background(person.id == selectedPerson?.id ? Color.accentColor.opacity(0.1) : Color.clear)
             }
         }
         .listStyle(.plain)
+        .background(Color(.windowBackgroundColor))
     }
     
     private func deletePerson(_ person: Person) {
@@ -29,49 +72,5 @@ struct PeopleListView: View {
         }
         viewContext.delete(person)
         try? viewContext.save()
-    }
-}
-
-struct PersonRowView: View {
-    let person: Person
-    let onSelect: () -> Void
-    let onDelete: () -> Void
-    
-    var body: some View {
-        Button(action: onSelect) {
-            HStack(spacing: 12) {
-                Circle()
-                    .fill(Color.accentColor)
-                    .frame(width: 36, height: 36)
-                    .overlay(
-                        Text(person.initials)
-                            .foregroundColor(.white)
-                            .font(.caption.weight(.bold))
-                    )
-
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(person.name ?? "Unnamed")
-                        .font(.headline)
-
-                    if let role = person.role, !role.isEmpty {
-                        Text(role)
-                            .font(.subheadline)
-                            .foregroundColor(.secondary)
-                    }
-                }
-                
-                Spacer()
-                
-                Button(action: onDelete) {
-                    Image(systemName: "trash")
-                        .foregroundColor(.secondary)
-                }
-                .buttonStyle(.plain)
-                .help("Delete \(person.name ?? "person")")
-            }
-            .padding(.vertical, 4)
-            .padding(.horizontal)
-        }
-        .buttonStyle(.plain)
     }
 }
