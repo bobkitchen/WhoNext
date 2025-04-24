@@ -12,6 +12,9 @@ struct InsightsView: View {
         animation: .default
     ) private var people: FetchedResults<Person>
     
+    // Calendar integration
+    @StateObject private var calendarService = CalendarService.shared
+    
     @AppStorage("dismissedPeople") private var dismissedPeopleData: Data = Data()
     @State private var dismissedPeople: [UUID: Date] = [:]
     
@@ -60,6 +63,26 @@ struct InsightsView: View {
     
     var body: some View {
         VStack(alignment: .leading, spacing: 24) {
+            // Upcoming 1:1 Meetings
+            VStack(alignment: .leading, spacing: 16) {
+                Text("Upcoming 1:1s")
+                    .font(.system(size: 20, weight: .semibold, design: .rounded))
+                if calendarService.upcomingMeetings.isEmpty {
+                    Text("No upcoming 1:1s")
+                        .foregroundStyle(.secondary)
+                } else {
+                    ForEach(calendarService.upcomingMeetings) { meeting in
+                        HStack {
+                            Text(meeting.title)
+                            Spacer()
+                            Text(meeting.startDate, style: .date)
+                        }
+                        .padding(.vertical, 4)
+                    }
+                }
+            }
+            .cardStyle()
+            
             // Chat Interface
             ChatView()
                 .frame(height: 300)
@@ -129,6 +152,11 @@ struct InsightsView: View {
         .onAppear {
             if let decoded = try? JSONDecoder().decode([UUID: Date].self, from: dismissedPeopleData) {
                 dismissedPeople = decoded
+            }
+            calendarService.requestAccess { granted in
+                if granted {
+                    calendarService.fetchUpcomingMeetings()
+                }
             }
         }
     }
