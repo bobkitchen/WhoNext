@@ -14,6 +14,9 @@ struct PersonDetailView: View {
     @State private var editingTimezone = ""
     @State private var editingNotes = ""
     @State private var isDirectReport = false
+    @State private var editingPhotoData: Data? = nil
+    @State private var editingPhotoImage: NSImage? = nil
+    @State private var showingPhotoPicker = false
 
     var sortedConversations: [Conversation] {
         let set = person.conversations as? Set<Conversation> ?? []
@@ -24,34 +27,56 @@ struct PersonDetailView: View {
         VStack(alignment: .leading, spacing: 24) {
             // Header
             HStack(alignment: .top, spacing: 16) {
-                // Avatar
-                ZStack {
-                    Circle()
-                        .fill(Color(nsColor: .systemGray).opacity(0.15))
-                        .frame(width: 64, height: 64)
-                    
-                    Text(person.initials)
-                        .font(.system(size: 24, weight: .medium, design: .rounded))
-                        .foregroundColor(.secondary)
+                // Avatar and photo button vertically stacked
+                VStack(spacing: 8) {
+                    ZStack {
+                        Circle()
+                            .fill(Color(nsColor: .systemGray).opacity(0.15))
+                            .frame(width: 64, height: 64)
+                        if isEditing {
+                            if let image = editingPhotoImage {
+                                Image(nsImage: image)
+                                    .resizable()
+                                    .scaledToFill()
+                                    .clipShape(Circle())
+                                    .frame(width: 64, height: 64)
+                            } else {
+                                Text(initials(from: editingName))
+                                    .font(.system(size: 24, weight: .medium, design: .rounded))
+                                    .foregroundColor(.secondary)
+                            }
+                        } else if let data = person.photo, let image = NSImage(data: data) {
+                            Image(nsImage: image)
+                                .resizable()
+                                .scaledToFill()
+                                .clipShape(Circle())
+                                .frame(width: 64, height: 64)
+                        } else {
+                            Text(person.initials)
+                                .font(.system(size: 24, weight: .medium, design: .rounded))
+                                .foregroundColor(.secondary)
+                        }
+                    }
+                    if isEditing {
+                        Button("Choose Photo") { showingPhotoPicker = true }
+                            .font(.system(size: 12))
+                    }
                 }
-                
+                // Name, role, etc. remain to the right, with more space
                 VStack(alignment: .leading, spacing: 6) {
                     if isEditing {
                         TextField("Name", text: $editingName)
                             .font(.system(size: 20, weight: .semibold))
                             .textFieldStyle(.plain)
-                        
                         TextField("Role", text: $editingRole)
                             .font(.system(size: 14))
                             .foregroundColor(.secondary)
                             .textFieldStyle(.plain)
-                        
                         TextField("Timezone", text: $editingTimezone)
                             .font(.system(size: 13))
                             .foregroundColor(.secondary)
                             .textFieldStyle(.plain)
                             .padding(.top, 2)
-                        
                         Toggle("Direct Report", isOn: $isDirectReport)
                             .font(.system(size: 13))
                             .toggleStyle(.checkbox)
@@ -59,20 +84,17 @@ struct PersonDetailView: View {
                     } else {
                         Text(person.name ?? "")
                             .font(.system(size: 20, weight: .semibold))
-                        
                         if let role = person.role {
                             Text(role)
                                 .font(.system(size: 14))
                                 .foregroundColor(.secondary)
                         }
-                        
                         if let timezone = person.timezone {
                             Text(timezone)
                                 .font(.system(size: 13))
                                 .foregroundColor(.secondary)
                                 .padding(.top, 2)
                         }
-                        
                         if person.isDirectReport {
                             Text("Direct Report")
                                 .font(.system(size: 13))
@@ -163,12 +185,30 @@ struct PersonDetailView: View {
         .padding(20)
         .frame(minWidth: 300, maxWidth: .infinity, maxHeight: .infinity)
         .background(Color(nsColor: .windowBackgroundColor))
+        .fileImporter(isPresented: $showingPhotoPicker, allowedContentTypes: [.image]) { result in
+            switch result {
+            case .success(let url):
+                if let data = try? Data(contentsOf: url), let image = NSImage(data: data) {
+                    editingPhotoData = data
+                    editingPhotoImage = image
+                }
+            default:
+                break
+            }
+        }
         .onAppear {
             editingName = person.name ?? ""
             editingRole = person.role ?? ""
             editingTimezone = person.timezone ?? ""
             editingNotes = person.notes ?? ""
             isDirectReport = person.isDirectReport
+            if let data = person.photo, let image = NSImage(data: data) {
+                editingPhotoData = data
+                editingPhotoImage = image
+            } else {
+                editingPhotoData = nil
+                editingPhotoImage = nil
+            }
         }
     }
     
@@ -178,7 +218,9 @@ struct PersonDetailView: View {
         person.timezone = editingTimezone
         person.notes = editingNotes
         person.isDirectReport = isDirectReport
-        
+        if let editingPhotoData = editingPhotoData {
+            person.photo = editingPhotoData
+        }
         try? viewContext.save()
     }
     
@@ -218,9 +260,9 @@ struct PersonDetailView: View {
         }
     }
 
-    private func initials(from name: String?) -> String {
-        let components = name?.split(separator: " ") ?? []
-        let initials = components.prefix(2).compactMap { $0.first }.map { String($0) }
+    private func initials(from name: String) -> String {
+        let components = name.split(separator: " ")
+        let initials = components.prefix(2).map { String($0.prefix(1)) }
         return initials.joined()
     }
 

@@ -73,10 +73,16 @@ struct PeopleListView: View {
             }
         }
         .sheet(isPresented: $showingAddPersonSheet) {
-            AddPersonView { name, role in
+            AddPersonView { name, role, timezone, isDirectReport, notes, photoData in
                 let newPerson = Person(context: viewContext)
                 newPerson.name = name
                 newPerson.role = role
+                newPerson.timezone = timezone
+                newPerson.isDirectReport = isDirectReport
+                newPerson.notes = notes
+                if let photoData = photoData {
+                    newPerson.photo = photoData
+                }
                 do {
                     try viewContext.save()
                 } catch {
