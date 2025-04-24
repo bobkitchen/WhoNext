@@ -29,7 +29,8 @@ struct ContentView: View {
                 } else if appState.selectedTab == .insights {
                     InsightsView(
                         selectedPersonID: $appState.selectedPersonID,
-                        selectedPerson: $appState.selectedPerson
+                        selectedPerson: $appState.selectedPerson,
+                        selectedTab: $appState.selectedTab
                     )
                 }
             }

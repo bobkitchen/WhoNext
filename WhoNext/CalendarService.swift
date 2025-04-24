@@ -6,6 +6,9 @@ struct UpcomingMeeting: Identifiable {
     let title: String
     let startDate: Date
     let calendarID: String
+    let notes: String?
+    let location: String?
+    let attendees: [String]?
 }
 
 class CalendarService: ObservableObject {
@@ -83,7 +86,10 @@ class CalendarService: ObservableObject {
                 id: event.eventIdentifier,
                 title: event.title,
                 startDate: event.startDate,
-                calendarID: event.calendar.calendarIdentifier
+                calendarID: event.calendar.calendarIdentifier,
+                notes: event.notes,
+                location: event.location,
+                attendees: event.attendees?.compactMap { $0.name }
             )
         }
         print("[CalendarService] Found \(meetings.count) upcoming 1:1 meetings in calendar \(calendar.title)")

@@ -4,6 +4,7 @@ import CoreData
 struct InsightsView: View {
     @Binding var selectedPersonID: UUID?
     @Binding var selectedPerson: Person?
+    @Binding var selectedTab: SidebarItem
     
     @Environment(\.managedObjectContext) private var viewContext
     @FetchRequest(
@@ -72,11 +73,33 @@ struct InsightsView: View {
                         .foregroundStyle(.secondary)
                 } else {
                     ForEach(calendarService.upcomingMeetings) { meeting in
-                        HStack {
-                            Text(meeting.title)
-                            Spacer()
-                            Text(meeting.startDate, style: .date)
+                        let matchedPerson = matchPerson(for: meeting)
+                        Button(action: {
+                            if let person = matchedPerson {
+                                selectedPerson = person
+                                selectedPersonID = person.identifier
+                                selectedTab = .people // Switch to people tab for navigation
+                            }
+                        }) {
+                            HStack {
+                                VStack(alignment: .leading) {
+                                    Text(meeting.title)
+                                        .font(.system(size: 15, weight: .medium))
+                                    if let person = matchedPerson {
+                                        Text(person.name ?? "")
+                                            .font(.system(size: 13))
+                                            .foregroundStyle(.secondary)
+                                    }
+                                }
+                                Spacer()
+                                Text(meeting.startDate, style: .date)
+                            }
+                            .contentShape(Rectangle())
                         }
+                        .buttonStyle(.plain)
+                        .disabled(matchedPerson == nil)
+                        .opacity(matchedPerson == nil ? 0.5 : 1.0)
+                        .help(matchedPerson == nil ? "No matching person found" : "Go to person detail")
                         .padding(.vertical, 4)
                     }
                 }
@@ -159,6 +182,70 @@ struct InsightsView: View {
                 }
             }
         }
+    }
+    
+    private func matchPerson(for meeting: UpcomingMeeting) -> Person? {
+        let currentUser = people.first { person in
+            guard let name = person.name else { return false }
+            return name.lowercased().contains("bob kitchen")
+        }
+        guard let attendees = meeting.attendees else { print("No attendees for meeting: \(meeting.title)"); return nil }
+        let selfNames = [currentUser?.name?.lowercased(), "bk", "bob"]
+        print("Meeting: \(meeting.title)")
+        print("Attendees: \(attendees)")
+        print("Self names: \(selfNames)")
+        print("People list: \(people.compactMap { $0.name })")
+        let otherAttendeeNames = attendees.filter { attendee in
+            let attendeeLower = attendee.lowercased()
+            return !selfNames.contains(where: { selfName in
+                guard let selfName = selfName else { return false }
+                return attendeeLower.contains(selfName)
+            })
+        }
+        print("Other attendee names: \(otherAttendeeNames)")
+        let nicknameMap: [String: String] = [
+            "kathryn": "kate", "kate": "kathryn",
+            "robert": "bob", "bob": "robert",
+            "william": "bill", "bill": "william",
+        ]
+        func firstNamesMatch(_ a: String, _ b: String) -> Bool {
+            if a == b { return true }
+            if a.hasPrefix(b) || b.hasPrefix(a) { return true }
+            if let nickA = nicknameMap[a], nickA == b { return true }
+            if let nickB = nicknameMap[b], nickB == a { return true }
+            return false
+        }
+        func splitName(_ name: String) -> (first: String, last: String) {
+            let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+            let parts = trimmed.split(separator: " ").map { String($0) }
+            if parts.count >= 2 {
+                let first = parts[0]
+                let last = parts[1...].joined(separator: " ")
+                return (first, last)
+            } else if parts.count == 1 {
+                return (parts[0], "")
+            } else {
+                return ("", "")
+            }
+        }
+        for attendee in otherAttendeeNames {
+            let (attendeeFirst, attendeeLast) = splitName(attendee)
+            print("Attendee split: first=\(attendeeFirst), last=\(attendeeLast)")
+            for person in people {
+                guard let name = person.name else { continue }
+                let (personFirst, personLast) = splitName(name)
+                print("  Person split: first=\(personFirst), last=\(personLast) [\(name)]")
+                let lastNameMatches = !attendeeLast.isEmpty && attendeeLast == personLast
+                let firstNameMatches = firstNamesMatch(attendeeFirst, personFirst)
+                print("    Last names match? \(lastNameMatches), First names match? \(firstNameMatches)")
+                if lastNameMatches && firstNameMatches {
+                    print("Matched attendee: \(attendee) to person: \(name)")
+                    return person
+                }
+            }
+        }
+        print("No match found for meeting: \(meeting.title)")
+        return nil
     }
     
     private func openConversationWindow(for person: Person) {

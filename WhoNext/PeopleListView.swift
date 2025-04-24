@@ -10,6 +10,8 @@ struct PeopleListView: View {
         animation: nil
     ) private var people: FetchedResults<Person>
 
+    @State private var showingAddPersonSheet = false
+
     var body: some View {
         List {
             ForEach(people) { person in
@@ -60,6 +62,27 @@ struct PeopleListView: View {
                     }
                 }
                 .background(person.id == selectedPerson?.id ? Color.accentColor.opacity(0.1) : Color.clear)
+            }
+        }
+        .toolbar {
+            ToolbarItem(placement: .automatic) {
+                Button(action: { showingAddPersonSheet = true }) {
+                    Image(systemName: "plus")
+                }
+                .help("Add new person")
+            }
+        }
+        .sheet(isPresented: $showingAddPersonSheet) {
+            AddPersonView { name, role in
+                let newPerson = Person(context: viewContext)
+                newPerson.name = name
+                newPerson.role = role
+                do {
+                    try viewContext.save()
+                } catch {
+                    // Handle error
+                }
+                showingAddPersonSheet = false
             }
         }
         .listStyle(.plain)
