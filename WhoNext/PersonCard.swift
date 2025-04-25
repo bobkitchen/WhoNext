@@ -69,9 +69,7 @@ struct PersonCard: View {
                 .stroke(Color.gray.opacity(0.1), lineWidth: 1)
         )
         .onHover { hovering in
-            withAnimation(.easeInOut(duration: 0.2)) {
-                isHovered = hovering
-            }
+            isHovered = hovering
         }
     }
 }

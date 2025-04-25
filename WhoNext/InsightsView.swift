@@ -16,55 +16,19 @@ struct InsightsView: View {
     // Calendar integration
     @StateObject private var calendarService = CalendarService.shared
     
-    @AppStorage("dismissedPeople") private var dismissedPeopleData: Data = Data()
-    @State private var dismissedPeople: [UUID: Date] = [:]
-    
-    private var suggestedPeople: [Person] {
-        let calendar = Calendar.current
-        let oneMonthAgo = calendar.date(byAdding: .month, value: -1, to: Date()) ?? Date()
-        
-        // Get all non-direct reports, sorted alphabetically
-        let nonDirectReports = people
-            .filter { person in
-                guard let name = person.name, !name.isEmpty else { return false }
-                guard !person.isDirectReport else { return false }
-                
-                // Check if person was dismissed within the last month
-                if let id = person.identifier,
-                   let dismissedDate = dismissedPeople[id],
-                   dismissedDate > oneMonthAgo {
-                    return false
-                }
-                
-                return true
-            }
-            .sorted { ($0.name ?? "") < ($1.name ?? "") }
-        
-        // Sort by last contact date, putting people we haven't met with first
-        return nonDirectReports
-            .sorted { 
-                let date1 = $0.lastContactDate ?? .distantPast
-                let date2 = $1.lastContactDate ?? .distantPast
-                return date1 < date2
-            }
-            .prefix(2)
-            .map { $0 }
-    }
-    
-    private var comingUpTomorrow: [Person] {
-        let calendar = Calendar.current
-        let tomorrow = calendar.date(byAdding: .day, value: 1, to: Date())!
-        return people.filter {
-            guard let scheduled = $0.scheduledConversationDate else { return false }
-            return calendar.isDate(scheduled, inSameDayAs: tomorrow)
-        }
-    }
-    
-    @State private var showingCalendar: Person? = nil
-    
     var body: some View {
         VStack(alignment: .leading, spacing: 24) {
-            // Upcoming 1:1 Meetings
+            Spacer().frame(height: 16) // Add space between toolbar and main content
+            
+            // Insights (Chat) Section at the top
+            ChatView()
+                .frame(height: 300)
+                .padding()
+                .background(Color(NSColor.controlBackgroundColor))
+                .cornerRadius(16)
+                .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 2)
+            
+            // Upcoming 1:1s as cards, limited to 2
             VStack(alignment: .leading, spacing: 16) {
                 Text("Upcoming 1:1s")
                     .font(.system(size: 20, weight: .semibold, design: .rounded))
@@ -72,51 +36,29 @@ struct InsightsView: View {
                     Text("No upcoming 1:1s")
                         .foregroundStyle(.secondary)
                 } else {
-                    ForEach(calendarService.upcomingMeetings) { meeting in
-                        let matchedPerson = matchPerson(for: meeting)
-                        Button(action: {
-                            if let person = matchedPerson {
-                                selectedPerson = person
-                                selectedPersonID = person.identifier
-                                selectedTab = .people // Switch to people tab for navigation
-                            }
-                        }) {
-                            HStack {
-                                VStack(alignment: .leading) {
-                                    Text(meeting.title)
-                                        .font(.system(size: 15, weight: .medium))
-                                    if let person = matchedPerson {
-                                        Text(person.name ?? "")
-                                            .font(.system(size: 13))
-                                            .foregroundStyle(.secondary)
-                                    }
+                    LazyVGrid(columns: [
+                        GridItem(.flexible()),
+                        GridItem(.flexible())
+                    ], spacing: 16) {
+                        ForEach(Array(calendarService.upcomingMeetings.prefix(2))) { meeting in
+                            let matchedPerson = matchPerson(for: meeting)
+                            UpcomingMeetingCard(meeting: meeting, matchedPerson: matchedPerson, onSelect: {
+                                if let person = matchedPerson {
+                                    selectedPerson = person
+                                    selectedPersonID = person.identifier
+                                    selectedTab = .people
                                 }
-                                Spacer()
-                                Text(meeting.startDate, style: .date)
-                            }
-                            .contentShape(Rectangle())
+                            })
                         }
-                        .buttonStyle(.plain)
-                        .disabled(matchedPerson == nil)
-                        .opacity(matchedPerson == nil ? 0.5 : 1.0)
-                        .help(matchedPerson == nil ? "No matching person found" : "Go to person detail")
-                        .padding(.vertical, 4)
                     }
                 }
             }
-            .cardStyle()
             
-            // Chat Interface
-            ChatView()
-                .frame(height: 300)
-                .cardStyle()
-            
-            // Suggested People Section
+            // Follow-up Needed Section
             VStack(alignment: .leading, spacing: 16) {
                 Text("Follow-up Needed")
                     .font(.system(size: 20, weight: .semibold, design: .rounded))
                     .foregroundStyle(.primary)
-                
                 if suggestedPeople.isEmpty {
                     Text("No follow-ups needed")
                         .foregroundStyle(.secondary)
@@ -128,60 +70,46 @@ struct InsightsView: View {
                         GridItem(.flexible()),
                         GridItem(.flexible())
                     ], spacing: 16) {
-                        ForEach(suggestedPeople) { person in
+                        ForEach(suggestedPeople, id: \.objectID) { person in
                             PersonCardView(
                                 person: person,
                                 isFollowUp: true,
                                 onDismiss: {
-                                    if let id = person.identifier {
-                                        dismissedPeople[id] = Date()
-                                        if let encoded = try? JSONEncoder().encode(dismissedPeople) {
-                                            dismissedPeopleData = encoded
-                                        }
-                                    }
+                                    let conversation = Conversation(context: viewContext)
+                                    conversation.date = Date()
+                                    conversation.person = person
+                                    conversation.uuid = UUID()
+                                    try? viewContext.save()
                                 }
                             )
                         }
                     }
                 }
             }
-            
-            // Coming Up Tomorrow Section
-            if !comingUpTomorrow.isEmpty {
-                VStack(alignment: .leading, spacing: 16) {
-                    Text("Coming Up Tomorrow")
-                        .font(.system(size: 20, weight: .semibold, design: .rounded))
-                        .foregroundStyle(.primary)
-                    
-                    LazyVGrid(columns: [
-                        GridItem(.flexible()),
-                        GridItem(.flexible())
-                    ], spacing: 16) {
-                        ForEach(comingUpTomorrow) { person in
-                            PersonCardView(
-                                person: person,
-                                isFollowUp: false,
-                                onDismiss: nil
-                            )
-                        }
-                    }
-                }
-            }
-            
             Spacer()
         }
-        .padding(24)
-        .background(Color(NSColor.windowBackgroundColor))
+        .padding([.horizontal, .bottom], 24)
         .onAppear {
-            if let decoded = try? JSONDecoder().decode([UUID: Date].self, from: dismissedPeopleData) {
-                dismissedPeople = decoded
-            }
             calendarService.requestAccess { granted in
                 if granted {
                     calendarService.fetchUpcomingMeetings()
                 }
             }
         }
+    }
+    
+    private var suggestedPeople: [Person] {
+        print("All people in DB: \(people.count)")
+        people.forEach { print("- \($0.name ?? "nil") (lastContact: \($0.lastContactDate?.description ?? "never")), directReport: \($0.isDirectReport)") }
+        let filtered = people.filter { $0.name != nil && !$0.isDirectReport }
+        print("Filtered people (not direct reports): \(filtered.map { $0.name ?? "nil" })")
+        let sorted = filtered.sorted {
+            ($0.lastContactDate ?? .distantPast) < ($1.lastContactDate ?? .distantPast)
+        }
+        print("Sorted people: \(sorted.map { $0.name ?? "nil" })")
+        let result = Array(sorted.prefix(2))
+        print("Suggested people: \(result.map { $0.name ?? "nil" })")
+        return result
     }
     
     private func matchPerson(for meeting: UpcomingMeeting) -> Person? {
@@ -335,6 +263,64 @@ struct PersonCardView: View {
         .frame(width: 300, height: 120)
         .background(Color(NSColor.controlBackgroundColor))
         .cornerRadius(12)
-        .shadow(color: .black.opacity(0.05), radius: 4)
+        .overlay(
+            RoundedRectangle(cornerRadius: 12)
+                .stroke(Color.white.opacity(0.08), lineWidth: 1)
+        )
+        .shadow(color: .black.opacity(0.15), radius: 8, x: 0, y: 2)
+    }
+}
+
+struct UpcomingMeetingCard: View {
+    let meeting: UpcomingMeeting
+    let matchedPerson: Person?
+    let onSelect: () -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(spacing: 12) {
+                // Avatar or icon (match PersonCardView)
+                if let person = matchedPerson {
+                    Circle()
+                        .fill(Color.blue.opacity(0.7))
+                        .frame(width: 36, height: 36)
+                        .overlay(Text(person.initials).foregroundColor(.white).font(.subheadline))
+                } else {
+                    Image(systemName: "calendar")
+                        .font(.system(size: 24))
+                        .foregroundColor(.blue)
+                }
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(meeting.title)
+                        .font(.headline)
+                        .foregroundColor(.primary)
+                    if let person = matchedPerson {
+                        if let role = person.role, !role.isEmpty {
+                            Text(role)
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        }
+                    } else {
+                        Text("No match found")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                }
+            }
+            // Date info (match density of follow-up card)
+            Text(meeting.startDate, style: .date)
+                .font(.caption2)
+                .foregroundColor(.gray)
+        }
+        .padding()
+        .frame(width: 300, height: 120)
+        .background(Color(NSColor.controlBackgroundColor))
+        .cornerRadius(12)
+        .overlay(
+            RoundedRectangle(cornerRadius: 12)
+                .stroke(Color.white.opacity(0.08), lineWidth: 1)
+        )
+        .shadow(color: .black.opacity(0.15), radius: 8, x: 0, y: 2)
+        .onTapGesture { onSelect() }
     }
 }

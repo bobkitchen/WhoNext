@@ -5,12 +5,20 @@ import UniformTypeIdentifiers
 struct SettingsView: View {
     @Environment(\.managedObjectContext) private var viewContext
     @AppStorage("openaiApiKey") private var apiKey: String = ""
+    @AppStorage("dismissedPeople") private var dismissedPeopleData: Data = Data()
     @State private var isValidatingKey = false
     @State private var isKeyValid = false
     @State private var keyError: String?
     @State private var importError: String?
     @State private var importSuccess: String?
     @State private var pastedPeopleText: String = ""
+    @State private var showResetConfirmation = false
+    
+    @FetchRequest(
+        sortDescriptors: [NSSortDescriptor(keyPath: \Person.name, ascending: true)],
+        predicate: nil,
+        animation: .default
+    ) private var people: FetchedResults<Person>
 
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
@@ -71,6 +79,25 @@ struct SettingsView: View {
                     }
                 }
                 .padding(.vertical, 8)
+            }
+            
+            Divider()
+            
+            // Reset App Section
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Testing Tools")
+                    .font(.headline)
+                Button(role: .destructive) {
+                    showResetConfirmation = true
+                } label: {
+                    Label("Reset Who You've Spoken To", systemImage: "arrow.counterclockwise")
+                }
+                .alert("Reset App", isPresented: $showResetConfirmation) {
+                    Button("Reset", role: .destructive) { resetSpokenTo() }
+                    Button("Cancel", role: .cancel) { }
+                } message: {
+                    Text("This will reset all memory of who you've spoken to and who needs to be spoken to next. Conversation records and notes will NOT be deleted.")
+                }
             }
             
             Spacer()
@@ -197,7 +224,7 @@ struct SettingsView: View {
                         
                         print("Creating person: \(name)")
                         let newPerson = Person(context: viewContext)
-                        newPerson.id = UUID()
+                        newPerson.identifier = UUID()
                         newPerson.name = name
                         newPerson.role = columns[roleIdx]
                         
@@ -234,5 +261,20 @@ struct SettingsView: View {
                 }
             }
         }
+    }
+    
+    private func resetSpokenTo() {
+        // Clear all lastContactDate by removing all conversations' dates (but not deleting conversations or notes)
+        for person in people {
+            if let convs = person.conversations as? Set<Conversation> {
+                for conversation in convs {
+                    conversation.date = nil
+                }
+            }
+        }
+        try? viewContext.save()
+        
+        // Clear dismissed people
+        dismissedPeopleData = Data()
     }
 }

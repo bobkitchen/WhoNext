@@ -2,6 +2,7 @@ import SwiftUI
 import UniformTypeIdentifiers
 
 struct AddPersonView: View {
+    @Environment(\.managedObjectContext) private var viewContext
     @State private var name: String = ""
     @State private var role: String = ""
     @State private var timezone: String = ""
@@ -76,6 +77,16 @@ struct AddPersonView: View {
                 }
                 Button("Add") {
                     if !name.trimmingCharacters(in: .whitespaces).isEmpty {
+                        let newPerson = Person(context: viewContext)
+                        newPerson.identifier = UUID()
+                        newPerson.name = name.trimmingCharacters(in: .whitespaces)
+                        newPerson.role = role.trimmingCharacters(in: .whitespaces)
+                        newPerson.timezone = timezone.trimmingCharacters(in: .whitespaces)
+                        newPerson.isDirectReport = isDirectReport
+                        newPerson.notes = notes.trimmingCharacters(in: .whitespacesAndNewlines)
+                        if let photoData = photoData {
+                            newPerson.photo = photoData
+                        }
                         onSave(name.trimmingCharacters(in: .whitespaces),
                                role.trimmingCharacters(in: .whitespaces),
                                timezone.trimmingCharacters(in: .whitespaces),

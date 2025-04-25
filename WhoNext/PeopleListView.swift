@@ -75,6 +75,7 @@ struct PeopleListView: View {
         .sheet(isPresented: $showingAddPersonSheet) {
             AddPersonView { name, role, timezone, isDirectReport, notes, photoData in
                 let newPerson = Person(context: viewContext)
+                newPerson.identifier = UUID()
                 newPerson.name = name
                 newPerson.role = role
                 newPerson.timezone = timezone
