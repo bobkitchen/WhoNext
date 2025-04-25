@@ -1,0 +1,60 @@
+{
+  "" : {
+    "const-values" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/SwiftCSV/build/SwiftCSV.build/Release/SwiftCSV.build/Objects-normal/arm64/SwiftCSV-master.swiftconstvalues",
+    "dependencies" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/SwiftCSV/build/SwiftCSV.build/Release/SwiftCSV.build/Objects-normal/arm64/SwiftCSV-master.d",
+    "diagnostics" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/SwiftCSV/build/SwiftCSV.build/Release/SwiftCSV.build/Objects-normal/arm64/SwiftCSV-master.dia",
+    "emit-module-dependencies" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/SwiftCSV/build/SwiftCSV.build/Release/SwiftCSV.build/Objects-normal/arm64/SwiftCSV-master-emit-module.d",
+    "emit-module-diagnostics" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/SwiftCSV/build/SwiftCSV.build/Release/SwiftCSV.build/Objects-normal/arm64/SwiftCSV-master-emit-module.dia",
+    "swift-dependencies" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/SwiftCSV/build/SwiftCSV.build/Release/SwiftCSV.build/Objects-normal/arm64/SwiftCSV-master.swiftdeps"
+  },
+  "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/SwiftCSV/SwiftCSV/CSV+DelimiterGuessing.swift" : {
+    "index-unit-output-path" : "/SwiftCSV.build/Release/SwiftCSV.build/Objects-normal/arm64/CSV+DelimiterGuessing.o",
+    "llvm-bc" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/SwiftCSV/build/SwiftCSV.build/Release/SwiftCSV.build/Objects-normal/arm64/CSV+DelimiterGuessing.bc",
+    "object" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/SwiftCSV/build/SwiftCSV.build/Release/SwiftCSV.build/Objects-normal/arm64/CSV+DelimiterGuessing.o"
+  },
+  "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/SwiftCSV/SwiftCSV/CSV.swift" : {
+    "index-unit-output-path" : "/SwiftCSV.build/Release/SwiftCSV.build/Objects-normal/arm64/CSV.o",
+    "llvm-bc" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/SwiftCSV/build/SwiftCSV.build/Release/SwiftCSV.build/Objects-normal/arm64/CSV.bc",
+    "object" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/SwiftCSV/build/SwiftCSV.build/Release/SwiftCSV.build/Objects-normal/arm64/CSV.o"
+  },
+  "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/SwiftCSV/SwiftCSV/CSVDelimiter.swift" : {
+    "index-unit-output-path" : "/SwiftCSV.build/Release/SwiftCSV.build/Objects-normal/arm64/CSVDelimiter.o",
+    "llvm-bc" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/SwiftCSV/build/SwiftCSV.build/Release/SwiftCSV.build/Objects-normal/arm64/CSVDelimiter.bc",
+    "object" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/SwiftCSV/build/SwiftCSV.build/Release/SwiftCSV.build/Objects-normal/arm64/CSVDelimiter.o"
+  },
+  "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/SwiftCSV/SwiftCSV/EnumeratedCSVView.swift" : {
+    "index-unit-output-path" : "/SwiftCSV.build/Release/SwiftCSV.build/Objects-normal/arm64/EnumeratedCSVView.o",
+    "llvm-bc" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/SwiftCSV/build/SwiftCSV.build/Release/SwiftCSV.build/Objects-normal/arm64/EnumeratedCSVView.bc",
+    "object" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/SwiftCSV/build/SwiftCSV.build/Release/SwiftCSV.build/Objects-normal/arm64/EnumeratedCSVView.o"
+  },
+  "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/SwiftCSV/SwiftCSV/NamedCSVView.swift" : {
+    "index-unit-output-path" : "/SwiftCSV.build/Release/SwiftCSV.build/Objects-normal/arm64/NamedCSVView.o",
+    "llvm-bc" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/SwiftCSV/build/SwiftCSV.build/Release/SwiftCSV.build/Objects-normal/arm64/NamedCSVView.bc",
+    "object" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/SwiftCSV/build/SwiftCSV.build/Release/SwiftCSV.build/Objects-normal/arm64/NamedCSVView.o"
+  },
+  "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/SwiftCSV/SwiftCSV/Parser.swift" : {
+    "index-unit-output-path" : "/SwiftCSV.build/Release/SwiftCSV.build/Objects-normal/arm64/Parser.o",
+    "llvm-bc" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/SwiftCSV/build/SwiftCSV.build/Release/SwiftCSV.build/Objects-normal/arm64/Parser.bc",
+    "object" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/SwiftCSV/build/SwiftCSV.build/Release/SwiftCSV.build/Objects-normal/arm64/Parser.o"
+  },
+  "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/SwiftCSV/SwiftCSV/ParsingState.swift" : {
+    "index-unit-output-path" : "/SwiftCSV.build/Release/SwiftCSV.build/Objects-normal/arm64/ParsingState.o",
+    "llvm-bc" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/SwiftCSV/build/SwiftCSV.build/Release/SwiftCSV.build/Objects-normal/arm64/ParsingState.bc",
+    "object" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/SwiftCSV/build/SwiftCSV.build/Release/SwiftCSV.build/Objects-normal/arm64/ParsingState.o"
+  },
+  "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/SwiftCSV/SwiftCSV/Serializer.swift" : {
+    "index-unit-output-path" : "/SwiftCSV.build/Release/SwiftCSV.build/Objects-normal/arm64/Serializer.o",
+    "llvm-bc" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/SwiftCSV/build/SwiftCSV.build/Release/SwiftCSV.build/Objects-normal/arm64/Serializer.bc",
+    "object" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/SwiftCSV/build/SwiftCSV.build/Release/SwiftCSV.build/Objects-normal/arm64/Serializer.o"
+  },
+  "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/SwiftCSV/SwiftCSV/String+Lines.swift" : {
+    "index-unit-output-path" : "/SwiftCSV.build/Release/SwiftCSV.build/Objects-normal/arm64/String+Lines.o",
+    "llvm-bc" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/SwiftCSV/build/SwiftCSV.build/Release/SwiftCSV.build/Objects-normal/arm64/String+Lines.bc",
+    "object" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/SwiftCSV/build/SwiftCSV.build/Release/SwiftCSV.build/Objects-normal/arm64/String+Lines.o"
+  },
+  "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/SwiftCSV/build/SwiftCSV.build/Release/SwiftCSV.build/DerivedSources/resource_bundle_accessor.swift" : {
+    "index-unit-output-path" : "/SwiftCSV.build/Release/SwiftCSV.build/Objects-normal/arm64/resource_bundle_accessor.o",
+    "llvm-bc" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/SwiftCSV/build/SwiftCSV.build/Release/SwiftCSV.build/Objects-normal/arm64/resource_bundle_accessor.bc",
+    "object" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/SwiftCSV/build/SwiftCSV.build/Release/SwiftCSV.build/Objects-normal/arm64/resource_bundle_accessor.o"
+  }
+}

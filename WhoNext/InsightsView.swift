@@ -1,4 +1,5 @@
 import SwiftUI
+import AppKit
 import CoreData
 
 struct InsightsView: View {
@@ -198,6 +199,117 @@ struct InsightsView: View {
                 .environment(\.managedObjectContext, viewContext)
         )
         window.makeKeyAndOrderFront(nil)
+    }
+}
+
+struct GlobalNewConversationView: View {
+    @Environment(\.managedObjectContext) private var viewContext
+    @State private var selectedPerson: Person?
+    @State private var searchText: String = ""
+    @State private var notes: String = ""
+    @State private var showSuggestions: Bool = false
+    @FetchRequest(
+        sortDescriptors: [NSSortDescriptor(keyPath: \Person.name, ascending: true)],
+        animation: .default
+    )
+    private var people: FetchedResults<Person>
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            // To: field
+            HStack {
+                Text("To:")
+                    .font(.headline)
+                ZStack(alignment: .topLeading) {
+                    TextField("Type a name...", text: $searchText, onEditingChanged: { editing in
+                        showSuggestions = editing
+                    })
+                    .textFieldStyle(RoundedBorderTextFieldStyle())
+                    .frame(width: 240)
+                    .onChange(of: searchText) { _ in showSuggestions = true }
+                    .onSubmit {
+                        if let match = people.first(where: { ($0.name ?? "").localizedCaseInsensitiveContains(searchText) }) {
+                            selectedPerson = match
+                            searchText = match.name ?? ""
+                            showSuggestions = false
+                        }
+                    }
+                    .disabled(selectedPerson != nil)
+
+                    if showSuggestions && !searchText.isEmpty {
+                        VStack(alignment: .leading, spacing: 0) {
+                            ForEach(people.filter { $0.name?.localizedCaseInsensitiveContains(searchText) == true }.prefix(5), id: \..objectID) { person in
+                                Button(action: {
+                                    selectedPerson = person
+                                    searchText = person.name ?? ""
+                                    showSuggestions = false
+                                }) {
+                                    HStack {
+                                        Text(person.name ?? "Unknown")
+                                            .foregroundColor(.primary)
+                                        Spacer()
+                                    }
+                                }
+                                .buttonStyle(.plain)
+                            }
+                        }
+                        .background(Color(.windowBackgroundColor))
+                        .border(Color.gray.opacity(0.3))
+                        .frame(maxWidth: 240)
+                        .offset(y: 28)
+                    }
+                }
+                if selectedPerson != nil {
+                    Button(action: {
+                        selectedPerson = nil
+                        searchText = ""
+                    }) {
+                        Image(systemName: "xmark.circle.fill")
+                            .foregroundColor(.secondary)
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+
+            // Notes field
+            VStack(alignment: .leading, spacing: 6) {
+                Text("Notes:")
+                    .font(.headline)
+                TextEditor(text: $notes)
+                    .frame(height: 120)
+                    .cornerRadius(8)
+                    .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.gray.opacity(0.2)))
+            }
+
+            HStack {
+                Spacer()
+                Button("Save") {
+                    saveConversation()
+                }
+                .disabled(selectedPerson == nil || notes.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                .buttonStyle(.borderedProminent)
+            }
+        }
+        .padding(20)
+        .frame(minWidth: 420, minHeight: 220)
+    }
+
+    private func saveConversation() {
+        guard let person = selectedPerson else { return }
+        let conversation = Conversation(context: viewContext)
+        conversation.date = Date()
+        conversation.person = person
+        conversation.notes = notes.trimmingCharacters(in: .whitespacesAndNewlines)
+        conversation.uuid = UUID()
+        do {
+            try viewContext.save()
+        } catch {
+            print("Failed to save conversation: \(error)")
+        }
+        // Reset fields and close window
+        if let window = NSApp.keyWindow {
+            window.close()
+        }
     }
 }
 

@@ -10,6 +10,10 @@ struct WhoNextApp: App {
             ContentView()
                 .environment(\.managedObjectContext, persistenceController.container.viewContext)
         }
+        Window("New Conversation", id: "newConversationWindow") {
+            NewConversationWindow()
+                .environment(\.managedObjectContext, persistenceController.container.viewContext)
+        }
         .commands {
             CommandMenu("File") {
                 Button("Import People from CSV…") {
@@ -18,7 +22,6 @@ struct WhoNextApp: App {
                 .keyboardShortcut("i", modifiers: [.command])
             }
         }
-
         Settings {
             SettingsView()
                 .environment(\.managedObjectContext, persistenceController.container.viewContext)

@@ -4,7 +4,9 @@ import CoreData
 struct ContentView: View {
     @StateObject private var appState = AppState()
     @Environment(\.managedObjectContext) private var viewContext
+    @Environment(\.openWindow) private var openWindow
     @State private var searchText = ""
+    @State private var showingNewConversationSheet = false
 
     var body: some View {
         NavigationStack {
@@ -35,36 +37,39 @@ struct ContentView: View {
                 }
             }
             .navigationTitle("")
-            .toolbar {
-                ToolbarItemGroup(placement: .navigation) {
-                    Button(action: {
-                        appState.selectedTab = .insights
-                    }) {
+        }
+        .toolbar {
+            ToolbarItem(placement: .navigation) {
+                HStack {
+                    Button(action: { appState.selectedTab = .insights }) {
                         Label("Insights", systemImage: "lightbulb")
                             .foregroundColor(appState.selectedTab == .insights ? .accentColor : .primary)
                     }
-
-                    Button(action: {
-                        appState.selectedTab = .people
-                    }) {
+                    Button(action: { appState.selectedTab = .people }) {
                         Label("People", systemImage: "person.3")
                             .foregroundColor(appState.selectedTab == .people ? .accentColor : .primary)
                     }
                 }
-                
-                ToolbarItem(placement: .principal) {
-                    Text("WhoNext")
-                        .font(.headline)
-                        .foregroundColor(.secondary)
+            }
+            ToolbarItem(placement: .automatic) {
+                Button(action: {
+                    openWindow(id: "newConversationWindow")
+                }) {
+                    Image(systemName: "bubble.left.and.bubble.right")
+                        .imageScale(.large)
+                        .help("New Conversation")
                 }
-                
-                ToolbarItem(placement: .automatic) {
-                    SearchBar(searchText: $searchText) { person in
-                        // Switch to people tab and select the person
-                        appState.selectedTab = .people
-                        appState.selectedPerson = person
-                        appState.selectedPersonID = person.identifier
-                    }
+            }
+            ToolbarItem(placement: .principal) {
+                Text("WhoNext")
+                    .font(.headline)
+                    .foregroundColor(.secondary)
+            }
+            ToolbarItem(placement: .automatic) {
+                SearchBar(searchText: $searchText) { person in
+                    appState.selectedTab = .people
+                    appState.selectedPerson = person
+                    appState.selectedPersonID = person.identifier
                 }
             }
         }

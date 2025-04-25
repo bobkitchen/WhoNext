@@ -1,31 +1,13 @@
 {
-  "originHash" : "8113530440718d9de2de62beaa85a103b9b8b0a4e82285801866b83dcd55cbc2",
+  "originHash" : "bdaa27ee814a3277a2d0d42eecdc889caf77b4342b2baeb77e38f8a09be0205a",
   "pins" : [
     {
-      "identity" : "markdownui",
+      "identity" : "down",
       "kind" : "remoteSourceControl",
-      "location" : "https://github.com/gonzalezreal/MarkdownUI",
+      "location" : "https://github.com/iwasrobbed/Down",
       "state" : {
-        "revision" : "5f613358148239d0292c0cef674a3c2314737f9e",
-        "version" : "2.4.1"
-      }
-    },
-    {
-      "identity" : "networkimage",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/gonzalezreal/NetworkImage",
-      "state" : {
-        "revision" : "2849f5323265386e200484b0d0f896e73c3411b9",
-        "version" : "6.0.1"
-      }
-    },
-    {
-      "identity" : "swift-cmark",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/swiftlang/swift-cmark",
-      "state" : {
-        "revision" : "b022b08312decdc46585e0b3440d97f6f22ef703",
-        "version" : "0.6.0"
+        "branch" : "master",
+        "revision" : "e754ab1c80920dd51a8e08290c912ac1c2ac8b58"
       }
     },
     {

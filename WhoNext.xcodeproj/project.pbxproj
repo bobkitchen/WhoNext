@@ -7,7 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		7A1739B22D981B8200B44C20 /* MarkdownUI in Frameworks */ = {isa = PBXBuildFile; productRef = 7A1739B12D981B8200B44C20 /* MarkdownUI */; };
+		7A1FD56D2DBC07E30089D3DA /* Down in Frameworks */ = {isa = PBXBuildFile; productRef = 7A1FD56C2DBC07E30089D3DA /* Down */; };
 		7A5791692D9940CC0018E162 /* SwiftCSV in Frameworks */ = {isa = PBXBuildFile; productRef = 7A5791682D9940CC0018E162 /* SwiftCSV */; };
 /* End PBXBuildFile section */
 
@@ -70,8 +70,8 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				7A1739B22D981B8200B44C20 /* MarkdownUI in Frameworks */,
 				7A5791692D9940CC0018E162 /* SwiftCSV in Frameworks */,
+				7A1FD56D2DBC07E30089D3DA /* Down in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -132,8 +132,8 @@
 			);
 			name = WhoNext;
 			packageProductDependencies = (
-				7A1739B12D981B8200B44C20 /* MarkdownUI */,
 				7A5791682D9940CC0018E162 /* SwiftCSV */,
+				7A1FD56C2DBC07E30089D3DA /* Down */,
 			);
 			productName = WhoNext;
 			productReference = 7AA52C322D97D8E700C2B563 /* WhoNext.app */;
@@ -218,8 +218,8 @@
 			mainGroup = 7AA52C292D97D8E700C2B563;
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
-				7A1739B02D981B8200B44C20 /* XCRemoteSwiftPackageReference "MarkdownUI" */,
 				7A5791672D9940CC0018E162 /* XCRemoteSwiftPackageReference "SwiftCSV" */,
+				7A1FD56B2DBC07E30089D3DA /* XCRemoteSwiftPackageReference "Down" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 7AA52C332D97D8E700C2B563 /* Products */;
@@ -579,12 +579,12 @@
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
-		7A1739B02D981B8200B44C20 /* XCRemoteSwiftPackageReference "MarkdownUI" */ = {
+		7A1FD56B2DBC07E30089D3DA /* XCRemoteSwiftPackageReference "Down" */ = {
 			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/gonzalezreal/MarkdownUI";
+			repositoryURL = "https://github.com/iwasrobbed/Down";
 			requirement = {
-				kind = upToNextMajorVersion;
-				minimumVersion = 2.4.1;
+				branch = master;
+				kind = branch;
 			};
 		};
 		7A5791672D9940CC0018E162 /* XCRemoteSwiftPackageReference "SwiftCSV" */ = {
@@ -598,10 +598,10 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
-		7A1739B12D981B8200B44C20 /* MarkdownUI */ = {
+		7A1FD56C2DBC07E30089D3DA /* Down */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = 7A1739B02D981B8200B44C20 /* XCRemoteSwiftPackageReference "MarkdownUI" */;
-			productName = MarkdownUI;
+			package = 7A1FD56B2DBC07E30089D3DA /* XCRemoteSwiftPackageReference "Down" */;
+			productName = Down;
 		};
 		7A5791682D9940CC0018E162 /* SwiftCSV */ = {
 			isa = XCSwiftPackageProductDependency;

@@ -1,0 +1,155 @@
+{
+  "" : {
+    "const-values" : "/Users/bobkitchen/Documents/GitHub/WhoNext/build/WhoNext.build/Release/WhoNext.build/Objects-normal/x86_64/WhoNext-master.swiftconstvalues",
+    "dependencies" : "/Users/bobkitchen/Documents/GitHub/WhoNext/build/WhoNext.build/Release/WhoNext.build/Objects-normal/x86_64/WhoNext-master.d",
+    "diagnostics" : "/Users/bobkitchen/Documents/GitHub/WhoNext/build/WhoNext.build/Release/WhoNext.build/Objects-normal/x86_64/WhoNext-master.dia",
+    "emit-module-dependencies" : "/Users/bobkitchen/Documents/GitHub/WhoNext/build/WhoNext.build/Release/WhoNext.build/Objects-normal/x86_64/WhoNext-master-emit-module.d",
+    "emit-module-diagnostics" : "/Users/bobkitchen/Documents/GitHub/WhoNext/build/WhoNext.build/Release/WhoNext.build/Objects-normal/x86_64/WhoNext-master-emit-module.dia",
+    "swift-dependencies" : "/Users/bobkitchen/Documents/GitHub/WhoNext/build/WhoNext.build/Release/WhoNext.build/Objects-normal/x86_64/WhoNext-master.swiftdeps"
+  },
+  "/Users/bobkitchen/Documents/GitHub/WhoNext/WhoNext/AIService.swift" : {
+    "index-unit-output-path" : "/WhoNext.build/Release/WhoNext.build/Objects-normal/x86_64/AIService.o",
+    "llvm-bc" : "/Users/bobkitchen/Documents/GitHub/WhoNext/build/WhoNext.build/Release/WhoNext.build/Objects-normal/x86_64/AIService.bc",
+    "object" : "/Users/bobkitchen/Documents/GitHub/WhoNext/build/WhoNext.build/Release/WhoNext.build/Objects-normal/x86_64/AIService.o"
+  },
+  "/Users/bobkitchen/Documents/GitHub/WhoNext/WhoNext/AddPersonView.swift" : {
+    "index-unit-output-path" : "/WhoNext.build/Release/WhoNext.build/Objects-normal/x86_64/AddPersonView.o",
+    "llvm-bc" : "/Users/bobkitchen/Documents/GitHub/WhoNext/build/WhoNext.build/Release/WhoNext.build/Objects-normal/x86_64/AddPersonView.bc",
+    "object" : "/Users/bobkitchen/Documents/GitHub/WhoNext/build/WhoNext.build/Release/WhoNext.build/Objects-normal/x86_64/AddPersonView.o"
+  },
+  "/Users/bobkitchen/Documents/GitHub/WhoNext/WhoNext/Appstate.swift" : {
+    "index-unit-output-path" : "/WhoNext.build/Release/WhoNext.build/Objects-normal/x86_64/Appstate.o",
+    "llvm-bc" : "/Users/bobkitchen/Documents/GitHub/WhoNext/build/WhoNext.build/Release/WhoNext.build/Objects-normal/x86_64/Appstate.bc",
+    "object" : "/Users/bobkitchen/Documents/GitHub/WhoNext/build/WhoNext.build/Release/WhoNext.build/Objects-normal/x86_64/Appstate.o"
+  },
+  "/Users/bobkitchen/Documents/GitHub/WhoNext/WhoNext/CalendarService.swift" : {
+    "index-unit-output-path" : "/WhoNext.build/Release/WhoNext.build/Objects-normal/x86_64/CalendarService.o",
+    "llvm-bc" : "/Users/bobkitchen/Documents/GitHub/WhoNext/build/WhoNext.build/Release/WhoNext.build/Objects-normal/x86_64/CalendarService.bc",
+    "object" : "/Users/bobkitchen/Documents/GitHub/WhoNext/build/WhoNext.build/Release/WhoNext.build/Objects-normal/x86_64/CalendarService.o"
+  },
+  "/Users/bobkitchen/Documents/GitHub/WhoNext/WhoNext/ChatView.swift" : {
+    "index-unit-output-path" : "/WhoNext.build/Release/WhoNext.build/Objects-normal/x86_64/ChatView.o",
+    "llvm-bc" : "/Users/bobkitchen/Documents/GitHub/WhoNext/build/WhoNext.build/Release/WhoNext.build/Objects-normal/x86_64/ChatView.bc",
+    "object" : "/Users/bobkitchen/Documents/GitHub/WhoNext/build/WhoNext.build/Release/WhoNext.build/Objects-normal/x86_64/ChatView.o"
+  },
+  "/Users/bobkitchen/Documents/GitHub/WhoNext/WhoNext/ContentView.swift" : {
+    "index-unit-output-path" : "/WhoNext.build/Release/WhoNext.build/Objects-normal/x86_64/ContentView.o",
+    "llvm-bc" : "/Users/bobkitchen/Documents/GitHub/WhoNext/build/WhoNext.build/Release/WhoNext.build/Objects-normal/x86_64/ContentView.bc",
+    "object" : "/Users/bobkitchen/Documents/GitHub/WhoNext/build/WhoNext.build/Release/WhoNext.build/Objects-normal/x86_64/ContentView.o"
+  },
+  "/Users/bobkitchen/Documents/GitHub/WhoNext/WhoNext/Conversation.swift" : {
+    "index-unit-output-path" : "/WhoNext.build/Release/WhoNext.build/Objects-normal/x86_64/Conversation.o",
+    "llvm-bc" : "/Users/bobkitchen/Documents/GitHub/WhoNext/build/WhoNext.build/Release/WhoNext.build/Objects-normal/x86_64/Conversation.bc",
+    "object" : "/Users/bobkitchen/Documents/GitHub/WhoNext/build/WhoNext.build/Release/WhoNext.build/Objects-normal/x86_64/Conversation.o"
+  },
+  "/Users/bobkitchen/Documents/GitHub/WhoNext/WhoNext/ConversationDetailView.swift" : {
+    "index-unit-output-path" : "/WhoNext.build/Release/WhoNext.build/Objects-normal/x86_64/ConversationDetailView.o",
+    "llvm-bc" : "/Users/bobkitchen/Documents/GitHub/WhoNext/build/WhoNext.build/Release/WhoNext.build/Objects-normal/x86_64/ConversationDetailView.bc",
+    "object" : "/Users/bobkitchen/Documents/GitHub/WhoNext/build/WhoNext.build/Release/WhoNext.build/Objects-normal/x86_64/ConversationDetailView.o"
+  },
+  "/Users/bobkitchen/Documents/GitHub/WhoNext/WhoNext/ConversationsView.swift" : {
+    "index-unit-output-path" : "/WhoNext.build/Release/WhoNext.build/Objects-normal/x86_64/ConversationsView.o",
+    "llvm-bc" : "/Users/bobkitchen/Documents/GitHub/WhoNext/build/WhoNext.build/Release/WhoNext.build/Objects-normal/x86_64/ConversationsView.bc",
+    "object" : "/Users/bobkitchen/Documents/GitHub/WhoNext/build/WhoNext.build/Release/WhoNext.build/Objects-normal/x86_64/ConversationsView.o"
+  },
+  "/Users/bobkitchen/Documents/GitHub/WhoNext/WhoNext/CustomViews.swift" : {
+    "index-unit-output-path" : "/WhoNext.build/Release/WhoNext.build/Objects-normal/x86_64/CustomViews.o",
+    "llvm-bc" : "/Users/bobkitchen/Documents/GitHub/WhoNext/build/WhoNext.build/Release/WhoNext.build/Objects-normal/x86_64/CustomViews.bc",
+    "object" : "/Users/bobkitchen/Documents/GitHub/WhoNext/build/WhoNext.build/Release/WhoNext.build/Objects-normal/x86_64/CustomViews.o"
+  },
+  "/Users/bobkitchen/Documents/GitHub/WhoNext/WhoNext/GlobalNewConversationSheet.swift" : {
+    "index-unit-output-path" : "/WhoNext.build/Release/WhoNext.build/Objects-normal/x86_64/GlobalNewConversationSheet.o",
+    "llvm-bc" : "/Users/bobkitchen/Documents/GitHub/WhoNext/build/WhoNext.build/Release/WhoNext.build/Objects-normal/x86_64/GlobalNewConversationSheet.bc",
+    "object" : "/Users/bobkitchen/Documents/GitHub/WhoNext/build/WhoNext.build/Release/WhoNext.build/Objects-normal/x86_64/GlobalNewConversationSheet.o"
+  },
+  "/Users/bobkitchen/Documents/GitHub/WhoNext/WhoNext/HomeView.swift" : {
+    "index-unit-output-path" : "/WhoNext.build/Release/WhoNext.build/Objects-normal/x86_64/HomeView.o",
+    "llvm-bc" : "/Users/bobkitchen/Documents/GitHub/WhoNext/build/WhoNext.build/Release/WhoNext.build/Objects-normal/x86_64/HomeView.bc",
+    "object" : "/Users/bobkitchen/Documents/GitHub/WhoNext/build/WhoNext.build/Release/WhoNext.build/Objects-normal/x86_64/HomeView.o"
+  },
+  "/Users/bobkitchen/Documents/GitHub/WhoNext/WhoNext/InsightsView.swift" : {
+    "index-unit-output-path" : "/WhoNext.build/Release/WhoNext.build/Objects-normal/x86_64/InsightsView.o",
+    "llvm-bc" : "/Users/bobkitchen/Documents/GitHub/WhoNext/build/WhoNext.build/Release/WhoNext.build/Objects-normal/x86_64/InsightsView.bc",
+    "object" : "/Users/bobkitchen/Documents/GitHub/WhoNext/build/WhoNext.build/Release/WhoNext.build/Objects-normal/x86_64/InsightsView.o"
+  },
+  "/Users/bobkitchen/Documents/GitHub/WhoNext/WhoNext/MarkdownHelper.swift" : {
+    "index-unit-output-path" : "/WhoNext.build/Release/WhoNext.build/Objects-normal/x86_64/MarkdownHelper.o",
+    "llvm-bc" : "/Users/bobkitchen/Documents/GitHub/WhoNext/build/WhoNext.build/Release/WhoNext.build/Objects-normal/x86_64/MarkdownHelper.bc",
+    "object" : "/Users/bobkitchen/Documents/GitHub/WhoNext/build/WhoNext.build/Release/WhoNext.build/Objects-normal/x86_64/MarkdownHelper.o"
+  },
+  "/Users/bobkitchen/Documents/GitHub/WhoNext/WhoNext/NewConversationSheet.swift" : {
+    "index-unit-output-path" : "/WhoNext.build/Release/WhoNext.build/Objects-normal/x86_64/NewConversationSheet.o",
+    "llvm-bc" : "/Users/bobkitchen/Documents/GitHub/WhoNext/build/WhoNext.build/Release/WhoNext.build/Objects-normal/x86_64/NewConversationSheet.bc",
+    "object" : "/Users/bobkitchen/Documents/GitHub/WhoNext/build/WhoNext.build/Release/WhoNext.build/Objects-normal/x86_64/NewConversationSheet.o"
+  },
+  "/Users/bobkitchen/Documents/GitHub/WhoNext/WhoNext/NewConversationWindow.swift" : {
+    "index-unit-output-path" : "/WhoNext.build/Release/WhoNext.build/Objects-normal/x86_64/NewConversationWindow.o",
+    "llvm-bc" : "/Users/bobkitchen/Documents/GitHub/WhoNext/build/WhoNext.build/Release/WhoNext.build/Objects-normal/x86_64/NewConversationWindow.bc",
+    "object" : "/Users/bobkitchen/Documents/GitHub/WhoNext/build/WhoNext.build/Release/WhoNext.build/Objects-normal/x86_64/NewConversationWindow.o"
+  },
+  "/Users/bobkitchen/Documents/GitHub/WhoNext/WhoNext/PeopleListView.swift" : {
+    "index-unit-output-path" : "/WhoNext.build/Release/WhoNext.build/Objects-normal/x86_64/PeopleListView.o",
+    "llvm-bc" : "/Users/bobkitchen/Documents/GitHub/WhoNext/build/WhoNext.build/Release/WhoNext.build/Objects-normal/x86_64/PeopleListView.bc",
+    "object" : "/Users/bobkitchen/Documents/GitHub/WhoNext/build/WhoNext.build/Release/WhoNext.build/Objects-normal/x86_64/PeopleListView.o"
+  },
+  "/Users/bobkitchen/Documents/GitHub/WhoNext/WhoNext/Persistence.swift" : {
+    "index-unit-output-path" : "/WhoNext.build/Release/WhoNext.build/Objects-normal/x86_64/Persistence.o",
+    "llvm-bc" : "/Users/bobkitchen/Documents/GitHub/WhoNext/build/WhoNext.build/Release/WhoNext.build/Objects-normal/x86_64/Persistence.bc",
+    "object" : "/Users/bobkitchen/Documents/GitHub/WhoNext/build/WhoNext.build/Release/WhoNext.build/Objects-normal/x86_64/Persistence.o"
+  },
+  "/Users/bobkitchen/Documents/GitHub/WhoNext/WhoNext/Person.swift" : {
+    "index-unit-output-path" : "/WhoNext.build/Release/WhoNext.build/Objects-normal/x86_64/Person.o",
+    "llvm-bc" : "/Users/bobkitchen/Documents/GitHub/WhoNext/build/WhoNext.build/Release/WhoNext.build/Objects-normal/x86_64/Person.bc",
+    "object" : "/Users/bobkitchen/Documents/GitHub/WhoNext/build/WhoNext.build/Release/WhoNext.build/Objects-normal/x86_64/Person.o"
+  },
+  "/Users/bobkitchen/Documents/GitHub/WhoNext/WhoNext/PersonCard.swift" : {
+    "index-unit-output-path" : "/WhoNext.build/Release/WhoNext.build/Objects-normal/x86_64/PersonCard.o",
+    "llvm-bc" : "/Users/bobkitchen/Documents/GitHub/WhoNext/build/WhoNext.build/Release/WhoNext.build/Objects-normal/x86_64/PersonCard.bc",
+    "object" : "/Users/bobkitchen/Documents/GitHub/WhoNext/build/WhoNext.build/Release/WhoNext.build/Objects-normal/x86_64/PersonCard.o"
+  },
+  "/Users/bobkitchen/Documents/GitHub/WhoNext/WhoNext/PersonDetailView.swift" : {
+    "index-unit-output-path" : "/WhoNext.build/Release/WhoNext.build/Objects-normal/x86_64/PersonDetailView.o",
+    "llvm-bc" : "/Users/bobkitchen/Documents/GitHub/WhoNext/build/WhoNext.build/Release/WhoNext.build/Objects-normal/x86_64/PersonDetailView.bc",
+    "object" : "/Users/bobkitchen/Documents/GitHub/WhoNext/build/WhoNext.build/Release/WhoNext.build/Objects-normal/x86_64/PersonDetailView.o"
+  },
+  "/Users/bobkitchen/Documents/GitHub/WhoNext/WhoNext/RichTextEditor.swift" : {
+    "index-unit-output-path" : "/WhoNext.build/Release/WhoNext.build/Objects-normal/x86_64/RichTextEditor.o",
+    "llvm-bc" : "/Users/bobkitchen/Documents/GitHub/WhoNext/build/WhoNext.build/Release/WhoNext.build/Objects-normal/x86_64/RichTextEditor.bc",
+    "object" : "/Users/bobkitchen/Documents/GitHub/WhoNext/build/WhoNext.build/Release/WhoNext.build/Objects-normal/x86_64/RichTextEditor.o"
+  },
+  "/Users/bobkitchen/Documents/GitHub/WhoNext/WhoNext/SearchBar.swift" : {
+    "index-unit-output-path" : "/WhoNext.build/Release/WhoNext.build/Objects-normal/x86_64/SearchBar.o",
+    "llvm-bc" : "/Users/bobkitchen/Documents/GitHub/WhoNext/build/WhoNext.build/Release/WhoNext.build/Objects-normal/x86_64/SearchBar.bc",
+    "object" : "/Users/bobkitchen/Documents/GitHub/WhoNext/build/WhoNext.build/Release/WhoNext.build/Objects-normal/x86_64/SearchBar.o"
+  },
+  "/Users/bobkitchen/Documents/GitHub/WhoNext/WhoNext/SettingsView.swift" : {
+    "index-unit-output-path" : "/WhoNext.build/Release/WhoNext.build/Objects-normal/x86_64/SettingsView.o",
+    "llvm-bc" : "/Users/bobkitchen/Documents/GitHub/WhoNext/build/WhoNext.build/Release/WhoNext.build/Objects-normal/x86_64/SettingsView.bc",
+    "object" : "/Users/bobkitchen/Documents/GitHub/WhoNext/build/WhoNext.build/Release/WhoNext.build/Objects-normal/x86_64/SettingsView.o"
+  },
+  "/Users/bobkitchen/Documents/GitHub/WhoNext/WhoNext/SideBarItem.swift" : {
+    "index-unit-output-path" : "/WhoNext.build/Release/WhoNext.build/Objects-normal/x86_64/SideBarItem.o",
+    "llvm-bc" : "/Users/bobkitchen/Documents/GitHub/WhoNext/build/WhoNext.build/Release/WhoNext.build/Objects-normal/x86_64/SideBarItem.bc",
+    "object" : "/Users/bobkitchen/Documents/GitHub/WhoNext/build/WhoNext.build/Release/WhoNext.build/Objects-normal/x86_64/SideBarItem.o"
+  },
+  "/Users/bobkitchen/Documents/GitHub/WhoNext/WhoNext/SidebarButton.swift" : {
+    "index-unit-output-path" : "/WhoNext.build/Release/WhoNext.build/Objects-normal/x86_64/SidebarButton.o",
+    "llvm-bc" : "/Users/bobkitchen/Documents/GitHub/WhoNext/build/WhoNext.build/Release/WhoNext.build/Objects-normal/x86_64/SidebarButton.bc",
+    "object" : "/Users/bobkitchen/Documents/GitHub/WhoNext/build/WhoNext.build/Release/WhoNext.build/Objects-normal/x86_64/SidebarButton.o"
+  },
+  "/Users/bobkitchen/Documents/GitHub/WhoNext/WhoNext/TokenField.swift" : {
+    "index-unit-output-path" : "/WhoNext.build/Release/WhoNext.build/Objects-normal/x86_64/TokenField.o",
+    "llvm-bc" : "/Users/bobkitchen/Documents/GitHub/WhoNext/build/WhoNext.build/Release/WhoNext.build/Objects-normal/x86_64/TokenField.bc",
+    "object" : "/Users/bobkitchen/Documents/GitHub/WhoNext/build/WhoNext.build/Release/WhoNext.build/Objects-normal/x86_64/TokenField.o"
+  },
+  "/Users/bobkitchen/Documents/GitHub/WhoNext/WhoNext/WhoNextApp.swift" : {
+    "index-unit-output-path" : "/WhoNext.build/Release/WhoNext.build/Objects-normal/x86_64/WhoNextApp.o",
+    "llvm-bc" : "/Users/bobkitchen/Documents/GitHub/WhoNext/build/WhoNext.build/Release/WhoNext.build/Objects-normal/x86_64/WhoNextApp.bc",
+    "object" : "/Users/bobkitchen/Documents/GitHub/WhoNext/build/WhoNext.build/Release/WhoNext.build/Objects-normal/x86_64/WhoNextApp.o"
+  },
+  "/Users/bobkitchen/Documents/GitHub/WhoNext/build/WhoNext.build/Release/WhoNext.build/DerivedSources/GeneratedAssetSymbols.swift" : {
+    "index-unit-output-path" : "/WhoNext.build/Release/WhoNext.build/Objects-normal/x86_64/GeneratedAssetSymbols.o",
+    "llvm-bc" : "/Users/bobkitchen/Documents/GitHub/WhoNext/build/WhoNext.build/Release/WhoNext.build/Objects-normal/x86_64/GeneratedAssetSymbols.bc",
+    "object" : "/Users/bobkitchen/Documents/GitHub/WhoNext/build/WhoNext.build/Release/WhoNext.build/Objects-normal/x86_64/GeneratedAssetSymbols.o"
+  }
+}

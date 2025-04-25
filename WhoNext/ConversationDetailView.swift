@@ -1,6 +1,5 @@
 import SwiftUI
 import CoreData
-import MarkdownUI
 
 struct ConversationDetailView: View {
     var conversation: Conversation
@@ -40,7 +39,7 @@ struct ConversationDetailView: View {
             } else {
                 ScrollView {
                     if let notes = conversation.notes {
-                        Markdown(notes)
+                        Text(notes)
                             .padding()
                     } else {
                         Text("No notes available.")

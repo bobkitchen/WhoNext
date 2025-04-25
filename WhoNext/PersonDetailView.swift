@@ -1,6 +1,5 @@
 import SwiftUI
 import CoreData
-import MarkdownUI
 import UniformTypeIdentifiers
 
 struct PersonDetailView: View {
