@@ -11,21 +11,84 @@ struct GlobalNewConversationSheet: View {
     @State private var selectedPerson: Person?
     @State private var date: Date = Date()
     @State private var notes: String = ""
+    @State private var toField: String = ""
+    @State private var showSuggestions: Bool = false
     @Binding var isPresented: Bool
+
+    var filteredPeople: [Person] {
+        let trimmed = toField.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return [] }
+        return people.filter { $0.name?.localizedCaseInsensitiveContains(trimmed) == true }
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
+            Rectangle()
+                .fill(Color.red)
+                .frame(height: 8)
+            Text("DEBUG AUTOCOMPLETE")
+                .foregroundColor(.red)
+                .bold()
             Text("New Conversation")
                 .font(.title2)
                 .bold()
 
-            Picker("Person", selection: $selectedPerson) {
-                Text("Select a person").tag(Person?.none)
-                ForEach(people, id: \ .self) { person in
-                    Text(person.name ?? "Unknown").tag(Person?.some(person))
+            // Autocomplete To: field
+            VStack(alignment: .leading, spacing: 2) {
+                Text("To:")
+                ZStack(alignment: .topLeading) {
+                    TextField("Type a name...", text: $toField, onEditingChanged: { editing in
+                        showSuggestions = editing && !filteredPeople.isEmpty
+                    })
+                    .frame(width: 220)
+                    .onChange(of: toField) { newValue in
+                        showSuggestions = !newValue.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && !filteredPeople.isEmpty
+                        if let match = people.first(where: { $0.name == newValue }) {
+                            selectedPerson = match
+                        } else {
+                            selectedPerson = nil
+                        }
+                    }
+                    .onSubmit {
+                        if let match = people.first(where: { $0.name == toField }) {
+                            selectedPerson = match
+                            showSuggestions = false
+                        }
+                    }
+                    .overlay(alignment: .topLeading) {
+                        if showSuggestions && !filteredPeople.isEmpty {
+                            VStack(alignment: .leading, spacing: 0) {
+                                ForEach(filteredPeople.prefix(5), id: \.id) { person in
+                                    Button(action: {
+                                        toField = person.name ?? ""
+                                        selectedPerson = person
+                                        showSuggestions = false
+                                    }) {
+                                        HStack {
+                                            Text(person.name ?? "")
+                                                .foregroundColor(.primary)
+                                            if let role = person.role, !role.isEmpty {
+                                                Text("(") + Text(role) + Text(")")
+                                                    .foregroundColor(.secondary)
+                                                    .font(.caption)
+                                            }
+                                            Spacer()
+                                        }
+                                        .padding(.vertical, 4)
+                                        .padding(.horizontal, 8)
+                                    }
+                                    .buttonStyle(.plain)
+                                }
+                            }
+                            .background(Color.white)
+                            .border(Color.gray)
+                            .zIndex(1)
+                            .frame(width: 220)
+                            .offset(y: 28)
+                        }
+                    }
                 }
             }
-            .pickerStyle(.menu)
 
             DatePicker("Date", selection: $date, displayedComponents: .date)
 
@@ -70,6 +133,7 @@ struct GlobalNewConversationSheet: View {
             notes = ""
             date = Date()
             selectedPerson = nil
+            toField = ""
         } catch {
             print("Error saving conversation: \(error.localizedDescription)")
         }

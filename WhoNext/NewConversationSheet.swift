@@ -19,6 +19,13 @@ struct NewConversationSheet: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
+            Rectangle()
+                .fill(Color.red)
+                .frame(height: 8)
+            Text("DEBUG AUTOCOMPLETE")
+                .foregroundColor(.red)
+                .bold()
+
             Text("New Conversation")
                 .font(.title2)
                 .bold()

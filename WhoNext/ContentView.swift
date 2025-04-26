@@ -11,6 +11,9 @@ struct ContentView: View {
     var body: some View {
         NavigationStack {
             VStack {
+                Button("Open Test Window") {
+                    openWindow(id: "testWindow")
+                }
                 if appState.selectedTab == .people {
                     HStack(spacing: 0) {
                         PeopleListView(
@@ -53,11 +56,16 @@ struct ContentView: View {
             }
             ToolbarItem(placement: .automatic) {
                 Button(action: {
-                    openWindow(id: "newConversationWindow")
+                    NewConversationWindowManager.shared.presentWindow()
                 }) {
                     Image(systemName: "bubble.left.and.bubble.right")
                         .imageScale(.large)
                         .help("New Conversation")
+                }
+                Button(action: {
+                    openWindow(id: "testWindow")
+                }) {
+                    Text("Test Window")
                 }
             }
             ToolbarItem(placement: .principal) {

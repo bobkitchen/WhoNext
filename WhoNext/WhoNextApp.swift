@@ -10,9 +10,9 @@ struct WhoNextApp: App {
             ContentView()
                 .environment(\.managedObjectContext, persistenceController.container.viewContext)
         }
-        Window("New Conversation", id: "newConversationWindow") {
-            NewConversationWindow()
-                .environment(\.managedObjectContext, persistenceController.container.viewContext)
+        // Removed direct Window for NewConversationWindow. Now handled in ContentView via .sheet presentation.
+        Window("Test Window", id: "testWindow") {
+            TestWindow()
         }
         .commands {
             CommandMenu("File") {

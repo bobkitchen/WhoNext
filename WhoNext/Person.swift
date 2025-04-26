@@ -12,6 +12,14 @@ public class Person: NSManagedObject {
     @NSManaged public var scheduledConversationDate: Date?
     @NSManaged public var timezone: String?
     @NSManaged public var conversations: NSSet?
+
+    // Guarantee that every newly-inserted Person gets a unique identifier
+    public override func awakeFromInsert() {
+        super.awakeFromInsert()
+        if identifier == nil {
+            identifier = UUID()
+        }
+    }
 }
 
 // MARK: - Computed Properties
@@ -47,7 +55,13 @@ extension Person {
 extension Person: Identifiable {
     public var id: UUID {
         get {
-            return identifier ?? UUID()
+            if let existing = identifier {
+                return existing
+            }
+            // If the identifier was somehow nil (e.g. pre-migration objects), generate and persist one now
+            let newId = UUID()
+            identifier = newId
+            return newId
         }
         set {
             identifier = newValue

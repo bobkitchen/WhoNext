@@ -3,7 +3,7 @@ import CoreData
 import UniformTypeIdentifiers
 
 struct PersonDetailView: View {
-    let person: Person
+    @ObservedObject var person: Person
     @Environment(\.managedObjectContext) private var viewContext
     @State private var isEditing = false
     
@@ -17,9 +17,15 @@ struct PersonDetailView: View {
     @State private var editingPhotoImage: NSImage? = nil
     @State private var showingPhotoPicker = false
 
-    var sortedConversations: [Conversation] {
-        let set = person.conversations as? Set<Conversation> ?? []
-        return set.sorted { ($0.date ?? .distantPast) > ($1.date ?? .distantPast) }
+    @FetchRequest private var conversations: FetchedResults<Conversation>
+
+    init(person: Person) {
+        self.person = person
+        _conversations = FetchRequest(
+            sortDescriptors: [NSSortDescriptor(keyPath: \Conversation.date, ascending: false)],
+            predicate: NSPredicate(format: "person == %@", person),
+            animation: .default
+        )
     }
 
     var body: some View {
@@ -168,7 +174,7 @@ struct PersonDetailView: View {
                     .cornerRadius(6)
                 }
                 
-                if sortedConversations.isEmpty {
+                if conversations.isEmpty {
                     Text("No conversations yet.")
                         .font(.system(size: 13))
                         .foregroundColor(.secondary)
@@ -176,6 +182,30 @@ struct PersonDetailView: View {
                         .padding(.vertical, 20)
                         .background(Color(nsColor: .controlBackgroundColor).opacity(0.5))
                         .cornerRadius(8)
+                } else {
+                    ForEach(conversations) { conversation in
+                        Button(action: { openConversationWindow(for: conversation) }) {
+                            HStack(alignment: .top, spacing: 12) {
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text(previewText(from: conversation.notes ?? ""))
+                                        .font(.system(size: 14, weight: .regular))
+                                        .foregroundColor(.primary)
+                                        .lineLimit(2)
+                                    if let date = conversation.date {
+                                        Text(formattedDate(date))
+                                            .font(.system(size: 12))
+                                            .foregroundColor(.secondary)
+                                    }
+                                }
+                                Spacer()
+                            }
+                            .padding(10)
+                            .background(Color(nsColor: .controlBackgroundColor).opacity(0.7))
+                            .cornerRadius(8)
+                        }
+                        .buttonStyle(.plain)
+                        .padding(.vertical, 2)
+                    }
                 }
             }
             
@@ -196,6 +226,24 @@ struct PersonDetailView: View {
             }
         }
         .onAppear {
+            print("Person in detail view: \(Unmanaged.passUnretained(person).toOpaque()), identifier: \(person.identifier?.uuidString ?? "nil"), objectID: \(person.objectID), context: \(String(describing: person.managedObjectContext))")
+            print("FetchRequest predicate: NSPredicate(format: 'person == %@', person) where person.objectID = \(person.objectID)")
+            print("FetchRequest results:")
+            for c in conversations {
+                print("  - Conversation uuid: \(c.uuid?.uuidString ?? "nil"), person.identifier: \(c.person?.identifier?.uuidString ?? "nil"), person.objectID: \(String(describing: c.person?.objectID)), person.context: \(String(describing: c.person?.managedObjectContext)), notes: \(c.notes ?? "")")
+            }
+            print("viewContext: \(String(describing: person.managedObjectContext))")
+            do {
+                let fetch = NSFetchRequest<Conversation>(entityName: "Conversation")
+                let allConvs = try viewContext.fetch(fetch)
+                print("ALL Conversation objects in store:")
+                for conv in allConvs {
+                    let p = conv.person
+                    print("  - Conv uuid: \(conv.uuid?.uuidString ?? "nil") | notes: \(conv.notes ?? "") | person: \(String(describing: p?.name)) | person.identifier: \(String(describing: p?.identifier?.uuidString)) | person.objectID: \(String(describing: p?.objectID))")
+                }
+            } catch {
+                print("Error fetching all conversations: \(error)")
+            }
             editingName = person.name ?? ""
             editingRole = person.role ?? ""
             editingTimezone = person.timezone ?? ""
@@ -248,7 +296,7 @@ struct PersonDetailView: View {
 
     private func deleteConversation(at offsets: IndexSet) {
         for index in offsets {
-            let conversation = sortedConversations[index]
+            let conversation = conversations[index]
             viewContext.delete(conversation)
         }
 
