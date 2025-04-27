@@ -6,11 +6,15 @@ class NewConversationWindowController: NSWindowController {
     private var onCancel: (() -> Void)?
 
     convenience init(onSave: (() -> Void)? = nil, onCancel: (() -> Void)? = nil) {
-        let contentView = NSHostingView(rootView: NewConversationWindowView(onSave: {
-            onSave?()
-        }, onCancel: {
-            onCancel?()
-        }))
+        let context = PersistenceController.shared.container.viewContext
+        let contentView = NSHostingView(rootView:
+            NewConversationWindowView(onSave: {
+                onSave?()
+            }, onCancel: {
+                onCancel?()
+            })
+            .environment(\.managedObjectContext, context)
+        )
         let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 420, height: 320),
                               styleMask: [.titled, .closable, .resizable, .miniaturizable],
                               backing: .buffered,
