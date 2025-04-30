@@ -20,7 +20,7 @@ struct PersonDetailView: View {
     @FetchRequest private var conversations: FetchedResults<Conversation>
 
     @State private var isGeneratingBrief = false
-    @State private var preMeetingBrief: String? = nil
+    @State private var preMeetingBrief: [UUID: String] = [:]
     @State private var briefError: String? = nil
     @AppStorage("openaiApiKey") private var apiKey: String = ""
 
@@ -163,7 +163,7 @@ struct PersonDetailView: View {
                         Label("Generate Pre-Meeting Brief", systemImage: "sparkles")
                     }
                     .disabled(isGeneratingBrief || apiKey.isEmpty)
-                    if let brief = preMeetingBrief {
+                    if let brief = preMeetingBrief[person.identifier ?? UUID()] {
                         Button(action: { copyToClipboard(brief) }) {
                             Label("Copy", systemImage: "doc.on.doc")
                         }
@@ -175,7 +175,7 @@ struct PersonDetailView: View {
                         Text("Generating brief...")
                             .foregroundColor(.secondary)
                     }
-                } else if let brief = preMeetingBrief, !brief.isEmpty {
+                } else if let brief = preMeetingBrief[person.identifier ?? UUID()], !brief.isEmpty {
                     // Convert Markdown to NSAttributedString for rich display
                     let attributedBrief = MarkdownHelper.attributedString(from: brief)
                     AttributedBriefView(attributedText: attributedBrief)
@@ -365,14 +365,14 @@ struct PersonDetailView: View {
     // MARK: - Pre-Meeting Brief Logic
     private func generatePreMeetingBrief() {
         isGeneratingBrief = true
-        preMeetingBrief = nil
+        preMeetingBrief[person.identifier ?? UUID()] = nil
         briefError = nil
         PreMeetingBriefService.generateBrief(for: person, apiKey: apiKey) { result in
             DispatchQueue.main.async {
                 isGeneratingBrief = false
                 switch result {
                 case .success(let brief):
-                    preMeetingBrief = brief
+                    preMeetingBrief[person.identifier ?? UUID()] = brief
                 case .failure(let error):
                     briefError = error.localizedDescription
                 }
