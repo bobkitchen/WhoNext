@@ -100,16 +100,11 @@ struct InsightsView: View {
     }
     
     private var suggestedPeople: [Person] {
-        print("All people in DB: \(people.count)")
-        people.forEach { print("- \($0.name ?? "nil") (lastContact: \($0.lastContactDate?.description ?? "never")), directReport: \($0.isDirectReport)") }
         let filtered = people.filter { $0.name != nil && !$0.isDirectReport }
-        print("Filtered people (not direct reports): \(filtered.map { $0.name ?? "nil" })")
         let sorted = filtered.sorted {
             ($0.lastContactDate ?? .distantPast) < ($1.lastContactDate ?? .distantPast)
         }
-        print("Sorted people: \(sorted.map { $0.name ?? "nil" })")
         let result = Array(sorted.prefix(2))
-        print("Suggested people: \(result.map { $0.name ?? "nil" })")
         return result
     }
     
@@ -118,12 +113,8 @@ struct InsightsView: View {
             guard let name = person.name else { return false }
             return name.lowercased().contains("bob kitchen")
         }
-        guard let attendees = meeting.attendees else { print("No attendees for meeting: \(meeting.title)"); return nil }
+        guard let attendees = meeting.attendees else { return nil }
         let selfNames = [currentUser?.name?.lowercased(), "bk", "bob"]
-        print("Meeting: \(meeting.title)")
-        print("Attendees: \(attendees)")
-        print("Self names: \(selfNames)")
-        print("People list: \(people.compactMap { $0.name })")
         let otherAttendeeNames = attendees.filter { attendee in
             let attendeeLower = attendee.lowercased()
             return !selfNames.contains(where: { selfName in
@@ -131,7 +122,6 @@ struct InsightsView: View {
                 return attendeeLower.contains(selfName)
             })
         }
-        print("Other attendee names: \(otherAttendeeNames)")
         let nicknameMap: [String: String] = [
             "kathryn": "kate", "kate": "kathryn",
             "robert": "bob", "bob": "robert",
@@ -159,21 +149,16 @@ struct InsightsView: View {
         }
         for attendee in otherAttendeeNames {
             let (attendeeFirst, attendeeLast) = splitName(attendee)
-            print("Attendee split: first=\(attendeeFirst), last=\(attendeeLast)")
             for person in people {
                 guard let name = person.name else { continue }
                 let (personFirst, personLast) = splitName(name)
-                print("  Person split: first=\(personFirst), last=\(personLast) [\(name)]")
                 let lastNameMatches = !attendeeLast.isEmpty && attendeeLast == personLast
                 let firstNameMatches = firstNamesMatch(attendeeFirst, personFirst)
-                print("    Last names match? \(lastNameMatches), First names match? \(firstNameMatches)")
                 if lastNameMatches && firstNameMatches {
-                    print("Matched attendee: \(attendee) to person: \(name)")
                     return person
                 }
             }
         }
-        print("No match found for meeting: \(meeting.title)")
         return nil
     }
     

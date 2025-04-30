@@ -16,8 +16,13 @@ struct PersonDetailView: View {
     @State private var editingPhotoData: Data? = nil
     @State private var editingPhotoImage: NSImage? = nil
     @State private var showingPhotoPicker = false
-
+    
     @FetchRequest private var conversations: FetchedResults<Conversation>
+
+    @State private var isGeneratingBrief = false
+    @State private var preMeetingBrief: String? = nil
+    @State private var briefError: String? = nil
+    @AppStorage("openaiApiKey") private var apiKey: String = ""
 
     init(person: Person) {
         self.person = person
@@ -151,6 +156,37 @@ struct PersonDetailView: View {
                 }
             }
             
+            // Pre-Meeting Brief Button & Display
+            VStack(alignment: .leading, spacing: 10) {
+                HStack(spacing: 12) {
+                    Button(action: generatePreMeetingBrief) {
+                        Label("Generate Pre-Meeting Brief", systemImage: "sparkles")
+                    }
+                    .disabled(isGeneratingBrief || apiKey.isEmpty)
+                    if let brief = preMeetingBrief {
+                        Button(action: { copyToClipboard(brief) }) {
+                            Label("Copy", systemImage: "doc.on.doc")
+                        }
+                    }
+                }
+                if isGeneratingBrief {
+                    HStack(spacing: 8) {
+                        ProgressView()
+                        Text("Generating brief...")
+                            .foregroundColor(.secondary)
+                    }
+                } else if let brief = preMeetingBrief, !brief.isEmpty {
+                    // Convert Markdown to NSAttributedString for rich display
+                    let attributedBrief = MarkdownHelper.attributedString(from: brief)
+                    AttributedBriefView(attributedText: attributedBrief)
+                        .frame(minHeight: 120, maxHeight: 300)
+                        .padding(.vertical, 4)
+                } else if let error = briefError {
+                    Text("Error: \(error)")
+                        .foregroundColor(.red)
+                }
+            }
+            
             // Conversations Section
             VStack(alignment: .leading, spacing: 16) {
                 HStack {
@@ -226,24 +262,6 @@ struct PersonDetailView: View {
             }
         }
         .onAppear {
-            print("Person in detail view: \(Unmanaged.passUnretained(person).toOpaque()), identifier: \(person.identifier?.uuidString ?? "nil"), objectID: \(person.objectID), context: \(String(describing: person.managedObjectContext))")
-            print("FetchRequest predicate: NSPredicate(format: 'person == %@', person) where person.objectID = \(person.objectID)")
-            print("FetchRequest results:")
-            for c in conversations {
-                print("  - Conversation uuid: \(c.uuid?.uuidString ?? "nil"), person.identifier: \(c.person?.identifier?.uuidString ?? "nil"), person.objectID: \(String(describing: c.person?.objectID)), person.context: \(String(describing: c.person?.managedObjectContext)), notes: \(c.notes ?? "")")
-            }
-            print("viewContext: \(String(describing: person.managedObjectContext))")
-            do {
-                let fetch = NSFetchRequest<Conversation>(entityName: "Conversation")
-                let allConvs = try viewContext.fetch(fetch)
-                print("ALL Conversation objects in store:")
-                for conv in allConvs {
-                    let p = conv.person
-                    print("  - Conv uuid: \(conv.uuid?.uuidString ?? "nil") | notes: \(conv.notes ?? "") | person: \(String(describing: p?.name)) | person.identifier: \(String(describing: p?.identifier?.uuidString)) | person.objectID: \(String(describing: p?.objectID))")
-                }
-            } catch {
-                print("Error fetching all conversations: \(error)")
-            }
             editingName = person.name ?? ""
             editingRole = person.role ?? ""
             editingTimezone = person.timezone ?? ""
@@ -342,5 +360,74 @@ struct PersonDetailView: View {
                 .environment(\.managedObjectContext, viewContext)
         )
         window.makeKeyAndOrderFront(nil)
+    }
+    
+    // MARK: - Pre-Meeting Brief Logic
+    private func generatePreMeetingBrief() {
+        isGeneratingBrief = true
+        preMeetingBrief = nil
+        briefError = nil
+        PreMeetingBriefService.generateBrief(for: person, apiKey: apiKey) { result in
+            DispatchQueue.main.async {
+                isGeneratingBrief = false
+                switch result {
+                case .success(let brief):
+                    preMeetingBrief = brief
+                case .failure(let error):
+                    briefError = error.localizedDescription
+                }
+            }
+        }
+    }
+    private func copyToClipboard(_ text: String) {
+        #if os(macOS)
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.setString(text, forType: .string)
+        #endif
+    }
+}
+
+struct TextViewWrapper: NSViewRepresentable {
+    let attributedText: NSAttributedString
+
+    func makeNSView(context: Context) -> NSTextView {
+        let textView = NSTextView()
+        textView.isEditable = false
+        textView.isSelectable = true
+        textView.backgroundColor = NSColor.textBackgroundColor
+        textView.textColor = NSColor.labelColor
+        textView.textContainerInset = NSSize(width: 6, height: 6)
+        textView.font = NSFont.systemFont(ofSize: 14)
+        textView.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
+        textView.setContentHuggingPriority(.defaultLow, for: .horizontal)
+        return textView
+    }
+
+    func updateNSView(_ nsView: NSTextView, context: Context) {
+        nsView.textStorage?.setAttributedString(attributedText)
+        nsView.textColor = NSColor.labelColor
+        nsView.backgroundColor = NSColor.textBackgroundColor
+        nsView.font = NSFont.systemFont(ofSize: 14)
+    }
+}
+
+struct AttributedBriefView: View {
+    let attributedText: NSAttributedString
+
+    var body: some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: 8)
+                .fill(Color(nsColor: .textBackgroundColor))
+            ScrollView(.vertical, showsIndicators: true) {
+                // Use a plain Text view for the attributed string content (as fallback)
+                Text(attributedText.string)
+                    .font(.system(size: 14))
+                    .foregroundColor(Color.primary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(8)
+            }
+        }
+        .frame(minHeight: 120, maxHeight: 300)
+        .padding(.vertical, 4)
     }
 }

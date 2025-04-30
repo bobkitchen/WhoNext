@@ -68,6 +68,9 @@ struct PersistenceController {
         description.setOption(true as NSNumber, forKey: NSMigratePersistentStoresAutomaticallyOption)
         description.setOption(true as NSNumber, forKey: NSInferMappingModelAutomaticallyOption)
         
+        // Enable CloudKit syncing with the correct container identifier
+        description.cloudKitContainerOptions = NSPersistentCloudKitContainerOptions(containerIdentifier: "iCloud.com.bobk.WhoNext")
+        
         // Load the persistent stores synchronously to ensure everything is ready
         container.loadPersistentStores { (storeDescription, error) in
             if let error = error as NSError? {

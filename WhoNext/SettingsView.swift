@@ -1,6 +1,7 @@
 import SwiftUI
 import CoreData
 import UniformTypeIdentifiers
+import CloudKit
 
 struct SettingsView: View {
     @Environment(\.managedObjectContext) private var viewContext
@@ -20,11 +21,37 @@ struct SettingsView: View {
         animation: .default
     ) private var people: FetchedResults<Person>
 
+    @StateObject private var syncStatus = CloudKitSyncStatus()
+
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
             Text("Settings")
                 .font(.largeTitle)
                 .bold()
+            
+            // --- Sync Status ---
+            VStack(alignment: .leading, spacing: 8) {
+                Text("iCloud Sync Status")
+                    .font(.headline)
+                if syncStatus.isSyncing {
+                    HStack {
+                        ProgressView()
+                        Text("Syncing with iCloud...")
+                            .foregroundColor(.secondary)
+                    }
+                } else if let lastSync = syncStatus.lastSyncDate {
+                    Text("Last successful sync: \(lastSync.formatted(date: .abbreviated, time: .standard))")
+                        .foregroundColor(.green)
+                } else {
+                    Text("No sync has occurred yet.")
+                        .foregroundColor(.secondary)
+                }
+                if let error = syncStatus.syncError {
+                    Text("Sync Error: \(error)")
+                        .foregroundColor(.red)
+                }
+            }
+            Divider()
             
             // API Key Section
             VStack(alignment: .leading, spacing: 8) {
