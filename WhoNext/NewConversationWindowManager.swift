@@ -4,9 +4,10 @@ class NewConversationWindowManager {
     static let shared = NewConversationWindowManager()
     private var windowController: NewConversationWindowController?
 
-    func presentWindow() {
+    // Present window, optionally pre-selecting a person
+    func presentWindow(for person: Person? = nil) {
         if windowController == nil {
-            windowController = NewConversationWindowController(onSave: {
+            windowController = NewConversationWindowController(person: person, onSave: {
                 // Handle save logic here
                 self.windowController = nil
             }, onCancel: {

@@ -125,11 +125,10 @@ struct PersonDetailView: View {
                     Text(isEditing ? "Save" : "Edit")
                         .font(.system(size: 13, weight: .medium))
                 }
-                .buttonStyle(.plain)
-                .padding(.horizontal, 12)
-                .padding(.vertical, 6)
-                .background(Color(nsColor: .controlBackgroundColor))
-                .cornerRadius(6)
+                .buttonStyle(.bordered)
+                .controlSize(.small)
+                .help("Edit this person's details")
+
             }
             
             // Notes Section (when editing)
@@ -163,7 +162,7 @@ struct PersonDetailView: View {
                         Label("Generate Pre-Meeting Brief", systemImage: "sparkles")
                     }
                     .disabled(isGeneratingBrief || apiKey.isEmpty)
-                    if let brief = preMeetingBrief[person.identifier ?? UUID()] {
+                    if let brief = preMeetingBrief[person.identifier ?? UUID()], !brief.isEmpty {
                         Button(action: { copyToClipboard(brief) }) {
                             Label("Copy", systemImage: "doc.on.doc")
                         }
@@ -195,19 +194,15 @@ struct PersonDetailView: View {
                     
                     Spacer()
                     
-                    Button(action: createNewConversation) {
-                        HStack(spacing: 4) {
-                            Image(systemName: "plus")
-                                .font(.system(size: 12, weight: .semibold))
-                            Text("New")
-                                .font(.system(size: 13, weight: .medium))
-                        }
+                    Button(action: {
+                        openNewConversationWindow(for: person)
+                    }) {
+                        Text("New")
+                            .font(.system(size: 13, weight: .medium))
                     }
-                    .buttonStyle(.plain)
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 5)
-                    .background(Color(nsColor: .controlBackgroundColor))
-                    .cornerRadius(6)
+                    .buttonStyle(.bordered)
+                    .controlSize(.small)
+                    .help("Start a new conversation with this person")
                 }
                 
                 if conversations.isEmpty {
@@ -360,6 +355,10 @@ struct PersonDetailView: View {
                 .environment(\.managedObjectContext, viewContext)
         )
         window.makeKeyAndOrderFront(nil)
+    }
+    
+    private func openNewConversationWindow(for person: Person) {
+        NewConversationWindowManager.shared.presentWindow(for: person)
     }
     
     // MARK: - Pre-Meeting Brief Logic

@@ -2,6 +2,7 @@ import SwiftUI
 import CoreData
 
 struct NewConversationWindowView: View {
+    var preselectedPerson: Person? = nil
     var onSave: (() -> Void)?
     var onCancel: (() -> Void)?
 
@@ -24,13 +25,15 @@ struct NewConversationWindowView: View {
         return people.filter { $0.name?.localizedCaseInsensitiveContains(trimmed) == true }
     }
 
+    init(preselectedPerson: Person? = nil, onSave: (() -> Void)? = nil, onCancel: (() -> Void)? = nil) {
+        self.preselectedPerson = preselectedPerson
+        self.onSave = onSave
+        self.onCancel = onCancel
+        // SwiftUI @State can't be initialized directly here, so preselection is handled in .onAppear
+    }
+
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            Text("New Conversation")
-                .font(.title)
-                .fontWeight(.bold)
-                .frame(maxWidth: .infinity, alignment: .center)
-                .padding(.bottom, 8)
+        VStack(alignment: .leading, spacing: 10) {
             VStack(alignment: .leading, spacing: 2) {
                 Text("To:")
                 ZStack(alignment: .topLeading) {
@@ -96,7 +99,7 @@ struct NewConversationWindowView: View {
                 .padding(.vertical, 4)
             Text("Notes:")
             TextEditor(text: $notes)
-                .frame(height: 120)
+                .frame(height: 220)
                 .padding(4)
                 .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.gray.opacity(0.15), lineWidth: 1))
                 .background(Color(.textBackgroundColor))
@@ -128,8 +131,16 @@ struct NewConversationWindowView: View {
                 .disabled(selectedPerson == nil)
             }
         }
-        .padding(24)
-        .frame(minWidth: 420, maxWidth: 540, minHeight: 320, maxHeight: .infinity)
+        .padding(.top, 12)
+        .padding(.bottom, 12)
+        .padding(.horizontal, 20)
+        .frame(minWidth: 400, minHeight: 420)
+        .onAppear {
+            if let preselected = preselectedPerson, selectedPerson == nil {
+                selectedPerson = preselected
+                toField = preselected.name ?? ""
+            }
+        }
     }
 }
 

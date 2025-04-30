@@ -11,9 +11,6 @@ struct ContentView: View {
     var body: some View {
         NavigationStack {
             VStack {
-                Button("Open Test Window") {
-                    openWindow(id: "testWindow")
-                }
                 if appState.selectedTab == .people {
                     HStack(spacing: 0) {
                         PeopleListView(
@@ -55,8 +52,9 @@ struct ContentView: View {
                 }
             }
             ToolbarItem(placement: .automatic) {
+                // In the toolbar, New Conversation button should open an empty window
                 Button(action: {
-                    NewConversationWindowManager.shared.presentWindow()
+                    NewConversationWindowManager.shared.presentWindow(for: nil)
                 }) {
                     Image(systemName: "bubble.left.and.bubble.right")
                         .imageScale(.large)

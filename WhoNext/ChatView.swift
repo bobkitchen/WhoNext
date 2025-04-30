@@ -185,23 +185,23 @@ struct ChatView: View {
             context += "Number of Past Conversations: \(conversations.count)\n"
             
             if !conversations.isEmpty {
-                context += "All Conversations:\n"
+                context += "Recent Conversations:\n"
                 let sortedConversations = conversations.sorted { 
                     ($0.date ?? .distantPast) > ($1.date ?? .distantPast)
                 }
-                for conversation in sortedConversations {
+                for conversation in sortedConversations.prefix(3) {
                     if let date = conversation.date {
                         context += "- Date: \(date.formatted())\n"
-                    }
-                    if let summary = conversation.summary, !summary.isEmpty {
-                        context += "  Summary: \(summary)\n"
-                    }
-                    if let notes = conversation.notes, !notes.isEmpty {
-                        context += "  Notes: \(notes)\n"
+                        if let summary = conversation.summary {
+                            context += "  Summary: \(summary)\n"
+                        }
+                        if let notes = conversation.notes {
+                            context += "  Notes: \(notes)\n"
+                        }
                     }
                 }
-                context += "\n"
             }
+            context += "\n"
         }
         
         return context
