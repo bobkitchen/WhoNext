@@ -101,6 +101,7 @@ struct PeopleListView: View {
             selectedPerson = nil
         }
         viewContext.delete(person)
+        print("[PeopleListView][LOG] Deleting person and saving context\n\tCallStack: \(Thread.callStackSymbols.joined(separator: "\n\t"))")
         try? viewContext.save()
     }
 }

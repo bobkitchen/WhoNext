@@ -50,6 +50,13 @@ struct SettingsView: View {
                     Text("Sync Error: \(error)")
                         .foregroundColor(.red)
                 }
+                Button(action: {
+                    syncStatus.isSyncing = true
+                    syncStatus.manualSync()
+                }) {
+                    Label("Trigger Manual Sync", systemImage: "arrow.clockwise")
+                }
+                .disabled(syncStatus.isSyncing)
             }
             Divider()
             
@@ -112,8 +119,9 @@ struct SettingsView: View {
             
             // Reset App Section
             VStack(alignment: .leading, spacing: 8) {
-                Text("Testing Tools")
+                Text("Warning + Danger")
                     .font(.headline)
+                    .foregroundColor(.red)
                 Button(role: .destructive) {
                     showResetConfirmation = true
                 } label: {
@@ -125,6 +133,12 @@ struct SettingsView: View {
                 } message: {
                     Text("This will reset all memory of who you've spoken to and who needs to be spoken to next. Conversation records and notes will NOT be deleted.")
                 }
+                Button(role: .destructive) {
+                    deleteAllPeople()
+                } label: {
+                    Label("Delete All People", systemImage: "person.crop.circle.badge.xmark")
+                }
+                .help("Deletes all People records from both this device and iCloud. This cannot be undone!")
             }
             
             Spacer()
@@ -268,6 +282,7 @@ struct SettingsView: View {
                     }
                     
                     try viewContext.save()
+                    print("[SettingsView][LOG] Saving context (import)\n\tCallStack: \(Thread.callStackSymbols.joined(separator: "\n\t"))")
                     print("Import complete: \(importedCount) imported, \(skippedCount) skipped")
                     
                     importError = nil
@@ -300,8 +315,22 @@ struct SettingsView: View {
             }
         }
         try? viewContext.save()
+        print("[SettingsView][LOG] Saving context (resetSpokenTo)\n\tCallStack: \(Thread.callStackSymbols.joined(separator: "\n\t"))")
         
         // Clear dismissed people
         dismissedPeopleData = Data()
+    }
+    
+    private func deleteAllPeople() {
+        for person in people {
+            viewContext.delete(person)
+        }
+        do {
+            print("[SettingsView][LOG] Saving context (deleteAllPeople)\n\tCallStack: \(Thread.callStackSymbols.joined(separator: "\n\t"))")
+            try viewContext.save()
+            print("All people deleted.")
+        } catch {
+            print("Failed to delete all people: \(error)")
+        }
     }
 }

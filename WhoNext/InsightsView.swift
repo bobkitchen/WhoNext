@@ -80,6 +80,7 @@ struct InsightsView: View {
                                     conversation.date = Date()
                                     conversation.person = person
                                     conversation.uuid = UUID()
+                                    print("[InsightsView][LOG] Saving context (follow-up)\n\tCallStack: \(Thread.callStackSymbols.joined(separator: "\n\t"))")
                                     try? viewContext.save()
                                 }
                             )
@@ -169,6 +170,7 @@ struct InsightsView: View {
         newConversation.uuid = UUID()
         
         person.scheduledConversationDate = nil
+        print("[InsightsView][LOG] Saving context (manual)\n\tCallStack: \(Thread.callStackSymbols.joined(separator: "\n\t"))")
         try? viewContext.save()
         
         let window = NSWindow(
@@ -287,6 +289,7 @@ struct GlobalNewConversationView: View {
         conversation.notes = notes.trimmingCharacters(in: .whitespacesAndNewlines)
         conversation.uuid = UUID()
         do {
+            print("[InsightsView][LOG] Saving context (manual)\n\tCallStack: \(Thread.callStackSymbols.joined(separator: "\n\t"))")
             try viewContext.save()
         } catch {
             print("Failed to save conversation: \(error)")

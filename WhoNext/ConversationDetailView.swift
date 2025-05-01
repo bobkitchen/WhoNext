@@ -35,6 +35,7 @@ struct ConversationDetailView: View {
                     .onChange(of: updatedNotes) { _, newValue in
                         conversation.notes = newValue
                         try? viewContext.save()
+                        print("[ConversationDetailView][LOG] Saving context (notes onChange)\n\tCallStack: \(Thread.callStackSymbols.joined(separator: "\n\t"))")
                     }
             } else {
                 ScrollView {

@@ -216,22 +216,27 @@ struct MessageBubble: View {
             if message.isUser {
                 Spacer()
             }
-            
             VStack(alignment: message.isUser ? .trailing : .leading, spacing: 4) {
-                Text(message.content)
-                    .padding(12)
-                    .background(
-                        Group {
-                            if message.isUser {
-                                LinearGradient(colors: [.blue, .blue.opacity(0.8)], startPoint: .topLeading, endPoint: .bottomTrailing)
-                            } else {
-                                Color(NSColor.controlBackgroundColor)
-                            }
-                        }
-                    )
-                    .foregroundColor(message.isUser ? .white : .primary)
-                    .clipShape(BubbleShape(isUser: message.isUser))
-                
+                if message.isUser {
+                    Text(message.content)
+                        .padding(12)
+                        .background(
+                            LinearGradient(colors: [.blue, .blue.opacity(0.8)], startPoint: .topLeading, endPoint: .bottomTrailing)
+                        )
+                        .foregroundColor(.white)
+                        .cornerRadius(14)
+                } else {
+                    // Render AI response as plain text, wrapped within the bubble
+                    Text(message.content)
+                        .padding(12)
+                        .background(Color(.windowBackgroundColor).opacity(0.8))
+                        .foregroundColor(.primary)
+                        .cornerRadius(14)
+                        .textSelection(.enabled)
+                        .font(.system(size: 15, weight: .regular, design: .rounded))
+                        .multilineTextAlignment(.leading)
+                        .frame(maxWidth: 400, alignment: .leading) // Limit width for wrapping
+                }
                 HStack(spacing: 4) {
                     if !message.isUser {
                         Image(systemName: "brain.head.profile")
@@ -243,7 +248,6 @@ struct MessageBubble: View {
                         .foregroundStyle(.secondary)
                 }
             }
-            
             if !message.isUser {
                 Spacer()
             }

@@ -128,6 +128,7 @@ struct GlobalNewConversationSheet: View {
         newConversation.notes = notes
         newConversation.person = person
         do {
+            print("[GlobalNewConversationSheet][LOG] Saving context\n\tCallStack: \(Thread.callStackSymbols.joined(separator: "\n\t"))")
             try viewContext.save()
             isPresented = false
             notes = ""

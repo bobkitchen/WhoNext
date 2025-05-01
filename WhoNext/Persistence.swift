@@ -21,6 +21,7 @@ struct PersistenceController {
             newPerson.isDirectReport = false
         }
         do {
+            print("[PersistenceController][LOG] Preview context save called\n\tCallStack: \(Thread.callStackSymbols.joined(separator: "\n\t"))")
             try viewContext.save()
         } catch {
             let nsError = error as NSError
@@ -32,6 +33,7 @@ struct PersistenceController {
     let container: NSPersistentCloudKitContainer
 
     init(inMemory: Bool = false) {
+        print("[PersistenceController][LOG] init called with inMemory=\(inMemory)\n\tCallStack: \(Thread.callStackSymbols.joined(separator: "\n\t"))")
         // Try loading the Core Data model with both possible extensions
         let modelName = "WhoNext"
         var model: NSManagedObjectModel?

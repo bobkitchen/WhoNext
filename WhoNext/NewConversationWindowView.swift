@@ -118,6 +118,7 @@ struct NewConversationWindowView: View {
                         newConversation.notes = notes
                         newConversation.person = person
                         do {
+                            print("[NewConversationWindowView][LOG] Saving context\n\tCallStack: \(Thread.callStackSymbols.joined(separator: "\n\t"))")
                             try viewContext.save()
                         } catch {
                             print("Failed to save conversation: \(error)")

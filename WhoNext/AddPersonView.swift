@@ -48,12 +48,15 @@ struct AddPersonView: View {
                         .foregroundColor(.secondary)
                         .textFieldStyle(.plain)
                         .frame(width: 260)
-                    TextField("Timezone", text: $timezone)
-                        .font(.system(size: 13))
-                        .foregroundColor(.secondary)
-                        .textFieldStyle(.plain)
-                        .frame(width: 260)
-                        .padding(.top, 2)
+                    // Restore timezone picker
+                    Picker("Timezone", selection: $timezone) {
+                        ForEach(TimeZone.knownTimeZoneIdentifiers, id: \ .self) { tz in
+                            Text(tz).tag(tz)
+                        }
+                    }
+                    .labelsHidden()
+                    .frame(width: 260)
+                    .padding(.top, 2)
                     Toggle("Direct Report", isOn: $isDirectReport)
                         .font(.system(size: 13))
                         .toggleStyle(.checkbox)
@@ -77,16 +80,6 @@ struct AddPersonView: View {
                 }
                 Button("Add") {
                     if !name.trimmingCharacters(in: .whitespaces).isEmpty {
-                        let newPerson = Person(context: viewContext)
-                        newPerson.identifier = UUID()
-                        newPerson.name = name.trimmingCharacters(in: .whitespaces)
-                        newPerson.role = role.trimmingCharacters(in: .whitespaces)
-                        newPerson.timezone = timezone.trimmingCharacters(in: .whitespaces)
-                        newPerson.isDirectReport = isDirectReport
-                        newPerson.notes = notes.trimmingCharacters(in: .whitespacesAndNewlines)
-                        if let photoData = photoData {
-                            newPerson.photo = photoData
-                        }
                         onSave(name.trimmingCharacters(in: .whitespaces),
                                role.trimmingCharacters(in: .whitespaces),
                                timezone.trimmingCharacters(in: .whitespaces),

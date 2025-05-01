@@ -282,6 +282,7 @@ struct PersonDetailView: View {
             person.photo = editingPhotoData
         }
         try? viewContext.save()
+        print("[PersonDetailView][LOG] Saving context (saveChanges)\n\tCallStack: \(Thread.callStackSymbols.joined(separator: "\n\t"))")
     }
     
     private func createNewConversation() {
@@ -292,6 +293,7 @@ struct PersonDetailView: View {
         conversation.notes = ""
         
         try? viewContext.save()
+        print("[PersonDetailView][LOG] Saving context (createNewConversation)\n\tCallStack: \(Thread.callStackSymbols.joined(separator: "\n\t"))")
         openConversationWindow(for: conversation)
     }
 
@@ -314,6 +316,7 @@ struct PersonDetailView: View {
         }
 
         do {
+            print("[PersonDetailView][LOG] Saving context (deleteConversation)\n\tCallStack: \(Thread.callStackSymbols.joined(separator: "\n\t"))")
             try viewContext.save()
         } catch {
             print("Failed to delete conversation: \(error)")
@@ -333,6 +336,7 @@ struct PersonDetailView: View {
             if response == .OK, let url = panel.url, let imageData = try? Data(contentsOf: url) {
                 person.photo = imageData
                 do {
+                    print("[PersonDetailView][LOG] Saving context (selectNewPhoto)\n\tCallStack: \(Thread.callStackSymbols.joined(separator: "\n\t"))")
                     try viewContext.save()
                 } catch {
                     print("Failed to save new photo: \(error)")
