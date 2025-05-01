@@ -33,19 +33,19 @@ struct InsightsView: View {
                 
                 VStack(spacing: 10) {
                     StatCardView(
-                        icon: "🏁",
+                        imageName: "icon_flag",
                         title: "Cycle Progress",
                         value: cycleProgressText,
                         description: "Team members contacted"
                     )
                     StatCardView(
-                        icon: "⏳",
+                        imageName: "icon_stopwatch",
                         title: "Weeks Remaining",
                         value: weeksRemainingText,
                         description: "At 2 per week"
                     )
                     StatCardView(
-                        icon: "🔥",
+                        imageName: "icon_fire",
                         title: "Streak",
                         value: streakText,
                         description: "Weeks in a row"
@@ -58,8 +58,13 @@ struct InsightsView: View {
             
             // Upcoming 1:1s as cards, limited to 2
             VStack(alignment: .leading, spacing: 16) {
-                Text("Upcoming 1:1s")
-                    .font(.system(size: 20, weight: .semibold, design: .rounded))
+                HStack(spacing: 8) {
+                    Image("icon_calendar")
+                        .resizable()
+                        .frame(width: 24, height: 24)
+                    Text("Upcoming 1:1s")
+                }
+                .font(.system(size: 20, weight: .semibold, design: .rounded))
                 if calendarService.upcomingMeetings.isEmpty {
                     Text("No upcoming 1:1s")
                         .foregroundStyle(.secondary)
@@ -84,9 +89,13 @@ struct InsightsView: View {
             
             // Follow-up Needed Section
             VStack(alignment: .leading, spacing: 16) {
-                Text("Follow-up Needed")
-                    .font(.system(size: 20, weight: .semibold, design: .rounded))
-                    .foregroundStyle(.primary)
+                HStack(spacing: 8) {
+                    Image("icon_bell")
+                        .resizable()
+                        .frame(width: 24, height: 24)
+                    Text("Follow-up Needed")
+                }
+                .font(.system(size: 20, weight: .semibold, design: .rounded))
                 if suggestedPeople.isEmpty {
                     Text("No follow-ups needed")
                         .foregroundStyle(.secondary)
@@ -221,16 +230,16 @@ struct InsightsView: View {
 
 // MARK: - Statistic Card View
 struct StatCardView: View {
-    let icon: String
+    let imageName: String
     let title: String
     let value: String
     let description: String
     
     var body: some View {
         HStack(alignment: .center, spacing: 12) {
-            Text(icon)
-                .font(.system(size: 28))
-                .frame(width: 36)
+            Image(imageName)
+                .resizable()
+                .frame(width: 28, height: 28)
             VStack(alignment: .leading, spacing: 2) {
                 Text(title)
                     .font(.headline)

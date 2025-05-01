@@ -40,19 +40,23 @@ struct ContentView: View {
         }
         .toolbar {
             ToolbarItem(placement: .navigation) {
-                HStack {
+                HStack(spacing: 20) {
                     Button(action: { appState.selectedTab = .insights }) {
-                        Label("Insights", systemImage: "lightbulb")
+                        Image(systemName: "lightbulb")
                             .foregroundColor(appState.selectedTab == .insights ? .accentColor : .primary)
                     }
                     Button(action: { appState.selectedTab = .people }) {
-                        Label("People", systemImage: "person.3")
+                        Image(systemName: "person.3")
                             .foregroundColor(appState.selectedTab == .people ? .accentColor : .primary)
                     }
                 }
             }
+            ToolbarItem(placement: .principal) {
+                Text("WhoNext")
+                    .font(.headline)
+                    .foregroundColor(.secondary)
+            }
             ToolbarItem(placement: .automatic) {
-                // In the toolbar, New Conversation button should open an empty window
                 Button(action: {
                     NewConversationWindowManager.shared.presentWindow(for: nil)
                 }) {
@@ -60,16 +64,6 @@ struct ContentView: View {
                         .imageScale(.large)
                         .help("New Conversation")
                 }
-                Button(action: {
-                    openWindow(id: "testWindow")
-                }) {
-                    Text("Test Window")
-                }
-            }
-            ToolbarItem(placement: .principal) {
-                Text("WhoNext")
-                    .font(.headline)
-                    .foregroundColor(.secondary)
             }
             ToolbarItem(placement: .automatic) {
                 SearchBar(searchText: $searchText) { person in

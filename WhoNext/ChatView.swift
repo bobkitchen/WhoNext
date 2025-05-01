@@ -12,14 +12,25 @@ struct ChatMessage: Identifiable, Equatable {
     }
 }
 
+class ChatSession: ObservableObject {
+    @Published var messages: [ChatMessage] = []
+    @Published var inputText: String = ""
+    @Published var isLoading: Bool = false
+    @Published var errorMessage: String?
+    @Published var showError: Bool = false
+}
+
+// Singleton holder for chat session
+class ChatSessionHolder {
+    static let shared = ChatSessionHolder()
+    let session = ChatSession()
+    private init() {}
+}
+
 struct ChatView: View {
     @Environment(\.managedObjectContext) private var viewContext
     @State private var people: [Person] = []
-    @State private var messages: [ChatMessage] = []
-    @State private var inputText: String = ""
-    @State private var isLoading: Bool = false
-    @State private var errorMessage: String?
-    @State private var showError: Bool = false
+    @StateObject private var chatSession = ChatSessionHolder.shared.session
     @FocusState private var isFocused: Bool
     
     var body: some View {
@@ -31,18 +42,23 @@ struct ChatView: View {
                 }
             
             // Title
-            Text("Insights")
-                .font(.system(size: 28, weight: .semibold, design: .rounded))
-                .foregroundStyle(.primary)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal)
-                .padding(.bottom, 4)
+            HStack(spacing: 8) {
+                Image("icon_lightbulb")
+                    .resizable()
+                    .frame(width: 28, height: 28)
+                Text("Insights")
+            }
+            .font(.system(size: 28, weight: .semibold, design: .rounded))
+            .foregroundStyle(.primary)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal)
+            .padding(.bottom, 4)
             
             // Messages List
             ScrollViewReader { proxy in
                 ScrollView {
                     LazyVStack(spacing: 12) {
-                        ForEach(messages) { message in
+                        ForEach(chatSession.messages) { message in
                             MessageBubble(message: message)
                                 .id(message.id)
                                 .transition(.asymmetric(
@@ -51,7 +67,7 @@ struct ChatView: View {
                                 ))
                         }
                         
-                        if isLoading {
+                        if chatSession.isLoading {
                             HStack {
                                 TypingIndicator()
                                 Spacer()
@@ -62,9 +78,9 @@ struct ChatView: View {
                     }
                     .padding()
                 }
-                .onChange(of: messages.count) { _, _ in
+                .onChange(of: chatSession.messages.count) { _, _ in
                     withAnimation {
-                        if let lastMessage = messages.last {
+                        if let lastMessage = chatSession.messages.last {
                             proxy.scrollTo(lastMessage.id, anchor: .bottom)
                         }
                     }
@@ -73,7 +89,7 @@ struct ChatView: View {
             
             // Input Area
             VStack(spacing: 8) {
-                if let error = errorMessage {
+                if let error = chatSession.errorMessage {
                     Text(error)
                         .foregroundColor(.red)
                         .font(.caption)
@@ -81,15 +97,15 @@ struct ChatView: View {
                 }
                 
                 HStack(spacing: 12) {
-                    TextField("Type your message...", text: $inputText)
+                    TextField("Type your message...", text: $chatSession.inputText)
                         .textFieldStyle(CustomTextFieldStyle())
                         .focused($isFocused)
-                        .disabled(isLoading)
+                        .disabled(chatSession.isLoading)
                         .overlay(
                             HStack {
                                 Spacer()
-                                if !inputText.isEmpty {
-                                    Button(action: { inputText = "" }) {
+                                if !chatSession.inputText.isEmpty {
+                                    Button(action: { chatSession.inputText = "" }) {
                                         Image(systemName: "xmark.circle.fill")
                                             .foregroundStyle(.secondary)
                                             .imageScale(.small)
@@ -100,7 +116,7 @@ struct ChatView: View {
                             }
                         )
                         .onSubmit {
-                            guard !inputText.isEmpty && !isLoading else { return }
+                            guard !chatSession.inputText.isEmpty && !chatSession.isLoading else { return }
                             Task {
                                 await sendMessage()
                             }
@@ -111,7 +127,7 @@ struct ChatView: View {
                             await sendMessage()
                         }
                     }) {
-                        if isLoading {
+                        if chatSession.isLoading {
                             ProgressView()
                                 .progressViewStyle(CircularProgressViewStyle())
                                 .scaleEffect(0.8)
@@ -123,16 +139,16 @@ struct ChatView: View {
                         }
                     }
                     .buttonStyle(.plain)
-                    .disabled(inputText.isEmpty || isLoading)
+                    .disabled(chatSession.inputText.isEmpty || chatSession.isLoading)
                 }
                 .padding()
             }
             .background(Color(NSColor.controlBackgroundColor))
         }
-        .alert("Error", isPresented: $showError) {
+        .alert("Error", isPresented: $chatSession.showError) {
             Button("OK", role: .cancel) { }
         } message: {
-            Text(errorMessage ?? "An unknown error occurred")
+            Text(chatSession.errorMessage ?? "An unknown error occurred")
         }
         .onAppear {
             isFocused = true
@@ -141,28 +157,28 @@ struct ChatView: View {
     }
     
     private func sendMessage() async {
-        guard !inputText.isEmpty else { return }
+        guard !chatSession.inputText.isEmpty else { return }
         
-        let userMessage = ChatMessage(content: inputText, isUser: true, timestamp: Date())
-        messages.append(userMessage)
+        let userMessage = ChatMessage(content: chatSession.inputText, isUser: true, timestamp: Date())
+        chatSession.messages.append(userMessage)
         
-        let messageToSend = inputText
-        inputText = ""
-        isLoading = true
-        errorMessage = nil
+        let messageToSend = chatSession.inputText
+        chatSession.inputText = ""
+        chatSession.isLoading = true
+        chatSession.errorMessage = nil
         
         do {
             let context = generateContext()
             let response = try await AIService.shared.sendMessage(messageToSend, context: context)
             let aiMessage = ChatMessage(content: response, isUser: false, timestamp: Date())
-            messages.append(aiMessage)
+            chatSession.messages.append(aiMessage)
             isFocused = true
         } catch {
-            errorMessage = error.localizedDescription
-            showError = true
+            chatSession.errorMessage = error.localizedDescription
+            chatSession.showError = true
         }
         
-        isLoading = false
+        chatSession.isLoading = false
     }
     
     private func generateContext() -> String {
@@ -321,4 +337,4 @@ struct BubbleShape: Shape {
         
         return path
     }
-} 
+}
