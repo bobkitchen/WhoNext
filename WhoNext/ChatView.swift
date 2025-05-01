@@ -14,11 +14,7 @@ struct ChatMessage: Identifiable, Equatable {
 
 struct ChatView: View {
     @Environment(\.managedObjectContext) private var viewContext
-    @FetchRequest(
-        sortDescriptors: [NSSortDescriptor(keyPath: \Person.name, ascending: true)],
-        animation: .default
-    ) private var people: FetchedResults<Person>
-    
+    @State private var people: [Person] = []
     @State private var messages: [ChatMessage] = []
     @State private var inputText: String = ""
     @State private var isLoading: Bool = false
@@ -28,6 +24,12 @@ struct ChatView: View {
     
     var body: some View {
         VStack(spacing: 0) {
+            // Listen for PeopleDidImport notification and refresh the FetchRequest
+            EmptyView()
+                .onReceive(NotificationCenter.default.publisher(for: Notification.Name("PeopleDidImport"))) { _ in
+                    fetchPeople()
+                }
+            
             // Title
             Text("Insights")
                 .font(.system(size: 28, weight: .semibold, design: .rounded))
@@ -134,6 +136,7 @@ struct ChatView: View {
         }
         .onAppear {
             isFocused = true
+            fetchPeople()
         }
     }
     
@@ -205,6 +208,17 @@ struct ChatView: View {
         }
         
         return context
+    }
+    
+    private func fetchPeople() {
+        let fetchRequest = NSFetchRequest<Person>(entityName: "Person")
+        fetchRequest.sortDescriptors = [NSSortDescriptor(keyPath: \Person.name, ascending: true)]
+        do {
+            people = try viewContext.fetch(fetchRequest)
+        } catch {
+            print("Failed to fetch people: \(error)")
+            people = []
+        }
     }
 }
 

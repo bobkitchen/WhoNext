@@ -102,10 +102,13 @@ struct InsightsView: View {
     
     private var suggestedPeople: [Person] {
         let filtered = people.filter { $0.name != nil && !$0.isDirectReport }
+        // Sort by least recently contacted, then shuffle for randomness among those with the same lastContactDate
         let sorted = filtered.sorted {
             ($0.lastContactDate ?? .distantPast) < ($1.lastContactDate ?? .distantPast)
         }
-        let result = Array(sorted.prefix(2))
+        // Take a larger pool (e.g., top 6 least-recently-contacted), then shuffle and pick 2
+        let pool = Array(sorted.prefix(6)).shuffled()
+        let result = Array(pool.prefix(2))
         return result
     }
     

@@ -282,6 +282,8 @@ struct SettingsView: View {
                     }
                     
                     try viewContext.save()
+                    // Force Core Data to refresh all managed objects after import
+                    viewContext.refreshAllObjects()
                     print("[SettingsView][LOG] Saving context (import)\n\tCallStack: \(Thread.callStackSymbols.joined(separator: "\n\t"))")
                     print("Import complete: \(importedCount) imported, \(skippedCount) skipped")
                     
@@ -295,6 +297,9 @@ struct SettingsView: View {
                         successMsg += ")"
                     }
                     importSuccess = successMsg
+                    
+                    // Notify other views to refresh people after import
+                    NotificationCenter.default.post(name: Notification.Name("PeopleDidImport"), object: nil)
                     
                 } catch {
                     print("Import failed: \(error)")
