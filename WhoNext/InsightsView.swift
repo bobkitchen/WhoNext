@@ -21,13 +21,40 @@ struct InsightsView: View {
         VStack(alignment: .leading, spacing: 24) {
             Spacer().frame(height: 16) // Add space between toolbar and main content
             
-            // Insights (Chat) Section at the top
-            ChatView()
-                .frame(height: 300)
-                .padding()
-                .background(Color(NSColor.controlBackgroundColor))
-                .cornerRadius(16)
-                .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 2)
+            // Insights (Chat) Section and Statistics Cards
+            HStack(alignment: .top, spacing: 24) {
+                ChatView()
+                    .frame(minWidth: 400, maxWidth: 500, minHeight: 0, maxHeight: .infinity)
+                    .padding()
+                    .background(Color(NSColor.controlBackgroundColor))
+                    .cornerRadius(16)
+                    .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 2)
+                    .alignmentGuide(.top) { d in d[.top] } // Align top with cards
+                
+                VStack(spacing: 10) {
+                    StatCardView(
+                        icon: "🏁",
+                        title: "Cycle Progress",
+                        value: cycleProgressText,
+                        description: "Team members contacted"
+                    )
+                    StatCardView(
+                        icon: "⏳",
+                        title: "Weeks Remaining",
+                        value: weeksRemainingText,
+                        description: "At 2 per week"
+                    )
+                    StatCardView(
+                        icon: "🔥",
+                        title: "Streak",
+                        value: streakText,
+                        description: "Weeks in a row"
+                    )
+                }
+                .frame(width: 260)
+            }
+            .frame(maxHeight: .infinity, alignment: .top)
+            .alignmentGuide(.top) { d in d[.top] }
             
             // Upcoming 1:1s as cards, limited to 2
             VStack(alignment: .leading, spacing: 16) {
@@ -189,6 +216,108 @@ struct InsightsView: View {
                 .environment(\.managedObjectContext, viewContext)
         )
         window.makeKeyAndOrderFront(nil)
+    }
+}
+
+// MARK: - Statistic Card View
+struct StatCardView: View {
+    let icon: String
+    let title: String
+    let value: String
+    let description: String
+    
+    var body: some View {
+        HStack(alignment: .center, spacing: 12) {
+            Text(icon)
+                .font(.system(size: 28))
+                .frame(width: 36)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title)
+                    .font(.headline)
+                Text(value)
+                    .font(.system(size: 24, weight: .bold, design: .rounded))
+                Text(description)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            Spacer()
+        }
+        .padding(12)
+        .background(Color(NSColor.windowBackgroundColor))
+        .cornerRadius(14)
+        .shadow(color: .black.opacity(0.04), radius: 4, x: 0, y: 2)
+    }
+}
+
+// MARK: - Statistic Computations
+extension InsightsView {
+    private var nonDirectReports: [Person] {
+        people.filter { !$0.isDirectReport }
+    }
+    
+    // 1. Cycle Progress
+    private var cycleProgressText: String {
+        "\(spokenToThisCycle.count) / \(nonDirectReports.count)"
+    }
+    
+    // 2. Weeks Remaining
+    private var weeksRemainingText: String {
+        let remaining = max(nonDirectReports.count - spokenToThisCycle.count, 0)
+        let perWeek = 2
+        let weeks = Int(ceil(Double(remaining) / Double(perWeek)))
+        return "\(weeks) week\(weeks == 1 ? "" : "s")"
+    }
+    
+    // 3. Streak
+    private var streakText: String {
+        "\(longestStreak) week\(longestStreak == 1 ? "" : "s")"
+    }
+    
+    // --- Cycle and Streak Logic ---
+    // Find the set of people spoken to since the most recent time all were contacted
+    private var spokenToThisCycle: [Person] {
+        // For each person, get their most recent conversation date
+        let lastDates = nonDirectReports.compactMap { person in
+            (person, person.lastContactDate)
+        }
+        // Find the earliest of the most recent dates (cycle start)
+        guard lastDates.count == nonDirectReports.count,
+              let cycleStart = lastDates.map({ $0.1 ?? .distantPast }).min(),
+              cycleStart > .distantPast else {
+            // If not everyone has been spoken to, cycle started at earliest contact
+            let earliest = lastDates.map { $0.1 ?? .distantPast }.min() ?? .distantPast
+            return nonDirectReports.filter { ($0.lastContactDate ?? .distantPast) >= earliest && $0.lastContactDate != nil }
+        }
+        // Only those spoken to since cycleStart
+        return nonDirectReports.filter { ($0.lastContactDate ?? .distantPast) >= cycleStart && $0.lastContactDate != nil }
+    }
+    
+    // Calculate the longest streak of weeks meeting the 2-per-week goal
+    private var longestStreak: Int {
+        // Gather all conversation dates with non-direct reports
+        let allDates = nonDirectReports.compactMap { $0.conversationsArray.map { $0.date }.compactMap { $0 } }.flatMap { $0 }
+        guard !allDates.isEmpty else { return 0 }
+        let sorted = allDates.sorted()
+        // Group by week
+        var streak = 0, maxStreak = 0, currentWeek: Date? = nil, countThisWeek = 0
+        let calendar = Calendar.current
+        for date in sorted {
+            let weekOfYear = calendar.component(.weekOfYear, from: date)
+            let year = calendar.component(.yearForWeekOfYear, from: date)
+            if currentWeek == nil || calendar.component(.weekOfYear, from: currentWeek!) != weekOfYear || calendar.component(.yearForWeekOfYear, from: currentWeek!) != year {
+                // New week
+                if countThisWeek >= 2 { streak += 1 } else { streak = 0 }
+                maxStreak = max(maxStreak, streak)
+                currentWeek = date
+                countThisWeek = 1
+            } else {
+                countThisWeek += 1
+            }
+        }
+        // Check last week
+        if countThisWeek >= 2 { streak += 1 } else { streak = 0 }
+        maxStreak = max(maxStreak, streak)
+        return maxStreak
     }
 }
 
