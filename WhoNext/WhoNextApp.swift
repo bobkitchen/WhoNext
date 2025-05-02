@@ -10,6 +10,10 @@ struct WhoNextApp: App {
             ContentView()
                 .environment(\.managedObjectContext, persistenceController.container.viewContext)
         }
+        .windowStyle(.titleBar)
+        .defaultSize(width: 800, height: 600)
+        .windowResizability(.contentSize)
+        .windowToolbarStyle(.unified)
         // Removed direct Window for NewConversationWindow. Now handled in ContentView via .sheet presentation.
         Window("Test Window", id: "testWindow") {
             TestWindow()

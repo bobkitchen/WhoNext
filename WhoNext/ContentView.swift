@@ -1,5 +1,8 @@
 import SwiftUI
 import CoreData
+#if os(macOS)
+import AppKit
+#endif
 
 // Add this at the top or near other Notification.Name extensions
 extension Notification.Name {
@@ -44,6 +47,16 @@ struct ContentView: View {
             }
             .navigationTitle("")
         }
+#if os(macOS)
+        .onAppear {
+            // Lock window size to 800x600
+            if let window = NSApplication.shared.windows.first {
+                let size = NSSize(width: 800, height: 600)
+                window.minSize = size
+                window.maxSize = size
+            }
+        }
+#endif
         .toolbar {
             // Far left: New Conversation and New Person (always visible)
             ToolbarItem(placement: .navigation) {
