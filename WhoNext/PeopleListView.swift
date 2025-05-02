@@ -64,13 +64,13 @@ struct PeopleListView: View {
                 .background(person.id == selectedPerson?.id ? Color.accentColor.opacity(0.1) : Color.clear)
             }
         }
-        .toolbar {
-            ToolbarItem(placement: .automatic) {
-                Button(action: { showingAddPersonSheet = true }) {
-                    Image(systemName: "plus")
-                }
-                .help("Add new person")
+        .onAppear {
+            NotificationCenter.default.addObserver(forName: .triggerAddPerson, object: nil, queue: .main) { _ in
+                showingAddPersonSheet = true
             }
+        }
+        .onDisappear {
+            NotificationCenter.default.removeObserver(self, name: .triggerAddPerson, object: nil)
         }
         .sheet(isPresented: $showingAddPersonSheet) {
             AddPersonView { name, role, timezone, isDirectReport, notes, photoData in

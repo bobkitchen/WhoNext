@@ -1,6 +1,11 @@
 import SwiftUI
 import CoreData
 
+// Add this at the top or near other Notification.Name extensions
+extension Notification.Name {
+    static let triggerAddPerson = Notification.Name("triggerAddPerson")
+}
+
 struct ContentView: View {
     @StateObject private var appState = AppState()
     @Environment(\.managedObjectContext) private var viewContext
@@ -40,37 +45,49 @@ struct ContentView: View {
             .navigationTitle("")
         }
         .toolbar {
+            // Far left: New Conversation and New Person (always visible)
             ToolbarItem(placement: .navigation) {
-                HStack(spacing: 20) {
-                    Button(action: { appState.selectedTab = .insights }) {
-                        Image(systemName: "lightbulb")
-                            .foregroundColor(appState.selectedTab == .insights ? .accentColor : .primary)
+                HStack(spacing: 12) {
+                    Button(action: {
+                        NewConversationWindowManager.shared.presentWindow(for: nil)
+                    }) {
+                        Label("New Conversation", systemImage: "plus.bubble")
                     }
-                    Button(action: { appState.selectedTab = .people }) {
-                        Image(systemName: "person.3")
-                            .foregroundColor(appState.selectedTab == .people ? .accentColor : .primary)
+                    .help("New Conversation")
+                    Button(action: {
+                        // If not on People tab, switch to People, then trigger add person after a short delay
+                        if appState.selectedTab != .people {
+                            appState.selectedTab = .people
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                                NotificationCenter.default.post(name: .triggerAddPerson, object: nil)
+                            }
+                        } else {
+                            NotificationCenter.default.post(name: .triggerAddPerson, object: nil)
+                        }
+                    }) {
+                        Label("New Person", systemImage: "person.crop.circle.badge.plus")
                     }
+                    .help("Add new person")
                 }
             }
+            // Center: Segmented control for Insights/People (always visible)
             ToolbarItem(placement: .principal) {
-                Text("WhoNext")
-                    .font(.headline)
-                    .foregroundColor(.secondary)
-            }
-            ToolbarItem(placement: .automatic) {
-                Button(action: {
-                    NewConversationWindowManager.shared.presentWindow(for: nil)
-                }) {
-                    Image(systemName: "bubble.left.and.bubble.right")
-                        .imageScale(.large)
-                        .help("New Conversation")
+                Picker("View", selection: $appState.selectedTab) {
+                    Text("Insights").tag(SidebarItem.insights)
+                    Text("People").tag(SidebarItem.people)
                 }
+                .pickerStyle(.segmented)
+                .frame(width: 220)
             }
+            // Far right: Search bar (always visible)
             ToolbarItem(placement: .automatic) {
-                SearchBar(searchText: $searchText) { person in
-                    appState.selectedTab = .people
-                    appState.selectedPerson = person
-                    appState.selectedPersonID = person.identifier
+                HStack {
+                    SearchBar(searchText: $searchText) { person in
+                        appState.selectedTab = .people
+                        appState.selectedPerson = person
+                        appState.selectedPersonID = person.identifier
+                    }
+                    .frame(width: 220)
                 }
             }
         }
