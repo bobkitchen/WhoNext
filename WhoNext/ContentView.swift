@@ -21,6 +21,7 @@ struct ContentView: View {
                         
                         if let person = appState.selectedPerson {
                             PersonDetailView(person: person)
+                                .id(person.identifier) // Force re-init on person change
                                 .frame(maxWidth: .infinity)
                         } else {
                             Text("Select a person")

@@ -75,7 +75,8 @@ struct PeopleListView: View {
         .sheet(isPresented: $showingAddPersonSheet) {
             AddPersonView { name, role, timezone, isDirectReport, notes, photoData in
                 let newPerson = Person(context: viewContext)
-                newPerson.identifier = UUID()
+                let newId = UUID()
+                newPerson.identifier = newId
                 newPerson.name = name
                 newPerson.role = role
                 newPerson.timezone = timezone
@@ -86,10 +87,31 @@ struct PeopleListView: View {
                 }
                 do {
                     try viewContext.save()
+                    // Set the selection to the new person by identifier
+                    DispatchQueue.main.async {
+                        // Find the new person in the context after save
+                        let fetchRequest = NSFetchRequest<Person>(entityName: "Person")
+                        fetchRequest.predicate = NSPredicate(format: "identifier == %@", newId as CVarArg)
+                        if let results = try? viewContext.fetch(fetchRequest), let savedPerson = results.first {
+                            selectedPerson = savedPerson
+                        } else {
+                            selectedPerson = newPerson // fallback
+                        }
+                    }
                 } catch {
                     // Handle error
                 }
                 showingAddPersonSheet = false
+            }
+        }
+        .onChange(of: people.map { $0.identifier }) { _ in
+            // Defensive: re-sync selectedPerson by identifier if needed
+            if let id = selectedPerson?.identifier {
+                if let match = people.first(where: { $0.identifier == id }) {
+                    selectedPerson = match
+                } else {
+                    selectedPerson = nil
+                }
             }
         }
         .listStyle(.plain)
