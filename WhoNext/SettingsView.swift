@@ -7,6 +7,18 @@ struct SettingsView: View {
     @Environment(\.managedObjectContext) private var viewContext
     @AppStorage("openaiApiKey") private var apiKey: String = ""
     @AppStorage("dismissedPeople") private var dismissedPeopleData: Data = Data()
+    @AppStorage("customPreMeetingPrompt") private var customPreMeetingPrompt: String = """
+You are an executive assistant preparing a pre-meeting brief. Your job is to help the user engage with this person confidently by surfacing:
+- Key personal details or preferences shared in past conversations
+- Trends or changes in topics over time
+- Any agreed tasks, deadlines, or follow-ups
+- Recent wins, challenges, or important events
+- Anything actionable or worth mentioning for the next meeting
+
+Use the provided context to be specific and actionable. Highlight details that would help the user build rapport and recall important facts. If any information is missing, state so.
+
+Pre-Meeting Brief:
+"""
     @State private var isValidatingKey = false
     @State private var isKeyValid = false
     @State private var keyError: String?
@@ -81,6 +93,49 @@ struct SettingsView: View {
                 } else if let error = keyError {
                     Text("✗ \(error)")
                         .foregroundColor(.red)
+                }
+            }
+            
+            Divider()
+            
+            // Pre-Meeting Prompt Section
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Pre-Meeting Brief Prompt")
+                    .font(.headline)
+                Text("Customize the AI prompt used for generating pre-meeting briefs")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                
+                TextEditor(text: $customPreMeetingPrompt)
+                    .font(.system(.body, design: .monospaced))
+                    .frame(minHeight: 150, maxHeight: 300)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 8)
+                            .stroke(Color.gray.opacity(0.2), lineWidth: 1)
+                    )
+                
+                HStack {
+                    Button("Reset to Default") {
+                        customPreMeetingPrompt = """
+You are an executive assistant preparing a pre-meeting brief. Your job is to help the user engage with this person confidently by surfacing:
+- Key personal details or preferences shared in past conversations
+- Trends or changes in topics over time
+- Any agreed tasks, deadlines, or follow-ups
+- Recent wins, challenges, or important events
+- Anything actionable or worth mentioning for the next meeting
+
+Use the provided context to be specific and actionable. Highlight details that would help the user build rapport and recall important facts. If any information is missing, state so.
+
+Pre-Meeting Brief:
+"""
+                    }
+                    .buttonStyle(.link)
+                    
+                    Spacer()
+                    
+                    Text("\(customPreMeetingPrompt.count) characters")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
                 }
             }
             

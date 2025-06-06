@@ -4,7 +4,9 @@ class PreMeetingBriefService {
     static func generateBrief(for person: Person, apiKey: String, completion: @escaping (Result<String, Error>) -> Void) {
         // Use the same context logic as the main chatbot, filtered for this person
         let context = PreMeetingBriefContextHelper.generateContext(for: person)
-        let prompt = """
+        
+        // Get the custom prompt from AppStorage
+        let customPrompt = UserDefaults.standard.string(forKey: "customPreMeetingPrompt") ?? """
 You are an executive assistant preparing a pre-meeting brief. Your job is to help the user engage with this person confidently by surfacing:
 - Key personal details or preferences shared in past conversations
 - Trends or changes in topics over time
@@ -16,9 +18,10 @@ Use the provided context to be specific and actionable. Highlight details that w
 
 Pre-Meeting Brief:
 """
+        
         Task {
             do {
-                let response = try await AIService.shared.sendMessage(prompt, context: context)
+                let response = try await AIService.shared.sendMessage(customPrompt, context: context)
                 completion(.success(response))
             } catch {
                 completion(.failure(error))

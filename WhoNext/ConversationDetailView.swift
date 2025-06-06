@@ -40,7 +40,7 @@ struct ConversationDetailView: View {
             } else {
                 ScrollView {
                     if let notes = conversation.notes {
-                        Text(notes)
+                        MarkdownView(markdown: notes)
                             .padding()
                     } else {
                         Text("No notes available.")

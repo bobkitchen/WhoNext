@@ -17,6 +17,9 @@ struct InsightsView: View {
     // Calendar integration
     @StateObject private var calendarService = CalendarService.shared
     
+    // Track dismissed people for current session only
+    @State private var dismissedPeopleIDs: Set<UUID> = []
+    
     var body: some View {
         VStack(alignment: .leading, spacing: 24) {
             Spacer().frame(height: 16) // Add space between toolbar and main content
@@ -112,12 +115,11 @@ struct InsightsView: View {
                                 person: person,
                                 isFollowUp: true,
                                 onDismiss: {
-                                    let conversation = Conversation(context: viewContext)
-                                    conversation.date = Date()
-                                    conversation.person = person
-                                    conversation.uuid = UUID()
-                                    print("[InsightsView][LOG] Saving context (follow-up)\n\tCallStack: \(Thread.callStackSymbols.joined(separator: "\n\t"))")
-                                    try? viewContext.save()
+                                    // Only hide the person from suggestions for this session
+                                    // Do NOT create a conversation or update lastContactDate
+                                    if let personID = person.identifier {
+                                        dismissedPeopleIDs.insert(personID)
+                                    }
                                 }
                             )
                         }
@@ -137,7 +139,16 @@ struct InsightsView: View {
     }
     
     private var suggestedPeople: [Person] {
-        let filtered = people.filter { $0.name != nil && !$0.isDirectReport }
+        let filtered = people.filter { person in
+            // Exclude people without names, direct reports, and dismissed people
+            guard let name = person.name,
+                  !person.isDirectReport,
+                  let personID = person.identifier,
+                  !dismissedPeopleIDs.contains(personID) else {
+                return false
+            }
+            return true
+        }
         // Sort by least recently contacted, then shuffle for randomness among those with the same lastContactDate
         let sorted = filtered.sorted {
             ($0.lastContactDate ?? .distantPast) < ($1.lastContactDate ?? .distantPast)
