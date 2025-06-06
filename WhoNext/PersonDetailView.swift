@@ -218,10 +218,10 @@ struct PersonDetailView: View {
                         Button(action: { openConversationWindow(for: conversation) }) {
                             HStack(alignment: .top, spacing: 12) {
                                 VStack(alignment: .leading, spacing: 4) {
-                                    Text(previewText(from: conversation.notes ?? ""))
-                                        .font(.system(size: 14, weight: .regular))
+                                    Text(ConversationTitleFormatter.smartTitle(for: conversation))
+                                        .font(.system(size: 14, weight: .medium))
                                         .foregroundColor(.primary)
-                                        .lineLimit(2)
+                                        .lineLimit(1)
                                     if let date = conversation.date {
                                         Text(formattedDate(date))
                                             .font(.system(size: 12))
@@ -236,6 +236,21 @@ struct PersonDetailView: View {
                         }
                         .buttonStyle(.plain)
                         .padding(.vertical, 2)
+                        .contextMenu {
+                            Button(action: {
+                                deleteConversation(conversation)
+                            }) {
+                                Label("Delete Conversation", systemImage: "trash")
+                            }
+                            
+                            Divider()
+                            
+                            Button(action: {
+                                openConversationWindow(for: conversation)
+                            }) {
+                                Label("Open in New Window", systemImage: "macwindow")
+                            }
+                        }
                     }
                 }
             }
@@ -305,8 +320,38 @@ struct PersonDetailView: View {
     }
 
     private func previewText(from notes: String) -> String {
-        let lines = notes.split(separator: "\n")
-        return lines.prefix(2).joined(separator: " ")
+        // Strip common markdown formatting
+        var cleaned = notes
+        
+        // Remove headers
+        cleaned = cleaned.replacingOccurrences(of: #"#{1,6}\s*"#, with: "", options: .regularExpression)
+        
+        // Remove bold/italic markers
+        cleaned = cleaned.replacingOccurrences(of: #"\*{1,2}([^\*]+)\*{1,2}"#, with: "$1", options: .regularExpression)
+        cleaned = cleaned.replacingOccurrences(of: #"_{1,2}([^_]+)_{1,2}"#, with: "$1", options: .regularExpression)
+        
+        // Remove inline code markers
+        cleaned = cleaned.replacingOccurrences(of: #"`([^`]+)`"#, with: "$1", options: .regularExpression)
+        
+        // Remove list markers
+        cleaned = cleaned.replacingOccurrences(of: #"^[\s]*[-\*]\s+"#, with: "", options: [.regularExpression, .anchored])
+        cleaned = cleaned.replacingOccurrences(of: #"^[\s]*\d+\.\s+"#, with: "", options: [.regularExpression, .anchored])
+        
+        // Get first non-empty line as title
+        let lines = cleaned.split(separator: "\n")
+            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { !$0.isEmpty }
+        
+        if let firstLine = lines.first {
+            // Truncate if too long
+            let maxLength = 60
+            if firstLine.count > maxLength {
+                return String(firstLine.prefix(maxLength)) + "..."
+            }
+            return String(firstLine)
+        }
+        
+        return "Conversation on \(formattedDate(Date()))"
     }
 
     private func deleteConversation(at offsets: IndexSet) {
@@ -315,6 +360,17 @@ struct PersonDetailView: View {
             viewContext.delete(conversation)
         }
 
+        do {
+            print("[PersonDetailView][LOG] Saving context (deleteConversation)\n\tCallStack: \(Thread.callStackSymbols.joined(separator: "\n\t"))")
+            try viewContext.save()
+        } catch {
+            print("Failed to delete conversation: \(error)")
+        }
+    }
+    
+    private func deleteConversation(_ conversation: Conversation) {
+        viewContext.delete(conversation)
+        
         do {
             print("[PersonDetailView][LOG] Saving context (deleteConversation)\n\tCallStack: \(Thread.callStackSymbols.joined(separator: "\n\t"))")
             try viewContext.save()

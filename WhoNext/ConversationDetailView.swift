@@ -6,8 +6,10 @@ struct ConversationDetailView: View {
     var isInitiallyEditing: Bool = false
 
     @Environment(\.managedObjectContext) private var viewContext
+    @Environment(\.dismiss) private var dismiss
     @State private var isEditing = false
     @State private var updatedNotes: String = ""
+    @State private var showingDeleteAlert = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
@@ -15,6 +17,16 @@ struct ConversationDetailView: View {
                 Text("Conversation on \(formattedDate(conversation.date))")
                     .font(.title2.bold())
                 Spacer()
+                
+                Button(action: {
+                    showingDeleteAlert = true
+                }) {
+                    Image(systemName: "trash")
+                        .foregroundColor(.red)
+                }
+                .buttonStyle(.plain)
+                .help("Delete this conversation")
+                
                 Picker("", selection: $isEditing) {
                     Text("Preview").tag(false)
                     Text("Edit").tag(true)
@@ -55,14 +67,33 @@ struct ConversationDetailView: View {
         .padding(24)
         .frame(minWidth: 500, minHeight: 400)
         .onAppear {
-            isEditing = isInitiallyEditing
             updatedNotes = conversation.notes ?? ""
+            isEditing = isInitiallyEditing
+        }
+        .alert("Delete Conversation", isPresented: $showingDeleteAlert) {
+            Button("Cancel", role: .cancel) { }
+            Button("Delete", role: .destructive) {
+                deleteConversation()
+            }
+        } message: {
+            Text("Are you sure you want to delete this conversation? This action cannot be undone.")
         }
     }
 
     private func formattedDate(_ date: Date?) -> String {
         guard let date = date else { return "Unknown" }
         return date.formatted(date: .abbreviated, time: .omitted)
+    }
+
+    private func deleteConversation() {
+        viewContext.delete(conversation)
+        
+        do {
+            try viewContext.save()
+            dismiss()
+        } catch {
+            print("Failed to delete conversation: \(error)")
+        }
     }
 
     static func formattedWindowTitle(for conversation: Conversation, person: Person) -> String {
