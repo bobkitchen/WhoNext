@@ -32,6 +32,17 @@ struct ChatView: View {
     @State private var people: [Person] = []
     @StateObject private var chatSession = ChatSessionHolder.shared.session
     @FocusState private var isFocused: Bool
+    @AppStorage("hasSeenChatOnboarding") private var hasSeenOnboarding = false
+    @State private var showOnboarding = false
+    
+    // Suggested prompts for empty state
+    let suggestedPrompts = [
+        "Who should I connect with this week?",
+        "Show me people I haven't talked to recently",
+        "Who are my key stakeholders?",
+        "Suggest someone for a coffee chat",
+        "Who should I follow up with?"
+    ]
     
     var body: some View {
         VStack(spacing: 0) {
@@ -41,7 +52,7 @@ struct ChatView: View {
                     fetchPeople()
                 }
             
-            // Title
+            // Title with help button
             HStack(spacing: 8) {
                 Image("icon_lightbulb")
                     .resizable()
@@ -49,78 +60,176 @@ struct ChatView: View {
                 Text("Insights")
             }
             .font(.system(size: 28, weight: .semibold, design: .rounded))
-            .foregroundStyle(.primary)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.horizontal)
-            .padding(.bottom, 4)
+            .padding(.horizontal, 20)
+            .padding(.top, 20)
+            .padding(.bottom, 16)
             
-            // Messages List
-            ScrollViewReader { proxy in
-                ScrollView {
-                    LazyVStack(spacing: 12) {
-                        ForEach(chatSession.messages) { message in
-                            MessageBubble(message: message)
-                                .id(message.id)
-                                .transition(.asymmetric(
-                                    insertion: .scale(scale: 0.9).combined(with: .opacity).animation(.spring()),
-                                    removal: .opacity.animation(.easeOut(duration: 0.2))
-                                ))
+            Divider()
+                .padding(.horizontal, 20)
+            
+            // Messages or Empty State
+            if chatSession.messages.isEmpty {
+                // Empty State
+                VStack(spacing: 16) {
+                    // Header with dismiss button
+                    HStack {
+                        Spacer()
+                        Button(action: { 
+                            // Add a welcome message to dismiss the empty state
+                            let welcomeMessage = ChatMessage(
+                                content: "Hello! I'm here to help you stay connected with your network. Feel free to ask me anything about your contacts, meetings, or networking strategies.",
+                                isUser: false,
+                                timestamp: Date()
+                            )
+                            chatSession.messages.append(welcomeMessage)
+                        }) {
+                            Image(systemName: "xmark.circle.fill")
+                                .foregroundColor(.secondary)
+                                .imageScale(.medium)
                         }
+                        .buttonStyle(.plain)
+                    }
+                    .padding(.horizontal, 20)
+                    .padding(.top, 10)
+                    
+                    VStack(spacing: 12) {
+                        Image(systemName: "bubble.left.and.bubble.right.fill")
+                            .font(.system(size: 36))
+                            .foregroundColor(.secondary.opacity(0.5))
                         
-                        if chatSession.isLoading {
-                            HStack {
-                                TypingIndicator()
-                                Spacer()
+                        Text("Ask me about your network")
+                            .font(.title3.bold())
+                            .foregroundColor(.primary)
+                        
+                        Text("I can help you stay connected")
+                            .font(.callout)
+                            .foregroundColor(.secondary)
+                    }
+                    
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text("Try asking:")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                            .padding(.horizontal, 4)
+                        
+                        // Show only 3 prompts to save space
+                        ForEach(Array(suggestedPrompts.prefix(3)), id: \.self) { prompt in
+                            Button(action: { 
+                                chatSession.inputText = prompt
+                                isFocused = true
+                                Task {
+                                    await sendMessage()
+                                }
+                            }) {
+                                HStack {
+                                    Image(systemName: "sparkle")
+                                        .font(.caption)
+                                        .foregroundColor(.accentColor)
+                                    Text(prompt)
+                                        .font(.caption)
+                                        .foregroundColor(.primary)
+                                    Spacer()
+                                }
+                                .padding(.horizontal, 10)
+                                .padding(.vertical, 6)
+                                .background(Color(NSColor.controlBackgroundColor))
+                                .cornerRadius(6)
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 6)
+                                        .stroke(Color.gray.opacity(0.2), lineWidth: 1)
+                                )
                             }
-                            .padding(.horizontal)
-                            .transition(.opacity)
+                            .buttonStyle(.plain)
                         }
                     }
-                    .padding()
+                    .frame(maxWidth: 300)
+                    
+                    Spacer()
                 }
-                .onChange(of: chatSession.messages.count) { _, _ in
-                    withAnimation {
-                        if let lastMessage = chatSession.messages.last {
-                            proxy.scrollTo(lastMessage.id, anchor: .bottom)
+                .padding(.horizontal, 20)
+            } else {
+                // Messages ScrollView
+                ScrollViewReader { proxy in
+                    ScrollView {
+                        LazyVStack(spacing: 12) {
+                            ForEach(chatSession.messages) { message in
+                                MessageBubble(message: message)
+                                    .id(message.id)
+                                    .transition(.asymmetric(
+                                        insertion: .scale(scale: 0.9).combined(with: .opacity).animation(.spring()),
+                                        removal: .opacity.animation(.easeOut(duration: 0.2))
+                                    ))
+                            }
+                            
+                            if chatSession.isLoading {
+                                HStack {
+                                    TypingIndicator()
+                                    Spacer()
+                                }
+                                .padding(.horizontal)
+                                .transition(.opacity)
+                            }
+                        }
+                        .padding()
+                    }
+                    .onChange(of: chatSession.messages.count) { _, _ in
+                        withAnimation {
+                            if let lastMessage = chatSession.messages.last {
+                                proxy.scrollTo(lastMessage.id, anchor: .bottom)
+                            }
                         }
                     }
                 }
             }
             
             // Input Area
-            VStack(spacing: 8) {
+            VStack(spacing: 0) {
                 if let error = chatSession.errorMessage {
-                    Text(error)
-                        .foregroundColor(.red)
-                        .font(.caption)
-                        .padding(.horizontal)
+                    HStack {
+                        Image(systemName: "exclamationmark.triangle.fill")
+                            .foregroundColor(.red)
+                        Text(error)
+                            .foregroundColor(.red)
+                            .font(.caption)
+                        Spacer()
+                    }
+                    .padding(.horizontal, 20)
+                    .padding(.vertical, 8)
+                    .background(Color.red.opacity(0.1))
+                    .cornerRadius(8)
+                    .padding(.horizontal, 20)
+                    .padding(.bottom, 8)
                 }
                 
                 HStack(spacing: 12) {
-                    TextField("Type your message...", text: $chatSession.inputText)
-                        .textFieldStyle(CustomTextFieldStyle())
-                        .focused($isFocused)
-                        .disabled(chatSession.isLoading)
-                        .overlay(
-                            HStack {
-                                Spacer()
-                                if !chatSession.inputText.isEmpty {
-                                    Button(action: { chatSession.inputText = "" }) {
-                                        Image(systemName: "xmark.circle.fill")
-                                            .foregroundStyle(.secondary)
-                                            .imageScale(.small)
-                                    }
-                                    .buttonStyle(.plain)
-                                    .padding(.trailing, 8)
+                    HStack {
+                        TextField("Ask about your network...", text: $chatSession.inputText)
+                            .textFieldStyle(.plain)
+                            .focused($isFocused)
+                            .disabled(chatSession.isLoading)
+                            .onSubmit {
+                                guard !chatSession.inputText.isEmpty && !chatSession.isLoading else { return }
+                                Task {
+                                    await sendMessage()
                                 }
                             }
-                        )
-                        .onSubmit {
-                            guard !chatSession.inputText.isEmpty && !chatSession.isLoading else { return }
-                            Task {
-                                await sendMessage()
+                        
+                        if !chatSession.inputText.isEmpty {
+                            Button(action: { chatSession.inputText = "" }) {
+                                Image(systemName: "xmark.circle.fill")
+                                    .foregroundStyle(.secondary)
+                                    .imageScale(.small)
                             }
+                            .buttonStyle(.plain)
                         }
+                    }
+                    .padding(12)
+                    .background(Color(NSColor.textBackgroundColor))
+                    .cornerRadius(12)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 12)
+                            .stroke(isFocused ? Color.accentColor : Color.gray.opacity(0.2), lineWidth: 1)
+                    )
                     
                     Button(action: {
                         Task {
@@ -129,30 +238,42 @@ struct ChatView: View {
                     }) {
                         if chatSession.isLoading {
                             ProgressView()
-                                .progressViewStyle(CircularProgressViewStyle())
                                 .scaleEffect(0.8)
+                                .frame(width: 20, height: 20)
                         } else {
                             Image(systemName: "arrow.up.circle.fill")
-                                .font(.title2)
-                                .symbolRenderingMode(.hierarchical)
-                                .foregroundStyle(.blue)
+                                .font(.system(size: 32))
+                                .foregroundColor(chatSession.inputText.isEmpty ? .gray : .accentColor)
                         }
                     }
                     .buttonStyle(.plain)
                     .disabled(chatSession.inputText.isEmpty || chatSession.isLoading)
                 }
-                .padding()
+                .padding(20)
+                .background(
+                    RoundedRectangle(cornerRadius: 16)
+                        .fill(Color(NSColor.controlBackgroundColor))
+                        .shadow(color: .black.opacity(0.05), radius: 5, x: 0, y: -2)
+                )
+                .padding(.horizontal, 20)
+                .padding(.bottom, 20)
             }
-            .background(Color(NSColor.controlBackgroundColor))
         }
         .alert("Error", isPresented: $chatSession.showError) {
-            Button("OK", role: .cancel) { }
+            Button("OK") { }
         } message: {
             Text(chatSession.errorMessage ?? "An unknown error occurred")
         }
         .onAppear {
             isFocused = true
             fetchPeople()
+            if !hasSeenOnboarding {
+                showOnboarding = true
+                hasSeenOnboarding = true
+            }
+        }
+        .sheet(isPresented: $showOnboarding) {
+            OnboardingView()
         }
     }
     
@@ -336,5 +457,90 @@ struct BubbleShape: Shape {
                    clockwise: false)
         
         return path
+    }
+}
+
+// Onboarding View
+struct OnboardingView: View {
+    @Environment(\.dismiss) private var dismiss
+    
+    var body: some View {
+        VStack(spacing: 24) {
+            HStack {
+                Text("Welcome to Insights")
+                    .font(.title.bold())
+                Spacer()
+                Button(action: { dismiss() }) {
+                    Image(systemName: "xmark.circle.fill")
+                        .foregroundColor(.secondary)
+                        .imageScale(.large)
+                }
+                .buttonStyle(.plain)
+            }
+            
+            VStack(alignment: .leading, spacing: 20) {
+                OnboardingRow(
+                    icon: "person.2.fill",
+                    title: "Stay Connected",
+                    description: "Get suggestions on who to reach out to based on your interaction history"
+                )
+                
+                OnboardingRow(
+                    icon: "calendar",
+                    title: "Smart Scheduling",
+                    description: "Find the best times to connect with team members"
+                )
+                
+                OnboardingRow(
+                    icon: "sparkles",
+                    title: "AI-Powered Insights",
+                    description: "Ask questions about your network and get personalized recommendations"
+                )
+                
+                OnboardingRow(
+                    icon: "chart.line.uptrend.xyaxis",
+                    title: "Track Progress",
+                    description: "Monitor your networking goals and maintain consistent connections"
+                )
+            }
+            
+            Spacer()
+            
+            Button(action: { dismiss() }) {
+                Text("Get Started")
+                    .font(.headline)
+                    .foregroundColor(.white)
+                    .frame(maxWidth: .infinity)
+                    .padding()
+                    .background(Color.accentColor)
+                    .cornerRadius(12)
+            }
+            .buttonStyle(.plain)
+        }
+        .padding(32)
+        .frame(width: 500, height: 400)
+    }
+}
+
+struct OnboardingRow: View {
+    let icon: String
+    let title: String
+    let description: String
+    
+    var body: some View {
+        HStack(alignment: .top, spacing: 16) {
+            Image(systemName: icon)
+                .font(.title2)
+                .foregroundColor(.accentColor)
+                .frame(width: 32)
+            
+            VStack(alignment: .leading, spacing: 4) {
+                Text(title)
+                    .font(.headline)
+                Text(description)
+                    .font(.callout)
+                    .foregroundColor(.secondary)
+            }
+        }
     }
 }

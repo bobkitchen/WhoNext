@@ -35,23 +35,29 @@ struct InsightsView: View {
                     .alignmentGuide(.top) { d in d[.top] } // Align top with cards
                 
                 VStack(spacing: 10) {
-                    StatCardView(
-                        imageName: "icon_flag",
+                    EnhancedStatCardView(
+                        icon: "flag.fill",
                         title: "Cycle Progress",
                         value: cycleProgressText,
-                        description: "Team members contacted"
+                        subtitle: "Team members contacted",
+                        color: .blue,
+                        progress: Double(spokenToThisCycle.count) / Double(max(nonDirectReports.count, 1))
                     )
-                    StatCardView(
-                        imageName: "icon_stopwatch",
+                    EnhancedStatCardView(
+                        icon: "clock.fill",
                         title: "Weeks Remaining",
                         value: weeksRemainingText,
-                        description: "At 2 per week"
+                        subtitle: "At 2 per week",
+                        color: .orange,
+                        progress: nil
                     )
-                    StatCardView(
-                        imageName: "icon_fire",
+                    EnhancedStatCardView(
+                        icon: "flame.fill",
                         title: "Streak",
                         value: streakText,
-                        description: "Weeks in a row"
+                        subtitle: "Weeks in a row",
+                        color: .red,
+                        progress: nil
                     )
                 }
                 .frame(width: 260)
@@ -66,15 +72,31 @@ struct InsightsView: View {
                         .resizable()
                         .frame(width: 24, height: 24)
                     Text("Upcoming 1:1s")
+                    
+                    if !calendarService.upcomingMeetings.isEmpty {
+                        Text("(\(min(calendarService.upcomingMeetings.count, 2)))")
+                            .foregroundColor(.secondary)
+                    }
                 }
                 .font(.system(size: 20, weight: .semibold, design: .rounded))
+                
                 if calendarService.upcomingMeetings.isEmpty {
-                    Text("No upcoming 1:1s")
-                        .foregroundStyle(.secondary)
+                    HStack {
+                        Spacer()
+                        VStack(spacing: 8) {
+                            Image(systemName: "calendar.badge.exclamationmark")
+                                .font(.system(size: 32))
+                                .foregroundColor(.gray.opacity(0.5))
+                            Text("No upcoming 1:1s")
+                                .foregroundStyle(.secondary)
+                        }
+                        .padding(.vertical, 20)
+                        Spacer()
+                    }
                 } else {
                     LazyVGrid(columns: [
-                        GridItem(.flexible()),
-                        GridItem(.flexible())
+                        GridItem(.flexible(), spacing: 16),
+                        GridItem(.flexible(), spacing: 16)
                     ], spacing: 16) {
                         ForEach(Array(calendarService.upcomingMeetings.prefix(2))) { meeting in
                             let matchedPerson = matchPerson(for: meeting)
@@ -97,20 +119,33 @@ struct InsightsView: View {
                         .resizable()
                         .frame(width: 24, height: 24)
                     Text("Follow-up Needed")
+                    
+                    if !suggestedPeople.isEmpty {
+                        Text("(\(min(suggestedPeople.count, 2)))")
+                            .foregroundColor(.secondary)
+                    }
                 }
                 .font(.system(size: 20, weight: .semibold, design: .rounded))
+                
                 if suggestedPeople.isEmpty {
-                    Text("No follow-ups needed")
-                        .foregroundStyle(.secondary)
-                        .frame(maxWidth: .infinity, alignment: .center)
-                        .padding()
-                        .cardStyle()
+                    HStack {
+                        Spacer()
+                        VStack(spacing: 8) {
+                            Image(systemName: "checkmark.circle.fill")
+                                .font(.system(size: 32))
+                                .foregroundColor(.green.opacity(0.5))
+                            Text("No follow-ups needed")
+                                .foregroundStyle(.secondary)
+                        }
+                        .padding(.vertical, 20)
+                        Spacer()
+                    }
                 } else {
                     LazyVGrid(columns: [
-                        GridItem(.flexible()),
-                        GridItem(.flexible())
+                        GridItem(.flexible(), spacing: 16),
+                        GridItem(.flexible(), spacing: 16)
                     ], spacing: 16) {
-                        ForEach(suggestedPeople, id: \.objectID) { person in
+                        ForEach(Array(suggestedPeople.prefix(2))) { person in
                             PersonCardView(
                                 person: person,
                                 isFollowUp: true,
@@ -236,36 +271,6 @@ struct InsightsView: View {
                 .environment(\.managedObjectContext, viewContext)
         )
         window.makeKeyAndOrderFront(nil)
-    }
-}
-
-// MARK: - Statistic Card View
-struct StatCardView: View {
-    let imageName: String
-    let title: String
-    let value: String
-    let description: String
-    
-    var body: some View {
-        HStack(alignment: .center, spacing: 12) {
-            Image(imageName)
-                .resizable()
-                .frame(width: 28, height: 28)
-            VStack(alignment: .leading, spacing: 2) {
-                Text(title)
-                    .font(.headline)
-                Text(value)
-                    .font(.system(size: 24, weight: .bold, design: .rounded))
-                Text(description)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
-            Spacer()
-        }
-        .padding(12)
-        .background(Color(NSColor.windowBackgroundColor))
-        .cornerRadius(14)
-        .shadow(color: .black.opacity(0.04), radius: 4, x: 0, y: 2)
     }
 }
 
@@ -459,24 +464,100 @@ struct PersonCardView: View {
     let onDismiss: (() -> Void)?
     
     @Environment(\.managedObjectContext) private var viewContext
+    @State private var isHovered = false
+    
+    // Calculate days since last contact
+    var daysSinceContact: String? {
+        guard let lastDate = person.lastContactDate else { return nil }
+        let days = Calendar.current.dateComponents([.day], from: lastDate, to: Date()).day ?? 0
+        if days == 0 {
+            return "today"
+        } else if days == 1 {
+            return "yesterday"
+        } else {
+            return "\(days) days ago"
+        }
+    }
+    
+    // Generate email draft
+    func openEmailDraft() {
+        let firstName = person.name?.components(separatedBy: " ").first ?? "there"
+        let subject = "Follow up - \(person.name ?? "Meeting")"
+        let body = """
+        Hi \(firstName),
+        
+        I wanted to follow up on our conversation and see how things are going.
+        
+        Would you have time for a quick chat this week?
+        
+        Best regards
+        """
+        
+        // Use AppleScript to open Outlook with a new message
+        let script = """
+        tell application "Microsoft Outlook"
+            activate
+            set newMessage to make new outgoing message with properties {subject:"\(subject.replacingOccurrences(of: "\"", with: "\\\""))", content:"\(body.replacingOccurrences(of: "\"", with: "\\\"").replacingOccurrences(of: "\n", with: "\\n"))"}
+            open newMessage
+        end tell
+        """
+        
+        var error: NSDictionary?
+        if let scriptObject = NSAppleScript(source: script) {
+            scriptObject.executeAndReturnError(&error)
+            if let error = error {
+                print("AppleScript error: \(error)")
+                // Fallback to URL scheme
+                fallbackToURLScheme(subject: subject, body: body)
+            }
+        }
+    }
+    
+    private func fallbackToURLScheme(subject: String, body: String) {
+        // URL encode the subject and body
+        let encodedSubject = subject.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? ""
+        let encodedBody = body.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? ""
+        
+        // Try different URL schemes
+        let schemes = [
+            "ms-outlook://compose?subject=\(encodedSubject)&body=\(encodedBody)",
+            "mailto:?subject=\(encodedSubject)&body=\(encodedBody)"
+        ]
+        
+        for scheme in schemes {
+            if let url = URL(string: scheme), NSWorkspace.shared.open(url) {
+                return
+            }
+        }
+    }
     
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             // Header with avatar and name
             HStack(spacing: 12) {
                 Circle()
-                    .fill(Color.blue.opacity(0.7))
-                    .frame(width: 36, height: 36)
-                    .overlay(Text(person.initials).foregroundColor(.white).font(.subheadline))
+                    .fill(LinearGradient(
+                        colors: [Color.blue, Color.blue.opacity(0.7)],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    ))
+                    .frame(width: 40, height: 40)
+                    .overlay(
+                        Text(person.initials)
+                            .foregroundColor(.white)
+                            .font(.system(size: 16, weight: .medium))
+                    )
                 
                 VStack(alignment: .leading, spacing: 2) {
                     Text(person.name ?? "Unknown")
-                        .font(.headline)
+                        .font(.system(size: 14, weight: .semibold))
                         .foregroundColor(.primary)
+                        .lineLimit(1)
                     if let role = person.role {
                         Text(role)
                             .font(.caption)
                             .foregroundColor(.secondary)
+                            .lineLimit(1)
                     }
                 }
                 
@@ -486,40 +567,95 @@ struct PersonCardView: View {
                     Button(action: dismiss) {
                         Image(systemName: "xmark.circle.fill")
                             .foregroundStyle(.secondary)
-                            .imageScale(.large)
+                            .imageScale(.medium)
                     }
                     .buttonStyle(.plain)
+                    .help("Dismiss follow-up")
                 }
             }
             
-            Spacer()
+            Divider()
+                .opacity(0.5)
             
-            // Contact info
-            if let lastDate = person.lastContactDate {
-                Text("Last contacted on \(lastDate.formatted(date: .abbreviated, time: .omitted))")
-                    .font(.caption2)
-                    .foregroundColor(.gray)
-            } else {
-                Text("Never contacted")
-                    .font(.caption2)
-                    .foregroundColor(.gray)
-            }
-            
-            if let scheduled = person.scheduledConversationDate {
-                Text("Meeting scheduled for \(scheduled.formatted(date: .abbreviated, time: .shortened))")
-                    .font(.caption2)
-                    .foregroundColor(.blue)
+            // Contact info and actions
+            HStack {
+                VStack(alignment: .leading, spacing: 4) {
+                    if let daysAgo = daysSinceContact {
+                        HStack(spacing: 4) {
+                            Image(systemName: "clock.arrow.circlepath")
+                                .font(.caption2)
+                                .foregroundColor(.orange)
+                            Text("Contacted \(daysAgo)")
+                                .font(.caption)
+                                .foregroundColor(.orange)
+                        }
+                    } else {
+                        HStack(spacing: 4) {
+                            Image(systemName: "exclamationmark.circle.fill")
+                                .font(.caption2)
+                                .foregroundColor(.red)
+                            Text("Never contacted")
+                                .font(.caption)
+                                .foregroundColor(.red)
+                        }
+                    }
+                    
+                    if let scheduled = person.scheduledConversationDate {
+                        HStack(spacing: 4) {
+                            Image(systemName: "calendar.circle.fill")
+                                .font(.caption2)
+                                .foregroundColor(.green)
+                            Text("Meeting scheduled")
+                                .font(.caption2)
+                                .foregroundColor(.green)
+                        }
+                    }
+                }
+                
+                Spacer()
+                
+                // Email button
+                Button(action: openEmailDraft) {
+                    HStack(spacing: 4) {
+                        Image(systemName: "envelope.fill")
+                            .font(.caption)
+                        Text("Email")
+                            .font(.caption)
+                            .fontWeight(.medium)
+                    }
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 6)
+                    .background(Color.blue.opacity(isHovered ? 0.8 : 0.1))
+                    .foregroundColor(isHovered ? .white : .blue)
+                    .cornerRadius(8)
+                }
+                .buttonStyle(.plain)
             }
         }
-        .padding()
-        .frame(width: 300, height: 120)
-        .background(Color(NSColor.controlBackgroundColor))
-        .cornerRadius(12)
-        .overlay(
-            RoundedRectangle(cornerRadius: 12)
-                .stroke(Color.white.opacity(0.08), lineWidth: 1)
+        .padding(16)
+        .frame(height: 120)
+        .background(
+            RoundedRectangle(cornerRadius: 14)
+                .fill(Color(NSColor.controlBackgroundColor))
+                .shadow(
+                    color: isHovered ? .black.opacity(0.1) : .black.opacity(0.05),
+                    radius: isHovered ? 12 : 8,
+                    x: 0,
+                    y: isHovered ? 4 : 2
+                )
         )
-        .shadow(color: .black.opacity(0.15), radius: 8, x: 0, y: 2)
+        .overlay(
+            RoundedRectangle(cornerRadius: 14)
+                .stroke(
+                    isHovered ? Color.orange.opacity(0.3) : Color.gray.opacity(0.1),
+                    lineWidth: 1
+                )
+        )
+        .scaleEffect(isHovered ? 1.02 : 1.0)
+        .animation(.easeInOut(duration: 0.2), value: isHovered)
+        .onHover { hovering in
+            isHovered = hovering
+        }
     }
 }
 
@@ -527,52 +663,132 @@ struct UpcomingMeetingCard: View {
     let meeting: UpcomingMeeting
     let matchedPerson: Person?
     let onSelect: () -> Void
-
+    
+    @State private var isHovered = false
+    
+    // Calculate time until meeting
+    var timeUntilMeeting: String {
+        let now = Date()
+        let components = Calendar.current.dateComponents([.day, .hour, .minute], from: now, to: meeting.startDate)
+        
+        if let days = components.day, days > 0 {
+            return "in \(days) day\(days == 1 ? "" : "s")"
+        } else if let hours = components.hour, hours > 0 {
+            return "in \(hours) hour\(hours == 1 ? "" : "s")"
+        } else if let minutes = components.minute, minutes > 0 {
+            return "in \(minutes) min"
+        } else {
+            return "starting soon"
+        }
+    }
+    
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack(spacing: 12) {
-                // Avatar or icon (match PersonCardView)
-                if let person = matchedPerson {
+                // Avatar or icon with calendar indicator
+                ZStack(alignment: .bottomTrailing) {
+                    if let person = matchedPerson {
+                        Circle()
+                            .fill(LinearGradient(
+                                colors: [Color.blue, Color.blue.opacity(0.7)],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            ))
+                            .frame(width: 40, height: 40)
+                            .overlay(
+                                Text(person.initials)
+                                    .foregroundColor(.white)
+                                    .font(.system(size: 16, weight: .medium))
+                            )
+                    } else {
+                        Circle()
+                            .fill(Color.gray.opacity(0.2))
+                            .frame(width: 40, height: 40)
+                            .overlay(
+                                Image(systemName: "person.fill")
+                                    .font(.system(size: 20))
+                                    .foregroundColor(.gray)
+                            )
+                    }
+                    
+                    // Calendar indicator
                     Circle()
-                        .fill(Color.blue.opacity(0.7))
-                        .frame(width: 36, height: 36)
-                        .overlay(Text(person.initials).foregroundColor(.white).font(.subheadline))
-                } else {
-                    Image(systemName: "calendar")
-                        .font(.system(size: 24))
-                        .foregroundColor(.blue)
+                        .fill(Color.green)
+                        .frame(width: 12, height: 12)
+                        .overlay(
+                            Circle()
+                                .stroke(Color(NSColor.controlBackgroundColor), lineWidth: 2)
+                        )
                 }
+                
                 VStack(alignment: .leading, spacing: 4) {
                     Text(meeting.title)
-                        .font(.headline)
+                        .font(.system(size: 14, weight: .semibold))
                         .foregroundColor(.primary)
+                        .lineLimit(1)
+                    
                     if let person = matchedPerson {
                         if let role = person.role, !role.isEmpty {
                             Text(role)
                                 .font(.caption)
                                 .foregroundColor(.secondary)
+                                .lineLimit(1)
                         }
                     } else {
-                        Text("No match found")
+                        Text("External meeting")
                             .font(.caption)
                             .foregroundColor(.secondary)
                     }
                 }
+                
+                Spacer()
             }
-            // Date info (match density of follow-up card)
-            Text(meeting.startDate, style: .date)
-                .font(.caption2)
-                .foregroundColor(.gray)
+            
+            Divider()
+                .opacity(0.5)
+            
+            // Time and date info
+            HStack {
+                Image(systemName: "clock.fill")
+                    .font(.caption)
+                    .foregroundColor(.orange)
+                
+                Text(timeUntilMeeting)
+                    .font(.caption)
+                    .fontWeight(.medium)
+                    .foregroundColor(.orange)
+                
+                Spacer()
+                
+                Text(meeting.startDate, style: .time)
+                    .font(.caption2)
+                    .foregroundColor(.secondary)
+            }
         }
-        .padding()
-        .frame(width: 300, height: 120)
-        .background(Color(NSColor.controlBackgroundColor))
-        .cornerRadius(12)
-        .overlay(
-            RoundedRectangle(cornerRadius: 12)
-                .stroke(Color.white.opacity(0.08), lineWidth: 1)
+        .padding(16)
+        .frame(height: 120)
+        .background(
+            RoundedRectangle(cornerRadius: 14)
+                .fill(Color(NSColor.controlBackgroundColor))
+                .shadow(
+                    color: isHovered ? .black.opacity(0.1) : .black.opacity(0.05),
+                    radius: isHovered ? 12 : 8,
+                    x: 0,
+                    y: isHovered ? 4 : 2
+                )
         )
-        .shadow(color: .black.opacity(0.15), radius: 8, x: 0, y: 2)
+        .overlay(
+            RoundedRectangle(cornerRadius: 14)
+                .stroke(
+                    isHovered ? Color.blue.opacity(0.3) : Color.gray.opacity(0.1),
+                    lineWidth: 1
+                )
+        )
+        .scaleEffect(isHovered ? 1.02 : 1.0)
+        .animation(.easeInOut(duration: 0.2), value: isHovered)
+        .onHover { hovering in
+            isHovered = hovering
+        }
         .onTapGesture { onSelect() }
     }
 }
