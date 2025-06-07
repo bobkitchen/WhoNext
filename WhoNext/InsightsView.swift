@@ -465,6 +465,8 @@ struct PersonCardView: View {
     
     @Environment(\.managedObjectContext) private var viewContext
     @State private var isHovered = false
+    @State private var showEmailInstructions = false
+    @State private var showPermissionAlert = false
     
     // Calculate days since last contact
     var daysSinceContact: String? {
@@ -481,52 +483,161 @@ struct PersonCardView: View {
     
     // Generate email draft
     func openEmailDraft() {
+        // Get email templates from settings
+        @AppStorage("emailSubjectTemplate") var subjectTemplate = "1:1 - {name} + BK"
+        @AppStorage("emailBodyTemplate") var bodyTemplate = """
+Hi {firstName},
+
+I wanted to follow up on our conversation and see how things are going.
+
+Would you have time for a quick chat this week?
+
+Best regards
+"""
+        
         let firstName = person.name?.components(separatedBy: " ").first ?? "there"
-        let subject = "Follow up - \(person.name ?? "Meeting")"
-        let body = """
-        Hi \(firstName),
+        let fullName = person.name ?? "Meeting"
         
-        I wanted to follow up on our conversation and see how things are going.
+        // Replace placeholders in templates
+        let subject = subjectTemplate
+            .replacingOccurrences(of: "{name}", with: fullName)
+            .replacingOccurrences(of: "{firstName}", with: firstName)
         
-        Would you have time for a quick chat this week?
+        let body = bodyTemplate
+            .replacingOccurrences(of: "{name}", with: fullName)
+            .replacingOccurrences(of: "{firstName}", with: firstName)
         
-        Best regards
-        """
+        print("Email button clicked - trying to open Outlook")
         
-        // Use AppleScript to open Outlook with a new message
-        let script = """
-        tell application "Microsoft Outlook"
-            activate
-            set newMessage to make new outgoing message with properties {subject:"\(subject.replacingOccurrences(of: "\"", with: "\\\""))", content:"\(body.replacingOccurrences(of: "\"", with: "\\\"").replacingOccurrences(of: "\n", with: "\\n"))"}
-            open newMessage
-        end tell
-        """
+        // Launch Outlook and use keyboard automation
+        launchOutlookAndAutomate(subject: subject, body: body)
+    }
+    
+    private func launchOutlookAndAutomate(subject: String, body: String) {
+        let outlookBundleID = "com.microsoft.Outlook"
+        let workspace = NSWorkspace.shared
         
-        var error: NSDictionary?
-        if let scriptObject = NSAppleScript(source: script) {
-            scriptObject.executeAndReturnError(&error)
+        guard let outlookURL = workspace.urlForApplication(withBundleIdentifier: outlookBundleID) else {
+            print("Outlook not found")
+            return
+        }
+        
+        workspace.openApplication(at: outlookURL, configuration: NSWorkspace.OpenConfiguration()) { app, error in
             if let error = error {
-                print("AppleScript error: \(error)")
-                // Fallback to URL scheme
-                fallbackToURLScheme(subject: subject, body: body)
+                print("Error opening Outlook: \(error)")
+                return
+            }
+            
+            print("Successfully opened Outlook, waiting for it to be ready...")
+            
+            // Wait for Outlook to be ready, then automate
+            DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
+                self.automateEmailCreation(subject: subject, body: body)
             }
         }
     }
     
-    private func fallbackToURLScheme(subject: String, body: String) {
-        // URL encode the subject and body
-        let encodedSubject = subject.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? ""
-        let encodedBody = body.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? ""
+    private func automateEmailCreation(subject: String, body: String) {
+        print("Starting keyboard automation")
         
-        // Try different URL schemes
-        let schemes = [
-            "ms-outlook://compose?subject=\(encodedSubject)&body=\(encodedBody)",
-            "mailto:?subject=\(encodedSubject)&body=\(encodedBody)"
-        ]
+        // Create CGEventSource
+        guard let eventSource = CGEventSource(stateID: .hidSystemState) else {
+            print("Failed to create event source")
+            fallbackToClipboard(subject: subject, body: body)
+            return
+        }
         
-        for scheme in schemes {
-            if let url = URL(string: scheme), NSWorkspace.shared.open(url) {
+        // Helper function to create and post keyboard events
+        func sendKeyboardShortcut(keyCode: CGKeyCode, flags: CGEventFlags) {
+            guard let keyDown = CGEvent(keyboardEventSource: eventSource, virtualKey: keyCode, keyDown: true),
+                  let keyUp = CGEvent(keyboardEventSource: eventSource, virtualKey: keyCode, keyDown: false) else {
                 return
+            }
+            keyDown.flags = flags
+            keyUp.flags = flags
+            keyDown.post(tap: .cghidEventTap)
+            keyUp.post(tap: .cghidEventTap)
+            Thread.sleep(forTimeInterval: 0.1)
+        }
+        
+        // Helper function to type text
+        func typeText(_ text: String) {
+            for char in text {
+                if let event = CGEvent(keyboardEventSource: eventSource, virtualKey: 0, keyDown: true) {
+                    event.keyboardSetUnicodeString(stringLength: 1, unicodeString: [char.utf16.first!])
+                    event.post(tap: .cghidEventTap)
+                }
+                if let event = CGEvent(keyboardEventSource: eventSource, virtualKey: 0, keyDown: false) {
+                    event.keyboardSetUnicodeString(stringLength: 1, unicodeString: [char.utf16.first!])
+                    event.post(tap: .cghidEventTap)
+                }
+                Thread.sleep(forTimeInterval: 0.01)
+            }
+        }
+        
+        // Send Cmd+N to create new email
+        print("Sending Cmd+N to create new email")
+        sendKeyboardShortcut(keyCode: 45, flags: .maskCommand) // 45 is 'N'
+        
+        // Wait for new email window
+        Thread.sleep(forTimeInterval: 1.5)
+        
+        // Click or ensure focus is in To: field
+        // Send Tab then Shift+Tab to ensure we're in the first field (To:)
+        print("Ensuring focus in To: field")
+        sendKeyboardShortcut(keyCode: 48, flags: []) // Tab
+        Thread.sleep(forTimeInterval: 0.1)
+        sendKeyboardShortcut(keyCode: 48, flags: .maskShift) // Shift+Tab back to To:
+        Thread.sleep(forTimeInterval: 0.2)
+        
+        // Generate email address from person's name
+        let nameParts = (person.name ?? "").components(separatedBy: " ")
+        let firstName = nameParts.first?.lowercased() ?? ""
+        let lastName = nameParts.count > 1 ? nameParts.last?.lowercased() ?? "" : ""
+        let emailAddress = "\(firstName).\(lastName)@rescue.org"
+        
+        // Type email address in To: field (cursor starts there)
+        print("Typing email address: \(emailAddress)")
+        typeText(emailAddress)
+        Thread.sleep(forTimeInterval: 0.3)
+        
+        // Tab to subject field
+        print("Tabbing to subject field")
+        sendKeyboardShortcut(keyCode: 48, flags: []) // 48 is Tab
+        Thread.sleep(forTimeInterval: 0.2)
+        
+        // Type subject
+        print("Typing subject")
+        typeText(subject)
+        Thread.sleep(forTimeInterval: 0.2)
+        
+        // Tab to body field
+        print("Tabbing to body field")
+        sendKeyboardShortcut(keyCode: 48, flags: []) // 48 is Tab
+        Thread.sleep(forTimeInterval: 0.2)
+        
+        // Type body
+        print("Typing body")
+        typeText(body)
+        
+        print("Email automation completed")
+    }
+    
+    private func fallbackToClipboard(subject: String, body: String) {
+        let emailContent = "Subject: \(subject)\n\n\(body)"
+        let pasteboard = NSPasteboard.general
+        pasteboard.clearContents()
+        pasteboard.setString(emailContent, forType: .string)
+        
+        // Open Outlook
+        let outlookBundleID = "com.microsoft.Outlook"
+        let workspace = NSWorkspace.shared
+        
+        if let outlookURL = workspace.urlForApplication(withBundleIdentifier: outlookBundleID) {
+            workspace.openApplication(at: outlookURL, configuration: NSWorkspace.OpenConfiguration()) { _, _ in
+                DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                    showEmailInstructions = true
+                }
             }
         }
     }
@@ -655,6 +766,38 @@ struct PersonCardView: View {
         .animation(.easeInOut(duration: 0.2), value: isHovered)
         .onHover { hovering in
             isHovered = hovering
+        }
+        .alert(isPresented: $showEmailInstructions) {
+            Alert(
+                title: Text("Email Ready"),
+                message: Text("Press Cmd+N to create a new email, then paste (Cmd+V) the pre-filled content."),
+                dismissButton: .default(Text("Got it"))
+            )
+        }
+        .alert(isPresented: $showPermissionAlert) {
+            Alert(
+                title: Text("Permission Required"),
+                message: Text("To automatically create emails, grant accessibility access in System Settings > Privacy & Security > Accessibility. Or continue with manual email creation."),
+                primaryButton: .default(Text("Open Settings")) {
+                    if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility") {
+                        NSWorkspace.shared.open(url)
+                    }
+                },
+                secondaryButton: .default(Text("Use Manual Method")) {
+                    let firstName = person.name?.components(separatedBy: " ").first ?? "there"
+                    let subject = "Follow up - \(person.name ?? "Meeting")"
+                    let body = """
+                    Hi \(firstName),
+                    
+                    I wanted to follow up on our conversation and see how things are going.
+                    
+                    Would you have time for a quick chat this week?
+                    
+                    Best regards
+                    """
+                    fallbackToClipboard(subject: subject, body: body)
+                }
+            )
         }
     }
 }

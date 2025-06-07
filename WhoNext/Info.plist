@@ -22,5 +22,7 @@
 	<string>11.0</string>
 	<key>NSCalendarsUsageDescription</key>
 	<string>WhoNext needs read-only access to your calendar to surface upcoming 1:1 meetings.</string>
+	<key>NSAppleEventsUsageDescription</key>
+	<string>WhoNext needs access to send emails via Microsoft Outlook.</string>
 </dict>
 </plist>
