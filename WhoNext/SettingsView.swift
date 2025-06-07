@@ -407,7 +407,7 @@ Best regards
                             }
                         }
                         .pickerStyle(.menu)
-                        .onChange(of: selectedCalendarID) { newValue in
+                        .onChange(of: selectedCalendarID) { oldValue, newValue in
                             storedCalendarID = newValue
                             // Notify CalendarService to update
                             NotificationCenter.default.post(

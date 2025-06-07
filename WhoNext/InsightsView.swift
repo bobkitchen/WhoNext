@@ -396,7 +396,7 @@ struct GlobalNewConversationView: View {
                     })
                     .textFieldStyle(RoundedBorderTextFieldStyle())
                     .frame(width: 240)
-                    .onChange(of: searchText) { _ in showSuggestions = true }
+                    .onChange(of: searchText) { oldValue, newValue in showSuggestions = true }
                     .onSubmit {
                         if let match = people.first(where: { ($0.name ?? "").localizedCaseInsensitiveContains(searchText) }) {
                             selectedPerson = match

@@ -5,18 +5,8 @@ import UniformTypeIdentifiers
 struct PersonDetailView: View {
     @ObservedObject var person: Person
     @Environment(\.managedObjectContext) private var viewContext
-    @State private var isEditing = false
-    
-    // State for edit mode
-    @State private var editingName = ""
-    @State private var editingRole = ""
-    @State private var editingTimezone = ""
-    @State private var editingNotes = ""
-    @State private var isDirectReport = false
-    @State private var editingPhotoData: Data? = nil
-    @State private var editingPhotoImage: NSImage? = nil
-    @State private var showingPhotoPicker = false
-    
+    @Environment(\.openWindow) private var openWindow
+
     @FetchRequest private var conversations: FetchedResults<Conversation>
 
     @State private var isGeneratingBrief = false
@@ -34,381 +24,522 @@ struct PersonDetailView: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 24) {
-            // Header
-            HStack(alignment: .top, spacing: 16) {
-                // Avatar and photo button vertically stacked
-                VStack(spacing: 8) {
-                    ZStack {
-                        Circle()
-                            .fill(Color(nsColor: .systemGray).opacity(0.15))
-                            .frame(width: 64, height: 64)
-                        if isEditing {
-                            if let image = editingPhotoImage {
-                                Image(nsImage: image)
-                                    .resizable()
-                                    .scaledToFill()
-                                    .clipShape(Circle())
-                                    .frame(width: 64, height: 64)
-                            } else {
-                                Text(initials(from: editingName))
-                                    .font(.system(size: 24, weight: .medium, design: .rounded))
-                                    .foregroundColor(.secondary)
-                            }
-                        } else if let data = person.photo, let image = NSImage(data: data) {
-                            Image(nsImage: image)
-                                .resizable()
-                                .scaledToFill()
-                                .clipShape(Circle())
-                                .frame(width: 64, height: 64)
-                        } else {
-                            Text(person.initials)
-                                .font(.system(size: 24, weight: .medium, design: .rounded))
-                                .foregroundColor(.secondary)
-                        }
-                    }
-                    if isEditing {
-                        Button("Choose Photo") { showingPhotoPicker = true }
-                            .font(.system(size: 12))
-                    }
-                }
-                // Name, role, etc. remain to the right, with more space
-                VStack(alignment: .leading, spacing: 6) {
-                    if isEditing {
-                        TextField("Name", text: $editingName)
-                            .font(.system(size: 20, weight: .semibold))
-                            .textFieldStyle(.plain)
-                        TextField("Role", text: $editingRole)
-                            .font(.system(size: 14))
-                            .foregroundColor(.secondary)
-                            .textFieldStyle(.plain)
-                        TextField("Timezone", text: $editingTimezone)
-                            .font(.system(size: 13))
-                            .foregroundColor(.secondary)
-                            .textFieldStyle(.plain)
-                            .padding(.top, 2)
-                        Toggle("Direct Report", isOn: $isDirectReport)
-                            .font(.system(size: 13))
-                            .toggleStyle(.checkbox)
-                            .padding(.top, 4)
-                    } else {
-                        Text(person.name ?? "")
-                            .font(.system(size: 20, weight: .semibold))
-                        if let role = person.role {
-                            Text(role)
-                                .font(.system(size: 14))
-                                .foregroundColor(.secondary)
-                        }
-                        if let timezone = person.timezone {
-                            Text(timezone)
-                                .font(.system(size: 13))
-                                .foregroundColor(.secondary)
-                                .padding(.top, 2)
-                        }
-                        if person.isDirectReport {
-                            Text("Direct Report")
-                                .font(.system(size: 13))
-                                .foregroundColor(.secondary)
-                                .padding(.top, 4)
-                        }
-                    }
-                }
-                
-                Spacer()
-                
-                Button(action: { 
-                    if isEditing {
-                        saveChanges()
-                    }
-                    isEditing.toggle()
-                }) {
-                    Text(isEditing ? "Save" : "Edit")
-                        .font(.system(size: 13, weight: .medium))
-                }
-                .buttonStyle(.bordered)
-                .controlSize(.small)
-                .help("Edit this person's details")
-
+        ScrollView {
+            VStack(alignment: .leading, spacing: 24) {
+                headerView
+                notesView
+                conversationsView
             }
-            
-            // Notes Section (when editing)
-            if isEditing {
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("Notes")
-                        .font(.system(size: 15, weight: .semibold))
-                    
-                    TextEditor(text: $editingNotes)
-                        .font(.system(size: 13))
-                        .frame(height: 100)
-                        .padding(8)
-                        .background(Color(nsColor: .textBackgroundColor))
-                        .cornerRadius(6)
-                }
-            } else if let notes = person.notes, !notes.isEmpty {
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("Notes")
-                        .font(.system(size: 15, weight: .semibold))
-                    
-                    Text(notes)
-                        .font(.system(size: 13))
-                        .foregroundColor(.secondary)
-                }
-            }
-            
-            // Pre-Meeting Brief Button & Display
-            VStack(alignment: .leading, spacing: 10) {
-                HStack(spacing: 12) {
-                    Button(action: generatePreMeetingBrief) {
-                        Label("Generate Pre-Meeting Brief", systemImage: "sparkles")
-                    }
-                    .disabled(isGeneratingBrief || apiKey.isEmpty)
-                    if let brief = preMeetingBrief[person.identifier ?? UUID()], !brief.isEmpty {
-                        Button(action: { copyToClipboard(brief) }) {
-                            Label("Copy", systemImage: "doc.on.doc")
-                        }
-                    }
-                }
-                if isGeneratingBrief {
-                    HStack(spacing: 8) {
-                        ProgressView()
-                        Text("Generating brief...")
-                            .foregroundColor(.secondary)
-                    }
-                } else if let brief = preMeetingBrief[person.identifier ?? UUID()], !brief.isEmpty {
-                    // Convert Markdown to NSAttributedString for rich display
-                    let attributedBrief = MarkdownHelper.attributedString(from: brief)
-                    AttributedBriefView(attributedText: attributedBrief)
-                        .frame(minHeight: 120, maxHeight: 300)
-                        .padding(.vertical, 4)
-                } else if let error = briefError {
-                    Text("Error: \(error)")
-                        .foregroundColor(.red)
-                }
-            }
-            
-            // Conversations Section
-            VStack(alignment: .leading, spacing: 16) {
-                HStack {
-                    Text("Conversations")
-                        .font(.system(size: 15, weight: .semibold))
-                    
-                    Spacer()
-                    
-                    Button(action: {
-                        openNewConversationWindow(for: person)
-                    }) {
-                        Text("New")
-                            .font(.system(size: 13, weight: .medium))
-                    }
-                    .buttonStyle(.bordered)
-                    .controlSize(.small)
-                    .help("Start a new conversation with this person")
-                }
+            .padding(32)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Color(nsColor: .windowBackgroundColor))
+    }
+    
+    private var headerView: some View {
+        HStack(alignment: .top, spacing: 20) {
+            // Avatar
+            ZStack {
+                Circle()
+                    .fill(Color(nsColor: .systemGray).opacity(0.15))
+                    .frame(width: 64, height: 64)
                 
-                if conversations.isEmpty {
-                    Text("No conversations yet.")
-                        .font(.system(size: 13))
-                        .foregroundColor(.secondary)
-                        .frame(maxWidth: .infinity, alignment: .center)
-                        .padding(.vertical, 20)
-                        .background(Color(nsColor: .controlBackgroundColor).opacity(0.5))
-                        .cornerRadius(8)
+                if let data = person.photo, let image = NSImage(data: data) {
+                    Image(nsImage: image)
+                        .resizable()
+                        .scaledToFill()
+                        .clipShape(Circle())
+                        .frame(width: 64, height: 64)
                 } else {
-                    ForEach(conversations) { conversation in
-                        Button(action: { openConversationWindow(for: conversation) }) {
-                            HStack(alignment: .top, spacing: 12) {
-                                VStack(alignment: .leading, spacing: 4) {
-                                    Text(ConversationTitleFormatter.smartTitle(for: conversation))
-                                        .font(.system(size: 14, weight: .medium))
-                                        .foregroundColor(.primary)
-                                        .lineLimit(1)
-                                    if let date = conversation.date {
-                                        Text(formattedDate(date))
-                                            .font(.system(size: 12))
-                                            .foregroundColor(.secondary)
-                                    }
-                                }
-                                Spacer()
-                            }
-                            .padding(10)
-                            .background(Color(nsColor: .controlBackgroundColor).opacity(0.7))
-                            .cornerRadius(8)
-                        }
-                        .buttonStyle(.plain)
-                        .padding(.vertical, 2)
-                        .contextMenu {
-                            Button(action: {
-                                deleteConversation(conversation)
-                            }) {
-                                Label("Delete Conversation", systemImage: "trash")
-                            }
-                            
-                            Divider()
-                            
-                            Button(action: {
-                                openConversationWindow(for: conversation)
-                            }) {
-                                Label("Open in New Window", systemImage: "macwindow")
-                            }
-                        }
+                    Text(person.initials)
+                        .font(.system(size: 20, weight: .medium, design: .rounded))
+                        .foregroundColor(.secondary)
+                }
+            }
+            
+            // Person Info
+            VStack(alignment: .leading, spacing: 6) {
+                Text(person.name ?? "Unnamed")
+                    .font(.system(size: 22, weight: .bold))
+                    .foregroundColor(.primary)
+                
+                if let role = person.role, !role.isEmpty {
+                    Text(role)
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundColor(.secondary)
+                }
+                
+                if let timezone = person.timezone, !timezone.isEmpty {
+                    HStack(spacing: 6) {
+                        Image(systemName: "clock")
+                            .font(.system(size: 12))
+                            .foregroundColor(.secondary)
+                        Text(timezone)
+                            .font(.system(size: 12))
+                            .foregroundColor(.secondary)
+                    }
+                }
+                
+                if (person.value(forKey: "isDirectReport") as? Bool) == true {
+                    HStack(spacing: 6) {
+                        Image(systemName: "person.badge.key")
+                            .font(.system(size: 12))
+                            .foregroundColor(.blue)
+                        Text("Direct Report")
+                            .font(.system(size: 12, weight: .medium))
+                            .foregroundColor(.blue)
                     }
                 }
             }
             
             Spacer()
-        }
-        .padding(20)
-        .frame(minWidth: 300, maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color(nsColor: .windowBackgroundColor))
-        .fileImporter(isPresented: $showingPhotoPicker, allowedContentTypes: [.image]) { result in
-            switch result {
-            case .success(let url):
-                if let data = try? Data(contentsOf: url), let image = NSImage(data: data) {
-                    editingPhotoData = data
-                    editingPhotoImage = image
+            
+            // Edit Button
+            Button(action: openEditWindow) {
+                HStack(spacing: 6) {
+                    Image(systemName: "pencil")
+                        .font(.system(size: 11))
+                    Text("Edit")
+                        .font(.system(size: 11, weight: .medium))
                 }
-            default:
-                break
+                .foregroundColor(.white)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 6)
+                .background(Color.accentColor)
+                .clipShape(RoundedRectangle(cornerRadius: 6))
             }
+            .buttonStyle(PlainButtonStyle())
         }
-        .onAppear {
-            editingName = person.name ?? ""
-            editingRole = person.role ?? ""
-            editingTimezone = person.timezone ?? ""
-            editingNotes = person.notes ?? ""
-            isDirectReport = person.isDirectReport
-            if let data = person.photo, let image = NSImage(data: data) {
-                editingPhotoData = data
-                editingPhotoImage = image
+    }
+    
+    @ViewBuilder
+    private var notesView: some View {
+        if let notes = person.notes, !notes.isEmpty {
+            VStack(alignment: .leading, spacing: 12) {
+                HStack {
+                    Image(systemName: "note.text")
+                        .font(.system(size: 14))
+                        .foregroundColor(.secondary)
+                    Text("Notes")
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundColor(.primary)
+                }
+                
+                Text(notes)
+                    .font(.system(size: 13))
+                    .foregroundColor(.primary)
+                    .padding(16)
+                    .background(Color(nsColor: .controlBackgroundColor))
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
+            }
+        } else {
+            EmptyView()
+        }
+    }
+    
+    private var conversationsView: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            HStack {
+                HStack(spacing: 8) {
+                    Image(systemName: "bubble.left.and.bubble.right")
+                        .font(.system(size: 14))
+                        .foregroundColor(.secondary)
+                    Text("Conversations")
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundColor(.primary)
+                }
+                
+                Spacer()
+                
+                Button(action: openNewConversationWindow) {
+                    HStack(spacing: 6) {
+                        Image(systemName: "plus")
+                            .font(.system(size: 10))
+                        Text("New")
+                            .font(.system(size: 12, weight: .medium))
+                    }
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 6)
+                    .background(Color.accentColor)
+                    .clipShape(RoundedRectangle(cornerRadius: 6))
+                }
+                .buttonStyle(PlainButtonStyle())
+            }
+            
+            if conversations.isEmpty {
+                // Empty State
+                VStack(spacing: 16) {
+                    Image(systemName: "bubble.left.and.bubble.right")
+                        .font(.system(size: 40))
+                        .foregroundColor(.secondary.opacity(0.5))
+                    
+                    VStack(spacing: 8) {
+                        Text("No conversations yet")
+                            .font(.system(size: 16, weight: .medium))
+                            .foregroundColor(.primary)
+                        
+                        Text("Start building your relationship by adding your first conversation")
+                            .font(.system(size: 12))
+                            .foregroundColor(.secondary)
+                            .multilineTextAlignment(.center)
+                    }
+                    
+                    Button(action: openNewConversationWindow) {
+                        HStack(spacing: 8) {
+                            Image(systemName: "plus.circle.fill")
+                                .font(.system(size: 14))
+                            Text("Add First Conversation")
+                                .font(.system(size: 14, weight: .medium))
+                        }
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 20)
+                        .padding(.vertical, 12)
+                        .background(Color.accentColor)
+                        .clipShape(RoundedRectangle(cornerRadius: 10))
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 40)
+                .background(Color(nsColor: .controlBackgroundColor).opacity(0.5))
+                .clipShape(RoundedRectangle(cornerRadius: 16))
             } else {
-                editingPhotoData = nil
-                editingPhotoImage = nil
-            }
-        }
-    }
-    
-    private func saveChanges() {
-        person.name = editingName
-        person.role = editingRole
-        person.timezone = editingTimezone
-        person.notes = editingNotes
-        person.isDirectReport = isDirectReport
-        if let editingPhotoData = editingPhotoData {
-            person.photo = editingPhotoData
-        }
-        try? viewContext.save()
-        print("[PersonDetailView][LOG] Saving context (saveChanges)\n\tCallStack: \(Thread.callStackSymbols.joined(separator: "\n\t"))")
-    }
-    
-    private func createNewConversation() {
-        let conversation = Conversation(context: viewContext)
-        conversation.date = Date()
-        conversation.person = person
-        conversation.uuid = UUID()
-        conversation.notes = ""
-        
-        try? viewContext.save()
-        print("[PersonDetailView][LOG] Saving context (createNewConversation)\n\tCallStack: \(Thread.callStackSymbols.joined(separator: "\n\t"))")
-        openConversationWindow(for: conversation)
-    }
-
-    private func formattedDate(_ date: Date?) -> String {
-        guard let date = date else { return "" }
-        let formatter = DateFormatter()
-        formatter.dateStyle = .medium
-        return formatter.string(from: date)
-    }
-
-    private func previewText(from notes: String) -> String {
-        // Strip common markdown formatting
-        var cleaned = notes
-        
-        // Remove headers
-        cleaned = cleaned.replacingOccurrences(of: #"#{1,6}\s*"#, with: "", options: .regularExpression)
-        
-        // Remove bold/italic markers
-        cleaned = cleaned.replacingOccurrences(of: #"\*{1,2}([^\*]+)\*{1,2}"#, with: "$1", options: .regularExpression)
-        cleaned = cleaned.replacingOccurrences(of: #"_{1,2}([^_]+)_{1,2}"#, with: "$1", options: .regularExpression)
-        
-        // Remove inline code markers
-        cleaned = cleaned.replacingOccurrences(of: #"`([^`]+)`"#, with: "$1", options: .regularExpression)
-        
-        // Remove list markers
-        cleaned = cleaned.replacingOccurrences(of: #"^[\s]*[-\*]\s+"#, with: "", options: [.regularExpression, .anchored])
-        cleaned = cleaned.replacingOccurrences(of: #"^[\s]*\d+\.\s+"#, with: "", options: [.regularExpression, .anchored])
-        
-        // Get first non-empty line as title
-        let lines = cleaned.split(separator: "\n")
-            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
-            .filter { !$0.isEmpty }
-        
-        if let firstLine = lines.first {
-            // Truncate if too long
-            let maxLength = 60
-            if firstLine.count > maxLength {
-                return String(firstLine.prefix(maxLength)) + "..."
-            }
-            return String(firstLine)
-        }
-        
-        return "Conversation on \(formattedDate(Date()))"
-    }
-
-    private func deleteConversation(at offsets: IndexSet) {
-        for index in offsets {
-            let conversation = conversations[index]
-            viewContext.delete(conversation)
-        }
-
-        do {
-            print("[PersonDetailView][LOG] Saving context (deleteConversation)\n\tCallStack: \(Thread.callStackSymbols.joined(separator: "\n\t"))")
-            try viewContext.save()
-        } catch {
-            print("Failed to delete conversation: \(error)")
-        }
-    }
-    
-    private func deleteConversation(_ conversation: Conversation) {
-        viewContext.delete(conversation)
-        
-        do {
-            print("[PersonDetailView][LOG] Saving context (deleteConversation)\n\tCallStack: \(Thread.callStackSymbols.joined(separator: "\n\t"))")
-            try viewContext.save()
-        } catch {
-            print("Failed to delete conversation: \(error)")
-        }
-    }
-
-    private func initials(from name: String) -> String {
-        let components = name.split(separator: " ")
-        let initials = components.prefix(2).map { String($0.prefix(1)) }
-        return initials.joined()
-    }
-
-    private func selectNewPhoto() {
-        let panel = NSOpenPanel()
-        panel.allowedContentTypes = [.png, .jpeg]
-        panel.begin { response in
-            if response == .OK, let url = panel.url, let imageData = try? Data(contentsOf: url) {
-                person.photo = imageData
-                do {
-                    print("[PersonDetailView][LOG] Saving context (selectNewPhoto)\n\tCallStack: \(Thread.callStackSymbols.joined(separator: "\n\t"))")
-                    try viewContext.save()
-                } catch {
-                    print("Failed to save new photo: \(error)")
+                // Pre-Meeting Brief Button
+                if !conversations.isEmpty {
+                    HStack {
+                        Text("Pre-Meeting Brief")
+                            .font(.headline)
+                            .fontWeight(.semibold)
+                        
+                        Spacer()
+                        
+                        if let brief = preMeetingBrief[person.identifier ?? UUID()], !brief.isEmpty {
+                            Button(action: {
+                                copyToClipboard(brief)
+                            }) {
+                                HStack(spacing: 4) {
+                                    Image(systemName: "doc.on.clipboard")
+                                        .font(.system(size: 10))
+                                    Text("Copy")
+                                        .font(.system(size: 10, weight: .medium))
+                                }
+                                .foregroundColor(.accentColor)
+                                .padding(.horizontal, 12)
+                                .padding(.vertical, 6)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 6)
+                                        .fill(Color.accentColor.opacity(0.1))
+                                )
+                            }
+                            .buttonStyle(PlainButtonStyle())
+                        } else {
+                            Button(action: generatePreMeetingBrief) {
+                                HStack(spacing: 6) {
+                                    if isGeneratingBrief {
+                                        ProgressView()
+                                            .scaleEffect(0.8)
+                                    } else {
+                                        Image(systemName: "sparkles")
+                                            .font(.system(size: 10))
+                                    }
+                                    Text(isGeneratingBrief ? "Generating..." : "Generate")
+                                        .font(.system(size: 10, weight: .medium))
+                                }
+                                .foregroundColor(.white)
+                                .padding(.horizontal, 12)
+                                .padding(.vertical, 6)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 6)
+                                        .fill(Color.accentColor)
+                                )
+                            }
+                            .buttonStyle(PlainButtonStyle())
+                            .disabled(isGeneratingBrief)
+                        }
+                    }
+                }
+                
+                // Pre-Meeting Brief Display
+                if let brief = preMeetingBrief[person.identifier ?? UUID()], !brief.isEmpty {
+                    VStack(alignment: .leading, spacing: 12) {
+                        ScrollView {
+                            VStack(alignment: .leading, spacing: 16) {
+                                MarkdownView(markdown: brief)
+                            }
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(20)
+                        }
+                        .frame(maxHeight: 200)
+                        .background(Color(nsColor: .textBackgroundColor))
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 12)
+                                .stroke(Color.gray.opacity(0.2), lineWidth: 1)
+                        )
+                    }
+                } else if let error = briefError {
+                    HStack(spacing: 8) {
+                        Image(systemName: "exclamationmark.triangle")
+                            .font(.system(size: 12))
+                            .foregroundColor(.red)
+                        Text(error)
+                            .font(.system(size: 12))
+                            .foregroundColor(.red)
+                    }
+                    .padding(12)
+                    .background(Color.red.opacity(0.1))
+                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                }
+                
+                // Conversation Analytics
+                if !conversations.isEmpty {
+                    ConversationDurationView(person: person)
+                }
+                
+                // Conversations List
+                LazyVStack(spacing: 12) {
+                    ForEach(conversations) { conversation in
+                        ConversationRowView(conversation: conversation)
+                    }
                 }
             }
         }
     }
-
-    private func openConversationWindow(for conversation: Conversation) {
+    
+    private func openEditWindow() {
         let window = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 500, height: 400),
+            contentRect: NSRect(x: 0, y: 0, width: 500, height: 600),
             styleMask: [.titled, .closable, .resizable],
             backing: .buffered,
             defer: false
         )
-        window.title = "Conversation with \(person.name ?? "Unknown")"
+        window.title = "Edit \(person.name ?? "Person")"
+        window.isReleasedWhenClosed = false
+        window.contentView = NSHostingView(
+            rootView: PersonEditView(
+                person: person,
+                onSave: { window.close() },
+                onCancel: { window.close() }
+            )
+            .environment(\.managedObjectContext, viewContext)
+        )
+        window.makeKeyAndOrderFront(nil)
+    }
+    
+    private func openNewConversationWindow() {
+        let window = NSWindow(
+            contentRect: NSRect(x: 0, y: 0, width: 600, height: 500),
+            styleMask: [.titled, .closable, .resizable],
+            backing: .buffered,
+            defer: false
+        )
+        window.title = "New Conversation with \(person.name ?? "Person")"
+        window.isReleasedWhenClosed = false
+        window.contentView = NSHostingView(
+            rootView: NewConversationWindowView(
+                preselectedPerson: person,
+                onSave: { window.close() },
+                onCancel: { window.close() }
+            )
+            .environment(\.managedObjectContext, viewContext)
+        )
+        window.makeKeyAndOrderFront(nil)
+    }
+    
+    private func generatePreMeetingBrief() {
+        guard !apiKey.isEmpty else {
+            briefError = "OpenAI API key is required. Please set it in Settings."
+            return
+        }
+        
+        isGeneratingBrief = true
+        preMeetingBrief[person.identifier ?? UUID()] = nil
+        briefError = nil
+        
+        PreMeetingBriefService.generateBrief(for: person, apiKey: apiKey) { result in
+            DispatchQueue.main.async {
+                self.isGeneratingBrief = false
+                switch result {
+                case .success(let brief):
+                    self.preMeetingBrief[self.person.identifier ?? UUID()] = brief
+                case .failure(let error):
+                    self.briefError = error.localizedDescription
+                }
+            }
+        }
+    }
+    
+    private func copyToClipboard(_ text: String) {
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.setString(text, forType: .string)
+    }
+}
+
+struct ConversationRowView: View {
+    let conversation: Conversation
+    @Environment(\.managedObjectContext) private var viewContext
+    
+    var body: some View {
+        HStack(alignment: .top, spacing: 16) {
+            dateIndicator
+            conversationContent
+        }
+        .padding(16)
+        .background(Color(nsColor: .controlBackgroundColor))
+        .clipShape(RoundedRectangle(cornerRadius: 12))
+        .overlay(
+            RoundedRectangle(cornerRadius: 12)
+                .stroke(Color.gray.opacity(0.2), lineWidth: 1)
+        )
+        .onTapGesture {
+            openConversationWindow()
+        }
+        .contextMenu {
+            Button(action: openConversationWindow) {
+                Label("Open in Window", systemImage: "macwindow")
+            }
+            
+            Divider()
+            
+            Button(action: deleteConversation) {
+                Label("Delete", systemImage: "trash")
+            }
+        }
+    }
+    
+    private var dateIndicator: some View {
+        VStack(spacing: 4) {
+            if let date = conversation.date {
+                Text(dayFormatter.string(from: date))
+                    .font(.system(size: 16, weight: .bold))
+                    .foregroundColor(.primary)
+                Text(monthFormatter.string(from: date))
+                    .font(.system(size: 10, weight: .medium))
+                    .foregroundColor(.secondary)
+                    .textCase(.uppercase)
+            }
+        }
+        .frame(width: 50)
+        .padding(.vertical, 4)
+    }
+    
+    private var conversationContent: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            headerRow
+            durationAndEngagementInfo
+            summaryOrNotes
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+    
+    private var headerRow: some View {
+        HStack {
+            Text(conversationTitle)
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundColor(.primary)
+                .lineLimit(2)
+            
+            Spacer()
+            
+            // Sentiment indicator
+            if conversation.value(forKey: "lastSentimentAnalysis") != nil {
+                sentimentIndicator
+            }
+            
+            if let date = conversation.date {
+                Text(timeFormatter.string(from: date))
+                    .font(.system(size: 10))
+                    .foregroundColor(.secondary)
+            }
+        }
+    }
+    
+    @ViewBuilder
+    private var durationAndEngagementInfo: some View {
+        let duration = conversation.value(forKey: "duration") as? Int16 ?? 0
+        if duration > 0 || conversation.value(forKey: "lastSentimentAnalysis") != nil {
+            HStack(spacing: 12) {
+                if duration > 0 {
+                    HStack(spacing: 4) {
+                        Image(systemName: "clock")
+                            .font(.system(size: 10))
+                            .foregroundColor(.secondary)
+                        Text("\(duration)m")
+                            .font(.system(size: 10))
+                            .foregroundColor(.secondary)
+                    }
+                }
+                
+                if let engagementLevel = conversation.value(forKey: "engagementLevel") as? String {
+                    HStack(spacing: 4) {
+                        Image(systemName: engagementIcon(engagementLevel))
+                            .font(.system(size: 10))
+                            .foregroundColor(engagementColor(engagementLevel))
+                        Text(engagementLevel.capitalized)
+                            .font(.system(size: 10))
+                            .foregroundColor(.secondary)
+                    }
+                }
+                
+                Spacer()
+            }
+        }
+    }
+    
+    @ViewBuilder
+    private var summaryOrNotes: some View {
+        if let summary = conversation.summary, !summary.isEmpty {
+            Text(summary)
+                .font(.system(size: 12))
+                .foregroundColor(.secondary)
+                .lineLimit(3)
+        } else if let notes = conversation.notes, !notes.isEmpty {
+            Text(notes)
+                .font(.system(size: 12))
+                .foregroundColor(.secondary)
+                .lineLimit(3)
+        }
+    }
+    
+    private var conversationTitle: String {
+        if let summary = conversation.summary, !summary.isEmpty {
+            // Extract first line as title
+            let firstLine = summary.components(separatedBy: .newlines).first ?? ""
+            return firstLine.isEmpty ? "Conversation" : firstLine
+        } else if let notes = conversation.notes, !notes.isEmpty {
+            let firstLine = notes.components(separatedBy: .newlines).first ?? ""
+            return firstLine.isEmpty ? "Conversation" : firstLine
+        }
+        return "Conversation"
+    }
+    
+    private var sentimentIndicator: some View {
+        Circle()
+            .fill(sentimentColor)
+            .frame(width: 8, height: 8)
+    }
+    
+    private var sentimentColor: Color {
+        let score = conversation.value(forKey: "sentimentScore") as? Double ?? 0.0
+        if score > 0.3 {
+            return .green
+        } else if score < -0.3 {
+            return .red
+        } else {
+            return .orange
+        }
+    }
+    
+    private func openConversationWindow() {
+        // Open conversation in new window
+        let window = NSWindow(
+            contentRect: NSRect(x: 0, y: 0, width: 600, height: 500),
+            styleMask: [.titled, .closable, .resizable],
+            backing: .buffered,
+            defer: false
+        )
+        window.title = "Conversation - \(conversationTitle)"
         window.isReleasedWhenClosed = false
         window.contentView = NSHostingView(
             rootView: ConversationDetailView(conversation: conversation)
@@ -417,76 +548,52 @@ struct PersonDetailView: View {
         window.makeKeyAndOrderFront(nil)
     }
     
-    private func openNewConversationWindow(for person: Person) {
-        NewConversationWindowManager.shared.presentWindow(for: person)
+    private func deleteConversation() {
+        viewContext.delete(conversation)
+        try? viewContext.save()
     }
     
-    // MARK: - Pre-Meeting Brief Logic
-    private func generatePreMeetingBrief() {
-        isGeneratingBrief = true
-        preMeetingBrief[person.identifier ?? UUID()] = nil
-        briefError = nil
-        PreMeetingBriefService.generateBrief(for: person, apiKey: apiKey) { result in
-            DispatchQueue.main.async {
-                isGeneratingBrief = false
-                switch result {
-                case .success(let brief):
-                    preMeetingBrief[person.identifier ?? UUID()] = brief
-                case .failure(let error):
-                    briefError = error.localizedDescription
-                }
-            }
+    private let dayFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "d"
+        return formatter
+    }()
+    
+    private let monthFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "MMM"
+        return formatter
+    }()
+    
+    private let timeFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.timeStyle = .short
+        return formatter
+    }()
+    
+    private func engagementIcon(_ engagementLevel: String) -> String {
+        switch engagementLevel.lowercased() {
+        case "high":
+            return "flame.fill"
+        case "medium":
+            return "circle.fill"
+        case "low":
+            return "circle"
+        default:
+            return "circle"
         }
     }
-    private func copyToClipboard(_ text: String) {
-        #if os(macOS)
-        NSPasteboard.general.clearContents()
-        NSPasteboard.general.setString(text, forType: .string)
-        #endif
-    }
-}
-
-struct TextViewWrapper: NSViewRepresentable {
-    let attributedText: NSAttributedString
-
-    func makeNSView(context: Context) -> NSTextView {
-        let textView = NSTextView()
-        textView.isEditable = false
-        textView.isSelectable = true
-        textView.backgroundColor = NSColor.textBackgroundColor
-        textView.textColor = NSColor.labelColor
-        textView.textContainerInset = NSSize(width: 6, height: 6)
-        textView.font = NSFont.systemFont(ofSize: 14)
-        textView.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
-        textView.setContentHuggingPriority(.defaultLow, for: .horizontal)
-        return textView
-    }
-
-    func updateNSView(_ nsView: NSTextView, context: Context) {
-        nsView.textStorage?.setAttributedString(attributedText)
-        nsView.textColor = NSColor.labelColor
-        nsView.backgroundColor = NSColor.textBackgroundColor
-        nsView.font = NSFont.systemFont(ofSize: 14)
-    }
-}
-
-struct AttributedBriefView: View {
-    let attributedText: NSAttributedString
-
-    var body: some View {
-        ZStack {
-            RoundedRectangle(cornerRadius: 8)
-                .fill(Color(nsColor: .textBackgroundColor))
-            ScrollView(.vertical, showsIndicators: true) {
-                // Use a plain Text view for the attributed string content (as fallback)
-                Text(attributedText.string)
-                    .font(.system(size: 14))
-                    .foregroundColor(Color.primary)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(8)
-            }
+    
+    private func engagementColor(_ engagementLevel: String) -> Color {
+        switch engagementLevel.lowercased() {
+        case "high":
+            return .green
+        case "medium":
+            return .orange
+        case "low":
+            return .red
+        default:
+            return .secondary
         }
-        .frame(minHeight: 120, maxHeight: 300)
-        .padding(.vertical, 4)
     }
 }

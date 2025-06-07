@@ -41,7 +41,7 @@ struct GlobalNewConversationSheet: View {
                         showSuggestions = editing && !filteredPeople.isEmpty
                     })
                     .frame(width: 220)
-                    .onChange(of: toField) { newValue in
+                    .onChange(of: toField) { oldValue, newValue in
                         showSuggestions = !newValue.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && !filteredPeople.isEmpty
                         if let match = people.first(where: { $0.name == newValue }) {
                             selectedPerson = match

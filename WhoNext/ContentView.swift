@@ -155,7 +155,11 @@ struct ContentView: View {
                                 .stroke(Color.gray.opacity(0.2), lineWidth: 1)
                         )
                 )
-                .animation(.easeInOut(duration: 0.2), value: appState.selectedTab)
+                .animation(nil, value: appState.selectedTab) // Disable initial appearance animation
+                .onAppear {
+                    // Disable any implicit animations on initial load
+                    withAnimation(.none) {}
+                }
             }
             
             // Far right: Search bar (compact for now, will improve in responsive phase)

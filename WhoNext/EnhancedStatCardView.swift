@@ -157,7 +157,7 @@ struct CircularProgressView: View {
                 }
             }
         }
-        .onChange(of: progress) { newProgress in
+        .onChange(of: progress) { oldValue, newProgress in
             withAnimation(.spring(response: 0.6, dampingFraction: 0.8)) {
                 animatedProgress = newProgress
             }

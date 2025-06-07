@@ -9,6 +9,10 @@ struct WhoNextApp: App {
         WindowGroup {
             ContentView()
                 .environment(\.managedObjectContext, persistenceController.container.viewContext)
+                .onAppear {
+                    // Initialize sentiment analysis on app startup
+                    initializeSentimentAnalysis()
+                }
         }
         .windowStyle(.titleBar)
         .defaultSize(width: 800, height: 600)
@@ -30,6 +34,25 @@ struct WhoNextApp: App {
             SettingsView()
                 .environment(\.managedObjectContext, persistenceController.container.viewContext)
         }
+    }
+    
+    /// Initialize sentiment analysis features on app startup
+    private func initializeSentimentAnalysis() {
+        let context = persistenceController.container.viewContext
+        
+        // Perform initial setup for existing conversations
+        SentimentAnalysisMigration.performInitialSetup(context: context)
+        
+        // Log sentiment analysis availability
+        if SentimentAnalysisMigration.isAnalysisReady() {
+            print("✅ Sentiment Analysis: Ready")
+        } else {
+            print("⚠️ Sentiment Analysis: Not available on this device")
+        }
+        
+        // Log migration status
+        let status = SentimentAnalysisMigration.getMigrationStatus(context: context)
+        print("📊 Sentiment Analysis Status: \(status.message)")
     }
 }
 

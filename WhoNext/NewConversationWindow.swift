@@ -47,7 +47,7 @@ struct NewConversationWindow: View {
                 })
                 .focused($isSearchFieldFocused)
                 .textFieldStyle(RoundedBorderTextFieldStyle())
-                .onChange(of: searchText) { _ in showDropdown = true }
+                .onChange(of: searchText) { oldValue, newValue in showDropdown = true }
                 .onTapGesture { showDropdown = true }
                 .onSubmit {
                     if let first = filteredPeople.first {

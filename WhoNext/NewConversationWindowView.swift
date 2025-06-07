@@ -16,6 +16,7 @@ struct NewConversationWindowView: View {
     @State private var selectedPerson: Person? = nil
     @State private var date: Date = Date()
     @State private var notes: String = ""
+    @State private var duration: Int = 30 // Duration in minutes
     @State private var showSuggestions: Bool = false
     @FocusState private var toFieldFocused: Bool
 
@@ -32,110 +33,295 @@ struct NewConversationWindowView: View {
         // SwiftUI @State can't be initialized directly here, so preselection is handled in .onAppear
     }
 
-    var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            VStack(alignment: .leading, spacing: 2) {
-                Text("To:")
-                ZStack(alignment: .topLeading) {
-                    TextField("Type a name...", text: $toField, onEditingChanged: { editing in
-                        showSuggestions = editing && !filteredPeople.isEmpty
-                    })
-                    .focused($toFieldFocused)
-                    .frame(width: 280)
-                    .onChange(of: toField) { newValue in
-                        showSuggestions = toFieldFocused && !filteredPeople.isEmpty
-                        if let match = people.first(where: { $0.name == newValue }) {
-                            selectedPerson = match
-                        } else {
-                            selectedPerson = nil
-                        }
-                    }
-                    .onSubmit {
-                        if let match = people.first(where: { $0.name == toField }) {
-                            selectedPerson = match
+    @ViewBuilder
+    private var toFieldSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            VStack(spacing: 0) {
+                // Text field
+                TextField("Search for a person...", text: $toField, onEditingChanged: { editing in
+                    if editing {
+                        showSuggestions = !filteredPeople.isEmpty
+                    } else {
+                        // Delay hiding suggestions to allow for selection
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                             showSuggestions = false
                         }
                     }
-                    if showSuggestions && !filteredPeople.isEmpty {
-                        VStack(alignment: .leading, spacing: 0) {
-                            ForEach(filteredPeople.prefix(5), id: \.id) { person in
-                                Button(action: {
-                                    toField = person.name ?? ""
-                                    selectedPerson = person
-                                    showSuggestions = false
-                                }) {
-                                    HStack {
-                                        Text(person.name ?? "")
-                                            .fontWeight(selectedPerson?.id == person.id ? .medium : .regular)
-                                        if let role = person.role, !role.isEmpty {
-                                            Text("· " + role)
-                                                .foregroundColor(.secondary)
-                                                .font(.caption)
-                                        }
-                                        Spacer()
-                                    }
-                                    .padding(.vertical, 6)
-                                    .padding(.horizontal, 12)
-                                    .background(selectedPerson?.id == person.id ? Color.accentColor.opacity(0.15) : Color.clear)
-                                }
-                                .buttonStyle(.plain)
-                            }
+                })
+                .focused($toFieldFocused)
+                .textFieldStyle(.roundedBorder)
+                .frame(maxWidth: .infinity)
+                .onChange(of: toField) { oldValue, newValue in
+                    // Clear selection if text doesn't match any person exactly
+                    if let match = people.first(where: { $0.name?.lowercased() == newValue.lowercased() }) {
+                        if selectedPerson?.id != match.id {
+                            selectedPerson = match
                         }
-                        .background(RoundedRectangle(cornerRadius: 8).fill(Color(.windowBackgroundColor)))
-                        .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.gray.opacity(0.2)))
-                        .shadow(radius: 6)
-                        .frame(width: 300)
-                        .offset(y: 34)
+                    } else {
+                        selectedPerson = nil
                     }
+                    
+                    // Show suggestions if focused and has filtered results
+                    showSuggestions = toFieldFocused && !filteredPeople.isEmpty && selectedPerson == nil
                 }
-                if let selected = selectedPerson {
-                    Text(selected.role ?? "")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                        .padding(.top, 2)
+                .onSubmit {
+                    // Try to find exact match on submit
+                    if let match = people.first(where: { $0.name?.lowercased() == toField.lowercased() }) {
+                        selectedPerson = match
+                        toField = match.name ?? ""
+                    }
+                    showSuggestions = false
+                    toFieldFocused = false
+                }
+                
+                // Suggestions dropdown
+                if showSuggestions && !filteredPeople.isEmpty {
+                    suggestionsList
                 }
             }
-            DatePicker("Date", selection: $date, displayedComponents: .date)
-                .padding(.vertical, 4)
-            Text("Notes:")
-            TextEditor(text: $notes)
-                .frame(height: 220)
-                .padding(4)
-                .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.gray.opacity(0.15), lineWidth: 1))
-                .background(Color(.textBackgroundColor))
-            HStack {
+            
+            // Selected person confirmation
+            if let selected = selectedPerson {
+                HStack(spacing: 8) {
+                    Image(systemName: "checkmark.circle.fill")
+                        .foregroundColor(.green)
+                        .font(.caption)
+                    
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(selected.name ?? "Unknown")
+                            .font(.subheadline)
+                            .fontWeight(.medium)
+                        
+                        if let role = selected.role, !role.isEmpty {
+                            Text(role)
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        }
+                    }
+                    
+                    Spacer()
+                    
+                    // Clear selection button
+                    Button(action: {
+                        selectedPerson = nil
+                        toField = ""
+                        toFieldFocused = true
+                    }) {
+                        Image(systemName: "xmark.circle.fill")
+                            .foregroundColor(.secondary)
+                            .font(.caption)
+                    }
+                    .buttonStyle(.plain)
+                }
+                .padding(8)
+                .background(Color.green.opacity(0.1))
+                .cornerRadius(6)
+            }
+        }
+    }
+    
+    @ViewBuilder
+    private var suggestionsList: some View {
+        VStack(alignment: .leading, spacing: 2) {
+            ForEach(filteredPeople.prefix(5), id: \.id) { person in
+                Button(action: {
+                    selectedPerson = person
+                    toField = person.name ?? ""
+                    showSuggestions = false
+                    toFieldFocused = false
+                }) {
+                    HStack(spacing: 12) {
+                        // Avatar or icon
+                        if let photoData = person.photo, let nsImage = NSImage(data: photoData) {
+                            Image(nsImage: nsImage)
+                                .resizable()
+                                .aspectRatio(contentMode: .fill)
+                                .frame(width: 24, height: 24)
+                                .clipShape(Circle())
+                        } else {
+                            Circle()
+                                .fill(Color.accentColor.opacity(0.15))
+                                .frame(width: 24, height: 24)
+                                .overlay(
+                                    Text(String(person.name?.prefix(1) ?? "?"))
+                                        .font(.caption)
+                                        .fontWeight(.medium)
+                                        .foregroundColor(.accentColor)
+                                )
+                        }
+                        
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(person.name ?? "Unknown")
+                                .font(.subheadline)
+                                .fontWeight(.medium)
+                                .foregroundColor(.primary)
+                            
+                            if let role = person.role, !role.isEmpty {
+                                Text(role)
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                            }
+                        }
+                        
+                        Spacer()
+                    }
+                    .padding(.vertical, 8)
+                    .padding(.horizontal, 12)
+                    .background(Color.clear)
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .background(
+                    RoundedRectangle(cornerRadius: 6)
+                        .fill(Color.clear)
+                )
+                .onHover { hovering in
+                    // Hover effect handled by system
+                }
+            }
+        }
+        .padding(4)
+        .background(
+            RoundedRectangle(cornerRadius: 8)
+                .fill(Color(NSColor.controlBackgroundColor))
+                .shadow(color: .black.opacity(0.1), radius: 8, x: 0, y: 2)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 8)
+                .stroke(Color.secondary.opacity(0.2), lineWidth: 1)
+        )
+    }
+    
+    private func saveConversation() {
+        if let person = selectedPerson {
+            let newConversation = Conversation(context: viewContext)
+            newConversation.date = date
+            newConversation.notes = notes
+            newConversation.setValue(Int16(duration), forKey: "duration")
+            newConversation.person = person
+            do {
+                print("[NewConversationWindowView][LOG] Saving context\n\tCallStack: \(Thread.callStackSymbols.joined(separator: "\n\t"))")
+                try viewContext.save()
+            } catch {
+                print("Failed to save conversation: \(error)")
+            }
+        }
+        onSave?()
+        closeWindow()
+    }
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            // Header
+            VStack(alignment: .leading, spacing: 8) {
+                HStack {
+                    Image(systemName: "plus.bubble.fill")
+                        .font(.title2)
+                        .foregroundColor(.accentColor)
+                    Text("New Conversation")
+                        .font(.title2)
+                        .fontWeight(.semibold)
+                    
+                    Spacer()
+                }
+                
+                Text("Record a conversation with a team member")
+                    .font(.subheadline)
+                    .foregroundColor(.secondary)
+            }
+            .padding(.horizontal, 24)
+            .padding(.top, 20)
+            .padding(.bottom, 24)
+            .background(Color(NSColor.controlBackgroundColor))
+            
+            // Form content
+            VStack(alignment: .leading, spacing: 20) {
+                // Person selection
+                VStack(alignment: .leading, spacing: 8) {
+                    Label("Person", systemImage: "person.fill")
+                        .font(.headline)
+                        .foregroundColor(.primary)
+                    
+                    toFieldSection
+                }
+                
+                // Date selection
+                VStack(alignment: .leading, spacing: 8) {
+                    Label("Date", systemImage: "calendar")
+                        .font(.headline)
+                        .foregroundColor(.primary)
+                    
+                    DatePicker("", selection: $date, displayedComponents: .date)
+                        .datePickerStyle(.compact)
+                        .labelsHidden()
+                }
+                
+                // Duration selection
+                VStack(alignment: .leading, spacing: 8) {
+                    Label("Duration", systemImage: "clock")
+                        .font(.headline)
+                        .foregroundColor(.primary)
+                    
+                    HStack(spacing: 12) {
+                        Picker("Duration", selection: $duration) {
+                            ForEach([15, 30, 45, 60, 90, 120], id: \.self) { minutes in
+                                Text("\(minutes) min").tag(minutes)
+                            }
+                        }
+                        .pickerStyle(.segmented)
+                        .frame(maxWidth: 300)
+                        
+                        Spacer()
+                    }
+                }
+                
+                // Notes section
+                VStack(alignment: .leading, spacing: 8) {
+                    Label("Notes", systemImage: "note.text")
+                        .font(.headline)
+                        .foregroundColor(.primary)
+                    
+                    TextEditor(text: $notes)
+                        .font(.system(size: 13))
+                        .frame(height: 180)
+                        .padding(12)
+                        .background(Color(NSColor.textBackgroundColor))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 8)
+                                .stroke(Color.secondary.opacity(0.2), lineWidth: 1)
+                        )
+                        .cornerRadius(8)
+                }
+                
                 Spacer()
+            }
+            .padding(.horizontal, 24)
+            .padding(.top, 8)
+            
+            // Footer with buttons
+            HStack(spacing: 12) {
+                Spacer()
+                
                 Button("Cancel") {
                     onCancel?()
                     closeWindow()
                 }
                 .keyboardShortcut(.cancelAction)
+                .buttonStyle(.bordered)
 
-                Button("Save") {
-                    if let person = selectedPerson {
-                        let newConversation = Conversation(context: viewContext)
-                        newConversation.date = date
-                        newConversation.notes = notes
-                        newConversation.person = person
-                        do {
-                            print("[NewConversationWindowView][LOG] Saving context\n\tCallStack: \(Thread.callStackSymbols.joined(separator: "\n\t"))")
-                            try viewContext.save()
-                        } catch {
-                            print("Failed to save conversation: \(error)")
-                        }
-                    }
-                    onSave?()
-                    closeWindow()
+                Button("Save Conversation") {
+                    saveConversation()
                 }
                 .keyboardShortcut(.defaultAction)
                 .buttonStyle(.borderedProminent)
                 .disabled(selectedPerson == nil)
             }
+            .padding(.horizontal, 24)
+            .padding(.vertical, 20)
+            .background(Color(NSColor.controlBackgroundColor))
         }
-        .padding(.top, 12)
-        .padding(.bottom, 12)
-        .padding(.horizontal, 20)
-        .frame(minWidth: 400, minHeight: 420)
+        .frame(minWidth: 480, minHeight: 520)
+        .background(Color(NSColor.windowBackgroundColor))
         .onAppear {
             if let preselected = preselectedPerson, selectedPerson == nil {
                 selectedPerson = preselected
