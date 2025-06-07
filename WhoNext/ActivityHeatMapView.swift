@@ -9,44 +9,45 @@ struct ActivityHeatMapView: View {
     private let weeksToShow = 12
     
     var body: some View {
-        GeometryReader { geometry in
-            let availableWidth = geometry.size.width - 40 // Account for week labels and padding
-            let cellSize = min((availableWidth - 24) / 7, 20) // Max 20px, responsive to width
-            
-            VStack(alignment: .leading, spacing: 16) {
-                // Heat map grid
-                VStack(spacing: 4) {
-                    // Days of week header
-                    HStack(spacing: 4) {
-                        Spacer().frame(width: 30) // Space for week labels
+        VStack(alignment: .leading, spacing: 16) {
+            // Heat map grid
+            VStack(spacing: 4) {
+                // Days of week header
+                HStack {
+                    Text("")
+                        .frame(width: 35, alignment: .trailing)
+                    
+                    HStack {
                         ForEach(daysOfWeek, id: \.self) { day in
                             Text(day)
                                 .font(.caption2)
                                 .fontWeight(.medium)
                                 .foregroundColor(.secondary)
-                                .frame(width: cellSize, height: 16)
+                                .frame(maxWidth: .infinity)
                         }
-                        Spacer()
                     }
-                    
-                    // Heat map cells
-                    VStack(spacing: 2) {
-                        ForEach(0..<weeksToShow, id: \.self) { weekIndex in
-                            HStack(spacing: 2) {
-                                // Week label
-                                Text(weekLabel(for: weekIndex))
-                                    .font(.caption2)
-                                    .foregroundColor(.secondary)
-                                    .frame(width: 28, alignment: .trailing)
-                                
-                                // Daily activity cells
+                }
+                
+                // Heat map cells
+                VStack(spacing: 2) {
+                    ForEach(0..<weeksToShow, id: \.self) { weekIndex in
+                        HStack {
+                            // Week label
+                            Text(weekLabel(for: weekIndex))
+                                .font(.caption2)
+                                .foregroundColor(.secondary)
+                                .frame(width: 35, alignment: .trailing)
+                            
+                            // Daily activity cells - use HStack with equal spacing
+                            HStack(spacing: 0) {
                                 ForEach(0..<7, id: \.self) { dayIndex in
                                     let date = dateForWeek(weekIndex, day: dayIndex)
                                     let activity = activityLevel(for: date)
                                     
-                                    RoundedRectangle(cornerRadius: 2)
+                                    RoundedRectangle(cornerRadius: 3)
                                         .fill(colorForActivity(activity))
-                                        .frame(width: cellSize, height: cellSize)
+                                        .aspectRatio(1, contentMode: .fit)
+                                        .frame(maxWidth: .infinity, maxHeight: 18)
                                         .scaleEffect(animateHeatMap ? 1.0 : 0.0)
                                         .animation(
                                             .spring(response: 0.4, dampingFraction: 0.8)
@@ -55,52 +56,49 @@ struct ActivityHeatMapView: View {
                                         )
                                         .help(tooltipForDate(date, activity: activity))
                                 }
-                                Spacer()
                             }
                         }
                     }
                 }
+            }
+            
+            // Legend
+            HStack {
+                Text("Less")
+                    .font(.caption2)
+                    .foregroundColor(.secondary)
                 
-                // Legend
-                HStack {
-                    Text("Less")
+                HStack(spacing: 2) {
+                    ForEach(0..<5, id: \.self) { level in
+                        RoundedRectangle(cornerRadius: 2)
+                            .fill(colorForActivity(level))
+                            .frame(width: 12, height: 12)
+                    }
+                }
+                
+                Text("More")
+                    .font(.caption2)
+                    .foregroundColor(.secondary)
+                
+                Spacer()
+                
+                // Activity summary
+                VStack(alignment: .trailing, spacing: 2) {
+                    Text("\(totalConversations) conversations")
+                        .font(.caption2)
+                        .fontWeight(.medium)
+                        .foregroundColor(.primary)
+                    
+                    Text("in last 12 weeks")
                         .font(.caption2)
                         .foregroundColor(.secondary)
-                    
-                    HStack(spacing: 2) {
-                        ForEach(0..<5, id: \.self) { level in
-                            RoundedRectangle(cornerRadius: 2)
-                                .fill(colorForActivity(level))
-                                .frame(width: 12, height: 12)
-                        }
-                    }
-                    
-                    Text("More")
-                        .font(.caption2)
-                        .foregroundColor(.secondary)
-                    
-                    Spacer()
-                    
-                    // Activity summary
-                    VStack(alignment: .trailing, spacing: 2) {
-                        Text("\(totalConversations) conversations")
-                            .font(.caption2)
-                            .fontWeight(.medium)
-                            .foregroundColor(.primary)
-                        
-                        Text("in last 12 weeks")
-                            .font(.caption2)
-                            .foregroundColor(.secondary)
-                    }
                 }
             }
         }
-        .frame(height: 200) // Fixed height for the heat map
         .padding(20)
         .background(
             RoundedRectangle(cornerRadius: 16)
                 .fill(Color(NSColor.controlBackgroundColor))
-                .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 2)
         )
         .onAppear {
             withAnimation {
