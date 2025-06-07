@@ -3,12 +3,13 @@ import CoreData
 
 struct TimelineView: View {
     let people: [Person]
-    let onPersonSelected: ((Person) -> Void)?
-    @State private var selectedTimeframe: TimeFrame = .month
+    let timeframe: TimeFrame
+    let onPersonSelected: (Person) -> Void
     @State private var animateTimeline = false
     
-    init(people: [Person], onPersonSelected: ((Person) -> Void)? = nil) {
+    init(people: [Person], timeframe: TimeFrame = .week, onPersonSelected: @escaping (Person) -> Void) {
         self.people = people
+        self.timeframe = timeframe
         self.onPersonSelected = onPersonSelected
     }
     
@@ -28,34 +29,37 @@ struct TimelineView: View {
     
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
-            // Timeframe picker
-            HStack {
-                Spacer()
-                Picker("Timeframe", selection: $selectedTimeframe) {
-                    ForEach(TimeFrame.allCases, id: \.self) { timeframe in
-                        Text(timeframe.rawValue).tag(timeframe)
+            // Timeline content with proportional spacing
+            GeometryReader { geometry in
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(alignment: .bottom, spacing: 0) {
+                        ForEach(Array(timelineData.enumerated()), id: \.offset) { index, item in
+                            let spacing = index > 0 ? spacingBetween(
+                                from: timelineData[index - 1].date,
+                                to: item.date,
+                                totalWidth: max(geometry.size.width * 2, 800)
+                            ) : 0
+                            
+                            HStack(spacing: 0) {
+                                if spacing > 0 {
+                                    Spacer()
+                                        .frame(width: spacing)
+                                }
+                                
+                                TimelineItemView(item: item, onPersonSelected: onPersonSelected)
+                                    .scaleEffect(animateTimeline ? 1.0 : 0.8)
+                                    .opacity(animateTimeline ? 1.0 : 0.0)
+                                    .animation(
+                                        .spring(response: 0.6, dampingFraction: 0.8)
+                                        .delay(Double(index) * 0.1),
+                                        value: animateTimeline
+                                    )
+                            }
+                        }
                     }
+                    .padding(.horizontal, 20)
+                    .padding(.vertical, 8)
                 }
-                .pickerStyle(.segmented)
-                .frame(width: 180)
-            }
-            
-            // Timeline content
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 12) {
-                    ForEach(timelineData, id: \.date) { item in
-                        TimelineItemView(item: item, onPersonSelected: onPersonSelected)
-                            .scaleEffect(animateTimeline ? 1.0 : 0.8)
-                            .opacity(animateTimeline ? 1.0 : 0.0)
-                            .animation(
-                                .spring(response: 0.6, dampingFraction: 0.8)
-                                .delay(Double(timelineData.firstIndex(where: { $0.date == item.date }) ?? 0) * 0.1),
-                                value: animateTimeline
-                            )
-                    }
-                }
-                .padding(.horizontal, 4)
-                .padding(.vertical, 8)
             }
             .frame(height: 120)
         }
@@ -70,18 +74,22 @@ struct TimelineView: View {
                 animateTimeline = true
             }
         }
-        .onChange(of: selectedTimeframe) { _, _ in
-            animateTimeline = false
-            withAnimation {
-                animateTimeline = true
-            }
-        }
+    }
+    
+    private func spacingBetween(from: Date, to: Date, totalWidth: CGFloat) -> CGFloat {
+        let timeInterval = to.timeIntervalSince(from)
+        let dayInterval: TimeInterval = 24 * 60 * 60
+        let days = timeInterval / dayInterval
+        
+        // Minimum spacing of 20px, maximum of 100px per day
+        let spacing = min(max(days * 30, 20), 100)
+        return spacing
     }
     
     private var timelineData: [TimelineItem] {
         let calendar = Calendar.current
         let now = Date()
-        let startDate = calendar.date(byAdding: .day, value: -selectedTimeframe.days, to: now) ?? now
+        let startDate = calendar.date(byAdding: .day, value: -timeframe.days, to: now) ?? now
         
         var items: [TimelineItem] = []
         var conversations: [(Person, Date)] = []
@@ -135,10 +143,10 @@ struct TimelineItem {
 
 struct TimelineItemView: View {
     let item: TimelineItem
-    let onPersonSelected: ((Person) -> Void)?
+    let onPersonSelected: (Person) -> Void
     @State private var isHovered = false
     
-    init(item: TimelineItem, onPersonSelected: ((Person) -> Void)? = nil) {
+    init(item: TimelineItem, onPersonSelected: @escaping (Person) -> Void) {
         self.item = item
         self.onPersonSelected = onPersonSelected
     }
@@ -174,7 +182,7 @@ struct TimelineItemView: View {
             HStack(spacing: -8) {
                 ForEach(Array(item.conversations.prefix(3).enumerated()), id: \.offset) { index, person in
                     Button(action: {
-                        onPersonSelected?(person)
+                        onPersonSelected(person)
                     }) {
                         PersonAvatarView(person: person, size: 20)
                             .overlay(
@@ -255,7 +263,7 @@ struct PersonAvatarView: View {
 }
 
 #Preview {
-    TimelineView(people: [])
+    TimelineView(people: [], timeframe: .month) { _ in }
         .frame(width: 600, height: 200)
         .padding()
 }

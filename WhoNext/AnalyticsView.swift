@@ -2,12 +2,13 @@ import SwiftUI
 import CoreData
 
 struct AnalyticsView: View {
+    @EnvironmentObject var appState: AppState
     @FetchRequest(
         entity: Person.entity(),
-        sortDescriptors: [NSSortDescriptor(keyPath: \Person.name, ascending: true)]
+        sortDescriptors: [NSSortDescriptor(key: "name", ascending: true)]
     ) var people: FetchedResults<Person>
     
-    @EnvironmentObject var appState: AppState
+    @State private var selectedTimeframe: TimelineView.TimeFrame = .week
     
     var body: some View {
         ScrollView(.vertical, showsIndicators: false) {
@@ -44,10 +45,21 @@ struct AnalyticsView: View {
                         Text("Recent conversations and meetings")
                             .font(.caption)
                             .foregroundColor(.secondary)
+                            .padding(.trailing, 16)
+                        
+                        Picker("", selection: $selectedTimeframe) {
+                            Text("Week").tag(TimelineView.TimeFrame.week)
+                            Text("Month").tag(TimelineView.TimeFrame.month)
+                            Text("Quarter").tag(TimelineView.TimeFrame.quarter)
+                        }
+                        .pickerStyle(.segmented)
+                        .frame(width: 180)
+                        .labelsHidden()
                     }
                     .padding(.horizontal, 32)
                     
-                    TimelineView(people: Array(people)) { person in
+                    // Timeline with safer implementation
+                    TimelineView(people: Array(people), timeframe: selectedTimeframe) { person in
                         // Navigate to the person in People tab
                         appState.selectedTab = .people
                         appState.selectedPerson = person
@@ -75,41 +87,6 @@ struct AnalyticsView: View {
                     .padding(.horizontal, 32)
                     
                     ActivityHeatMapView(people: Array(people))
-                        .padding(.horizontal, 32)
-                }
-                
-                // Coming Soon Section
-                VStack(alignment: .leading, spacing: 20) {
-                    HStack {
-                        Image(systemName: "sparkles")
-                            .font(.title3)
-                            .foregroundColor(.purple)
-                        Text("Coming Soon")
-                            .font(.title2)
-                            .fontWeight(.semibold)
-                    }
-                    .padding(.horizontal, 32)
-                    
-                    RoundedRectangle(cornerRadius: 16)
-                        .fill(Color(NSColor.controlBackgroundColor))
-                        .frame(height: 140)
-                        .overlay(
-                            VStack(spacing: 16) {
-                                Image(systemName: "chart.line.uptrend.xyaxis")
-                                    .font(.system(size: 36))
-                                    .foregroundColor(.purple)
-                                
-                                Text("More Analytics Coming")
-                                    .font(.headline)
-                                    .fontWeight(.semibold)
-                                
-                                Text("Team engagement trends, conversation quality metrics, and personalized insights")
-                                    .font(.subheadline)
-                                    .foregroundColor(.secondary)
-                                    .multilineTextAlignment(.center)
-                                    .padding(.horizontal, 24)
-                            }
-                        )
                         .padding(.horizontal, 32)
                 }
                 

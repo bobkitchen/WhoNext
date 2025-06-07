@@ -194,17 +194,9 @@ struct InsightsView: View {
         let now = Date()
         let endDate = calendar.date(byAdding: .day, value: 7, to: now) ?? now
         
-        let filtered = calendarService.upcomingMeetings.filter { meeting in
+        return calendarService.upcomingMeetings.filter { meeting in
             meeting.startDate >= now && meeting.startDate < endDate
         }
-        
-        print("[InsightsView] Total meetings: \(calendarService.upcomingMeetings.count)")
-        print("[InsightsView] Filtered meetings (next 7 days): \(filtered.count)")
-        for meeting in calendarService.upcomingMeetings {
-            print("[InsightsView] Meeting: \(meeting.title) at \(meeting.startDate)")
-        }
-        
-        return filtered
     }
     
     private var suggestedPeople: [Person] {
