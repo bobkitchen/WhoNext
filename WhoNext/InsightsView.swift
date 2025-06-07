@@ -21,149 +21,165 @@ struct InsightsView: View {
     @State private var dismissedPeopleIDs: Set<UUID> = []
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 24) {
-            Spacer().frame(height: 16) // Add space between toolbar and main content
-            
-            // Insights (Chat) Section and Statistics Cards
-            HStack(alignment: .top, spacing: 24) {
-                ChatView()
-                    .frame(minWidth: 400, maxWidth: 500, minHeight: 0, maxHeight: .infinity)
-                    .padding()
-                    .background(Color(NSColor.controlBackgroundColor))
-                    .cornerRadius(16)
-                    .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 2)
-                    .alignmentGuide(.top) { d in d[.top] } // Align top with cards
+        ScrollView(.vertical, showsIndicators: false) {
+            VStack(alignment: .leading, spacing: 24) {
+                Spacer().frame(height: 16) // Add space between toolbar and main content
                 
-                VStack(spacing: 10) {
-                    EnhancedStatCardView(
-                        icon: "flag.fill",
-                        title: "Cycle Progress",
-                        value: cycleProgressText,
-                        subtitle: "Team members contacted",
-                        color: .blue,
-                        progress: Double(spokenToThisCycle.count) / Double(max(nonDirectReports.count, 1))
-                    )
-                    EnhancedStatCardView(
-                        icon: "clock.fill",
-                        title: "Weeks Remaining",
-                        value: weeksRemainingText,
-                        subtitle: "At 2 per week",
-                        color: .orange,
-                        progress: nil
-                    )
-                    EnhancedStatCardView(
-                        icon: "flame.fill",
-                        title: "Streak",
-                        value: streakText,
-                        subtitle: "Weeks in a row",
-                        color: .red,
-                        progress: nil
-                    )
-                }
-                .frame(width: 260)
-            }
-            .frame(maxHeight: .infinity, alignment: .top)
-            .alignmentGuide(.top) { d in d[.top] }
-            
-            // Upcoming 1:1s as cards, limited to 2
-            VStack(alignment: .leading, spacing: 16) {
-                HStack(spacing: 8) {
-                    Image("icon_calendar")
-                        .resizable()
-                        .frame(width: 24, height: 24)
-                    Text("Upcoming 1:1s")
+                // Insights (Chat) Section and Statistics Cards
+                HStack(alignment: .top, spacing: 24) {
+                    ChatView()
+                        .frame(minWidth: 400, maxWidth: 500, minHeight: 0, maxHeight: .infinity)
+                        .padding()
+                        .background(Color(NSColor.controlBackgroundColor))
+                        .cornerRadius(16)
+                        .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 2)
+                        .alignmentGuide(.top) { d in d[.top] } // Align top with cards
                     
-                    if !calendarService.upcomingMeetings.isEmpty {
-                        Text("(\(min(calendarService.upcomingMeetings.count, 2)))")
-                            .foregroundColor(.secondary)
+                    VStack(spacing: 10) {
+                        EnhancedStatCardView(
+                            icon: "flag.fill",
+                            title: "Cycle Progress",
+                            value: cycleProgressText,
+                            subtitle: "Team members contacted",
+                            color: .blue,
+                            progress: Double(spokenToThisCycle.count) / Double(max(nonDirectReports.count, 1))
+                        )
+                        EnhancedStatCardView(
+                            icon: "clock.fill",
+                            title: "Weeks Remaining",
+                            value: weeksRemainingText,
+                            subtitle: "At 2 per week",
+                            color: .orange,
+                            progress: nil
+                        )
+                        EnhancedStatCardView(
+                            icon: "calendar.badge.clock",
+                            title: "This Week",
+                            value: "\(upcomingMeetingsThisWeek.count)",
+                            subtitle: "Scheduled meetings",
+                            color: .green,
+                            progress: nil
+                        )
                     }
+                    .frame(width: 200)
                 }
-                .font(.system(size: 20, weight: .semibold, design: .rounded))
                 
-                if calendarService.upcomingMeetings.isEmpty {
-                    HStack {
-                        Spacer()
-                        VStack(spacing: 8) {
-                            Image(systemName: "calendar.badge.exclamationmark")
-                                .font(.system(size: 32))
-                                .foregroundColor(.gray.opacity(0.5))
-                            Text("No upcoming 1:1s")
-                                .foregroundStyle(.secondary)
-                        }
-                        .padding(.vertical, 20)
-                        Spacer()
-                    }
-                } else {
-                    LazyVGrid(columns: [
-                        GridItem(.flexible(), spacing: 16),
-                        GridItem(.flexible(), spacing: 16)
-                    ], spacing: 16) {
-                        ForEach(Array(calendarService.upcomingMeetings.prefix(2))) { meeting in
-                            let matchedPerson = matchPerson(for: meeting)
-                            UpcomingMeetingCard(meeting: meeting, matchedPerson: matchedPerson, onSelect: {
-                                if let person = matchedPerson {
-                                    selectedPerson = person
-                                    selectedPersonID = person.identifier
-                                    selectedTab = .people
-                                }
-                            })
+                // Upcoming 1:1s Section
+                VStack(alignment: .leading, spacing: 16) {
+                    HStack(spacing: 8) {
+                        Image("icon_calendar")
+                            .resizable()
+                            .frame(width: 24, height: 24)
+                        Text("Upcoming 1:1s")
+                        
+                        if !upcomingMeetingsThisWeek.isEmpty {
+                            Text("(\(min(upcomingMeetingsThisWeek.count, 2)))")
+                                .foregroundColor(.secondary)
                         }
                     }
-                }
-            }
-            
-            // Follow-up Needed Section
-            VStack(alignment: .leading, spacing: 16) {
-                HStack(spacing: 8) {
-                    Image("icon_bell")
-                        .resizable()
-                        .frame(width: 24, height: 24)
-                    Text("Follow-up Needed")
+                    .font(.system(size: 20, weight: .semibold, design: .rounded))
                     
-                    if !suggestedPeople.isEmpty {
-                        Text("(\(min(suggestedPeople.count, 2)))")
-                            .foregroundColor(.secondary)
-                    }
-                }
-                .font(.system(size: 20, weight: .semibold, design: .rounded))
-                
-                if suggestedPeople.isEmpty {
-                    HStack {
-                        Spacer()
-                        VStack(spacing: 8) {
-                            Image(systemName: "checkmark.circle.fill")
-                                .font(.system(size: 32))
-                                .foregroundColor(.green.opacity(0.5))
-                            Text("No follow-ups needed")
-                                .foregroundStyle(.secondary)
+                    if upcomingMeetingsThisWeek.isEmpty {
+                        HStack {
+                            Spacer()
+                            VStack(spacing: 8) {
+                                Image(systemName: "calendar")
+                                    .font(.system(size: 32))
+                                    .foregroundColor(.blue.opacity(0.5))
+                                Text("No meetings scheduled")
+                                    .foregroundStyle(.secondary)
+                            }
+                            .padding(.vertical, 20)
+                            Spacer()
                         }
-                        .padding(.vertical, 20)
-                        Spacer()
-                    }
-                } else {
-                    LazyVGrid(columns: [
-                        GridItem(.flexible(), spacing: 16),
-                        GridItem(.flexible(), spacing: 16)
-                    ], spacing: 16) {
-                        ForEach(Array(suggestedPeople.prefix(2))) { person in
-                            PersonCardView(
-                                person: person,
-                                isFollowUp: true,
-                                onDismiss: {
-                                    // Only hide the person from suggestions for this session
-                                    // Do NOT create a conversation or update lastContactDate
-                                    if let personID = person.identifier {
-                                        dismissedPeopleIDs.insert(personID)
+                    } else {
+                        LazyVGrid(columns: [
+                            GridItem(.flexible(), spacing: 16),
+                            GridItem(.flexible(), spacing: 16)
+                        ], spacing: 16) {
+                            ForEach(Array(upcomingMeetingsThisWeek.prefix(2))) { meeting in
+                                UpcomingMeetingCard(
+                                    meeting: meeting,
+                                    matchedPerson: people.first { person in
+                                        guard let personName = person.name else { return false }
+                                        return meeting.title.localizedCaseInsensitiveContains(personName) ||
+                                               (meeting.attendees?.contains { attendee in
+                                                   attendee.localizedCaseInsensitiveContains(personName)
+                                               } ?? false)
+                                    },
+                                    onSelect: {
+                                        if let matchedPerson = people.first(where: { person in
+                                            guard let personName = person.name else { return false }
+                                            return meeting.title.localizedCaseInsensitiveContains(personName) ||
+                                                   (meeting.attendees?.contains { attendee in
+                                                       attendee.localizedCaseInsensitiveContains(personName)
+                                                   } ?? false)
+                                        }) {
+                                            selectedPerson = matchedPerson
+                                            selectedPersonID = matchedPerson.identifier
+                                            selectedTab = .people
+                                        }
                                     }
-                                }
-                            )
+                                )
+                            }
                         }
                     }
                 }
+                
+                // Follow-up Needed Section
+                VStack(alignment: .leading, spacing: 16) {
+                    HStack(spacing: 8) {
+                        Image("icon_bell")
+                            .resizable()
+                            .frame(width: 24, height: 24)
+                        Text("Follow-up Needed")
+                        
+                        if !suggestedPeople.isEmpty {
+                            Text("(\(min(suggestedPeople.count, 2)))")
+                                .foregroundColor(.secondary)
+                        }
+                    }
+                    .font(.system(size: 20, weight: .semibold, design: .rounded))
+                    
+                    if suggestedPeople.isEmpty {
+                        HStack {
+                            Spacer()
+                            VStack(spacing: 8) {
+                                Image(systemName: "checkmark.circle.fill")
+                                    .font(.system(size: 32))
+                                    .foregroundColor(.green.opacity(0.5))
+                                Text("No follow-ups needed")
+                                    .foregroundStyle(.secondary)
+                            }
+                            .padding(.vertical, 20)
+                            Spacer()
+                        }
+                    } else {
+                        LazyVGrid(columns: [
+                            GridItem(.flexible(), spacing: 16),
+                            GridItem(.flexible(), spacing: 16)
+                        ], spacing: 16) {
+                            ForEach(Array(suggestedPeople.prefix(2))) { person in
+                                PersonCardView(
+                                    person: person,
+                                    isFollowUp: true,
+                                    onDismiss: {
+                                        // Only hide the person from suggestions for this session
+                                        // Do NOT create a conversation or update lastContactDate
+                                        if let personID = person.identifier {
+                                            dismissedPeopleIDs.insert(personID)
+                                        }
+                                    }
+                                )
+                            }
+                        }
+                    }
+                }
+                
+                Spacer().frame(height: 24) // Bottom padding
             }
-            Spacer()
+            .padding([.horizontal, .bottom], 24)
         }
-        .padding([.horizontal, .bottom], 24)
         .onAppear {
             calendarService.requestAccess { granted in
                 if granted {
@@ -171,6 +187,24 @@ struct InsightsView: View {
                 }
             }
         }
+    }
+    
+    private var upcomingMeetingsThisWeek: [UpcomingMeeting] {
+        let calendar = Calendar.current
+        let now = Date()
+        let endDate = calendar.date(byAdding: .day, value: 7, to: now) ?? now
+        
+        let filtered = calendarService.upcomingMeetings.filter { meeting in
+            meeting.startDate >= now && meeting.startDate < endDate
+        }
+        
+        print("[InsightsView] Total meetings: \(calendarService.upcomingMeetings.count)")
+        print("[InsightsView] Filtered meetings (next 7 days): \(filtered.count)")
+        for meeting in calendarService.upcomingMeetings {
+            print("[InsightsView] Meeting: \(meeting.title) at \(meeting.startDate)")
+        }
+        
+        return filtered
     }
     
     private var suggestedPeople: [Person] {

@@ -3,6 +3,7 @@ import Foundation
 enum SidebarItem: String, CaseIterable, Identifiable {
     case people
     case insights
+    case analytics
 
     var id: String { self.rawValue }
 
@@ -12,6 +13,8 @@ enum SidebarItem: String, CaseIterable, Identifiable {
             return "People"
         case .insights:
             return "Insights"
+        case .analytics:
+            return "Analytics"
         }
     }
 }

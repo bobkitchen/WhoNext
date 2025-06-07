@@ -43,6 +43,9 @@ struct ContentView: View {
                         selectedPerson: $appState.selectedPerson,
                         selectedTab: $appState.selectedTab
                     )
+                } else if appState.selectedTab == .analytics {
+                    AnalyticsView()
+                        .environmentObject(appState)
                 }
             }
             .navigationTitle("")
@@ -58,15 +61,18 @@ struct ContentView: View {
         }
 #endif
         .toolbar {
-            // Far left: New Conversation and New Person (always visible)
+            // Far left: New Conversation and New Person (compact)
             ToolbarItem(placement: .navigation) {
-                HStack(spacing: 12) {
+                HStack(spacing: 8) {
                     Button(action: {
                         NewConversationWindowManager.shared.presentWindow(for: nil)
                     }) {
-                        Label("New Conversation", systemImage: "plus.bubble")
+                        Image(systemName: "plus.bubble")
+                            .font(.system(size: 16, weight: .medium))
                     }
+                    .buttonStyle(PlainButtonStyle())
                     .help("New Conversation")
+                    
                     Button(action: {
                         // If not on People tab, switch to People, then trigger add person after a short delay
                         if appState.selectedTab != .people {
@@ -78,30 +84,100 @@ struct ContentView: View {
                             NotificationCenter.default.post(name: .triggerAddPerson, object: nil)
                         }
                     }) {
-                        Label("New Person", systemImage: "person.crop.circle.badge.plus")
+                        Image(systemName: "person.crop.circle.badge.plus")
+                            .font(.system(size: 16, weight: .medium))
                     }
-                    .help("Add new person")
+                    .buttonStyle(PlainButtonStyle())
+                    .help("New Person")
                 }
             }
-            // Center: Segmented control for Insights/People (always visible)
+            
+            // Center: Main navigation (Insights/People/Analytics)
             ToolbarItem(placement: .principal) {
-                Picker("View", selection: $appState.selectedTab) {
-                    Text("Insights").tag(SidebarItem.insights)
-                    Text("People").tag(SidebarItem.people)
-                }
-                .pickerStyle(.segmented)
-                .frame(width: 220)
-            }
-            // Far right: Search bar (always visible)
-            ToolbarItem(placement: .automatic) {
-                HStack {
-                    SearchBar(searchText: $searchText) { person in
-                        appState.selectedTab = .people
-                        appState.selectedPerson = person
-                        appState.selectedPersonID = person.identifier
+                HStack(spacing: 0) {
+                    Button(action: { appState.selectedTab = .insights }) {
+                        HStack(spacing: 6) {
+                            Image(systemName: "chart.line.uptrend.xyaxis")
+                                .font(.system(size: 14, weight: .medium))
+                            Text("Insights")
+                                .font(.system(size: 14, weight: .medium))
+                        }
+                        .foregroundColor(appState.selectedTab == .insights ? .white : .primary)
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 8)
+                        .background(
+                            RoundedRectangle(cornerRadius: 8)
+                                .fill(appState.selectedTab == .insights ? Color.accentColor : Color.clear)
+                        )
                     }
-                    .frame(width: 220)
+                    .buttonStyle(PlainButtonStyle())
+                    
+                    Button(action: { appState.selectedTab = .people }) {
+                        HStack(spacing: 6) {
+                            Image(systemName: "person.2")
+                                .font(.system(size: 14, weight: .medium))
+                            Text("People")
+                                .font(.system(size: 14, weight: .medium))
+                        }
+                        .foregroundColor(appState.selectedTab == .people ? .white : .primary)
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 8)
+                        .background(
+                            RoundedRectangle(cornerRadius: 8)
+                                .fill(appState.selectedTab == .people ? Color.accentColor : Color.clear)
+                        )
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                    
+                    Button(action: { appState.selectedTab = .analytics }) {
+                        HStack(spacing: 6) {
+                            Image(systemName: "chart.bar.fill")
+                                .font(.system(size: 14, weight: .medium))
+                            Text("Analytics")
+                                .font(.system(size: 14, weight: .medium))
+                        }
+                        .foregroundColor(appState.selectedTab == .analytics ? .white : .primary)
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 8)
+                        .background(
+                            RoundedRectangle(cornerRadius: 8)
+                                .fill(appState.selectedTab == .analytics ? Color.accentColor : Color.clear)
+                        )
+                    }
+                    .buttonStyle(PlainButtonStyle())
                 }
+                .padding(2)
+                .background(
+                    RoundedRectangle(cornerRadius: 10)
+                        .fill(Color(NSColor.controlBackgroundColor))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 10)
+                                .stroke(Color.gray.opacity(0.2), lineWidth: 1)
+                        )
+                )
+                .animation(.easeInOut(duration: 0.2), value: appState.selectedTab)
+            }
+            
+            // Far right: Search bar (compact for now, will improve in responsive phase)
+            ToolbarItem(placement: .automatic) {
+                SearchBar(searchText: $searchText) { person in
+                    appState.selectedTab = .people
+                    appState.selectedPerson = person
+                    appState.selectedPersonID = person.identifier
+                }
+                .frame(width: 180) // Reduced width to fit
+            }
+            
+            // Settings button
+            ToolbarItem(placement: .automatic) {
+                Button(action: {
+                    openWindow(id: "settings")
+                }) {
+                    Image(systemName: "gear")
+                        .font(.system(size: 16))
+                        .foregroundColor(.primary)
+                }
+                .buttonStyle(PlainButtonStyle())
             }
         }
     }

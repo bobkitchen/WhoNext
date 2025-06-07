@@ -52,14 +52,17 @@ struct ChatView: View {
                     fetchPeople()
                 }
             
-            // Title with help button
-            HStack(spacing: 8) {
-                Image("icon_lightbulb")
-                    .resizable()
-                    .frame(width: 28, height: 28)
-                Text("Insights")
+            // Title section - left aligned
+            HStack {
+                HStack(spacing: 8) {
+                    Image("icon_lightbulb")
+                        .resizable()
+                        .frame(width: 28, height: 28)
+                    Text("Insights")
+                        .font(.system(size: 28, weight: .semibold, design: .rounded))
+                }
+                Spacer()
             }
-            .font(.system(size: 28, weight: .semibold, design: .rounded))
             .padding(.horizontal, 20)
             .padding(.top, 20)
             .padding(.bottom, 16)
@@ -154,20 +157,50 @@ struct ChatView: View {
                         LazyVStack(spacing: 12) {
                             ForEach(chatSession.messages) { message in
                                 MessageBubble(message: message)
-                                    .id(message.id)
                                     .transition(.asymmetric(
-                                        insertion: .scale(scale: 0.9).combined(with: .opacity).animation(.spring()),
-                                        removal: .opacity.animation(.easeOut(duration: 0.2))
+                                        insertion: .move(edge: .bottom).combined(with: .opacity),
+                                        removal: .opacity
                                     ))
                             }
                             
+                            // Enhanced loading indicator
                             if chatSession.isLoading {
                                 HStack {
-                                    TypingIndicator()
                                     Spacer()
+                                    VStack(spacing: 8) {
+                                        HStack(spacing: 6) {
+                                            ForEach(0..<3) { index in
+                                                Circle()
+                                                    .fill(Color.accentColor.opacity(0.6))
+                                                    .frame(width: 8, height: 8)
+                                                    .scaleEffect(chatSession.isLoading ? 1.2 : 0.8)
+                                                    .animation(
+                                                        Animation.easeInOut(duration: 0.6)
+                                                            .repeatForever()
+                                                            .delay(Double(index) * 0.2),
+                                                        value: chatSession.isLoading
+                                                    )
+                                            }
+                                        }
+                                        .padding(.horizontal, 16)
+                                        .padding(.vertical, 12)
+                                        .background(
+                                            RoundedRectangle(cornerRadius: 18)
+                                                .fill(Color(NSColor.controlBackgroundColor))
+                                                .shadow(color: .black.opacity(0.1), radius: 2, x: 0, y: 1)
+                                        )
+                                        
+                                        Text("AI is thinking...")
+                                            .font(.caption)
+                                            .foregroundColor(.secondary)
+                                            .opacity(0.8)
+                                    }
+                                    .padding(.trailing, 16)
                                 }
-                                .padding(.horizontal)
-                                .transition(.opacity)
+                                .transition(.asymmetric(
+                                    insertion: .move(edge: .bottom).combined(with: .opacity),
+                                    removal: .opacity
+                                ))
                             }
                         }
                         .padding()
@@ -361,6 +394,7 @@ struct ChatView: View {
 
 struct MessageBubble: View {
     let message: ChatMessage
+    @State private var isHovered = false
     
     var body: some View {
         HStack {
@@ -370,38 +404,63 @@ struct MessageBubble: View {
             VStack(alignment: message.isUser ? .trailing : .leading, spacing: 4) {
                 if message.isUser {
                     Text(message.content)
-                        .padding(12)
+                        .padding(16)
                         .background(
-                            LinearGradient(colors: [.blue, .blue.opacity(0.8)], startPoint: .topLeading, endPoint: .bottomTrailing)
+                            LinearGradient(
+                                colors: [Color.accentColor, Color.accentColor.opacity(0.8)], 
+                                startPoint: .topLeading, 
+                                endPoint: .bottomTrailing
+                            )
                         )
                         .foregroundColor(.white)
-                        .cornerRadius(14)
+                        .cornerRadius(18)
+                        .shadow(color: Color.accentColor.opacity(0.3), radius: isHovered ? 8 : 4, x: 0, y: 2)
+                        .scaleEffect(isHovered ? 1.02 : 1.0)
+                        .animation(.easeInOut(duration: 0.2), value: isHovered)
                 } else {
-                    // Render AI response as plain text, wrapped within the bubble
+                    // Enhanced AI response bubble
                     Text(message.content)
-                        .padding(12)
-                        .background(Color(.windowBackgroundColor).opacity(0.8))
+                        .padding(16)
+                        .background(
+                            RoundedRectangle(cornerRadius: 18)
+                                .fill(Color(NSColor.controlBackgroundColor))
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 18)
+                                        .stroke(Color.gray.opacity(0.1), lineWidth: 1)
+                                )
+                        )
                         .foregroundColor(.primary)
-                        .cornerRadius(14)
                         .textSelection(.enabled)
                         .font(.system(size: 15, weight: .regular, design: .rounded))
                         .multilineTextAlignment(.leading)
-                        .frame(maxWidth: 400, alignment: .leading) // Limit width for wrapping
+                        .frame(maxWidth: 400, alignment: .leading)
+                        .shadow(color: .black.opacity(0.08), radius: isHovered ? 6 : 3, x: 0, y: 1)
+                        .scaleEffect(isHovered ? 1.01 : 1.0)
+                        .animation(.easeInOut(duration: 0.2), value: isHovered)
                 }
+                
+                // Enhanced timestamp with better styling
                 HStack(spacing: 4) {
                     if !message.isUser {
-                        Image(systemName: "brain.head.profile")
-                            .foregroundStyle(.secondary)
-                            .font(.caption2)
+                        Image(systemName: "sparkles")
+                            .font(.system(size: 10))
+                            .foregroundColor(.accentColor.opacity(0.7))
                     }
                     Text(message.timestamp.formatted(date: .omitted, time: .shortened))
                         .font(.caption2)
-                        .foregroundStyle(.secondary)
+                        .foregroundColor(.secondary)
+                        .opacity(isHovered ? 1.0 : 0.6)
+                        .animation(.easeInOut(duration: 0.2), value: isHovered)
                 }
+                .padding(.horizontal, 4)
             }
             if !message.isUser {
                 Spacer()
             }
+        }
+        .padding(.horizontal, 16)
+        .onHover { hovering in
+            isHovered = hovering
         }
     }
 }

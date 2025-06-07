@@ -102,27 +102,71 @@ struct EnhancedStatCardView: View {
     }
 }
 
-// Circular Progress Indicator
+// Enhanced Circular Progress Indicator
 struct CircularProgressView: View {
     let progress: Double
     let color: Color
+    @State private var animatedProgress: Double = 0
+    @State private var isAnimating = false
     
     var body: some View {
         ZStack {
+            // Background circle
             Circle()
-                .stroke(color.opacity(0.2), lineWidth: 3)
+                .stroke(color.opacity(0.15), lineWidth: 4)
             
+            // Progress circle with gradient and glow
             Circle()
-                .trim(from: 0, to: progress)
+                .trim(from: 0, to: animatedProgress)
                 .stroke(
                     AngularGradient(
-                        colors: [color, color.opacity(0.7)],
-                        center: .center
+                        colors: [
+                            color,
+                            color.opacity(0.8),
+                            color,
+                            color.opacity(0.6)
+                        ],
+                        center: .center,
+                        startAngle: .degrees(0),
+                        endAngle: .degrees(360)
                     ),
-                    style: StrokeStyle(lineWidth: 3, lineCap: .round)
+                    style: StrokeStyle(lineWidth: 4, lineCap: .round)
                 )
                 .rotationEffect(.degrees(-90))
-                .animation(.spring(response: 0.5, dampingFraction: 0.8), value: progress)
+                .shadow(color: color.opacity(0.3), radius: 2, x: 0, y: 0)
+                .scaleEffect(isAnimating ? 1.05 : 1.0)
+                .animation(.easeInOut(duration: 0.1).repeatCount(1), value: isAnimating)
+            
+            // Percentage text
+            Text("\(Int(progress * 100))%")
+                .font(.system(size: 10, weight: .bold, design: .rounded))
+                .foregroundColor(color)
+                .scaleEffect(isAnimating ? 1.1 : 1.0)
+                .animation(.easeInOut(duration: 0.1).repeatCount(1), value: isAnimating)
+        }
+        .onAppear {
+            withAnimation(.spring(response: 0.8, dampingFraction: 0.6).delay(0.2)) {
+                animatedProgress = progress
+            }
+            
+            // Pulse animation on appear
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                isAnimating = true
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                    isAnimating = false
+                }
+            }
+        }
+        .onChange(of: progress) { newProgress in
+            withAnimation(.spring(response: 0.6, dampingFraction: 0.8)) {
+                animatedProgress = newProgress
+            }
+            
+            // Pulse on change
+            isAnimating = true
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                isAnimating = false
+            }
         }
     }
 }

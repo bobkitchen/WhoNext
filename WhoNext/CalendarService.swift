@@ -18,7 +18,24 @@ class CalendarService: ObservableObject {
 
     @Published var upcomingMeetings: [UpcomingMeeting] = []
 
-    private init() {}
+    private init() {
+        // Listen for calendar selection changes
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(calendarSelectionChanged(_:)),
+            name: Notification.Name("CalendarSelectionChanged"),
+            object: nil
+        )
+    }
+    
+    @objc private func calendarSelectionChanged(_ notification: Notification) {
+        if let calendarID = notification.object as? String, !calendarID.isEmpty {
+            loadTargetCalendar(withID: calendarID)
+        } else {
+            let storedID = UserDefaults.standard.string(forKey: "selectedCalendarID")
+            loadTargetCalendar(withID: storedID)
+        }
+    }
 
     func requestAccess(completion: @escaping (Bool) -> Void) {
         if #available(macOS 14.0, *) {
@@ -27,7 +44,8 @@ class CalendarService: ObservableObject {
                 print("[CalendarService] Calendar access granted: \(granted). Error: \(String(describing: error))")
                 if granted {
                     self.logAvailableCalendars()
-                    self.loadTargetCalendar()
+                    let storedID = UserDefaults.standard.string(forKey: "selectedCalendarID")
+                    self.loadTargetCalendar(withID: storedID)
                 }
                 DispatchQueue.main.async {
                     completion(granted)
@@ -39,7 +57,8 @@ class CalendarService: ObservableObject {
                 print("[CalendarService] Calendar access granted: \(granted). Error: \(String(describing: error))")
                 if granted {
                     self.logAvailableCalendars()
-                    self.loadTargetCalendar()
+                    let storedID = UserDefaults.standard.string(forKey: "selectedCalendarID")
+                    self.loadTargetCalendar(withID: storedID)
                 }
                 DispatchQueue.main.async {
                     completion(granted)
@@ -56,12 +75,14 @@ class CalendarService: ObservableObject {
         }
     }
 
-    private func loadTargetCalendar() {
-        let calendars = eventStore.calendars(for: .event)
-        if let exchangeCal = calendars.first(where: { $0.source.title.lowercased().contains("exchange") }) {
+    private func loadTargetCalendar(withID id: String? = nil) {
+        if let id = id, let exchangeCal = eventStore.calendars(for: .event).first(where: { $0.calendarIdentifier == id }) {
+            targetCalendar = exchangeCal
+            print("[CalendarService] Selected calendar with ID \(id): \(exchangeCal.title)")
+        } else if let exchangeCal = eventStore.calendars(for: .event).first(where: { $0.source.title.lowercased().contains("exchange") }) {
             targetCalendar = exchangeCal
             print("[CalendarService] Selected Exchange calendar: \(exchangeCal.title) (ID: \(exchangeCal.calendarIdentifier))")
-        } else if let first = calendars.first {
+        } else if let first = eventStore.calendars(for: .event).first {
             targetCalendar = first
             print("[CalendarService] Selected fallback calendar: \(first.title) (ID: \(first.calendarIdentifier))")
         } else {
@@ -72,7 +93,8 @@ class CalendarService: ObservableObject {
     func fetchUpcomingMeetings(daysAhead: Int = 7) {
         guard let calendar = targetCalendar else {
             print("[CalendarService] No target calendar set, attempting to reload...")
-            loadTargetCalendar()
+            let storedID = UserDefaults.standard.string(forKey: "selectedCalendarID")
+            loadTargetCalendar(withID: storedID)
             return
         }
         let start = Date()

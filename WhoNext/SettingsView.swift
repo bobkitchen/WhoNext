@@ -2,6 +2,7 @@ import SwiftUI
 import CoreData
 import UniformTypeIdentifiers
 import CloudKit
+import EventKit
 
 struct SettingsView: View {
     @Environment(\.managedObjectContext) private var viewContext
@@ -36,6 +37,9 @@ Best regards
     @State private var importSuccess: String?
     @State private var pastedPeopleText: String = ""
     @State private var showResetConfirmation = false
+    @State private var availableCalendars: [EKCalendar] = []
+    @State private var selectedCalendarID: String = ""
+    @AppStorage("selectedCalendarID") private var storedCalendarID: String = ""
     
     @FetchRequest(
         sortDescriptors: [NSSortDescriptor(keyPath: \Person.name, ascending: true)],
@@ -70,6 +74,10 @@ Best regards
                 TabButton(title: "Import & Export", icon: "square.and.arrow.down", isSelected: selectedTab == "import") {
                     selectedTab = "import"
                 }
+                
+                TabButton(title: "Calendar", icon: "calendar", isSelected: selectedTab == "calendar") {
+                    selectedTab = "calendar"
+                }
             }
             .background(Color.gray.opacity(0.1))
             .cornerRadius(10)
@@ -86,6 +94,8 @@ Best regards
                         emailSettingsView
                     case "import":
                         importExportView
+                    case "calendar":
+                        calendarSettingsView
                     default:
                         generalSettingsView
                     }
@@ -351,6 +361,129 @@ Best regards
                 }
                 .padding(.vertical, 8)
             }
+        }
+    }
+    
+    // MARK: - Calendar Settings
+    private var calendarSettingsView: some View {
+        VStack(alignment: .leading, spacing: 20) {
+            // Calendar Integration Section
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Calendar Integration")
+                    .font(.headline)
+                Text("Select which calendar to use for meeting scheduling and upcoming events")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                
+                HStack {
+                    Button("Request Calendar Access") {
+                        requestCalendarAccess()
+                    }
+                    .buttonStyle(.borderedProminent)
+                    
+                    Button("Refresh Calendars") {
+                        loadAvailableCalendars()
+                    }
+                    .buttonStyle(.bordered)
+                }
+                
+                // Calendar Selection
+                if !availableCalendars.isEmpty {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Select Calendar:")
+                            .font(.subheadline)
+                            .fontWeight(.medium)
+                        
+                        Picker("Calendar", selection: $selectedCalendarID) {
+                            Text("None Selected").tag("")
+                            ForEach(availableCalendars, id: \.calendarIdentifier) { calendar in
+                                HStack {
+                                    Circle()
+                                        .fill(Color(calendar.color))
+                                        .frame(width: 12, height: 12)
+                                    Text("\(calendar.title) (\(calendar.source.title))")
+                                }
+                                .tag(calendar.calendarIdentifier)
+                            }
+                        }
+                        .pickerStyle(.menu)
+                        .onChange(of: selectedCalendarID) { newValue in
+                            storedCalendarID = newValue
+                            // Notify CalendarService to update
+                            NotificationCenter.default.post(
+                                name: Notification.Name("CalendarSelectionChanged"),
+                                object: newValue
+                            )
+                        }
+                    }
+                }
+                
+                // Current Status
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Status:")
+                        .font(.subheadline)
+                        .fontWeight(.medium)
+                    
+                    let authStatus = EKEventStore.authorizationStatus(for: .event)
+                    HStack {
+                        Circle()
+                            .fill(authStatus == .authorized ? .green : .red)
+                            .frame(width: 8, height: 8)
+                        Text(calendarStatusText(authStatus))
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                }
+            }
+        }
+        .onAppear {
+            selectedCalendarID = storedCalendarID
+            if EKEventStore.authorizationStatus(for: .event) == .authorized {
+                loadAvailableCalendars()
+            }
+        }
+    }
+    
+    private func requestCalendarAccess() {
+        let eventStore = EKEventStore()
+        if #available(macOS 14.0, *) {
+            eventStore.requestFullAccessToEvents { granted, error in
+                DispatchQueue.main.async {
+                    if granted {
+                        loadAvailableCalendars()
+                    }
+                }
+            }
+        } else {
+            eventStore.requestAccess(to: .event) { granted, error in
+                DispatchQueue.main.async {
+                    if granted {
+                        loadAvailableCalendars()
+                    }
+                }
+            }
+        }
+    }
+    
+    private func loadAvailableCalendars() {
+        let eventStore = EKEventStore()
+        availableCalendars = eventStore.calendars(for: .event)
+            .filter { $0.allowsContentModifications }
+            .sorted { $0.title < $1.title }
+    }
+    
+    private func calendarStatusText(_ status: EKAuthorizationStatus) -> String {
+        switch status {
+        case .authorized:
+            return "Calendar access granted"
+        case .denied:
+            return "Calendar access denied"
+        case .restricted:
+            return "Calendar access restricted"
+        case .notDetermined:
+            return "Calendar access not requested"
+        @unknown default:
+            return "Unknown calendar status"
         }
     }
     
