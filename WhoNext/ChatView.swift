@@ -1,31 +1,6 @@
 import SwiftUI
 import CoreData
-
-struct ChatMessage: Identifiable, Equatable {
-    let id = UUID()
-    let content: String
-    let isUser: Bool
-    let timestamp: Date
-    
-    static func == (lhs: ChatMessage, rhs: ChatMessage) -> Bool {
-        lhs.id == rhs.id
-    }
-}
-
-class ChatSession: ObservableObject {
-    @Published var messages: [ChatMessage] = []
-    @Published var inputText: String = ""
-    @Published var isLoading: Bool = false
-    @Published var errorMessage: String?
-    @Published var showError: Bool = false
-}
-
-// Singleton holder for chat session
-class ChatSessionHolder {
-    static let shared = ChatSessionHolder()
-    let session = ChatSession()
-    private init() {}
-}
+import AppKit
 
 struct ChatView: View {
     @Environment(\.managedObjectContext) private var viewContext
@@ -62,6 +37,26 @@ struct ChatView: View {
                         .font(.system(size: 28, weight: .semibold, design: .rounded))
                 }
                 Spacer()
+                
+                // Pop-out button
+                Button(action: {
+                    openPopoutChat()
+                }) {
+                    HStack(spacing: 6) {
+                        Image(systemName: "arrow.up.right.square")
+                            .font(.system(size: 16, weight: .medium))
+                        Text("Pop Out")
+                            .font(.system(size: 14, weight: .medium))
+                    }
+                    .foregroundColor(.accentColor)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 6)
+                    .background(
+                        RoundedRectangle(cornerRadius: 8)
+                            .fill(Color.accentColor.opacity(0.1))
+                    )
+                }
+                .buttonStyle(.plain)
             }
             .padding(.horizontal, 20)
             .padding(.top, 20)
@@ -205,6 +200,7 @@ struct ChatView: View {
                         }
                         .padding()
                     }
+                    .frame(maxHeight: 400)
                     .onChange(of: chatSession.messages.count) { _, _ in
                         withAnimation {
                             if let lastMessage = chatSession.messages.last {
@@ -351,6 +347,11 @@ struct ChatView: View {
             context += "Direct Report: \(isDirectReport)\n"
             context += "Timezone: \(timezone)\n"
             
+            // Add person's background notes
+            if let personNotes = person.notes, !personNotes.isEmpty {
+                context += "Background Notes: \(personNotes)\n"
+            }
+            
             if let scheduledDate = scheduledDate {
                 context += "Next Scheduled Conversation: \(scheduledDate.formatted())\n"
             }
@@ -389,6 +390,18 @@ struct ChatView: View {
             print("Failed to fetch people: \(error)")
             people = []
         }
+    }
+    
+    private func openPopoutChat() {
+        // Check if popout window already exists
+        if let existingWindow = NSApp.windows.first(where: { $0 is PopoutChatWindow }) {
+            existingWindow.makeKeyAndOrderFront(nil)
+            return
+        }
+        
+        // Create new popout window with Core Data context
+        let popoutWindow = PopoutChatWindow(context: viewContext)
+        popoutWindow.makeKeyAndOrderFront(nil)
     }
 }
 

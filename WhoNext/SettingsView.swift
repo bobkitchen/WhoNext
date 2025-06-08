@@ -7,6 +7,8 @@ import EventKit
 struct SettingsView: View {
     @Environment(\.managedObjectContext) private var viewContext
     @AppStorage("openaiApiKey") private var apiKey: String = ""
+    @AppStorage("claudeApiKey") private var claudeApiKey: String = ""
+    @AppStorage("aiProvider") private var aiProvider: String = "openai"
     @AppStorage("dismissedPeople") private var dismissedPeopleData: Data = Data()
     @AppStorage("customPreMeetingPrompt") private var customPreMeetingPrompt: String = """
 You are an executive assistant preparing a pre-meeting brief. Your job is to help the user engage with this person confidently by surfacing:
@@ -33,6 +35,9 @@ Best regards
     @State private var isValidatingKey = false
     @State private var isKeyValid = false
     @State private var keyError: String?
+    @State private var isValidatingClaudeKey = false
+    @State private var isClaudeKeyValid = false
+    @State private var claudeKeyError: String?
     @State private var importError: String?
     @State private var importSuccess: String?
     @State private var pastedPeopleText: String = ""
@@ -208,27 +213,59 @@ Best regards
     // MARK: - AI Settings
     private var aiSettingsView: some View {
         VStack(alignment: .leading, spacing: 20) {
+            // AI Provider Section
+            VStack(alignment: .leading, spacing: 8) {
+                Text("AI Provider")
+                    .font(.headline)
+                Picker("AI Provider", selection: $aiProvider) {
+                    Text("OpenAI").tag("openai")
+                    Text("Claude").tag("claude")
+                }
+                .pickerStyle(.menu)
+            }
+            
             // API Key Section
             VStack(alignment: .leading, spacing: 8) {
-                Text("OpenAI API Key")
+                Text("API Key")
                     .font(.headline)
-                HStack {
-                    SecureField("sk-...", text: $apiKey)
-                        .textFieldStyle(.roundedBorder)
-                    Button("Validate") {
-                        validateApiKey()
+                if aiProvider == "openai" {
+                    HStack {
+                        SecureField("sk-...", text: $apiKey)
+                            .textFieldStyle(.roundedBorder)
+                        Button("Validate") {
+                            validateApiKey()
+                        }
+                        .disabled(isValidatingKey)
                     }
-                    .disabled(isValidatingKey)
-                }
-                if isValidatingKey {
-                    Text("Validating...")
-                        .foregroundColor(.secondary)
-                } else if isKeyValid {
-                    Text("✓ Valid API Key")
-                        .foregroundColor(.green)
-                } else if let error = keyError {
-                    Text("✗ \(error)")
-                        .foregroundColor(.red)
+                    if isValidatingKey {
+                        Text("Validating...")
+                            .foregroundColor(.secondary)
+                    } else if isKeyValid {
+                        Text("✓ Valid API Key")
+                            .foregroundColor(.green)
+                    } else if let error = keyError {
+                        Text("✗ \(error)")
+                            .foregroundColor(.red)
+                    }
+                } else if aiProvider == "claude" {
+                    HStack {
+                        SecureField("ck-...", text: $claudeApiKey)
+                            .textFieldStyle(.roundedBorder)
+                        Button("Validate") {
+                            validateClaudeApiKey()
+                        }
+                        .disabled(isValidatingClaudeKey)
+                    }
+                    if isValidatingClaudeKey {
+                        Text("Validating...")
+                            .foregroundColor(.secondary)
+                    } else if isClaudeKeyValid {
+                        Text("✓ Valid API Key")
+                            .foregroundColor(.green)
+                    } else if let error = claudeKeyError {
+                        Text("✗ \(error)")
+                            .foregroundColor(.red)
+                    }
                 }
             }
             
@@ -560,6 +597,97 @@ Best regards
                         isKeyValid = false
                         keyError = "Unexpected error (HTTP \(httpResponse.statusCode))"
                     }
+                }
+            }
+        }.resume()
+    }
+    
+    private func validateClaudeApiKey() {
+        guard !claudeApiKey.isEmpty else {
+            claudeKeyError = "API key cannot be empty"
+            isClaudeKeyValid = false
+            return
+        }
+        
+        isValidatingClaudeKey = true
+        isClaudeKeyValid = false
+        claudeKeyError = nil
+        
+        // Simple validation request to Claude
+        let url = URL(string: "https://api.anthropic.com/v1/messages")!
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.setValue(claudeApiKey, forHTTPHeaderField: "x-api-key")
+        request.setValue("2023-06-01", forHTTPHeaderField: "anthropic-version")
+        
+        // Simple test message
+        let requestBody: [String: Any] = [
+            "model": "claude-sonnet-4-20250514",
+            "max_tokens": 10,
+            "messages": [
+                [
+                    "role": "user",
+                    "content": "Hi"
+                ]
+            ]
+        ]
+        
+        do {
+            request.httpBody = try JSONSerialization.data(withJSONObject: requestBody)
+        } catch {
+            DispatchQueue.main.async {
+                self.isValidatingClaudeKey = false
+                self.claudeKeyError = "Request encoding error: \(error.localizedDescription)"
+                self.isClaudeKeyValid = false
+            }
+            return
+        }
+        
+        URLSession.shared.dataTask(with: request) { data, response, error in
+            DispatchQueue.main.async {
+                isValidatingClaudeKey = false
+                
+                if let error = error {
+                    claudeKeyError = "Network error: \(error.localizedDescription)"
+                    isClaudeKeyValid = false
+                    return
+                }
+                
+                if let httpResponse = response as? HTTPURLResponse {
+                    print("Claude API validation response: \(httpResponse.statusCode)")
+                    if let data = data, let responseString = String(data: data, encoding: .utf8) {
+                        print("Claude API response body: \(responseString)")
+                    }
+                    
+                    switch httpResponse.statusCode {
+                    case 200:
+                        isClaudeKeyValid = true
+                        claudeKeyError = nil
+                    case 401:
+                        isClaudeKeyValid = false
+                        claudeKeyError = "Invalid API key - check your Claude API key"
+                    case 400:
+                        // Parse the error response for more details
+                        if let data = data,
+                           let errorResponse = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+                           let error = errorResponse["error"] as? [String: Any],
+                           let message = error["message"] as? String {
+                            claudeKeyError = "Bad request: \(message)"
+                        } else {
+                            claudeKeyError = "Bad request - check API key format"
+                        }
+                        isClaudeKeyValid = false
+                    case 429:
+                        isClaudeKeyValid = false
+                        claudeKeyError = "Rate limit exceeded - try again later"
+                    default:
+                        isClaudeKeyValid = false
+                        claudeKeyError = "API error (HTTP \(httpResponse.statusCode))"
+                    }
+                } else {
+                    claudeKeyError = "Invalid response format"
+                    isClaudeKeyValid = false
                 }
             }
         }.resume()
