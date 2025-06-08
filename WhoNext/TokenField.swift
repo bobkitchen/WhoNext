@@ -39,7 +39,6 @@ struct TokenField: NSViewRepresentable {
         }
         
         func tokenField(_ tokenField: NSTokenField, completionsForSubstring substring: String, indexOfToken tokenIndex: Int, indexOfSelectedItem selectedIndex: UnsafeMutablePointer<Int>?) -> [Any]? {
-            print("[TokenField] Autocomplete called for substring: \(substring)")
             let filtered = parent.people.compactMap { person in
                 let name = person.name?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
                 return (!name.isEmpty && name.localizedCaseInsensitiveContains(substring)) ? name : nil

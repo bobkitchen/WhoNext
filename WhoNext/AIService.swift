@@ -87,6 +87,81 @@ class AIService {
             throw AIError.apiError(message: errorMessage ?? "Unknown API error")
         }
     }
+    
+    func analyzeImageWithVision(imageData: String, prompt: String, completion: @escaping (Result<String, Error>) -> Void) {
+        guard !apiKey.isEmpty else {
+            completion(.failure(AIError.missingAPIKey))
+            return
+        }
+        
+        let visionURL = "https://api.openai.com/v1/chat/completions"
+        
+        let requestBody: [String: Any] = [
+            "model": "gpt-4o",
+            "messages": [
+                [
+                    "role": "user",
+                    "content": [
+                        [
+                            "type": "text",
+                            "text": prompt
+                        ],
+                        [
+                            "type": "image_url",
+                            "image_url": [
+                                "url": "data:image/jpeg;base64,\(imageData)"
+                            ]
+                        ]
+                    ]
+                ]
+            ],
+            "max_tokens": 2000
+        ]
+        
+        guard let url = URL(string: visionURL) else {
+            completion(.failure(AIError.invalidResponse))
+            return
+        }
+        
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        
+        do {
+            request.httpBody = try JSONSerialization.data(withJSONObject: requestBody)
+        } catch {
+            completion(.failure(error))
+            return
+        }
+        
+        URLSession.shared.dataTask(with: request) { data, response, error in
+            if let error = error {
+                completion(.failure(error))
+                return
+            }
+            
+            guard let data = data,
+                  let httpResponse = response as? HTTPURLResponse else {
+                completion(.failure(AIError.invalidResponse))
+                return
+            }
+            
+            do {
+                if httpResponse.statusCode == 200 {
+                    let decodedResponse = try JSONDecoder().decode(OpenAIResponse.self, from: data)
+                    let content = decodedResponse.choices.first?.message.content ?? "No response content."
+                    completion(.success(content))
+                } else {
+                    let errorResponse = try? JSONSerialization.jsonObject(with: data) as? [String: Any]
+                    let errorMessage = (errorResponse?["error"] as? [String: Any])?["message"] as? String
+                    completion(.failure(AIError.apiError(message: errorMessage ?? "Unknown API error")))
+                }
+            } catch {
+                completion(.failure(error))
+            }
+        }.resume()
+    }
 }
 
 enum AIError: Error {
@@ -104,4 +179,4 @@ enum AIError: Error {
             return "API Error: \(message)"
         }
     }
-} 
+}

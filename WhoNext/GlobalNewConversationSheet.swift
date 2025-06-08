@@ -128,7 +128,6 @@ struct GlobalNewConversationSheet: View {
         newConversation.notes = notes
         newConversation.person = person
         do {
-            print("[GlobalNewConversationSheet][LOG] Saving context\n\tCallStack: \(Thread.callStackSymbols.joined(separator: "\n\t"))")
             try viewContext.save()
             isPresented = false
             notes = ""
@@ -136,7 +135,7 @@ struct GlobalNewConversationSheet: View {
             selectedPerson = nil
             toField = ""
         } catch {
-            print("Error saving conversation: \(error.localizedDescription)")
+            print("Failed to save conversation: \(error)")
         }
     }
 }

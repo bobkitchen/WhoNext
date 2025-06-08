@@ -1,5 +1,6 @@
 import SwiftUI
 import CoreData
+import AppKit
 
 struct AnalyticsView: View {
     @EnvironmentObject var appState: AppState
@@ -10,10 +11,10 @@ struct AnalyticsView: View {
     ) var people: FetchedResults<Person>
     
     @State private var selectedTimeframe: TimelineView.TimeFrame = .week
-    @State private var allPersonMetrics: [PersonMetrics] = []
-    @State private var aggregateStats: (averageDuration: Double, totalConversations: Int, averageHealthScore: Double) = (0, 0, 0)
-    @State private var priorityInsights: [PriorityInsight] = []
-    @State private var isLoadingSentiment = true
+    @State private var showLowHealthDetail = false
+    @State private var showOverdueDetail = false
+    @State private var lowHealthWindowController: NSWindowController?
+    @State private var overdueWindowController: NSWindowController?
     
     var body: some View {
         ScrollView(.vertical, showsIndicators: false) {
@@ -41,100 +42,116 @@ struct AnalyticsView: View {
                         .font(.title2)
                         .fontWeight(.bold)
                     
-                    if isLoadingSentiment {
-                        HStack {
-                            ProgressView()
-                                .scaleEffect(0.8)
-                            Text("Analyzing conversations...")
-                                .foregroundColor(.secondary)
-                        }
-                        .frame(maxWidth: .infinity, alignment: .center)
-                        .padding(.vertical, 40)
-                    } else {
-                        // Aggregate Statistics
-                        LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 3), spacing: 16) {
-                            StatCardView(
-                                title: "Avg Duration",
-                                value: String(format: "%.1f min", aggregateStats.averageDuration),
-                                icon: "clock.fill",
-                                color: .blue
-                            )
-                            
-                            StatCardView(
-                                title: "Total Conversations",
-                                value: "\(aggregateStats.totalConversations)",
-                                icon: "bubble.left.and.bubble.right.fill",
-                                color: .green
-                            )
-                            
-                            StatCardView(
-                                title: "Avg Health Score",
-                                value: String(format: "%.1f", aggregateStats.averageHealthScore),
-                                icon: "heart.fill",
-                                color: .red
-                            )
-                        }
+                    let metrics = ConversationMetricsCalculator.shared.calculateAllPersonMetrics(context: self.viewContext)
+                    let stats = computeAggregateStats(from: metrics)
+                    let insights = generatePriorityInsights(from: metrics)
+                    
+                    // Aggregate Statistics
+                    LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 3), spacing: 16) {
+                        StatCardView(
+                            title: "Avg Duration",
+                            value: String(format: "%.1f min", stats.averageDuration),
+                            icon: "clock.fill",
+                            color: .blue
+                        )
                         
-                        // Priority Insights
-                        if !priorityInsights.isEmpty {
-                            VStack(alignment: .leading, spacing: 12) {
-                                Text("Priority Insights")
-                                    .font(.headline)
-                                    .fontWeight(.semibold)
-                                
-                                LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 2), spacing: 12) {
-                                    ForEach(Array(priorityInsights.prefix(4)), id: \.title) { insight in
-                                        HStack(spacing: 12) {
-                                            Image(systemName: getInsightIcon(for: insight.type))
-                                                .foregroundColor(getInsightColor(for: insight.priority))
-                                                .font(.title3)
-                                                .frame(width: 24, height: 24)
-                                            
-                                            VStack(alignment: .leading, spacing: 4) {
-                                                Text(insight.title)
-                                                    .font(.subheadline)
-                                                    .fontWeight(.medium)
-                                                Text(insight.description)
-                                                    .font(.caption)
-                                                    .foregroundColor(.secondary)
-                                                    .lineLimit(2)
-                                            }
-                                            
-                                            Spacer()
-                                        }
-                                        .padding(12)
-                                        .background(Color(NSColor.controlBackgroundColor))
-                                        .cornerRadius(8)
-                                    }
-                                }
-                            }
-                            .padding(.top, 8)
-                        }
+                        StatCardView(
+                            title: "Total Conversations",
+                            value: "\(stats.totalConversations)",
+                            icon: "bubble.left.and.bubble.right.fill",
+                            color: .green
+                        )
                         
-                        // Relationship Health Overview
-                        if !allPersonMetrics.isEmpty {
-                            VStack(alignment: .leading, spacing: 12) {
-                                Text("Relationship Health")
-                                    .font(.headline)
-                                    .fontWeight(.semibold)
-                                
-                                LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 3), spacing: 12) {
-                                    ForEach(Array(allPersonMetrics.prefix(9)), id: \.person.objectID) { personMetrics in
-                                        RelationshipHealthCardView(personMetrics: personMetrics)
+                        StatCardView(
+                            title: "Avg Health Score",
+                            value: String(format: "%.1f", stats.averageHealthScore),
+                            icon: "heart.fill",
+                            color: .red
+                        )
+                    }
+                    
+                    // Priority Insights
+                    VStack(alignment: .leading, spacing: 16) {
+                        Text("Priority Insights")
+                            .font(.title2)
+                            .fontWeight(.semibold)
+                        
+                        HStack(spacing: 16) {
+                            // Low Health Score Alert
+                            Button(action: {
+                                openLowHealthScoreWindow(metrics: metrics)
+                            }) {
+                                HStack(spacing: 12) {
+                                    Image(systemName: "exclamationmark.triangle.fill")
+                                        .foregroundColor(.red)
+                                        .font(.title2)
+                                    
+                                    VStack(alignment: .leading, spacing: 4) {
+                                        Text("Low Health Score Alert")
+                                            .font(.headline)
+                                            .foregroundColor(.primary)
+                                        Text("4 relationships showing health scores")
+                                            .font(.caption)
+                                            .foregroundColor(.secondary)
                                     }
+                                    
+                                    Spacer()
                                 }
-                                
-                                if allPersonMetrics.count > 9 {
-                                    Text("And \(allPersonMetrics.count - 9) more relationships...")
-                                        .font(.caption)
-                                        .foregroundColor(.secondary)
-                                        .padding(.top, 8)
-                                }
+                                .padding(16)
+                                .background(Color(NSColor.controlBackgroundColor))
+                                .cornerRadius(12)
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 12)
+                                        .stroke(Color.red.opacity(0.3), lineWidth: 1)
+                                )
                             }
-                            .padding(.top, 8)
+                            .buttonStyle(.plain)
+                            
+                            // Overdue Conversations
+                            Button(action: {
+                                openOverdueConversationsWindow(metrics: metrics)
+                            }) {
+                                HStack(spacing: 12) {
+                                    Image(systemName: "clock.fill")
+                                        .foregroundColor(.orange)
+                                        .font(.title2)
+                                    
+                                    VStack(alignment: .leading, spacing: 4) {
+                                        Text("Overdue Conversations")
+                                            .font(.headline)
+                                            .foregroundColor(.primary)
+                                        Text("2 people haven't been contacted in 30+ days")
+                                            .font(.caption)
+                                            .foregroundColor(.secondary)
+                                    }
+                                    
+                                    Spacer()
+                                }
+                                .padding(16)
+                                .background(Color(NSColor.controlBackgroundColor))
+                                .cornerRadius(12)
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 12)
+                                        .stroke(Color.orange.opacity(0.3), lineWidth: 1)
+                                )
+                            }
+                            .buttonStyle(.plain)
                         }
                     }
+                    
+                    // Health Score Graph
+                    if !metrics.isEmpty {
+                        VStack(alignment: .leading, spacing: 12) {
+                            Text("Health Score Graph")
+                                .font(.headline)
+                                .fontWeight(.semibold)
+                            
+                            HealthScoreGraphView(healthScoreData: generateHealthScoreData(from: metrics))
+                        }
+                        .padding(.top, 8)
+                    }
                 }
+                .padding(.horizontal, 32)
                 
                 // Timeline Section
                 VStack(alignment: .leading, spacing: 20) {
@@ -199,29 +216,9 @@ struct AnalyticsView: View {
                 Spacer(minLength: 40)
             }
         }
-        .onAppear {
-            loadSentimentInsights()
-        }
     }
     
     // MARK: - Data Loading
-    
-    private func loadSentimentInsights() {
-        isLoadingSentiment = true
-        
-        DispatchQueue.global(qos: .userInitiated).async {
-            let metrics = ConversationMetricsCalculator.shared.calculateAllPersonMetrics(context: self.viewContext)
-            let stats = self.computeAggregateStats(from: metrics)
-            let insights = self.generatePriorityInsights(from: metrics)
-            
-            DispatchQueue.main.async {
-                self.allPersonMetrics = metrics
-                self.aggregateStats = stats
-                self.priorityInsights = insights
-                self.isLoadingSentiment = false
-            }
-        }
-    }
     
     private func computeAggregateStats(from metrics: [PersonMetrics]) -> (averageDuration: Double, totalConversations: Int, averageHealthScore: Double) {
         guard !metrics.isEmpty else {
@@ -273,6 +270,57 @@ struct AnalyticsView: View {
         return insights
     }
     
+    private func generateHealthScoreData(from metrics: [PersonMetrics]) -> [HealthScoreDataPoint] {
+        let calendar = Calendar.current
+        var weeklyData: [Date: (totalScore: Double, count: Int)] = [:]
+        
+        // Get all conversations from all people to determine actual data range
+        let allConversations = metrics.flatMap { metric in
+            metric.person.conversationsArray
+        }
+        
+        // If no conversations, return empty data
+        guard !allConversations.isEmpty else {
+            return []
+        }
+        
+        // Find the earliest conversation date to determine our data range
+        let earliestDate = allConversations.compactMap { $0.date }.min() ?? Date()
+        let currentDate = Date()
+        
+        // Group conversations by week and calculate health scores for each week
+        for conversation in allConversations {
+            guard let conversationDate = conversation.date,
+                  let weekStart = calendar.dateInterval(of: .weekOfYear, for: conversationDate)?.start else {
+                continue
+            }
+            
+            // Calculate health score for this person for this week
+            if let person = conversation.person {
+                let healthScore = RelationshipHealthCalculator.shared.calculateHealthScore(for: person)
+                
+                if let existing = weeklyData[weekStart] {
+                    weeklyData[weekStart] = (existing.totalScore + healthScore, existing.count + 1)
+                } else {
+                    weeklyData[weekStart] = (healthScore, 1)
+                }
+            }
+        }
+        
+        // Convert to data points and sort by date
+        let dataPoints = weeklyData.map { (date, data) in
+            HealthScoreDataPoint(
+                weekStart: date,
+                averageScore: data.totalScore / Double(data.count),
+                relationshipCount: data.count
+            )
+        }.sorted { $0.weekStart < $1.weekStart }
+        
+        // Limit to last 25 weeks maximum, but only show weeks with actual data
+        let maxWeeks = 25
+        return Array(dataPoints.suffix(maxWeeks))
+    }
+    
     private func getInsightIcon(for type: PriorityInsightType) -> String {
         switch type {
         case .lowEngagement:
@@ -292,14 +340,45 @@ struct AnalyticsView: View {
             return .green
         }
     }
-}
-
-// Preview
-struct AnalyticsView_Previews: PreviewProvider {
-    static var previews: some View {
-        AnalyticsView()
+    
+    private func openLowHealthScoreWindow(metrics: [PersonMetrics]) {
+        let lowHealthRelationships = metrics.filter { $0.healthScore < 0.3 }
+        let window = NSWindow(
+            contentRect: NSRect(x: 0, y: 0, width: 600, height: 500),
+            styleMask: [.titled, .closable, .miniaturizable, .resizable],
+            backing: .buffered,
+            defer: false
+        )
+        window.center()
+        let hostingView = NSHostingView(rootView: LowHealthScoreDetailView(lowHealthRelationships: lowHealthRelationships).environment(\.managedObjectContext, viewContext))
+        window.contentView = hostingView
+        window.title = "Low Health Score Relationships"
+        lowHealthWindowController = NSWindowController(window: window)
+        lowHealthWindowController?.showWindow(nil)
+    }
+    
+    private func openOverdueConversationsWindow(metrics: [PersonMetrics]) {
+        let overdueRelationships = metrics.filter { metric in
+            guard let lastDate = metric.lastConversationDate else { return true }
+            let thirtyDaysAgo = Calendar.current.date(byAdding: .day, value: -30, to: Date()) ?? Date()
+            return lastDate < thirtyDaysAgo
+        }
+        let window = NSWindow(
+            contentRect: NSRect(x: 0, y: 0, width: 600, height: 500),
+            styleMask: [.titled, .closable, .miniaturizable, .resizable],
+            backing: .buffered,
+            defer: false
+        )
+        window.center()
+        let hostingView = NSHostingView(rootView: OverdueConversationsDetailView(overdueRelationships: overdueRelationships).environment(\.managedObjectContext, viewContext))
+        window.contentView = hostingView
+        window.title = "Overdue Conversations"
+        overdueWindowController = NSWindowController(window: window)
+        overdueWindowController?.showWindow(nil)
     }
 }
+
+// MARK: - Enums and Structs
 
 enum PriorityInsightType {
     case lowEngagement
@@ -317,4 +396,11 @@ struct PriorityInsight {
     let description: String
     let type: PriorityInsightType
     let priority: Priority
+}
+
+// Preview
+struct AnalyticsView_Previews: PreviewProvider {
+    static var previews: some View {
+        AnalyticsView()
+    }
 }

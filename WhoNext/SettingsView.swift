@@ -40,6 +40,7 @@ Best regards
     @State private var availableCalendars: [EKCalendar] = []
     @State private var selectedCalendarID: String = ""
     @AppStorage("selectedCalendarID") private var storedCalendarID: String = ""
+    @StateObject private var pdfProcessor = OrgChartProcessor()
     
     @FetchRequest(
         sortDescriptors: [NSSortDescriptor(keyPath: \Person.name, ascending: true)],
@@ -71,12 +72,12 @@ Best regards
                     selectedTab = "email"
                 }
                 
-                TabButton(title: "Import & Export", icon: "square.and.arrow.down", isSelected: selectedTab == "import") {
-                    selectedTab = "import"
-                }
-                
                 TabButton(title: "Calendar", icon: "calendar", isSelected: selectedTab == "calendar") {
                     selectedTab = "calendar"
+                }
+                
+                TabButton(title: "Import & Export", icon: "square.and.arrow.down", isSelected: selectedTab == "import") {
+                    selectedTab = "import"
                 }
             }
             .background(Color.gray.opacity(0.1))
@@ -333,9 +334,43 @@ Best regards
     // MARK: - Import & Export
     private var importExportView: some View {
         VStack(alignment: .leading, spacing: 20) {
+            // Org Chart Import Section
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Import Org Chart")
+                    .font(.headline)
+                Text("Drop a file to automatically extract team member details using AI")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                
+                OrgChartDropZone(
+                    isProcessing: pdfProcessor.isProcessing,
+                    processingStatus: pdfProcessor.processingStatus
+                ) { fileURL in
+                    processOrgChartFile(fileURL)
+                }
+                .frame(height: 120)
+                
+                if let error = pdfProcessor.error {
+                    Label(error, systemImage: "xmark.circle.fill")
+                        .foregroundColor(.red)
+                }
+                
+                if let success = importSuccess {
+                    Label(success, systemImage: "checkmark.circle.fill")
+                        .foregroundColor(.green)
+                }
+                
+                if let error = importError {
+                    Label(error, systemImage: "xmark.circle.fill")
+                        .foregroundColor(.red)
+                }
+            }
+            
+            Divider()
+            
             // CSV Import Section
             VStack(alignment: .leading, spacing: 8) {
-                Text("Import Team Members")
+                Text("Import Team Members (CSV)")
                     .font(.headline)
                 Text("Import CSV file with columns: Name, Role, Direct Report (true/false), Timezone")
                     .font(.caption)
@@ -622,26 +657,32 @@ Best regards
                         importedCount += 1
                     }
                     
-                    try viewContext.save()
-                    // Force Core Data to refresh all managed objects after import
-                    viewContext.refreshAllObjects()
-                    print("[SettingsView][LOG] Saving context (import)\n\tCallStack: \(Thread.callStackSymbols.joined(separator: "\n\t"))")
                     print("Import complete: \(importedCount) imported, \(skippedCount) skipped")
                     
-                    importError = nil
-                    // Build success message
-                    var successMsg = "✓ Imported \(importedCount) team member"
-                    if importedCount != 1 { successMsg += "s" }
-                    if skippedCount > 0 {
-                        successMsg += " (skipped \(skippedCount) duplicate"
-                        if skippedCount != 1 { successMsg += "s" }
-                        successMsg += ")"
+                    do {
+                        try viewContext.save()
+                        print("Saving context (import)\n\tCallStack: \(Thread.callStackSymbols.joined(separator: "\n\t"))")
+                        print("Import complete: \(importedCount) imported, \(skippedCount) skipped")
+                        
+                        importError = nil
+                        // Build success message
+                        var successMsg = "✓ Imported \(importedCount) team member"
+                        if importedCount != 1 { successMsg += "s" }
+                        if skippedCount > 0 {
+                            successMsg += " (skipped \(skippedCount) duplicate"
+                            if skippedCount != 1 { successMsg += "s" }
+                            successMsg += ")"
+                        }
+                        importSuccess = successMsg
+                        
+                        // Notify other views to refresh people after import
+                        NotificationCenter.default.post(name: Notification.Name("PeopleDidImport"), object: nil)
+                        
+                    } catch {
+                        print("Import failed: \(error)")
+                        importError = error.localizedDescription
+                        importSuccess = nil
                     }
-                    importSuccess = successMsg
-                    
-                    // Notify other views to refresh people after import
-                    NotificationCenter.default.post(name: Notification.Name("PeopleDidImport"), object: nil)
-                    
                 } catch {
                     print("Import failed: \(error)")
                     importError = error.localizedDescription
@@ -660,8 +701,11 @@ Best regards
                 }
             }
         }
-        try? viewContext.save()
-        print("[SettingsView][LOG] Saving context (resetSpokenTo)\n\tCallStack: \(Thread.callStackSymbols.joined(separator: "\n\t"))")
+        do {
+            try viewContext.save()
+        } catch {
+            print("Failed to reset spoken to dates: \(error)")
+        }
         
         // Clear dismissed people
         dismissedPeopleData = Data()
@@ -672,11 +716,197 @@ Best regards
             viewContext.delete(person)
         }
         do {
-            print("[SettingsView][LOG] Saving context (deleteAllPeople)\n\tCallStack: \(Thread.callStackSymbols.joined(separator: "\n\t"))")
             try viewContext.save()
-            print("All people deleted.")
         } catch {
             print("Failed to delete all people: \(error)")
         }
+    }
+    
+    private func processOrgChartFile(_ fileURL: URL) {
+        print("🔍 [DROP] File dropped: \(fileURL.lastPathComponent)")
+        print("🔍 [DROP] File path: \(fileURL.path)")
+        
+        // Clear previous messages
+        importSuccess = nil
+        importError = nil
+        
+        pdfProcessor.processOrgChartFile(fileURL) { result in
+            DispatchQueue.main.async {
+                switch result {
+                case .success(let csvContent):
+                    // Process the CSV content using existing CSV import logic
+                    self.processCSVContent(csvContent)
+                case .failure(let error):
+                    self.importError = "File processing failed: \(error.localizedDescription)"
+                }
+            }
+        }
+    }
+    
+    private func processCSVContent(_ csvContent: String) {
+        print("🔍 [CSV] Starting CSV processing")
+        print("🔍 [CSV] Raw CSV content:\n\(csvContent)")
+        
+        let lines = csvContent.components(separatedBy: .newlines)
+        print("🔍 [CSV] Split into \(lines.count) lines")
+        
+        guard lines.count > 1 else {
+            print("❌ [CSV] Not enough lines in CSV content")
+            importError = "No data found in CSV content"
+            return
+        }
+        
+        // Fetch existing people for duplicate checking
+        let fetchRequest = Person.fetchRequest()
+        do {
+            let existingPeople = try viewContext.fetch(fetchRequest)
+            let existingNames = Set(existingPeople.compactMap { ($0 as? Person)?.name?.lowercased() })
+            print("🔍 [CSV] Found \(existingNames.count) existing people: \(existingNames)")
+            
+            // Skip header line and process data
+            let dataLines = Array(lines.dropFirst()).filter { !$0.trimmingCharacters(in: .whitespaces).isEmpty }
+            print("🔍 [CSV] Processing \(dataLines.count) data lines (after filtering empty lines)")
+            
+            var importedCount = 0
+            var skippedCount = 0
+            
+            for (index, line) in dataLines.enumerated() {
+                print("🔍 [CSV] Processing line \(index + 1): \(line)")
+                
+                let components = parseCSVLine(line)
+                print("🔍 [CSV] Parsed components: \(components)")
+                
+                guard components.count >= 2 else {
+                    print("⚠️ [CSV] Skipping line with insufficient components: \(components.count)")
+                    continue
+                }
+                
+                let name = components[0].trimmingCharacters(in: .whitespacesAndNewlines)
+                let role = components[1].trimmingCharacters(in: .whitespacesAndNewlines)
+                let isDirectReport = components.count > 2 ? components[2].trimmingCharacters(in: .whitespacesAndNewlines).lowercased() == "true" : false
+                let timezone = components.count > 4 ? components[4].trimmingCharacters(in: .whitespacesAndNewlines) : ""
+                
+                print("🔍 [CSV] Extracted - Name: '\(name)', Role: '\(role)', DirectReport: \(isDirectReport), Timezone: '\(timezone)'")
+                
+                // Check for duplicates (case-insensitive)
+                if existingNames.contains(name.lowercased()) {
+                    print("⚠️ [CSV] Skipping duplicate: \(name)")
+                    skippedCount += 1
+                    continue
+                }
+                
+                print("✅ [CSV] Creating new person: \(name)")
+                let person = Person(context: viewContext)
+                person.name = name
+                person.role = role
+                person.isDirectReport = isDirectReport
+                person.timezone = timezone.isEmpty ? "UTC" : timezone
+                importedCount += 1
+            }
+            
+            print("🔍 [CSV] Import summary - Imported: \(importedCount), Skipped: \(skippedCount)")
+            
+            // Save context
+            do {
+                try viewContext.save()
+                print("✅ [CSV] Context saved successfully")
+                
+                // Update success message
+                var successMsg = "✓ Imported \(importedCount) team member"
+                if importedCount != 1 { successMsg += "s" }
+                successMsg += " from org chart"
+                
+                if skippedCount > 0 {
+                    successMsg += " (skipped \(skippedCount) duplicate"
+                    if skippedCount != 1 { successMsg += "s" }
+                    successMsg += ")"
+                }
+                
+                print("✅ [CSV] Success message: \(successMsg)")
+                importSuccess = successMsg
+                importError = nil
+            } catch {
+                print("❌ [CSV] Failed to save context: \(error)")
+                importError = "Failed to save imported data: \(error.localizedDescription)"
+                importSuccess = nil
+            }
+        } catch {
+            print("❌ [CSV] Failed to fetch existing people: \(error)")
+            importError = "Failed to check for duplicates: \(error.localizedDescription)"
+        }
+    }
+    
+    private func parseCSVLine(_ line: String) -> [String] {
+        var components = [String]()
+        var currentComponent = ""
+        var inQuotes = false
+        
+        for char in line {
+            if char == "\"" {
+                inQuotes.toggle()
+            } else if char == "," && !inQuotes {
+                components.append(currentComponent)
+                currentComponent = ""
+            } else {
+                currentComponent.append(char)
+            }
+        }
+        
+        components.append(currentComponent)
+        
+        return components
+    }
+}
+
+struct OrgChartDropZone: View {
+    let isProcessing: Bool
+    let processingStatus: String?
+    let onDrop: (URL) -> Void
+    
+    var body: some View {
+        Rectangle()
+            .fill(Color.gray.opacity(0.1))
+            .overlay(
+                VStack {
+                    if let status = processingStatus {
+                        Text(status)
+                            .font(.headline)
+                    } else {
+                        VStack(spacing: 4) {
+                            Text("Drop a file to import org chart")
+                                .font(.headline)
+                            Text("Supports: PDF, PowerPoint (.ppt/.pptx), Images (.jpg/.png)")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        }
+                    }
+                    
+                    if isProcessing {
+                        ProgressView()
+                    }
+                }
+            )
+            .onDrop(of: [.fileURL], isTargeted: nil) { providers in
+                print("🔍 [DROP] onDrop triggered with \(providers.count) providers")
+                if let provider = providers.first {
+                    print("🔍 [DROP] Checking if provider can load URL...")
+                    if provider.canLoadObject(ofClass: URL.self) {
+                        print("🔍 [DROP] Provider can load URL, loading...")
+                        _ = provider.loadObject(ofClass: URL.self) { url, _ in
+                            if let url = url {
+                                print("🔍 [DROP] Successfully loaded URL: \(url)")
+                                onDrop(url)
+                            } else {
+                                print("❌ [DROP] Failed to load URL")
+                            }
+                        }
+                    } else {
+                        print("❌ [DROP] Provider cannot load URL")
+                    }
+                } else {
+                    print("❌ [DROP] No providers found")
+                }
+                return true
+            }
     }
 }

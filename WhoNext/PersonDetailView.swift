@@ -27,7 +27,8 @@ struct PersonDetailView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 24) {
                 headerView
-                notesView
+                sentimentAnalyticsView
+                preMeetingBriefView
                 conversationsView
             }
             .padding(32)
@@ -113,30 +114,211 @@ struct PersonDetailView: View {
     }
     
     @ViewBuilder
-    private var notesView: some View {
-        if let notes = person.notes, !notes.isEmpty {
-            VStack(alignment: .leading, spacing: 12) {
+    private var sentimentAnalyticsView: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            HStack {
+                Image(systemName: "chart.bar.xaxis")
+                    .font(.system(size: 14))
+                    .foregroundColor(.accentColor)
+                Text("Conversation Analytics")
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundColor(.primary)
+                Spacer()
+                Text("(\(conversations.count) conversations)")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }
+            
+            if conversations.isEmpty {
+                // Show placeholder when no conversations
+                VStack(spacing: 12) {
+                    Image(systemName: "chart.bar.xaxis")
+                        .font(.system(size: 32))
+                        .foregroundColor(.secondary)
+                    Text("No conversation data yet")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                    Text("Start a conversation to see analytics")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+                .frame(maxWidth: .infinity)
+                .padding(24)
+                .background(Color(nsColor: .controlBackgroundColor))
+                .cornerRadius(8)
+            } else {
+                // Analytics Cards
+                LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 12), count: 3), spacing: 12) {
+                    // Health Score Card
+                    VStack(alignment: .leading, spacing: 8) {
+                        HStack {
+                            Image(systemName: "heart.fill")
+                                .font(.system(size: 12))
+                                .foregroundColor(healthScoreColor)
+                            Text("Health Score")
+                                .font(.system(size: 11, weight: .medium))
+                                .foregroundColor(.secondary)
+                        }
+                        
+                        Text(String(format: "%.1f", relationshipHealthScore))
+                            .font(.system(size: 18, weight: .bold))
+                            .foregroundColor(healthScoreColor)
+                    }
+                    .padding(12)
+                    .background(Color(nsColor: .controlBackgroundColor))
+                    .cornerRadius(8)
+                    
+                    // Average Sentiment Card
+                    VStack(alignment: .leading, spacing: 8) {
+                        HStack {
+                            Image(systemName: "face.smiling.fill")
+                                .font(.system(size: 12))
+                                .foregroundColor(averageSentimentColor)
+                            Text("Avg Sentiment")
+                                .font(.system(size: 11, weight: .medium))
+                                .foregroundColor(.secondary)
+                        }
+                        
+                        Text(averageSentimentLabel)
+                            .font(.system(size: 18, weight: .bold))
+                            .foregroundColor(averageSentimentColor)
+                    }
+                    .padding(12)
+                    .background(Color(nsColor: .controlBackgroundColor))
+                    .cornerRadius(8)
+                    
+                    // Total Conversations Card
+                    VStack(alignment: .leading, spacing: 8) {
+                        HStack {
+                            Image(systemName: "bubble.left.and.bubble.right.fill")
+                                .font(.system(size: 12))
+                                .foregroundColor(.accentColor)
+                            Text("Conversations")
+                                .font(.system(size: 11, weight: .medium))
+                                .foregroundColor(.secondary)
+                        }
+                        
+                        Text("\(conversations.count)")
+                            .font(.system(size: 18, weight: .bold))
+                            .foregroundColor(.primary)
+                    }
+                    .padding(12)
+                    .background(Color(nsColor: .controlBackgroundColor))
+                    .cornerRadius(8)
+                }
+                
+                // Detailed Analytics
+                ConversationDurationView(person: person)
+            }
+        }
+        .padding(16)
+        .background(Color(nsColor: .controlBackgroundColor).opacity(0.3))
+        .cornerRadius(12)
+    }
+    
+    private var relationshipHealthScore: Double {
+        guard let metrics = ConversationMetricsCalculator.shared.calculateMetrics(for: person) else {
+            return 0.0
+        }
+        return metrics.healthScore
+    }
+    
+    private var healthScoreColor: Color {
+        let score = relationshipHealthScore
+        if score >= 0.7 { return .green }
+        else if score >= 0.4 { return .orange }
+        else { return .red }
+    }
+    
+    private var averageSentiment: Double {
+        let sentiments = conversations.compactMap { conversation in
+            conversation.value(forKey: "sentimentScore") as? Double
+        }
+        guard !sentiments.isEmpty else { return 0.0 }
+        return sentiments.reduce(0, +) / Double(sentiments.count)
+    }
+    
+    private var averageSentimentLabel: String {
+        let sentiment = averageSentiment
+        if sentiment >= 0.6 { return "Positive" }
+        else if sentiment >= 0.4 { return "Neutral" }
+        else if sentiment >= 0.2 { return "Mixed" }
+        else { return "Negative" }
+    }
+    
+    private var averageSentimentColor: Color {
+        let sentiment = averageSentiment
+        if sentiment >= 0.6 { return .green }
+        else if sentiment >= 0.4 { return .blue }
+        else if sentiment >= 0.2 { return .orange }
+        else { return .red }
+    }
+    
+    @ViewBuilder
+    private var preMeetingBriefView: some View {
+        if !conversations.isEmpty {
+            VStack(alignment: .leading, spacing: 16) {
                 HStack {
                     Image(systemName: "note.text")
                         .font(.system(size: 14))
                         .foregroundColor(.secondary)
-                    Text("Notes")
+                    Text("Pre-Meeting Brief")
                         .font(.system(size: 16, weight: .semibold))
                         .foregroundColor(.primary)
+                    
+                    Spacer()
+                    
+                    if let brief = preMeetingBrief[person.identifier ?? UUID()], !brief.isEmpty {
+                        Button(action: {
+                            copyToClipboard(brief)
+                        }) {
+                            HStack(spacing: 4) {
+                                Image(systemName: "doc.on.clipboard")
+                                    .font(.system(size: 10))
+                                Text("Copy")
+                                    .font(.system(size: 10, weight: .medium))
+                            }
+                            .foregroundColor(.accentColor)
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 6)
+                            .background(
+                                RoundedRectangle(cornerRadius: 6)
+                                    .fill(Color.accentColor.opacity(0.1))
+                            )
+                        }
+                        .buttonStyle(PlainButtonStyle())
+                    } else {
+                        Button(action: generatePreMeetingBrief) {
+                            HStack(spacing: 6) {
+                                if isGeneratingBrief {
+                                    ProgressView()
+                                        .scaleEffect(0.8)
+                                } else {
+                                    Image(systemName: "sparkles")
+                                        .font(.system(size: 10))
+                                }
+                                Text(isGeneratingBrief ? "Generating..." : "Generate")
+                                    .font(.system(size: 10, weight: .medium))
+                            }
+                            .foregroundColor(.white)
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 6)
+                            .background(
+                                RoundedRectangle(cornerRadius: 6)
+                                    .fill(Color.accentColor)
+                            )
+                        }
+                        .buttonStyle(PlainButtonStyle())
+                        .disabled(isGeneratingBrief)
+                    }
                 }
-                
-                Text(notes)
-                    .font(.system(size: 13))
-                    .foregroundColor(.primary)
-                    .padding(16)
-                    .background(Color(nsColor: .controlBackgroundColor))
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
             }
         } else {
             EmptyView()
         }
     }
     
+    @ViewBuilder
     private var conversationsView: some View {
         VStack(alignment: .leading, spacing: 16) {
             HStack {
@@ -178,16 +360,15 @@ struct PersonDetailView: View {
                         Text("No conversations yet")
                             .font(.system(size: 16, weight: .medium))
                             .foregroundColor(.primary)
-                        
-                        Text("Start building your relationship by adding your first conversation")
-                            .font(.system(size: 12))
+                        Text("Start your first conversation to begin building insights")
+                            .font(.system(size: 13))
                             .foregroundColor(.secondary)
                             .multilineTextAlignment(.center)
                     }
                     
                     Button(action: openNewConversationWindow) {
                         HStack(spacing: 8) {
-                            Image(systemName: "plus.circle.fill")
+                            Image(systemName: "plus")
                                 .font(.system(size: 14))
                             Text("Add First Conversation")
                                 .font(.system(size: 14, weight: .medium))
@@ -205,99 +386,7 @@ struct PersonDetailView: View {
                 .background(Color(nsColor: .controlBackgroundColor).opacity(0.5))
                 .clipShape(RoundedRectangle(cornerRadius: 16))
             } else {
-                // Pre-Meeting Brief Button
-                if !conversations.isEmpty {
-                    HStack {
-                        Text("Pre-Meeting Brief")
-                            .font(.headline)
-                            .fontWeight(.semibold)
-                        
-                        Spacer()
-                        
-                        if let brief = preMeetingBrief[person.identifier ?? UUID()], !brief.isEmpty {
-                            Button(action: {
-                                copyToClipboard(brief)
-                            }) {
-                                HStack(spacing: 4) {
-                                    Image(systemName: "doc.on.clipboard")
-                                        .font(.system(size: 10))
-                                    Text("Copy")
-                                        .font(.system(size: 10, weight: .medium))
-                                }
-                                .foregroundColor(.accentColor)
-                                .padding(.horizontal, 12)
-                                .padding(.vertical, 6)
-                                .background(
-                                    RoundedRectangle(cornerRadius: 6)
-                                        .fill(Color.accentColor.opacity(0.1))
-                                )
-                            }
-                            .buttonStyle(PlainButtonStyle())
-                        } else {
-                            Button(action: generatePreMeetingBrief) {
-                                HStack(spacing: 6) {
-                                    if isGeneratingBrief {
-                                        ProgressView()
-                                            .scaleEffect(0.8)
-                                    } else {
-                                        Image(systemName: "sparkles")
-                                            .font(.system(size: 10))
-                                    }
-                                    Text(isGeneratingBrief ? "Generating..." : "Generate")
-                                        .font(.system(size: 10, weight: .medium))
-                                }
-                                .foregroundColor(.white)
-                                .padding(.horizontal, 12)
-                                .padding(.vertical, 6)
-                                .background(
-                                    RoundedRectangle(cornerRadius: 6)
-                                        .fill(Color.accentColor)
-                                )
-                            }
-                            .buttonStyle(PlainButtonStyle())
-                            .disabled(isGeneratingBrief)
-                        }
-                    }
-                }
-                
-                // Pre-Meeting Brief Display
-                if let brief = preMeetingBrief[person.identifier ?? UUID()], !brief.isEmpty {
-                    VStack(alignment: .leading, spacing: 12) {
-                        ScrollView {
-                            VStack(alignment: .leading, spacing: 16) {
-                                MarkdownView(markdown: brief)
-                            }
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .padding(20)
-                        }
-                        .frame(maxHeight: 200)
-                        .background(Color(nsColor: .textBackgroundColor))
-                        .clipShape(RoundedRectangle(cornerRadius: 12))
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 12)
-                                .stroke(Color.gray.opacity(0.2), lineWidth: 1)
-                        )
-                    }
-                } else if let error = briefError {
-                    HStack(spacing: 8) {
-                        Image(systemName: "exclamationmark.triangle")
-                            .font(.system(size: 12))
-                            .foregroundColor(.red)
-                        Text(error)
-                            .font(.system(size: 12))
-                            .foregroundColor(.red)
-                    }
-                    .padding(12)
-                    .background(Color.red.opacity(0.1))
-                    .clipShape(RoundedRectangle(cornerRadius: 8))
-                }
-                
-                // Conversation Analytics
-                if !conversations.isEmpty {
-                    ConversationDurationView(person: person)
-                }
-                
-                // Conversations List
+                // Conversation List
                 LazyVStack(spacing: 12) {
                     ForEach(conversations) { conversation in
                         ConversationRowView(conversation: conversation)

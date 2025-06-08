@@ -123,7 +123,6 @@ struct NewConversationWindow: View {
         newConversation.person = person
         newConversation.uuid = UUID()
         do {
-            print("[NewConversationWindow][LOG] Saving context\n\tCallStack: \(Thread.callStackSymbols.joined(separator: "\n\t"))")
             try viewContext.save()
             isPresented = false
         } catch {

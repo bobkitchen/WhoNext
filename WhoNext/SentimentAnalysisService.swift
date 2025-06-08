@@ -259,8 +259,13 @@ class SentimentAnalysisService {
 class RelationshipHealthCalculator {
     static let shared = RelationshipHealthCalculator()
     
-    /// Calculate overall relationship health score for a person
+    /// Calculate overall relationship health score for a person (legacy method)
     func calculateHealthScore(for person: Person) -> Double {
+        return calculateHealthScore(for: person, relationshipType: .other)
+    }
+    
+    /// Calculate context-aware relationship health score for a person
+    func calculateHealthScore(for person: Person, relationshipType: RelationshipType) -> Double {
         guard let conversations = person.conversations?.allObjects as? [Conversation],
               !conversations.isEmpty else {
             return 0.5 // Neutral score for no data
@@ -288,7 +293,146 @@ class RelationshipHealthCalculator {
         let averageSentiment = weightedSentimentSum / totalWeight
         
         // Convert sentiment (-1 to 1) to health score (0 to 1)
-        return (averageSentiment + 1.0) / 2.0
+        var baseHealthScore = (averageSentiment + 1.0) / 2.0
+        
+        // Apply relationship type context adjustments
+        baseHealthScore = applyRelationshipTypeAdjustments(
+            baseScore: baseHealthScore,
+            person: person,
+            relationshipType: relationshipType,
+            conversations: Array(recentConversations)
+        )
+        
+        // Apply relationship type weighting
+        return baseHealthScore * relationshipType.healthScoreWeight
+    }
+    
+    /// Apply relationship type-specific adjustments to health score
+    private func applyRelationshipTypeAdjustments(
+        baseScore: Double,
+        person: Person,
+        relationshipType: RelationshipType,
+        conversations: [Conversation]
+    ) -> Double {
+        var adjustedScore = baseScore
+        
+        // Check meeting frequency adherence
+        let daysSinceLastConversation = getDaysSinceLastConversation(person: person)
+        let expectedFrequency = relationshipType.expectedMeetingFrequencyDays
+        let overdueThreshold = Double(expectedFrequency) * relationshipType.overdueThresholdMultiplier
+        
+        if daysSinceLastConversation > overdueThreshold {
+            // Penalize overdue conversations more severely for direct reports
+            let overduePenalty = relationshipType == .directReport ? 0.3 : 0.2
+            adjustedScore -= overduePenalty
+        }
+        
+        // Check duration alignment with relationship type
+        let averageDuration = conversations.map { conversation in
+            Double(conversation.value(forKey: "duration") as? Int32 ?? 0)
+        }.reduce(0, +) / Double(conversations.count)
+        
+        let optimalRange = relationshipType.optimalDurationRange
+        if averageDuration < optimalRange.lowerBound || averageDuration > optimalRange.upperBound {
+            // Small penalty for duration misalignment
+            adjustedScore -= 0.1
+        }
+        
+        // Relationship type specific bonuses/penalties
+        switch relationshipType {
+        case .directReport:
+            // Direct reports should have more consistent communication
+            let consistencyBonus = calculateConsistencyBonus(conversations: conversations)
+            adjustedScore += consistencyBonus
+            
+        case .skipLevel:
+            // Skip level meetings should focus on feedback - check for engagement
+            let engagementBonus = calculateEngagementBonus(conversations: conversations)
+            adjustedScore += engagementBonus
+            
+        case .other:
+            // No specific adjustments for other relationships
+            break
+        }
+        
+        // Ensure score stays within bounds
+        return max(0.0, min(1.0, adjustedScore))
+    }
+    
+    /// Calculate consistency bonus for direct reports based on regular meeting patterns
+    private func calculateConsistencyBonus(conversations: [Conversation]) -> Double {
+        guard conversations.count >= 3 else { return 0.0 }
+        
+        let dates = conversations.compactMap { $0.value(forKey: "date") as? Date }.sorted(by: >)
+        guard dates.count >= 3 else { return 0.0 }
+        
+        // Calculate intervals between meetings
+        var intervals: [TimeInterval] = []
+        for i in 0..<(dates.count - 1) {
+            intervals.append(dates[i].timeIntervalSince(dates[i + 1]))
+        }
+        
+        // Check consistency (lower standard deviation = more consistent)
+        let avgInterval = intervals.reduce(0, +) / Double(intervals.count)
+        let variance = intervals.map { pow($0 - avgInterval, 2) }.reduce(0, +) / Double(intervals.count)
+        let standardDeviation = sqrt(variance)
+        
+        // Convert to days and calculate bonus (more consistent = higher bonus)
+        let avgDays = avgInterval / 86400 // Convert seconds to days
+        let stdDevDays = standardDeviation / 86400
+        
+        // Bonus for consistency (max 0.1 bonus)
+        if avgDays <= 14 && stdDevDays <= 3 { // Weekly/bi-weekly with low variation
+            return 0.1
+        } else if avgDays <= 21 && stdDevDays <= 5 { // Somewhat consistent
+            return 0.05
+        }
+        
+        return 0.0
+    }
+    
+    /// Calculate engagement bonus for skip level meetings based on conversation depth
+    private func calculateEngagementBonus(conversations: [Conversation]) -> Double {
+        guard !conversations.isEmpty else { return 0.0 }
+        
+        // Check for meaningful duration (skip levels should be substantial)
+        let averageDuration = conversations.map { conversation in
+            Double(conversation.value(forKey: "duration") as? Int32 ?? 0)
+        }.reduce(0, +) / Double(conversations.count)
+        
+        // Check for sentiment depth (skip levels should surface real feedback)
+        let sentimentVariance = calculateSentimentVariance(conversations: conversations)
+        
+        var bonus = 0.0
+        
+        // Bonus for appropriate duration (25-35 minutes optimal for skip levels)
+        if averageDuration >= 25 && averageDuration <= 35 {
+            bonus += 0.05
+        }
+        
+        // Bonus for sentiment variance (indicates real feedback, not just pleasantries)
+        if sentimentVariance > 0.1 {
+            bonus += 0.05
+        }
+        
+        return bonus
+    }
+    
+    /// Calculate sentiment variance to detect meaningful feedback sessions
+    private func calculateSentimentVariance(conversations: [Conversation]) -> Double {
+        let sentiments = conversations.compactMap { $0.value(forKey: "sentimentScore") as? Double }
+        guard sentiments.count > 1 else { return 0.0 }
+        
+        let average = sentiments.reduce(0, +) / Double(sentiments.count)
+        let variance = sentiments.map { pow($0 - average, 2) }.reduce(0, +) / Double(sentiments.count)
+        
+        return variance
+    }
+    
+    /// Get days since last conversation
+    private func getDaysSinceLastConversation(person: Person) -> Double {
+        guard let lastDate = person.lastContactDate else { return Double.infinity }
+        return Date().timeIntervalSince(lastDate) / 86400 // Convert to days
     }
     
     /// Get trend direction for relationship

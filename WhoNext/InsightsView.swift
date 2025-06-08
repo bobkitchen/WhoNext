@@ -1,6 +1,7 @@
 import SwiftUI
 import AppKit
 import CoreData
+import Combine
 
 struct InsightsView: View {
     @Binding var selectedPersonID: UUID?
@@ -28,7 +29,7 @@ struct InsightsView: View {
                 // Insights (Chat) Section and Statistics Cards
                 HStack(alignment: .top, spacing: 24) {
                     ChatView()
-                        .frame(minWidth: 400, maxWidth: 500, minHeight: 0, maxHeight: .infinity)
+                        .frame(minWidth: 400, minHeight: 0, maxHeight: .infinity)
                         .padding()
                         .background(Color(NSColor.controlBackgroundColor))
                         .cornerRadius(16)
@@ -45,11 +46,11 @@ struct InsightsView: View {
                             progress: Double(spokenToThisCycle.count) / Double(max(nonDirectReports.count, 1))
                         )
                         EnhancedStatCardView(
-                            icon: "clock.fill",
-                            title: "Weeks Remaining",
-                            value: weeksRemainingText,
-                            subtitle: "At 2 per week",
-                            color: .orange,
+                            icon: "heart.fill",
+                            title: "Health Alerts",
+                            value: "\(lowHealthRelationships.count)",
+                            subtitle: "Need attention",
+                            color: lowHealthRelationships.count > 0 ? .red : .green,
                             progress: nil
                         )
                         EnhancedStatCardView(
@@ -181,9 +182,14 @@ struct InsightsView: View {
             .padding([.horizontal, .bottom], 24)
         }
         .onAppear {
-            calendarService.requestAccess { granted in
+            calendarService.requestAccess { granted, error in
                 if granted {
                     calendarService.fetchUpcomingMeetings()
+                } else {
+                    // Handle access denied or error
+                    if let error = error {
+                        print("Calendar access error: \(error)")
+                    }
                 }
             }
         }
@@ -281,7 +287,6 @@ struct InsightsView: View {
         newConversation.uuid = UUID()
         
         person.scheduledConversationDate = nil
-        print("[InsightsView][LOG] Saving context (manual)\n\tCallStack: \(Thread.callStackSymbols.joined(separator: "\n\t"))")
         try? viewContext.save()
         
         let window = NSWindow(
@@ -369,6 +374,14 @@ extension InsightsView {
         if countThisWeek >= 2 { streak += 1 } else { streak = 0 }
         maxStreak = max(maxStreak, streak)
         return maxStreak
+    }
+    
+    private var lowHealthRelationships: [Person] {
+        let calculator = ConversationMetricsCalculator()
+        return people.compactMap { person in
+            guard let metrics = calculator.calculateMetrics(for: person) else { return nil }
+            return metrics.healthScore < 0.4 ? person : nil
+        }
     }
 }
 
@@ -472,7 +485,6 @@ struct GlobalNewConversationView: View {
         conversation.notes = notes.trimmingCharacters(in: .whitespacesAndNewlines)
         conversation.uuid = UUID()
         do {
-            print("[InsightsView][LOG] Saving context (manual)\n\tCallStack: \(Thread.callStackSymbols.joined(separator: "\n\t"))")
             try viewContext.save()
         } catch {
             print("Failed to save conversation: \(error)")

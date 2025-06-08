@@ -18,6 +18,9 @@ struct PersonMetrics {
     let trendDirection: String
     let lastConversationDate: Date?
     let daysSinceLastConversation: Int
+    let relationshipType: RelationshipType
+    let isOverdue: Bool
+    let contextualInsights: [String]
 }
 
 struct DurationInsight {
@@ -40,14 +43,82 @@ struct DurationInsight {
     }
 }
 
+// MARK: - Relationship Type Classification
+
+enum RelationshipType {
+    case directReport
+    case skipLevel
+    case other
+    
+    var expectedMeetingFrequencyDays: Int {
+        switch self {
+        case .directReport: return 10 // Weekly to bi-weekly (7-14 days)
+        case .skipLevel: return 180 // 1-2 times per year (180-365 days)
+        case .other: return 30 // Monthly default
+        }
+    }
+    
+    var optimalDurationRange: ClosedRange<Double> {
+        switch self {
+        case .directReport: return 45...60 // 45-60 minutes as specified
+        case .skipLevel: return 25...35 // 30 minutes ±5 for flexibility
+        case .other: return 20...45 // General range
+        }
+    }
+    
+    var overdueThresholdMultiplier: Double {
+        switch self {
+        case .directReport: return 1.5 // 15-21 days before considered overdue
+        case .skipLevel: return 1.2 // ~7-8 months before considered overdue
+        case .other: return 2.0 // 2 months before considered overdue
+        }
+    }
+    
+    var healthScoreWeight: Double {
+        switch self {
+        case .directReport: return 1.0 // Full weight - most important relationships
+        case .skipLevel: return 0.7 // Lower weight - less frequent but still important
+        case .other: return 0.8 // Standard weight
+        }
+    }
+    
+    var description: String {
+        switch self {
+        case .directReport: return "Direct Report"
+        case .skipLevel: return "Skip Level"
+        case .other: return "Other"
+        }
+    }
+}
+
 // MARK: - Conversation Metrics Calculator
 
 class ConversationMetricsCalculator {
     static let shared = ConversationMetricsCalculator()
     
-    // MARK: - Duration Analytics
+    // MARK: - Relationship Type Classification
     
-    /// Calculate comprehensive metrics for a person's conversations
+    /// Classify relationship type based on person attributes
+    func classifyRelationshipType(for person: Person) -> RelationshipType {
+        if person.isDirectReport {
+            return .directReport
+        }
+        
+        // Check if this might be a skip level based on role patterns
+        if let role = person.role?.lowercased() {
+            // Common skip level indicators
+            let skipLevelIndicators = ["engineer", "developer", "analyst", "specialist", "coordinator", "associate"]
+            if skipLevelIndicators.contains(where: role.contains) && !person.isDirectReport {
+                return .skipLevel
+            }
+        }
+        
+        return .other
+    }
+    
+    // MARK: - Context-Aware Duration Analytics
+    
+    /// Calculate comprehensive metrics for a person's conversations with relationship context
     func calculateMetrics(for person: Person) -> PersonMetrics? {
         guard let conversations = person.conversations?.allObjects as? [Conversation],
               !conversations.isEmpty else {
@@ -63,16 +134,21 @@ class ConversationMetricsCalculator {
             return nil
         }
         
-        let metrics = calculateConversationMetrics(validConversations)
-        let healthScore = RelationshipHealthCalculator.shared.calculateHealthScore(for: person)
+        let relationshipType = classifyRelationshipType(for: person)
+        let metrics = calculateConversationMetrics(validConversations, relationshipType: relationshipType)
+        let healthScore = RelationshipHealthCalculator.shared.calculateHealthScore(for: person, relationshipType: relationshipType)
         let trendDirection = RelationshipHealthCalculator.shared.getTrendDirection(for: person)
         let totalConversations = validConversations.count
         let lastConversationDate = validConversations.compactMap { $0.date }.max()
         
         // Calculate days since last conversation
         let daysSinceLastConversation = lastConversationDate.map { 
-            Calendar.current.dateInterval(of: .day, for: $0)?.duration ?? 0 
+            Calendar.current.dateComponents([.day], from: $0, to: Date()).day ?? 0 
         } ?? 0
+        
+        let isOverdue = Double(daysSinceLastConversation) > Double(relationshipType.expectedMeetingFrequencyDays) * relationshipType.overdueThresholdMultiplier
+        
+        let contextualInsights = generateContextualInsights(for: person, relationshipType: relationshipType, metrics: metrics)
         
         return PersonMetrics(
             person: person,
@@ -80,12 +156,15 @@ class ConversationMetricsCalculator {
             healthScore: healthScore,
             trendDirection: trendDirection,
             lastConversationDate: lastConversationDate,
-            daysSinceLastConversation: Int(daysSinceLastConversation / 86400) // Convert seconds to days
+            daysSinceLastConversation: daysSinceLastConversation,
+            relationshipType: relationshipType,
+            isOverdue: isOverdue,
+            contextualInsights: contextualInsights
         )
     }
     
-    /// Calculate metrics for a collection of conversations
-    private func calculateConversationMetrics(_ conversations: [Conversation]) -> ConversationMetrics {
+    /// Calculate metrics for a collection of conversations with relationship context
+    private func calculateConversationMetrics(_ conversations: [Conversation], relationshipType: RelationshipType) -> ConversationMetrics {
         let durations = conversations.map { conversation in
             let duration = conversation.value(forKey: "duration") as? Int32 ?? 0
             return Double(duration)
@@ -104,8 +183,8 @@ class ConversationMetricsCalculator {
         let averageSentimentPerMinute = sentimentPerMinuteValues.isEmpty ? 0.0 : 
             sentimentPerMinuteValues.reduce(0, +) / Double(sentimentPerMinuteValues.count)
         
-        // Determine optimal duration range based on historical data
-        let optimalDurationRange = calculateOptimalDurationRange(conversations)
+        // Determine optimal duration range based on relationship type
+        let optimalDurationRange = relationshipType.optimalDurationRange
         
         return ConversationMetrics(
             averageDuration: averageDuration,
@@ -116,30 +195,110 @@ class ConversationMetricsCalculator {
         )
     }
     
-    /// Calculate optimal conversation duration range based on sentiment correlation
-    private func calculateOptimalDurationRange(_ conversations: [Conversation]) -> ClosedRange<Double> {
-        // Find conversations with highest sentiment scores
-        let positiveConversations = conversations.filter { conversation in
-            guard let sentimentScore = conversation.value(forKey: "sentimentScore") as? Double else { return false }
-            return sentimentScore > 0.3
+    /// Generate contextual insights for a person based on relationship type and metrics
+    private func generateContextualInsights(for person: Person, relationshipType: RelationshipType, metrics: ConversationMetrics) -> [String] {
+        var insights: [String] = []
+        
+        // Check for optimal duration insights
+        if let optimalInsight = generateOptimalDurationInsight(person, relationshipType: relationshipType, metrics: metrics) {
+            insights.append(optimalInsight)
         }
         
-        if positiveConversations.count >= 3 {
-            let positiveDurations = positiveConversations.map { conversation in
-                let duration = conversation.value(forKey: "duration") as? Int32 ?? 0
-                return Double(duration)
-            }.sorted()
-            let lowerBound = positiveDurations[positiveDurations.count / 4] // 25th percentile
-            let upperBound = positiveDurations[positiveDurations.count * 3 / 4] // 75th percentile
-            return max(15, lowerBound)...min(120, upperBound) // Reasonable bounds
-        } else {
-            return 30.0...60.0 // Default range
+        // Check for over/under communication patterns
+        if let communicationInsight = generateCommunicationPatternInsight(person, relationshipType: relationshipType, metrics: metrics) {
+            insights.append(communicationInsight)
         }
+        
+        // Check for efficiency improvements
+        if let efficiencyInsight = generateEfficiencyInsight(person, relationshipType: relationshipType, metrics: metrics) {
+            insights.append(efficiencyInsight)
+        }
+        
+        // Check for relationship alerts
+        if let relationshipInsight = generateRelationshipAlert(person, relationshipType: relationshipType, metrics: metrics) {
+            insights.append(relationshipInsight)
+        }
+        
+        return insights
     }
     
-    // MARK: - Insights Generation
+    // MARK: - Context-Aware Insight Generation Methods
     
-    /// Generate duration-based insights for a person
+    /// Generate optimal duration insight based on relationship type
+    private func generateOptimalDurationInsight(_ person: Person, relationshipType: RelationshipType, metrics: ConversationMetrics) -> String? {
+        let optimalRange = relationshipType.optimalDurationRange
+        let avgDuration = metrics.averageDuration
+        
+        if avgDuration < optimalRange.lowerBound {
+            let shortfall = optimalRange.lowerBound - avgDuration
+            return "Consider extending \(relationshipType.description.lowercased()) meetings by ~\(Int(shortfall)) minutes for better engagement"
+        } else if avgDuration > optimalRange.upperBound {
+            let excess = avgDuration - optimalRange.upperBound
+            return "Meetings are running \(Int(excess)) minutes longer than optimal for \(relationshipType.description.lowercased()) relationships"
+        }
+        
+        return nil
+    }
+    
+    /// Generate communication pattern insight based on relationship type
+    private func generateCommunicationPatternInsight(_ person: Person, relationshipType: RelationshipType, metrics: ConversationMetrics) -> String? {
+        let expectedFrequency = relationshipType.expectedMeetingFrequencyDays
+        let lastConversationDays = Calendar.current.dateComponents([.day], from: person.lastContactDate ?? .distantPast, to: Date()).day ?? 0
+        let daysSince = lastConversationDays
+        
+        if daysSince > Int(Double(expectedFrequency) * relationshipType.overdueThresholdMultiplier) {
+            switch relationshipType {
+            case .directReport:
+                return "Direct report check-in is overdue - last conversation was \(daysSince) days ago"
+            case .skipLevel:
+                return "Skip level meeting may be due - last conversation was \(daysSince) days ago"
+            case .other:
+                return "Consider scheduling a catch-up - last conversation was \(daysSince) days ago"
+            }
+        }
+        
+        return nil
+    }
+    
+    /// Generate efficiency insight based on relationship type and conversation patterns
+    private func generateEfficiencyInsight(_ person: Person, relationshipType: RelationshipType, metrics: ConversationMetrics) -> String? {
+        let sentimentPerMinute = metrics.averageSentimentPerMinute
+        
+        if sentimentPerMinute < 0.01 && metrics.averageDuration > relationshipType.optimalDurationRange.upperBound {
+            switch relationshipType {
+            case .directReport:
+                return "Consider more structured 1:1 agendas to improve engagement efficiency"
+            case .skipLevel:
+                return "Skip level meetings could benefit from more focused feedback questions"
+            case .other:
+                return "Consider shorter, more focused conversations for better engagement"
+            }
+        }
+        
+        return nil
+    }
+    
+    /// Generate relationship alert based on sentiment trends and relationship type
+    private func generateRelationshipAlert(_ person: Person, relationshipType: RelationshipType, metrics: ConversationMetrics) -> String? {
+        let healthScore = RelationshipHealthCalculator.shared.calculateHealthScore(for: person, relationshipType: relationshipType)
+        
+        if healthScore < 0.4 {
+            switch relationshipType {
+            case .directReport:
+                return "Direct report relationship needs attention - consider additional support or feedback"
+            case .skipLevel:
+                return "Skip level relationship showing low engagement - may indicate broader team issues"
+            case .other:
+                return "Relationship health is declining - consider proactive outreach"
+            }
+        }
+        
+        return nil
+    }
+    
+    // MARK: - Legacy Insight Generation (Updated for Compatibility)
+    
+    /// Generate duration-based insights for a person with relationship context
     func generateInsights(for personMetrics: PersonMetrics) -> [DurationInsight] {
         var insights: [DurationInsight] = []
         
@@ -166,26 +325,29 @@ class ConversationMetricsCalculator {
         return insights
     }
     
+    // MARK: - Individual Insight Generators (Updated)
+    
     private func generateOptimalDurationInsight(_ personMetrics: PersonMetrics) -> DurationInsight? {
-        let metrics = personMetrics.metrics
-        let currentAverage = metrics.averageDuration
-        let optimalRange = metrics.optimalDurationRange
+        let optimalRange = personMetrics.relationshipType.optimalDurationRange
+        let avgDuration = personMetrics.metrics.averageDuration
         
-        if currentAverage < optimalRange.lowerBound {
+        if avgDuration < optimalRange.lowerBound {
+            let shortfall = optimalRange.lowerBound - avgDuration
             return DurationInsight(
                 type: .optimalDuration,
-                title: "Consider Longer Conversations",
-                description: "Your conversations with \(personMetrics.person.name ?? "this person") average \(Int(currentAverage)) minutes. Data suggests \(Int(optimalRange.lowerBound))-\(Int(optimalRange.upperBound)) minutes yields better outcomes.",
+                title: "Extend \(personMetrics.relationshipType.description) Meetings",
+                description: "Average duration is \(Int(shortfall)) minutes below optimal range for \(personMetrics.relationshipType.description.lowercased()) relationships",
                 actionable: true,
                 priority: .medium
             )
-        } else if currentAverage > optimalRange.upperBound {
+        } else if avgDuration > optimalRange.upperBound {
+            let excess = avgDuration - optimalRange.upperBound
             return DurationInsight(
-                type: .optimalDuration,
-                title: "Conversations May Be Too Long",
-                description: "Your conversations average \(Int(currentAverage)) minutes. Consider more focused \(Int(optimalRange.lowerBound))-\(Int(optimalRange.upperBound)) minute sessions for better efficiency.",
+                type: .efficiencyImprovement,
+                title: "Optimize \(personMetrics.relationshipType.description) Meeting Length",
+                description: "Meetings run \(Int(excess)) minutes longer than optimal. Consider more focused agendas",
                 actionable: true,
-                priority: .medium
+                priority: .low
             )
         }
         
@@ -194,24 +356,35 @@ class ConversationMetricsCalculator {
     
     private func generateCommunicationPatternInsight(_ personMetrics: PersonMetrics) -> DurationInsight? {
         let daysSince = personMetrics.daysSinceLastConversation
-        let isDirectReport = personMetrics.person.isDirectReport
+        let relationshipType = personMetrics.relationshipType
         
-        if isDirectReport && daysSince > 14 {
-            return DurationInsight(
-                type: .underCommunicating,
-                title: "Direct Report Check-in Overdue",
-                description: "It's been \(daysSince) days since your last conversation with \(personMetrics.person.name ?? "this direct report"). Consider scheduling a check-in.",
-                actionable: true,
-                priority: .high
-            )
-        } else if daysSince > 30 {
-            return DurationInsight(
-                type: .underCommunicating,
-                title: "Long Time Since Last Conversation",
-                description: "It's been \(daysSince) days since your last conversation. Consider reaching out to maintain the relationship.",
-                actionable: true,
-                priority: .medium
-            )
+        if daysSince > Int(Double(relationshipType.expectedMeetingFrequencyDays) * relationshipType.overdueThresholdMultiplier) {
+            switch relationshipType {
+            case .directReport:
+                return DurationInsight(
+                    type: .underCommunicating,
+                    title: "Direct Report Check-in Overdue",
+                    description: "Last conversation was \(daysSince) days ago. Direct reports should be contacted weekly or bi-weekly",
+                    actionable: true,
+                    priority: .high
+                )
+            case .skipLevel:
+                return DurationInsight(
+                    type: .relationshipAlert,
+                    title: "Skip Level Meeting Due",
+                    description: "Last conversation was \(daysSince) days ago. Consider scheduling skip level meeting",
+                    actionable: true,
+                    priority: .medium
+                )
+            case .other:
+                return DurationInsight(
+                    type: .underCommunicating,
+                    title: "Long Time Since Last Conversation",
+                    description: "Last conversation was \(daysSince) days ago. Consider reaching out",
+                    actionable: true,
+                    priority: .medium
+                )
+            }
         }
         
         return nil
@@ -219,12 +392,14 @@ class ConversationMetricsCalculator {
     
     private func generateEfficiencyInsight(_ personMetrics: PersonMetrics) -> DurationInsight? {
         let sentimentPerMinute = personMetrics.metrics.averageSentimentPerMinute
+        let avgDuration = personMetrics.metrics.averageDuration
+        let relationshipType = personMetrics.relationshipType
         
-        if sentimentPerMinute < 0.01 && personMetrics.metrics.averageDuration > 60 {
+        if sentimentPerMinute < 0.01 && avgDuration > relationshipType.optimalDurationRange.upperBound {
             return DurationInsight(
                 type: .efficiencyImprovement,
-                title: "Consider Shorter, More Focused Meetings",
-                description: "Long conversations with low sentiment per minute suggest meetings could be more efficient. Try shorter, agenda-driven sessions.",
+                title: "Improve \(relationshipType.description) Meeting Efficiency",
+                description: "Low engagement per minute suggests need for more structured approach",
                 actionable: true,
                 priority: .medium
             )
@@ -234,13 +409,16 @@ class ConversationMetricsCalculator {
     }
     
     private func generateRelationshipAlert(_ personMetrics: PersonMetrics) -> DurationInsight? {
-        if personMetrics.healthScore < 0.3 && personMetrics.trendDirection == "declining" {
+        let healthScore = personMetrics.healthScore
+        let relationshipType = personMetrics.relationshipType
+        
+        if healthScore < 0.4 {
             return DurationInsight(
                 type: .relationshipAlert,
-                title: "Relationship Needs Attention",
-                description: "Declining sentiment trend with \(personMetrics.person.name ?? "this person"). Consider scheduling a one-on-one to address any concerns.",
+                title: "\(relationshipType.description) Relationship Needs Attention",
+                description: "Health score is \(String(format: "%.1f", healthScore * 100))%. Consider additional support or feedback",
                 actionable: true,
-                priority: .high
+                priority: relationshipType == .directReport ? .high : .medium
             )
         }
         

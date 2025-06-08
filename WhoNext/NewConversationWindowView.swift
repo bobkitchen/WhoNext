@@ -200,14 +200,13 @@ struct NewConversationWindowView: View {
             newConversation.setValue(Int16(duration), forKey: "duration")
             newConversation.person = person
             do {
-                print("[NewConversationWindowView][LOG] Saving context\n\tCallStack: \(Thread.callStackSymbols.joined(separator: "\n\t"))")
                 try viewContext.save()
+                onSave?()
+                closeWindow()
             } catch {
                 print("Failed to save conversation: \(error)")
             }
         }
-        onSave?()
-        closeWindow()
     }
     
     var body: some View {
