@@ -27,6 +27,7 @@ struct PersonDetailView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 24) {
                 headerView
+                notesView
                 sentimentAnalyticsView
                 preMeetingBriefView
                 conversationsView
@@ -95,22 +96,87 @@ struct PersonDetailView: View {
             
             Spacer()
             
-            // Edit Button
-            Button(action: openEditWindow) {
-                HStack(spacing: 6) {
-                    Image(systemName: "pencil")
-                        .font(.system(size: 11))
-                    Text("Edit")
-                        .font(.system(size: 11, weight: .medium))
+            // Action Buttons
+            HStack(spacing: 8) {
+                // LinkedIn Search Button
+                Button(action: searchLinkedIn) {
+                    HStack(spacing: 6) {
+                        Image(systemName: "magnifyingglass")
+                            .font(.system(size: 11))
+                        Text("Find on LinkedIn")
+                            .font(.system(size: 11, weight: .medium))
+                    }
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 6)
+                    .background(Color.blue)
+                    .clipShape(RoundedRectangle(cornerRadius: 6))
                 }
-                .foregroundColor(.white)
-                .padding(.horizontal, 12)
-                .padding(.vertical, 6)
-                .background(Color.accentColor)
-                .clipShape(RoundedRectangle(cornerRadius: 6))
+                .buttonStyle(PlainButtonStyle())
+                
+                // Edit Button
+                Button(action: openEditWindow) {
+                    HStack(spacing: 6) {
+                        Image(systemName: "pencil")
+                            .font(.system(size: 11))
+                        Text("Edit")
+                            .font(.system(size: 11, weight: .medium))
+                    }
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 6)
+                    .background(Color.accentColor)
+                    .clipShape(RoundedRectangle(cornerRadius: 6))
+                }
+                .buttonStyle(PlainButtonStyle())
             }
-            .buttonStyle(PlainButtonStyle())
         }
+    }
+    
+    @ViewBuilder
+    private var notesView: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            HStack {
+                Image(systemName: "note.text")
+                    .font(.system(size: 14))
+                    .foregroundColor(.secondary)
+                Text("Profile Notes")
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundColor(.primary)
+                Spacer()
+                
+                // Quick tip for LinkedIn info
+                Text("💡 Tip: Use 'Find on LinkedIn' button above, then copy/paste profile info here")
+                    .font(.system(size: 11))
+                    .foregroundColor(.secondary)
+                    .italic()
+            }
+            
+            if let notes = person.notes, !notes.isEmpty {
+                ScrollView {
+                    Text(notes)
+                        .font(.system(size: 14))
+                        .foregroundColor(.primary)
+                        .textSelection(.enabled)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                }
+                .frame(maxHeight: 120)
+            } else {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("No profile information available")
+                        .font(.system(size: 14))
+                        .foregroundColor(.secondary)
+                    
+                    Text("Click 'Find on LinkedIn' above to search for this person, then copy relevant details (job history, education, etc.) and paste them in the Edit view.")
+                        .font(.system(size: 12))
+                        .foregroundColor(.secondary)
+                        .italic()
+                }
+            }
+        }
+        .padding(16)
+        .background(Color(nsColor: .controlBackgroundColor).opacity(0.3))
+        .cornerRadius(12)
     }
     
     @ViewBuilder
@@ -462,6 +528,26 @@ struct PersonDetailView: View {
     private func copyToClipboard(_ text: String) {
         NSPasteboard.general.clearContents()
         NSPasteboard.general.setString(text, forType: .string)
+    }
+    
+    private func searchLinkedIn() {
+        // Construct LinkedIn search URL with person's name and role
+        var searchQuery = person.name ?? ""
+        
+        if let role = person.role, !role.isEmpty {
+            searchQuery += " " + role
+        }
+        
+        // URL encode the search query
+        let encodedQuery = searchQuery.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? ""
+        
+        // LinkedIn search URL
+        let linkedInSearchURL = "https://www.linkedin.com/search/results/people/?keywords=\(encodedQuery)"
+        
+        // Open LinkedIn search in default browser
+        if let url = URL(string: linkedInSearchURL) {
+            NSWorkspace.shared.open(url)
+        }
     }
 }
 

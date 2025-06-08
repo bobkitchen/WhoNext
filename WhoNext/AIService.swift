@@ -109,7 +109,7 @@ class AIService {
                         [
                             "type": "image_url",
                             "image_url": [
-                                "url": "data:image/jpeg;base64,\(imageData)"
+                                "url": "data:image/png;base64,\(imageData)"
                             ]
                         ]
                     ]
@@ -158,6 +158,95 @@ class AIService {
                     completion(.failure(AIError.apiError(message: errorMessage ?? "Unknown API error")))
                 }
             } catch {
+                completion(.failure(error))
+            }
+        }.resume()
+    }
+    
+    func analyzeMultipleImagesWithVision(imageDataArray: [String], prompt: String, completion: @escaping (Result<String, Error>) -> Void) {
+        guard !apiKey.isEmpty else {
+            completion(.failure(AIError.missingAPIKey))
+            return
+        }
+        
+        print("🔍 [AI] Starting multi-image analysis with \(imageDataArray.count) images")
+        print("🔍 [AI] Prompt length: \(prompt.count) characters")
+        
+        let visionURL = "https://api.openai.com/v1/chat/completions"
+        
+        // Build content array with text prompt and multiple images
+        var contentArray: [[String: Any]] = [
+            [
+                "type": "text",
+                "text": prompt
+            ]
+        ]
+        
+        // Add each image to the content array
+        for imageData in imageDataArray {
+            contentArray.append([
+                "type": "image_url",
+                "image_url": [
+                    "url": "data:image/png;base64,\(imageData)"
+                ]
+            ])
+        }
+        
+        let requestBody: [String: Any] = [
+            "model": "gpt-4o",
+            "messages": [
+                [
+                    "role": "user",
+                    "content": contentArray
+                ]
+            ],
+            "max_tokens": 3000 // Increased for multiple images
+        ]
+        
+        guard let url = URL(string: visionURL) else {
+            completion(.failure(AIError.invalidResponse))
+            return
+        }
+        
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        
+        do {
+            request.httpBody = try JSONSerialization.data(withJSONObject: requestBody)
+        } catch {
+            completion(.failure(error))
+            return
+        }
+        
+        URLSession.shared.dataTask(with: request) { data, response, error in
+            if let error = error {
+                completion(.failure(error))
+                return
+            }
+            
+            guard let data = data,
+                  let httpResponse = response as? HTTPURLResponse else {
+                completion(.failure(AIError.invalidResponse))
+                return
+            }
+            
+            do {
+                if httpResponse.statusCode == 200 {
+                    let decodedResponse = try JSONDecoder().decode(OpenAIResponse.self, from: data)
+                    let content = decodedResponse.choices.first?.message.content ?? "No response content."
+                    print("🔍 [AI] Multi-image analysis successful, response length: \(content.count) characters")
+                    print("🔍 [AI] Response preview: \(String(content.prefix(200)))...")
+                    completion(.success(content))
+                } else {
+                    let errorResponse = try? JSONSerialization.jsonObject(with: data) as? [String: Any]
+                    let errorMessage = (errorResponse?["error"] as? [String: Any])?["message"] as? String
+                    print("❌ [AI] Multi-image analysis failed with status \(httpResponse.statusCode): \(errorMessage ?? "Unknown error")")
+                    completion(.failure(AIError.apiError(message: errorMessage ?? "Unknown API error")))
+                }
+            } catch {
+                print("❌ [AI] Multi-image analysis parsing error: \(error)")
                 completion(.failure(error))
             }
         }.resume()

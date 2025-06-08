@@ -14,6 +14,7 @@ struct PersonEditView: View {
     @State private var editingPhotoData: Data? = nil
     @State private var editingPhotoImage: NSImage? = nil
     @State private var showingPhotoPicker = false
+    @State private var showingLinkedInDropZone = false
     
     var onSave: (() -> Void)?
     var onCancel: (() -> Void)?
@@ -40,6 +41,11 @@ struct PersonEditView: View {
                                 Circle()
                                     .fill(Color(nsColor: .systemGray).opacity(0.15))
                                     .frame(width: 80, height: 80)
+                                    .overlay(
+                                        Circle()
+                                            .stroke(Color.blue.opacity(0.3), lineWidth: 2)
+                                            .opacity(canPasteImage() ? 1 : 0)
+                                    )
                                 
                                 if let image = editingPhotoImage {
                                     Image(nsImage: image)
@@ -53,12 +59,22 @@ struct PersonEditView: View {
                                         .foregroundColor(.secondary)
                                 }
                             }
+                            .onTapGesture {
+                                pasteImageFromClipboard()
+                            }
+                            .help(canPasteImage() ? "Click to paste image from clipboard" : "Copy an image to clipboard first")
                             
                             VStack(alignment: .leading, spacing: 8) {
                                 Button("Choose Photo") {
                                     showingPhotoPicker = true
                                 }
                                 .buttonStyle(.bordered)
+                                
+                                Button("Paste from Clipboard") {
+                                    pasteImageFromClipboard()
+                                }
+                                .buttonStyle(.bordered)
+                                .disabled(!canPasteImage())
                                 
                                 if editingPhotoImage != nil {
                                     Button("Remove Photo") {
@@ -109,12 +125,42 @@ struct PersonEditView: View {
                     
                     // Notes Section
                     VStack(alignment: .leading, spacing: 12) {
-                        Text("Notes")
-                            .font(.system(size: 16, weight: .semibold))
+                        HStack {
+                            Text("Profile Notes")
+                                .font(.system(size: 16, weight: .semibold))
+                            
+                            Spacer()
+                            
+                            Button(action: {
+                                showingLinkedInDropZone.toggle()
+                            }) {
+                                HStack(spacing: 6) {
+                                    Image(systemName: "plus.circle.fill")
+                                    Text("LinkedIn PDF")
+                                }
+                                .font(.system(size: 12, weight: .medium))
+                                .foregroundColor(.blue)
+                            }
+                            .buttonStyle(PlainButtonStyle())
+                        }
+                        
+                        // LinkedIn PDF Drop Zone (conditionally shown)
+                        if showingLinkedInDropZone {
+                            LinkedInPDFDropZone { generatedSummary in
+                                // Append the generated summary to existing notes
+                                if !editingNotes.isEmpty {
+                                    editingNotes += "\n\n" + generatedSummary
+                                } else {
+                                    editingNotes = generatedSummary
+                                }
+                                showingLinkedInDropZone = false
+                            }
+                            .transition(.opacity.combined(with: .scale))
+                        }
                         
                         TextEditor(text: $editingNotes)
                             .font(.system(size: 14))
-                            .frame(minHeight: 120)
+                            .frame(minHeight: showingLinkedInDropZone ? 100 : 120)
                             .padding(8)
                             .background(Color(nsColor: .textBackgroundColor))
                             .clipShape(RoundedRectangle(cornerRadius: 8))
@@ -122,6 +168,14 @@ struct PersonEditView: View {
                                 RoundedRectangle(cornerRadius: 8)
                                     .stroke(Color.gray.opacity(0.3), lineWidth: 1)
                             )
+                        
+                        // Helper text
+                        if !showingLinkedInDropZone {
+                            Text("💡 Tip: Use the LinkedIn PDF button above to automatically generate a professional summary from LinkedIn profile pages.")
+                                .font(.system(size: 11))
+                                .foregroundColor(.secondary)
+                                .padding(.top, 4)
+                        }
                     }
                 }
             }
@@ -198,6 +252,33 @@ struct PersonEditView: View {
         let components = name.split(separator: " ")
         let initials = components.prefix(2).map { String($0.prefix(1)) }
         return initials.joined().uppercased()
+    }
+    
+    private func canPasteImage() -> Bool {
+        let pasteboard = NSPasteboard.general
+        return pasteboard.types?.contains(.png) == true || 
+               pasteboard.types?.contains(.tiff) == true ||
+               pasteboard.canReadItem(withDataConformingToTypes: [NSPasteboard.PasteboardType.png.rawValue, NSPasteboard.PasteboardType.tiff.rawValue])
+    }
+    
+    private func pasteImageFromClipboard() {
+        let pasteboard = NSPasteboard.general
+        
+        // Try to get image data from various formats
+        if let imageData = pasteboard.data(forType: .png) ?? 
+                          pasteboard.data(forType: .tiff),
+           let image = NSImage(data: imageData) {
+            editingPhotoData = imageData
+            editingPhotoImage = image
+        } else if let image = NSImage(pasteboard: pasteboard) {
+            // Fallback: try to get NSImage directly and convert to PNG
+            if let tiffData = image.tiffRepresentation,
+               let bitmap = NSBitmapImageRep(data: tiffData),
+               let pngData = bitmap.representation(using: .png, properties: [:]) {
+                editingPhotoData = pngData
+                editingPhotoImage = image
+            }
+        }
     }
 }
 
