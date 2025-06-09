@@ -32,9 +32,9 @@ struct ChatView: View {
                 HStack(spacing: 8) {
                     Image("icon_lightbulb")
                         .resizable()
-                        .frame(width: 28, height: 28)
-                    Text("Insights")
-                        .font(.system(size: 28, weight: .semibold, design: .rounded))
+                        .frame(width: 24, height: 24)
+                    Text("Chat Insights")
+                        .font(.system(size: 20, weight: .semibold, design: .rounded))
                 }
                 Spacer()
                 
@@ -58,12 +58,12 @@ struct ChatView: View {
                 }
                 .buttonStyle(.plain)
             }
-            .padding(.horizontal, 20)
-            .padding(.top, 20)
-            .padding(.bottom, 16)
+            .padding(.horizontal, 12)
+            .padding(.top, 6)
+            .padding(.bottom, 8)
             
             Divider()
-                .padding(.horizontal, 20)
+                .padding(.horizontal, 12)
             
             // Messages or Empty State
             if chatSession.messages.isEmpty {
@@ -87,7 +87,7 @@ struct ChatView: View {
                         }
                         .buttonStyle(.plain)
                     }
-                    .padding(.horizontal, 20)
+                    .padding(.horizontal, 12)
                     .padding(.top, 10)
                     
                     VStack(spacing: 12) {
@@ -144,7 +144,8 @@ struct ChatView: View {
                     
                     Spacer()
                 }
-                .padding(.horizontal, 20)
+                .padding(.horizontal, 12)
+                .padding(.top, 10)
             } else {
                 // Messages ScrollView
                 ScrollViewReader { proxy in
@@ -222,11 +223,11 @@ struct ChatView: View {
                             .font(.caption)
                         Spacer()
                     }
-                    .padding(.horizontal, 20)
+                    .padding(.horizontal, 12)
                     .padding(.vertical, 8)
                     .background(Color.red.opacity(0.1))
                     .cornerRadius(8)
-                    .padding(.horizontal, 20)
+                    .padding(.horizontal, 12)
                     .padding(.bottom, 8)
                 }
                 
@@ -278,14 +279,14 @@ struct ChatView: View {
                     .buttonStyle(.plain)
                     .disabled(chatSession.inputText.isEmpty || chatSession.isLoading)
                 }
-                .padding(20)
+                .padding(12)
                 .background(
                     RoundedRectangle(cornerRadius: 16)
                         .fill(Color(NSColor.controlBackgroundColor))
                         .shadow(color: .black.opacity(0.05), radius: 5, x: 0, y: -2)
                 )
-                .padding(.horizontal, 20)
-                .padding(.bottom, 20)
+                .padding(.horizontal, 12)
+                .padding(.bottom, 4)
             }
         }
         .alert("Error", isPresented: $chatSession.showError) {
@@ -548,6 +549,7 @@ struct OnboardingView: View {
                         .imageScale(.large)
                 }
                 .buttonStyle(.plain)
+                .padding(.horizontal, 12)
             }
             
             VStack(alignment: .leading, spacing: 20) {

@@ -6,7 +6,7 @@ struct WhoNextApp: App {
     let persistenceController = PersistenceController.shared
 
     var body: some Scene {
-        WindowGroup {
+        WindowGroup(id: "main-window") {
             ContentView()
                 .environment(\.managedObjectContext, persistenceController.container.viewContext)
                 .onAppear {
@@ -15,8 +15,8 @@ struct WhoNextApp: App {
                 }
         }
         .windowStyle(.titleBar)
-        .defaultSize(width: 800, height: 600)
-        .windowResizability(.contentSize)
+        .defaultSize(width: 1000, height: 800)
+        .windowResizability(.automatic)
         .windowToolbarStyle(.unified)
         // Removed direct Window for NewConversationWindow. Now handled in ContentView via .sheet presentation.
         Window("Test Window", id: "testWindow") {

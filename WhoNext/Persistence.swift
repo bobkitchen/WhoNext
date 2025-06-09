@@ -77,8 +77,20 @@ struct PersistenceController {
         // ---------------------------------------------------------------------
         // Load stores
         // ---------------------------------------------------------------------
-        container.loadPersistentStores { _, error in
-            if let error { fatalError("❌ Core Data load error: \(error)") }
+        container.loadPersistentStores { storeDescription, error in
+            if let error = error {
+                print("❌ Core Data load error: \(error)")
+                print("❌ Store description: \(storeDescription)")
+                if let cloudKitError = error as? CKError {
+                    print("❌ CloudKit error code: \(cloudKitError.code)")
+                    print("❌ CloudKit error description: \(cloudKitError.localizedDescription)")
+                }
+                fatalError("❌ Core Data load error: \(error)")
+            } else {
+                print("✅ Core Data store loaded successfully")
+                print("✅ Store URL: \(storeDescription.url?.absoluteString ?? "unknown")")
+                print("✅ CloudKit container: \(storeDescription.cloudKitContainerOptions?.containerIdentifier ?? "none")")
+            }
         }
 
         container.viewContext.automaticallyMergesChangesFromParent = true

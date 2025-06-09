@@ -5,7 +5,7 @@
         <attribute name="date" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
         <attribute name="duration" optional="YES" attributeType="Integer 32" defaultValueString="0" usesScalarValueType="YES"/>
         <attribute name="engagementLevel" optional="YES" attributeType="String"/>
-        <attribute name="keyTopics" optional="YES" attributeType="Transformable" valueTransformerName="NSSecureUnarchiveFromDataTransformer" customClassName="[String]"/>
+        <attribute name="keyTopics" optional="YES" attributeType="Transformable" valueTransformerName="NSSecureUnarchiveFromDataTransformer"/>
         <attribute name="lastAnalyzed" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
         <attribute name="lastSentimentAnalysis" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
         <attribute name="legacyId" optional="YES" attributeType="Date" usesScalarValueType="NO"/>

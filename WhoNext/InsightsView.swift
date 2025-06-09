@@ -29,14 +29,14 @@ struct InsightsView: View {
                 // Insights (Chat) Section and Statistics Cards
                 HStack(alignment: .top, spacing: 24) {
                     ChatView()
-                        .frame(minWidth: 400, minHeight: 0, maxHeight: .infinity)
+                        .frame(minWidth: 400, maxHeight: 480)
                         .padding()
                         .background(Color(NSColor.controlBackgroundColor))
                         .cornerRadius(16)
                         .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 2)
                         .alignmentGuide(.top) { d in d[.top] } // Align top with cards
                     
-                    VStack(spacing: 10) {
+                    VStack(spacing: 24) {
                         EnhancedStatCardView(
                             icon: "flag.fill",
                             title: "Cycle Progress",

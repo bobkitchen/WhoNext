@@ -153,33 +153,84 @@ Best regards
     private var generalSettingsView: some View {
         VStack(alignment: .leading, spacing: 20) {
             // --- Sync Status ---
-            VStack(alignment: .leading, spacing: 8) {
+            VStack(alignment: .leading, spacing: 12) {
                 Text("iCloud Sync Status")
                     .font(.headline)
-                if syncStatus.isSyncing {
-                    HStack {
-                        ProgressView()
-                        Text("Syncing with iCloud...")
-                            .foregroundColor(.secondary)
+                
+                HStack {
+                    Image(systemName: syncStatus.cloudKitAvailable ? "checkmark.circle.fill" : "exclamationmark.triangle.fill")
+                        .foregroundColor(syncStatus.cloudKitAvailable ? .green : .orange)
+                    
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(syncStatus.cloudKitAvailable ? "iCloud Sync Active" : "iCloud Sync Issue")
+                            .font(.subheadline)
+                            .fontWeight(.medium)
+                        
+                        if let lastSync = syncStatus.lastSyncDate {
+                            Text("Last synced: \(lastSync.formatted(date: .abbreviated, time: .shortened))")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        } else {
+                            Text("Never synced")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        }
                     }
-                } else if let lastSync = syncStatus.lastSyncDate {
-                    Text("Last successful sync: \(lastSync.formatted(date: .abbreviated, time: .standard))")
-                        .foregroundColor(.green)
-                } else {
-                    Text("No sync has occurred yet.")
-                        .foregroundColor(.secondary)
+                    
+                    Spacer()
+                    
+                    if syncStatus.isSyncing {
+                        ProgressView()
+                            .scaleEffect(0.8)
+                    }
                 }
+                .padding(.vertical, 8)
+                .padding(.horizontal, 12)
+                .background(Color(.controlBackgroundColor))
+                .cornerRadius(8)
+                
                 if let error = syncStatus.syncError {
-                    Text("Sync Error: \(error)")
+                    Text("Sync Error: \(error.localizedDescription)")
+                        .font(.caption)
                         .foregroundColor(.red)
+                        .padding(.horizontal, 12)
                 }
-                Button(action: {
-                    syncStatus.isSyncing = true
-                    syncStatus.manualSync()
-                }) {
-                    Label("Trigger Manual Sync", systemImage: "arrow.clockwise")
+                
+                if !syncStatus.cloudKitAvailable {
+                    Text("Account Status: \(syncStatus.accountStatus)")
+                        .font(.caption)
+                        .foregroundColor(.orange)
+                        .padding(.horizontal, 12)
                 }
-                .disabled(syncStatus.isSyncing)
+                
+                HStack(spacing: 12) {
+                    Button(action: {
+                        syncStatus.manualSync()
+                    }) {
+                        Label("Sync Now", systemImage: "arrow.clockwise")
+                    }
+                    .buttonStyle(.borderless)
+                    
+                    if !syncStatus.cloudKitAvailable || syncStatus.syncError != nil {
+                        Button(action: {
+                            syncStatus.testCloudKitConnection()
+                        }) {
+                            Label("Diagnose Issue", systemImage: "stethoscope")
+                        }
+                        .buttonStyle(.borderless)
+                        .foregroundColor(.blue)
+                    }
+                    
+                    if syncStatus.syncError != nil {
+                        Button(action: {
+                            syncStatus.resetCloudKitSync()
+                        }) {
+                            Label("Reset Sync", systemImage: "arrow.counterclockwise")
+                        }
+                        .buttonStyle(.borderless)
+                        .foregroundColor(.orange)
+                    }
+                }
             }
             
             Divider()
@@ -685,9 +736,6 @@ Best regards
                         isClaudeKeyValid = false
                         claudeKeyError = "API error (HTTP \(httpResponse.statusCode))"
                     }
-                } else {
-                    claudeKeyError = "Invalid response format"
-                    isClaudeKeyValid = false
                 }
             }
         }.resume()
