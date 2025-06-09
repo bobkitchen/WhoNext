@@ -62,6 +62,7 @@ Best regards
     @StateObject private var supabaseSync = SupabaseSyncManager.shared
 
     @State private var selectedTab = "general"
+    @State private var refreshTrigger = false
 
     var body: some View {
         ScrollView {
@@ -550,6 +551,12 @@ Best regards
                         Task {
                             do {
                                 try await supabaseSync.deduplicateAllData(context: viewContext)
+                                // Force refresh of the view to update conversation count
+                                await MainActor.run {
+                                    // Trigger a view refresh by updating the environment
+                                    try? viewContext.save()
+                                    refreshTrigger.toggle()
+                                }
                             } catch {
                                 print("Deduplication failed: \(error)")
                             }
@@ -558,6 +565,26 @@ Best regards
                     .buttonStyle(.bordered)
                     .disabled(supabaseSync.isSyncing)
                     .foregroundColor(.orange)
+                    
+                    // EMERGENCY: Data Recovery Button
+                    Button("🚨 Check Supabase for Data") {
+                        Task {
+                            do {
+                                // Force download everything from Supabase to restore local data
+                                try await supabaseSync.downloadRemoteChanges(context: viewContext)
+                                await MainActor.run {
+                                    try? viewContext.save()
+                                    refreshTrigger.toggle()
+                                }
+                                print("✅ Data recovery attempt completed")
+                            } catch {
+                                print("❌ Data recovery failed: \(error)")
+                            }
+                        }
+                    }
+                    .buttonStyle(.bordered)
+                    .disabled(supabaseSync.isSyncing)
+                    .foregroundColor(.red)
                     
                     // Error Display
                     if let error = supabaseSync.error {
@@ -600,6 +627,7 @@ Best regards
                         Spacer()
                         Text("\(conversations.count)")
                             .foregroundColor(.secondary)
+                            .id(refreshTrigger) // Force refresh when trigger changes
                     }
                 }
                 .font(.caption)

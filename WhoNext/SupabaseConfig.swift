@@ -20,51 +20,75 @@ class SupabaseConfig {
 
 // MARK: - Supabase Data Models
 struct SupabasePerson: Codable {
-    let id: String
-    let identifier: String?
+    let id: String?
+    let identifier: String
     let name: String?
-    let role: String?
+    let photoBase64: String?
     let notes: String?
-    let isDirectReport: Bool
+    let createdAt: String?
+    let updatedAt: String?
+    let deviceId: String?
+    let isDeleted: Bool?
+    let deletedAt: String?
+    let role: String?
     let timezone: String?
-    let scheduledConversationDate: Date?
-    let photoBase64: String? // Store as base64 string for Supabase
-    let createdAt: Date
-    let updatedAt: Date
+    let scheduledConversationDate: String?
+    let isDirectReport: Bool?
     
     enum CodingKeys: String, CodingKey {
-        case id, identifier, name, role, notes, timezone
-        case isDirectReport = "is_direct_report"
-        case scheduledConversationDate = "scheduled_conversation_date"
-        case photoBase64 = "photo"
+        case id
+        case identifier
+        case name
+        case photoBase64 = "photo_base64"
+        case notes
         case createdAt = "created_at"
         case updatedAt = "updated_at"
+        case deviceId = "device_id"
+        case isDeleted = "is_deleted"
+        case deletedAt = "deleted_at"
+        case role
+        case timezone
+        case scheduledConversationDate = "scheduled_conversation_date"
+        case isDirectReport = "is_direct_report"
     }
 }
 
 struct SupabaseConversation: Codable {
-    let id: String
+    let id: String?
     let uuid: String
-    let personId: String?
-    let date: Date?
-    let duration: Int?
-    let engagementLevel: String?
+    let personIdentifier: String?
+    let date: String?
     let notes: String?
     let summary: String?
+    let createdAt: String?
+    let updatedAt: String?
+    let deviceId: String?
+    let isDeleted: Bool?
+    let deletedAt: String?
+    let duration: Int?
+    let engagementLevel: String?
     let analysisVersion: String?
     let keyTopics: [String]?
     let qualityScore: Double
     let sentimentLabel: String?
     let sentimentScore: Double
-    let lastAnalyzed: Date?
-    let lastSentimentAnalysis: Date?
-    let legacyId: Date?
-    let createdAt: Date
-    let updatedAt: Date
+    let lastAnalyzed: String?
+    let lastSentimentAnalysis: String?
+    let legacyId: String?
     
     enum CodingKeys: String, CodingKey {
-        case id, uuid, date, duration, notes, summary
-        case personId = "person_id"
+        case id
+        case uuid
+        case personIdentifier = "person_identifier"
+        case date
+        case notes
+        case summary
+        case createdAt = "created_at"
+        case updatedAt = "updated_at"
+        case deviceId = "device_id"
+        case isDeleted = "is_deleted"
+        case deletedAt = "deleted_at"
+        case duration
         case engagementLevel = "engagement_level"
         case analysisVersion = "analysis_version"
         case keyTopics = "key_topics"
@@ -74,7 +98,5 @@ struct SupabaseConversation: Codable {
         case lastAnalyzed = "last_analyzed"
         case lastSentimentAnalysis = "last_sentiment_analysis"
         case legacyId = "legacy_id"
-        case createdAt = "created_at"
-        case updatedAt = "updated_at"
     }
 }

@@ -233,9 +233,8 @@ extension SupabaseSyncManager {
         // Group by identifier
         var peopleByIdentifier: [String: [SupabasePerson]] = [:]
         for person in allPeople {
-            if let identifier = person.identifier {
-                peopleByIdentifier[identifier, default: []].append(person)
-            }
+            let identifier = person.identifier
+            peopleByIdentifier[identifier, default: []].append(person)
         }
         
         // Find and delete duplicates (keep the most recent one)
@@ -243,14 +242,18 @@ extension SupabaseSyncManager {
         for (_, duplicates) in peopleByIdentifier {
             if duplicates.count > 1 {
                 // Sort by created_at and keep the most recent
-                let sorted = duplicates.sorted { $0.createdAt > $1.createdAt }
+                let sorted = duplicates.sorted { 
+                    let date1 = ISO8601DateFormatter().date(from: $0.createdAt ?? "") ?? Date.distantPast
+                    let date2 = ISO8601DateFormatter().date(from: $1.createdAt ?? "") ?? Date.distantPast
+                    return date1 > date2
+                }
                 let toDelete = Array(sorted.dropFirst()) // Remove all except the first (most recent)
                 
                 for person in toDelete {
                     try await SupabaseConfig.shared.client.database
                         .from("people")
                         .delete()
-                        .eq("id", value: person.id)
+                        .eq("id", value: person.id ?? "")
                         .execute()
                     deletedCount += 1
                 }
@@ -279,14 +282,18 @@ extension SupabaseSyncManager {
         for (_, duplicates) in conversationsByUUID {
             if duplicates.count > 1 {
                 // Sort by created_at and keep the most recent
-                let sorted = duplicates.sorted { $0.createdAt > $1.createdAt }
+                let sorted = duplicates.sorted { 
+                    let date1 = ISO8601DateFormatter().date(from: $0.createdAt ?? "") ?? Date.distantPast
+                    let date2 = ISO8601DateFormatter().date(from: $1.createdAt ?? "") ?? Date.distantPast
+                    return date1 > date2
+                }
                 let toDelete = Array(sorted.dropFirst()) // Remove all except the first (most recent)
                 
                 for conversation in toDelete {
                     try await SupabaseConfig.shared.client.database
                         .from("conversations")
                         .delete()
-                        .eq("id", value: conversation.id)
+                        .eq("id", value: conversation.id ?? "")
                         .execute()
                     deletedCount += 1
                 }
