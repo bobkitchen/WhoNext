@@ -523,6 +523,19 @@ Best regards
                         }
                     }
                     
+                    // Progress Bar (when syncing)
+                    if supabaseSync.isSyncing {
+                        VStack(alignment: .leading, spacing: 4) {
+                            ProgressView(value: supabaseSync.syncProgress)
+                                .progressViewStyle(LinearProgressViewStyle())
+                            if !supabaseSync.syncStep.isEmpty {
+                                Text(supabaseSync.syncStep)
+                                    .font(.caption2)
+                                    .foregroundColor(.secondary)
+                            }
+                        }
+                    }
+                    
                     // Sync Button
                     Button(supabaseSync.isSyncing ? "Syncing..." : "Sync Now") {
                         Task {
@@ -532,6 +545,20 @@ Best regards
                     .buttonStyle(.borderedProminent)
                     .disabled(supabaseSync.isSyncing)
                     
+                    // Deduplication Button
+                    Button(supabaseSync.isSyncing ? "Deduplicating..." : "Remove Duplicates") {
+                        Task {
+                            do {
+                                try await supabaseSync.deduplicateAllData(context: viewContext)
+                            } catch {
+                                print("Deduplication failed: \(error)")
+                            }
+                        }
+                    }
+                    .buttonStyle(.bordered)
+                    .disabled(supabaseSync.isSyncing)
+                    .foregroundColor(.orange)
+                    
                     // Error Display
                     if let error = supabaseSync.error {
                         Label(error, systemImage: "xmark.circle.fill")
@@ -539,8 +566,8 @@ Best regards
                             .font(.caption)
                     }
                     
-                    // Success Display
-                    if let success = supabaseSync.success {
+                    // Success Display (only show if not currently syncing)
+                    if let success = supabaseSync.success, !supabaseSync.isSyncing {
                         Label(success, systemImage: "checkmark.circle.fill")
                             .foregroundColor(.green)
                             .font(.caption)
@@ -552,11 +579,11 @@ Best regards
             .background(Color(NSColor.controlBackgroundColor))
             .cornerRadius(8)
             
-            // Migration Section
+            // Data Summary Section
             VStack(alignment: .leading, spacing: 8) {
-                Text("Migration from CloudKit")
+                Text("Local Data")
                     .font(.headline)
-                Text("Your existing data will be automatically migrated to Supabase on first sync")
+                Text("Current data in your local database")
                     .font(.caption)
                     .foregroundColor(.secondary)
                 
@@ -578,21 +605,6 @@ Best regards
                 .font(.caption)
                 .padding(.vertical, 8)
             }
-            .padding()
-            .background(Color(NSColor.controlBackgroundColor))
-            .cornerRadius(8)
-            
-            // Setup Instructions
-            VStack(alignment: .leading, spacing: 8) {
-                Text("Setup Instructions")
-                    .font(.headline)
-                Text("1. Create a Supabase project at supabase.com")
-                Text("2. Run the SQL schema (see SUPABASE_SETUP.md)")
-                Text("3. Update SupabaseConfig.swift with your credentials")
-                Text("4. Click 'Sync Now' to migrate your data")
-            }
-            .font(.caption)
-            .foregroundColor(.secondary)
             .padding()
             .background(Color(NSColor.controlBackgroundColor))
             .cornerRadius(8)

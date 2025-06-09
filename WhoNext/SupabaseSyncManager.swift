@@ -11,6 +11,8 @@ class SupabaseSyncManager: ObservableObject {
     @Published var isSyncing = false
     @Published var lastSyncDate: Date?
     @Published var syncStatus = "Ready"
+    @Published var syncProgress: Double = 0.0
+    @Published var syncStep: String = ""
     @Published var errorMessage: String?
     @Published var error: String?
     @Published var success: String?
@@ -35,6 +37,8 @@ class SupabaseSyncManager: ObservableObject {
         
         isSyncing = true
         syncStatus = "Syncing..."
+        syncProgress = 0.0
+        syncStep = ""
         errorMessage = nil
         error = nil
         success = nil
@@ -63,6 +67,8 @@ class SupabaseSyncManager: ObservableObject {
     // MARK: - People Sync
     private func syncPeople(context: NSManagedObjectContext) async throws {
         syncStatus = "Syncing people..."
+        syncStep = "Syncing people"
+        syncProgress = 0.25
         
         // 1. Upload local changes to Supabase
         try await uploadPeopleToSupabase(context: context)
@@ -78,6 +84,19 @@ class SupabaseSyncManager: ObservableObject {
         let people = try context.fetch(request)
         
         for person in people {
+            // Check if this person already exists in Supabase
+            let existingResponse: [SupabasePerson] = try await supabase.database
+                .from("people")
+                .select()
+                .eq("identifier", value: person.identifier?.uuidString ?? "")
+                .execute()
+                .value
+            
+            // Skip if person already exists in Supabase
+            if !existingResponse.isEmpty {
+                continue
+            }
+            
             let supabasePerson = SupabasePerson(
                 id: UUID().uuidString, // Supabase auto-generates this
                 identifier: person.identifier?.uuidString ?? UUID().uuidString,
@@ -94,7 +113,7 @@ class SupabaseSyncManager: ObservableObject {
             
             try await supabase.database
                 .from("people")
-                .upsert(supabasePerson, onConflict: "identifier")
+                .insert(supabasePerson)
                 .execute()
         }
     }
@@ -131,6 +150,8 @@ class SupabaseSyncManager: ObservableObject {
     // MARK: - Conversations Sync
     private func syncConversations(context: NSManagedObjectContext) async throws {
         syncStatus = "Syncing conversations..."
+        syncStep = "Syncing conversations"
+        syncProgress = 0.75
         
         // 1. Upload local changes
         try await uploadConversationsToSupabase(context: context)
@@ -146,6 +167,19 @@ class SupabaseSyncManager: ObservableObject {
         let conversations = try context.fetch(request)
         
         for conversation in conversations {
+            // Check if this conversation already exists in Supabase
+            let existingResponse: [SupabaseConversation] = try await supabase.database
+                .from("conversations")
+                .select()
+                .eq("uuid", value: conversation.uuid?.uuidString ?? "")
+                .execute()
+                .value
+            
+            // Skip if conversation already exists in Supabase
+            if !existingResponse.isEmpty {
+                continue
+            }
+            
             let supabaseConversation = SupabaseConversation(
                 id: UUID().uuidString, // Supabase auto-generates this
                 uuid: conversation.uuid?.uuidString ?? UUID().uuidString,
@@ -169,7 +203,7 @@ class SupabaseSyncManager: ObservableObject {
             
             try await supabase.database
                 .from("conversations")
-                .upsert(supabaseConversation, onConflict: "uuid")
+                .insert(supabaseConversation)
                 .execute()
         }
     }
@@ -237,12 +271,16 @@ class SupabaseSyncManager: ObservableObject {
         error = nil
         success = nil
         syncStatus = "Ready"
+        syncProgress = 0.0
+        syncStep = ""
     }
     
     private func performSync(context: NSManagedObjectContext) async throws {
         print("🔄 Starting Supabase sync...")
         
         // Test basic connectivity first
+        syncStep = "Testing connection"
+        syncProgress = 0.1
         do {
             // Try a simple query to test connection - just count records
             let response = try await supabase.database
@@ -257,11 +295,17 @@ class SupabaseSyncManager: ObservableObject {
         }
         
         // Upload local changes to Supabase
+        syncStep = "Uploading local changes"
+        syncProgress = 0.3
         try await uploadLocalChanges(context: context)
         
         // Download remote changes from Supabase
+        syncStep = "Downloading remote changes"
+        syncProgress = 0.8
         try await downloadRemoteChanges(context: context)
         
+        syncStep = "Completing sync"
+        syncProgress = 1.0
         print("✅ Supabase sync completed successfully")
     }
     
