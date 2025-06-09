@@ -1,8 +1,8 @@
 import SwiftUI
 import CoreData
 import UniformTypeIdentifiers
-import CloudKit
 import EventKit
+import Supabase
 
 struct SettingsView: View {
     @Environment(\.managedObjectContext) private var viewContext
@@ -52,45 +52,56 @@ Best regards
         predicate: nil,
         animation: .default
     ) private var people: FetchedResults<Person>
-
-    @StateObject private var syncStatus = CloudKitSyncStatus()
+    
+    @FetchRequest(
+        sortDescriptors: [NSSortDescriptor(keyPath: \Conversation.date, ascending: false)],
+        predicate: nil,
+        animation: .default
+    ) private var conversations: FetchedResults<Conversation>
+    
+    @StateObject private var supabaseSync = SupabaseSyncManager.shared
 
     @State private var selectedTab = "general"
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 20) {
-            Text("Settings")
-                .font(.largeTitle)
-                .bold()
-            
-            // Tab selector with modern design
-            HStack(spacing: 0) {
-                TabButton(title: "General", icon: "gear", isSelected: selectedTab == "general") {
-                    selectedTab = "general"
-                }
+        ScrollView {
+            VStack(alignment: .leading, spacing: 20) {
+                Text("Settings")
+                    .font(.largeTitle)
+                    .bold()
                 
-                TabButton(title: "AI & Prompts", icon: "brain", isSelected: selectedTab == "ai") {
-                    selectedTab = "ai"
+                // Tab selector with modern design
+                HStack(spacing: 0) {
+                    TabButton(title: "General", icon: "gear", isSelected: selectedTab == "general") {
+                        selectedTab = "general"
+                    }
+                    
+                    TabButton(title: "AI & Prompts", icon: "brain", isSelected: selectedTab == "ai") {
+                        selectedTab = "ai"
+                    }
+                    
+                    TabButton(title: "Email Templates", icon: "envelope", isSelected: selectedTab == "email") {
+                        selectedTab = "email"
+                    }
+                    
+                    TabButton(title: "Calendar", icon: "calendar", isSelected: selectedTab == "calendar") {
+                        selectedTab = "calendar"
+                    }
+                    
+                    TabButton(title: "Import & Export", icon: "square.and.arrow.down", isSelected: selectedTab == "import") {
+                        selectedTab = "import"
+                    }
+                    
+                    TabButton(title: "Sync", icon: "arrow.triangle.2.circlepath.camera", isSelected: selectedTab == "sync") {
+                        selectedTab = "sync"
+                    }
+                    
+                    Spacer()
                 }
+                .padding(.bottom, 10)
                 
-                TabButton(title: "Email Templates", icon: "envelope", isSelected: selectedTab == "email") {
-                    selectedTab = "email"
-                }
-                
-                TabButton(title: "Calendar", icon: "calendar", isSelected: selectedTab == "calendar") {
-                    selectedTab = "calendar"
-                }
-                
-                TabButton(title: "Import & Export", icon: "square.and.arrow.down", isSelected: selectedTab == "import") {
-                    selectedTab = "import"
-                }
-            }
-            .background(Color.gray.opacity(0.1))
-            .cornerRadius(10)
-            .padding(.bottom, 10)
-            
-            ScrollView {
-                VStack(alignment: .leading, spacing: 20) {
+                // Content based on selected tab
+                Group {
                     switch selectedTab {
                     case "general":
                         generalSettingsView
@@ -102,16 +113,16 @@ Best regards
                         importExportView
                     case "calendar":
                         calendarSettingsView
+                    case "sync":
+                        syncSettingsView
                     default:
                         generalSettingsView
                     }
                 }
-                .padding(.trailing, 20)
             }
-            
-            Spacer()
+            .padding(.horizontal, 30)
+            .padding(.vertical, 20)
         }
-        .padding()
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
     
@@ -152,89 +163,6 @@ Best regards
     // MARK: - General Settings
     private var generalSettingsView: some View {
         VStack(alignment: .leading, spacing: 20) {
-            // --- Sync Status ---
-            VStack(alignment: .leading, spacing: 12) {
-                Text("iCloud Sync Status")
-                    .font(.headline)
-                
-                HStack {
-                    Image(systemName: syncStatus.cloudKitAvailable ? "checkmark.circle.fill" : "exclamationmark.triangle.fill")
-                        .foregroundColor(syncStatus.cloudKitAvailable ? .green : .orange)
-                    
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(syncStatus.cloudKitAvailable ? "iCloud Sync Active" : "iCloud Sync Issue")
-                            .font(.subheadline)
-                            .fontWeight(.medium)
-                        
-                        if let lastSync = syncStatus.lastSyncDate {
-                            Text("Last synced: \(lastSync.formatted(date: .abbreviated, time: .shortened))")
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-                        } else {
-                            Text("Never synced")
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-                        }
-                    }
-                    
-                    Spacer()
-                    
-                    if syncStatus.isSyncing {
-                        ProgressView()
-                            .scaleEffect(0.8)
-                    }
-                }
-                .padding(.vertical, 8)
-                .padding(.horizontal, 12)
-                .background(Color(.controlBackgroundColor))
-                .cornerRadius(8)
-                
-                if let error = syncStatus.syncError {
-                    Text("Sync Error: \(error.localizedDescription)")
-                        .font(.caption)
-                        .foregroundColor(.red)
-                        .padding(.horizontal, 12)
-                }
-                
-                if !syncStatus.cloudKitAvailable {
-                    Text("Account Status: \(syncStatus.accountStatus)")
-                        .font(.caption)
-                        .foregroundColor(.orange)
-                        .padding(.horizontal, 12)
-                }
-                
-                HStack(spacing: 12) {
-                    Button(action: {
-                        syncStatus.manualSync()
-                    }) {
-                        Label("Sync Now", systemImage: "arrow.clockwise")
-                    }
-                    .buttonStyle(.borderless)
-                    
-                    if !syncStatus.cloudKitAvailable || syncStatus.syncError != nil {
-                        Button(action: {
-                            syncStatus.testCloudKitConnection()
-                        }) {
-                            Label("Diagnose Issue", systemImage: "stethoscope")
-                        }
-                        .buttonStyle(.borderless)
-                        .foregroundColor(.blue)
-                    }
-                    
-                    if syncStatus.syncError != nil {
-                        Button(action: {
-                            syncStatus.resetCloudKitSync()
-                        }) {
-                            Label("Reset Sync", systemImage: "arrow.counterclockwise")
-                        }
-                        .buttonStyle(.borderless)
-                        .foregroundColor(.orange)
-                    }
-                }
-            }
-            
-            Divider()
-            
             // Reset App Section
             VStack(alignment: .leading, spacing: 8) {
                 Text("Warning + Danger")
@@ -332,7 +260,7 @@ Best regards
                 
                 TextEditor(text: $customPreMeetingPrompt)
                     .font(.system(.body, design: .monospaced))
-                    .frame(minHeight: 150, maxHeight: 300)
+                    .frame(minHeight: 200, maxHeight: 400)
                     .overlay(
                         RoundedRectangle(cornerRadius: 8)
                             .stroke(Color.gray.opacity(0.2), lineWidth: 1)
@@ -394,7 +322,7 @@ Pre-Meeting Brief:
                             .font(.subheadline)
                         TextEditor(text: $emailBodyTemplate)
                             .font(.system(.body, design: .monospaced))
-                            .frame(minHeight: 120, maxHeight: 200)
+                            .frame(minHeight: 120, maxHeight: 300)
                             .overlay(
                                 RoundedRectangle(cornerRadius: 8)
                                     .stroke(Color.gray.opacity(0.2), lineWidth: 1)
@@ -564,6 +492,110 @@ Best regards
             if EKEventStore.authorizationStatus(for: .event) == .authorized {
                 loadAvailableCalendars()
             }
+        }
+    }
+    
+    // MARK: - Sync Settings
+    private var syncSettingsView: some View {
+        VStack(alignment: .leading, spacing: 20) {
+            // Supabase Sync Section
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Supabase Sync")
+                    .font(.headline)
+                Text("Real-time sync across all your devices")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                
+                VStack(alignment: .leading, spacing: 12) {
+                    // Sync Status
+                    HStack {
+                        Circle()
+                            .fill(supabaseSync.isSyncing ? .blue : (supabaseSync.error != nil ? .red : .green))
+                            .frame(width: 8, height: 8)
+                        Text(supabaseSync.syncStatus)
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                        Spacer()
+                        if let lastSync = supabaseSync.lastSyncDate {
+                            Text("Last sync: \(lastSync, formatter: DateFormatter.timeOnly)")
+                                .font(.caption2)
+                                .foregroundColor(.secondary)
+                        }
+                    }
+                    
+                    // Sync Button
+                    Button(supabaseSync.isSyncing ? "Syncing..." : "Sync Now") {
+                        Task {
+                            await supabaseSync.syncNow(context: viewContext)
+                        }
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .disabled(supabaseSync.isSyncing)
+                    
+                    // Error Display
+                    if let error = supabaseSync.error {
+                        Label(error, systemImage: "xmark.circle.fill")
+                            .foregroundColor(.red)
+                            .font(.caption)
+                    }
+                    
+                    // Success Display
+                    if let success = supabaseSync.success {
+                        Label(success, systemImage: "checkmark.circle.fill")
+                            .foregroundColor(.green)
+                            .font(.caption)
+                    }
+                }
+                .padding(.vertical, 8)
+            }
+            .padding()
+            .background(Color(NSColor.controlBackgroundColor))
+            .cornerRadius(8)
+            
+            // Migration Section
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Migration from CloudKit")
+                    .font(.headline)
+                Text("Your existing data will be automatically migrated to Supabase on first sync")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                
+                VStack(alignment: .leading, spacing: 8) {
+                    HStack {
+                        Text("People:")
+                        Spacer()
+                        Text("\(people.count)")
+                            .foregroundColor(.secondary)
+                    }
+                    
+                    HStack {
+                        Text("Conversations:")
+                        Spacer()
+                        Text("\(conversations.count)")
+                            .foregroundColor(.secondary)
+                    }
+                }
+                .font(.caption)
+                .padding(.vertical, 8)
+            }
+            .padding()
+            .background(Color(NSColor.controlBackgroundColor))
+            .cornerRadius(8)
+            
+            // Setup Instructions
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Setup Instructions")
+                    .font(.headline)
+                Text("1. Create a Supabase project at supabase.com")
+                Text("2. Run the SQL schema (see SUPABASE_SETUP.md)")
+                Text("3. Update SupabaseConfig.swift with your credentials")
+                Text("4. Click 'Sync Now' to migrate your data")
+            }
+            .font(.caption)
+            .foregroundColor(.secondary)
+            .padding()
+            .background(Color(NSColor.controlBackgroundColor))
+            .cornerRadius(8)
         }
     }
     
@@ -1085,4 +1117,12 @@ struct OrgChartDropZone: View {
                 return true
             }
     }
+}
+
+extension DateFormatter {
+    static let timeOnly: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.timeStyle = .short
+        return formatter
+    }()
 }

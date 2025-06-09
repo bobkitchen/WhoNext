@@ -4,11 +4,19 @@ import CoreData
 @objc(Conversation)
 public class Conversation: NSManagedObject {
     @NSManaged public var date: Date?
+    @NSManaged public var duration: Int32
+    @NSManaged public var engagementLevel: String?
     @NSManaged public var legacyId: Date?
     @NSManaged public var lastAnalyzed: Date?
+    @NSManaged public var lastSentimentAnalysis: Date?
     @NSManaged public var notes: String?
     @NSManaged public var summary: String?
     @NSManaged public var uuid: UUID?
+    @NSManaged public var analysisVersion: String?
+    @NSManaged public var keyTopics: [String]?
+    @NSManaged public var qualityScore: Double
+    @NSManaged public var sentimentLabel: String?
+    @NSManaged public var sentimentScore: Double
     @NSManaged public var person: Person?
     @NSManaged public var notesRTF: Data?
 

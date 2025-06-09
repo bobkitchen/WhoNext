@@ -36,8 +36,8 @@ class CloudKitSyncStatus: ObservableObject {
         }
         
         // Monitor for CloudKit import/export events
-        NotificationCenter.default.addObserver(forName: NSNotification.Name("NSPersistentCloudKitContainerEventChangedNotification"), object: nil, queue: .main) { notification in
-            print("🔄 CloudKit: Container event notification - \(notification)")
+        NotificationCenter.default.addObserver(forName: NSNotification.Name("NSPersistentCloudKitContainerEventChangedNotification"), object: nil, queue: .main) { [weak self] notification in
+            self?.handleContainerEvent(notification)
         }
         
         // Listen for context will save
@@ -95,20 +95,89 @@ class CloudKitSyncStatus: ObservableObject {
             let updatedObjects = context.updatedObjects  
             let deletedObjects = context.deletedObjects
             
-            if !insertedObjects.isEmpty || !updatedObjects.isEmpty || !deletedObjects.isEmpty {
-                print("🔄 CloudKit: Context will save with user changes - inserted: \(insertedObjects.count), updated: \(updatedObjects.count), deleted: \(deletedObjects.count)")
+            // Filter out CloudKit internal objects
+            let userInserted = insertedObjects.filter { !String(describing: type(of: $0)).contains("NSCK") }
+            let userUpdated = updatedObjects.filter { !String(describing: type(of: $0)).contains("NSCK") }
+            let userDeleted = deletedObjects.filter { !String(describing: type(of: $0)).contains("NSCK") }
+            
+            if !userInserted.isEmpty || !userUpdated.isEmpty || !userDeleted.isEmpty {
+                print("🔄 CloudKit: User changes detected - inserted: \(userInserted.count), updated: \(userUpdated.count), deleted: \(userDeleted.count)")
                 
-                for object in insertedObjects {
+                for object in userInserted {
                     print("  ➕ Inserting: \(type(of: object))")
+                    if let person = object as? Person {
+                        print("    📝 Person: \(person.name ?? "Unknown")")
+                    } else if let conversation = object as? Conversation {
+                        print("    💬 Conversation with: \(conversation.person?.name ?? "Unknown")")
+                    }
                 }
-                for object in updatedObjects {
+                
+                for object in userUpdated {
                     print("  ✏️ Updating: \(type(of: object))")
+                    if let person = object as? Person {
+                        print("    📝 Person: \(person.name ?? "Unknown")")
+                    } else if let conversation = object as? Conversation {
+                        print("    💬 Conversation with: \(conversation.person?.name ?? "Unknown")")
+                    }
                 }
-                for object in deletedObjects {
+                
+                for object in userDeleted {
                     print("  🗑️ Deleting: \(type(of: object))")
                 }
                 
                 self?.isSyncing = true
+            } else if !insertedObjects.isEmpty || !updatedObjects.isEmpty || !deletedObjects.isEmpty {
+                print("🔄 CloudKit: Internal changes only - inserted: \(insertedObjects.count), updated: \(updatedObjects.count), deleted: \(deletedObjects.count)")
+                for object in insertedObjects {
+                    print("  🔧 Internal insert: \(type(of: object))")
+                }
+                for object in updatedObjects {
+                    print("  🔧 Internal update: \(type(of: object))")
+                }
+            }
+        }
+    }
+    
+    private func handleContainerEvent(_ notification: Notification) {
+        DispatchQueue.main.async { [weak self] in
+            guard let event = notification.userInfo?["event"] as? NSPersistentCloudKitContainer.Event else { return }
+            
+            let eventType = event.type == .export ? "Export" : 
+                           event.type == .import ? "Import" : "Unknown"
+            let succeeded = event.succeeded ? "YES" : "NO"
+            let startTime = event.startDate.formatted(date: .omitted, time: .standard)
+            let endTime = event.endDate?.formatted(date: .omitted, time: .standard) ?? "In Progress"
+            
+            print("🔄 CloudKit: \(eventType) event - started: \(startTime), ended: \(endTime), succeeded: \(succeeded)")
+            
+            if !event.succeeded {
+                if let error = event.error {
+                    print("❌ CloudKit: \(eventType) failed with error: \(error.localizedDescription)")
+                    if let ckError = error as? CKError {
+                        print("❌ CloudKit: Error code \(ckError.code.rawValue) - \(ckError.localizedDescription)")
+                        if let underlyingError = ckError.userInfo[NSUnderlyingErrorKey] as? Error {
+                            print("❌ CloudKit: Underlying error: \(underlyingError.localizedDescription)")
+                        }
+                        // Print all userInfo for debugging
+                        print("❌ CloudKit: Full error info: \(ckError.userInfo)")
+                    }
+                    
+                    self?.syncError = error
+                } else {
+                    print("❌ CloudKit: \(eventType) failed with no error details")
+                    print("❌ CloudKit: Event details - type: \(event.type.rawValue), identifier: \(event.identifier)")
+                    print("❌ CloudKit: Store identifier: \(event.storeIdentifier)")
+                }
+            } else {
+                // Clear error on successful sync
+                if event.type == .export {
+                    self?.syncError = nil
+                }
+            }
+            
+            if event.endDate != nil {
+                self?.lastSyncDate = event.endDate
+                self?.isSyncing = false
             }
         }
     }
@@ -187,28 +256,136 @@ class CloudKitSyncStatus: ObservableObject {
             print("✅ CloudKit: Account status - \(status)")
         }
         
-        // Test 2: Try to fetch a simple record to test connectivity
+        // Test 2: Query for Person records
         let database = container.privateCloudDatabase
-        let query = CKQuery(recordType: "CD_Person", predicate: NSPredicate(value: true))
+        let personQuery = CKQuery(recordType: "CD_Person", predicate: NSPredicate(value: true))
         
-        database.fetch(withQuery: query, inZoneWith: nil, desiredKeys: nil, resultsLimit: 1) { result in
+        database.fetch(withQuery: personQuery, inZoneWith: nil, desiredKeys: nil, resultsLimit: 10) { result in
             switch result {
             case .success(let (matchResults, _)):
-                print("✅ CloudKit: Query successful - found \(matchResults.count) records")
-                for (recordID, recordResult) in matchResults {
+                print("✅ CloudKit: Person query successful - found \(matchResults.count) records")
+                for (_, recordResult) in matchResults {
                     switch recordResult {
-                    case .success(_):
-                        print("✅ CloudKit: Found record - \(recordID)")
+                    case .success(let record):
+                        let name = record["CD_name"] as? String ?? "Unknown"
+                        print("  📝 Person record: \(name)")
                     case .failure(let error):
-                        print("❌ CloudKit: Record error - \(error)")
+                        print("❌ CloudKit: Person record error - \(error)")
                     }
                 }
             case .failure(let error):
-                print("❌ CloudKit: Query error - \(error)")
-                if let ckError = error as? CKError {
-                    print("❌ CloudKit: Error code \(ckError.code.rawValue) - \(ckError.localizedDescription)")
+                print("❌ CloudKit: Person query error - \(error)")
+            }
+        }
+        
+        // Test 3: Query for Conversation records
+        let conversationQuery = CKQuery(recordType: "CD_Conversation", predicate: NSPredicate(value: true))
+        
+        database.fetch(withQuery: conversationQuery, inZoneWith: nil, desiredKeys: nil, resultsLimit: 10) { result in
+            switch result {
+            case .success(let (matchResults, _)):
+                print("✅ CloudKit: Conversation query successful - found \(matchResults.count) records")
+                for (_, recordResult) in matchResults {
+                    switch recordResult {
+                    case .success(let record):
+                        let content = record["CD_content"] as? String ?? "No content"
+                        let preview = String(content.prefix(50))
+                        print("  💬 Conversation record: \(preview)...")
+                    case .failure(let error):
+                        print("❌ CloudKit: Conversation record error - \(error)")
+                    }
+                }
+            case .failure(let error):
+                print("❌ CloudKit: Conversation query error - \(error)")
+            }
+        }
+    }
+    
+    func queryCloudKitRecords() {
+        print("🔄 CloudKit: Querying records in CloudKit...")
+        
+        let database = container.privateCloudDatabase
+        
+        // Use a simple fetch operation instead of query
+        database.fetchAllRecordZones { zones, error in
+            if let error = error {
+                print("❌ CloudKit: Zone fetch error - \(error)")
+                return
+            }
+            
+            guard let zones = zones else {
+                print("❌ CloudKit: No zones returned")
+                return
+            }
+            
+            print("✅ CloudKit: Found \(zones.count) zones")
+            for zone in zones {
+                print("  🏠 Zone: \(zone.zoneID.zoneName)")
+            }
+            
+            // Now try to fetch records from the Core Data CloudKit zone
+            let recordZoneID = CKRecordZone.ID(zoneName: "com.apple.coredata.cloudkit.zone", ownerName: CKCurrentUserDefaultName)
+            
+            // Try a different approach - fetch records by type using CKQueryOperation
+            let personQueryOp = CKQueryOperation(query: CKQuery(recordType: "CD_Person", predicate: NSPredicate(value: true)))
+            personQueryOp.zoneID = recordZoneID
+            personQueryOp.resultsLimit = 10
+            
+            var personRecords: [CKRecord] = []
+            personQueryOp.recordMatchedBlock = { recordID, result in
+                switch result {
+                case .success(let record):
+                    personRecords.append(record)
+                case .failure(let error):
+                    print("❌ CloudKit: Person record error - \(error)")
                 }
             }
+            
+            personQueryOp.queryResultBlock = { result in
+                switch result {
+                case .success:
+                    print("✅ CloudKit: Found \(personRecords.count) Person records")
+                    for record in personRecords.prefix(5) {
+                        let name = record["CD_name"] as? String ?? "Unknown"
+                        print("  📝 Person: \(name)")
+                    }
+                case .failure(let error):
+                    print("❌ CloudKit: Person query operation error - \(error)")
+                }
+            }
+            
+            database.add(personQueryOp)
+            
+            // Same for conversations
+            let conversationQueryOp = CKQueryOperation(query: CKQuery(recordType: "CD_Conversation", predicate: NSPredicate(value: true)))
+            conversationQueryOp.zoneID = recordZoneID
+            conversationQueryOp.resultsLimit = 10
+            
+            var conversationRecords: [CKRecord] = []
+            conversationQueryOp.recordMatchedBlock = { recordID, result in
+                switch result {
+                case .success(let record):
+                    conversationRecords.append(record)
+                case .failure(let error):
+                    print("❌ CloudKit: Conversation record error - \(error)")
+                }
+            }
+            
+            conversationQueryOp.queryResultBlock = { result in
+                switch result {
+                case .success:
+                    print("✅ CloudKit: Found \(conversationRecords.count) Conversation records")
+                    for record in conversationRecords.prefix(5) {
+                        let content = record["CD_content"] as? String ?? "No content"
+                        let preview = String(content.prefix(50))
+                        print("  💬 Conversation: \(preview)...")
+                    }
+                case .failure(let error):
+                    print("❌ CloudKit: Conversation query operation error - \(error)")
+                }
+            }
+            
+            database.add(conversationQueryOp)
         }
     }
     

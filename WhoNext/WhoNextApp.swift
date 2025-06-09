@@ -33,7 +33,9 @@ struct WhoNextApp: App {
         Settings {
             SettingsView()
                 .environment(\.managedObjectContext, persistenceController.container.viewContext)
+                .frame(minWidth: 800, minHeight: 600)
         }
+        .windowResizability(.contentSize)
     }
     
     /// Initialize sentiment analysis features on app startup
