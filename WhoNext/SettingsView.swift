@@ -22,6 +22,42 @@ Use the provided context to be specific and actionable. Highlight details that w
 
 Pre-Meeting Brief:
 """
+    @AppStorage("customSummarizationPrompt") private var customSummarizationPrompt: String = """
+You are an executive assistant creating comprehensive meeting minutes. Generate detailed, actionable meeting minutes that include:
+
+**Meeting Overview:**
+- Meeting purpose and context
+- Key themes and overall tone
+- Primary objectives discussed
+
+**Discussion Details:**
+- Main points raised by each participant
+- Key decisions made and rationale
+- Areas of agreement and disagreement
+- Important insights or revelations
+- Questions raised and answers provided
+
+**Action Items & Follow-ups:**
+- Specific tasks assigned with owners
+- Deadlines and timelines mentioned
+- Next steps and follow-up meetings
+- Dependencies and blockers identified
+
+**Outcomes & Conclusions:**
+- Final decisions reached
+- Issues resolved or escalated
+- Commitments made by participants
+- Success metrics or goals established
+
+**Additional Notes:**
+- Context for future reference
+- Relationship dynamics observed
+- Support needs identified
+- Risk factors or concerns noted
+- Strengths and positive developments
+
+Format the output in clear, professional meeting minutes suitable for distribution and follow-up preparation.
+"""
     @AppStorage("emailSubjectTemplate") private var emailSubjectTemplate: String = "1:1 - {name} + BK"
     @AppStorage("emailBodyTemplate") private var emailBodyTemplate: String = """
 Hi {firstName},
@@ -287,6 +323,71 @@ Pre-Meeting Brief:
                     Spacer()
                     
                     Text("\(customPreMeetingPrompt.count) characters")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+            }
+            
+            // Summarization Prompt Section
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Summarization Prompt")
+                    .font(.headline)
+                Text("Customize the AI prompt used for generating meeting summaries")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                
+                TextEditor(text: $customSummarizationPrompt)
+                    .font(.system(.body, design: .monospaced))
+                    .frame(minHeight: 200, maxHeight: 400)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 8)
+                            .stroke(Color.gray.opacity(0.2), lineWidth: 1)
+                    )
+                
+                HStack {
+                    Button("Reset to Default") {
+                        customSummarizationPrompt = """
+You are an executive assistant creating comprehensive meeting minutes. Generate detailed, actionable meeting minutes that include:
+
+**Meeting Overview:**
+- Meeting purpose and context
+- Key themes and overall tone
+- Primary objectives discussed
+
+**Discussion Details:**
+- Main points raised by each participant
+- Key decisions made and rationale
+- Areas of agreement and disagreement
+- Important insights or revelations
+- Questions raised and answers provided
+
+**Action Items & Follow-ups:**
+- Specific tasks assigned with owners
+- Deadlines and timelines mentioned
+- Next steps and follow-up meetings
+- Dependencies and blockers identified
+
+**Outcomes & Conclusions:**
+- Final decisions reached
+- Issues resolved or escalated
+- Commitments made by participants
+- Success metrics or goals established
+
+**Additional Notes:**
+- Context for future reference
+- Relationship dynamics observed
+- Support needs identified
+- Risk factors or concerns noted
+- Strengths and positive developments
+
+Format the output in clear, professional meeting minutes suitable for distribution and follow-up preparation.
+"""
+                    }
+                    .buttonStyle(.link)
+                    
+                    Spacer()
+                    
+                    Text("\(customSummarizationPrompt.count) characters")
                         .font(.caption)
                         .foregroundColor(.secondary)
                 }

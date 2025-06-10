@@ -89,6 +89,15 @@ struct ContentView: View {
                     }
                     .buttonStyle(PlainButtonStyle())
                     .help("New Person")
+                    
+                    Button(action: {
+                        TranscriptImportWindowManager.shared.presentWindow()
+                    }) {
+                        Image(systemName: "arrow.up.doc")
+                            .font(.system(size: 16, weight: .medium))
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                    .help("Import Transcript")
                 }
             }
             

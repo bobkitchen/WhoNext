@@ -139,6 +139,82 @@ class SentimentAnalysisService {
         }
     }
     
+    /// AI-powered sentiment analysis for more sophisticated results
+    func analyzeConversationWithAI(summary: String?, notes: String?) async -> ConversationAnalysis? {
+        let combinedText = buildAnalysisText(summary: summary, notes: notes)
+        guard !combinedText.isEmpty else { return nil }
+        
+        let prompt = """
+        Analyze the sentiment and quality of this conversation summary and notes.
+        
+        Provide detailed analysis including:
+        1. Sentiment score (-1.0 to 1.0, where -1 is very negative, 0 is neutral, 1 is very positive)
+        2. Confidence level (0.0 to 1.0)
+        3. Quality assessment (0.0 to 1.0, based on depth, engagement, and outcomes)
+        4. Engagement level (high/medium/low)
+        5. Key topics discussed
+        
+        Format as JSON:
+        {
+            "sentimentScore": 0.0,
+            "sentimentLabel": "positive/negative/neutral",
+            "confidence": 0.0,
+            "qualityScore": 0.0,
+            "engagementLevel": "high/medium/low",
+            "keyTopics": ["topic1", "topic2", "topic3"],
+            "reasoning": "Brief explanation of the analysis"
+        }
+        
+        Text to analyze:
+        \(combinedText)
+        """
+        
+        do {
+            let response = try await AIService.shared.sendMessage(prompt)
+            return parseAISentimentResponse(response, originalText: combinedText)
+        } catch {
+            print("AI sentiment analysis failed, falling back to basic analysis: \(error)")
+            return await analyzeConversation(summary: summary, notes: notes)
+        }
+    }
+    
+    /// Enhanced batch analysis using AI when available
+    func batchAnalyzeConversationsWithAI(_ conversations: [Conversation], context: NSManagedObjectContext, progressCallback: @escaping (Int, Int) -> Void) async {
+        let conversationsNeedingAnalysis = conversations
+            .filter { conversation in
+                let lastAnalysis = conversation.value(forKey: "lastSentimentAnalysis") as? Date
+                let analysisVersion = conversation.value(forKey: "analysisVersion") as? String
+                return lastAnalysis == nil || analysisVersion != currentAnalysisVersion
+            }
+        
+        print("🤖 Starting AI-powered sentiment analysis for \(conversationsNeedingAnalysis.count) conversations")
+        
+        for (index, conversation) in conversationsNeedingAnalysis.enumerated() {
+            // Try AI analysis first, fallback to basic if it fails
+            var analysis: ConversationAnalysis?
+            
+            if !AIService.shared.apiKey.isEmpty {
+                analysis = await analyzeConversationWithAI(summary: conversation.summary, notes: conversation.notes)
+            }
+            
+            // Fallback to basic analysis if AI fails
+            if analysis == nil {
+                analysis = await analyzeConversation(summary: conversation.summary, notes: conversation.notes)
+            }
+            
+            if let analysis = analysis {
+                updateConversationWithAnalysis(conversation, analysis: analysis, context: context)
+            }
+            
+            progressCallback(index + 1, conversationsNeedingAnalysis.count)
+            
+            // Small delay to avoid overwhelming the API
+            try? await Task.sleep(nanoseconds: 100_000_000) // 0.1 seconds
+        }
+        
+        print("✅ Completed sentiment analysis for \(conversationsNeedingAnalysis.count) conversations")
+    }
+    
     // MARK: - Private Analysis Methods
     
     private func buildAnalysisText(summary: String?, notes: String?) -> String {
@@ -156,7 +232,7 @@ class SentimentAnalysisService {
     }
     
     /// Basic sentiment analysis using Apple's Natural Language framework
-    private func performBasicSentimentAnalysis(_ text: String) -> SentimentResult {
+    public func performBasicSentimentAnalysis(_ text: String) -> SentimentResult {
         let tagger = NLTagger(tagSchemes: [.sentimentScore])
         tagger.string = text
         
@@ -250,7 +326,97 @@ class SentimentAnalysisService {
             }
         }
         
-        return Array(topics.prefix(5)) // Limit to top 5 topics
+        let topicsArray = Array(topics)
+        let limitedTopics = topicsArray.count > 10 ? Array(topicsArray[0..<10]) : topicsArray
+        return limitedTopics.map { String($0) }
+    }
+    
+    // MARK: - AI Response Parsing
+    
+    private func parseAISentimentResponse(_ response: String, originalText: String) -> ConversationAnalysis? {
+        guard let data = response.data(using: .utf8),
+              let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+            print("Failed to parse AI sentiment response, using fallback")
+            return parseAISentimentFallback(response, originalText: originalText)
+        }
+        
+        let sentimentScore = json["sentimentScore"] as? Double ?? 0.0
+        let sentimentLabel = json["sentimentLabel"] as? String ?? "neutral"
+        let confidence = json["confidence"] as? Double ?? 0.5
+        let qualityScore = json["qualityScore"] as? Double ?? 0.5
+        let engagementLevel = json["engagementLevel"] as? String ?? "medium"
+        let keyTopics = json["keyTopics"] as? [String] ?? []
+        
+        let sentimentResult = SentimentResult(
+            score: sentimentScore,
+            label: sentimentLabel,
+            confidence: confidence
+        )
+        
+        return ConversationAnalysis(
+            sentimentResult: sentimentResult,
+            qualityScore: qualityScore,
+            engagementLevel: engagementLevel,
+            keyTopics: keyTopics,
+            analysisVersion: currentAnalysisVersion
+        )
+    }
+    
+    private func parseAISentimentFallback(_ response: String, originalText: String) -> ConversationAnalysis? {
+        // Extract sentiment information from unstructured response
+        let lines = response.components(separatedBy: .newlines)
+        var sentimentScore = 0.0
+        var confidence = 0.5
+        var qualityScore = 0.5
+        var engagementLevel = "medium"
+        
+        for line in lines {
+            let lowercased = line.lowercased()
+            if lowercased.contains("positive") {
+                sentimentScore = 0.5
+            } else if lowercased.contains("negative") {
+                sentimentScore = -0.5
+            } else if lowercased.contains("very positive") || lowercased.contains("highly positive") {
+                sentimentScore = 0.8
+            } else if lowercased.contains("very negative") || lowercased.contains("highly negative") {
+                sentimentScore = -0.8
+            }
+            
+            if lowercased.contains("high") && lowercased.contains("confidence") {
+                confidence = 0.8
+            } else if lowercased.contains("low") && lowercased.contains("confidence") {
+                confidence = 0.3
+            }
+            
+            if lowercased.contains("high") && lowercased.contains("quality") {
+                qualityScore = 0.8
+            } else if lowercased.contains("low") && lowercased.contains("quality") {
+                qualityScore = 0.3
+            }
+            
+            if lowercased.contains("high engagement") {
+                engagementLevel = "high"
+            } else if lowercased.contains("low engagement") {
+                engagementLevel = "low"
+            }
+        }
+        
+        let sentimentLabel = sentimentScore > 0.1 ? "positive" : (sentimentScore < -0.1 ? "negative" : "neutral")
+        let keyTopics = extractKeyTopics(text: originalText)
+        
+        let sentimentResult = SentimentResult(
+            score: sentimentScore,
+            label: sentimentLabel,
+            confidence: confidence
+        )
+        
+        return ConversationAnalysis(
+            sentimentResult: sentimentResult,
+            qualityScore: qualityScore,
+            engagementLevel: engagementLevel,
+            keyTopics: keyTopics,
+            analysisVersion: currentAnalysisVersion
+        )
     }
 }
 
@@ -272,7 +438,10 @@ class RelationshipHealthCalculator {
         }
         
         let recentConversations = conversations
-            .filter { $0.value(forKey: "lastSentimentAnalysis") != nil }
+            .filter { conversation in
+                let lastAnalysis = conversation.value(forKey: "lastSentimentAnalysis") as? Date
+                return lastAnalysis != nil
+            }
             .sorted { ($0.value(forKey: "date") as? Date ?? Date.distantPast) > ($1.value(forKey: "date") as? Date ?? Date.distantPast) }
             .prefix(10) // Consider last 10 analyzed conversations
         
@@ -443,7 +612,10 @@ class RelationshipHealthCalculator {
         }
         
         let recentConversations = conversations
-            .filter { $0.value(forKey: "lastSentimentAnalysis") != nil }
+            .filter { conversation in
+                let lastAnalysis = conversation.value(forKey: "lastSentimentAnalysis") as? Date
+                return lastAnalysis != nil
+            }
             .sorted { ($0.value(forKey: "date") as? Date ?? Date.distantPast) > ($1.value(forKey: "date") as? Date ?? Date.distantPast) }
             .prefix(5)
         

@@ -71,7 +71,7 @@ class AIService {
         UserDefaults.standard.string(forKey: "claudeApiKey") ?? ""
     }
     
-    private var apiKey: String {
+    public var apiKey: String {
         switch currentProvider {
         case .openai: return openAIApiKey
         case .claude: return claudeApiKey

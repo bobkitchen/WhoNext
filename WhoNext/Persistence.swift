@@ -2,11 +2,10 @@
 //  Persistence.swift
 //  WhoNext
 //
-//  Re-worked 1 May 25 for rock-solid CloudKit sync
+//  Updated for Supabase integration - CloudKit removed
 //
 
 import CoreData
-import CloudKit
 
 struct PersistenceController {
     static let shared = PersistenceController()
@@ -29,12 +28,11 @@ struct PersistenceController {
 
     // MARK: - Core stack ------------------------------------------------------
 
-    let container: NSPersistentCloudKitContainer
+    let container: NSPersistentContainer
 
     init(inMemory: Bool = false) {
 
         let modelName = "WhoNext"
-        let cloudID   = "iCloud.com.bobk.whonext"        // ← all-lower-case, exact match
 
         // Load the compiled model (.momd or .mom)
         guard
@@ -45,9 +43,9 @@ struct PersistenceController {
             fatalError("❌ Unable to locate Core Data model.")
         }
 
-        // Create a CloudKit-aware container
-        container = NSPersistentCloudKitContainer(name: modelName,
-                                                  managedObjectModel: model)
+        // Create a regular Core Data container (no CloudKit)
+        container = NSPersistentContainer(name: modelName,
+                                         managedObjectModel: model)
 
         // ---------------------------------------------------------------------
         // TUNE THE PERSISTENT-STORE DESCRIPTION
@@ -56,22 +54,11 @@ struct PersistenceController {
             fatalError("❌ Missing persistent-store description.")
         }
 
-        // 1. Tell the store which CloudKit container to use
-        store.cloudKitContainerOptions =
-            NSPersistentCloudKitContainerOptions(containerIdentifier: cloudID)
-
-        // 2. Enable history tracking – makes CloudKit export every transaction
-        store.setOption(true as NSNumber, forKey: NSPersistentHistoryTrackingKey)            //  [oai_citation:0‡Stack Overflow](https://stackoverflow.com/questions/71492385/nspersistentcloudkitcontainer-and-persistent-history-tracking?utm_source=chatgpt.com)
-
-        // 3. Post *remote-change* notifications – the other Mac hears the push
-        store.setOption(true as NSNumber,
-                        forKey: NSPersistentStoreRemoteChangeNotificationPostOptionKey)     //  [oai_citation:1‡Stack Overflow](https://stackoverflow.com/questions/61790440/coredata-and-cloudkit-sync-works-but-nspersistentstoreremotechange-notification?utm_source=chatgpt.com)
-
-        // 4. Allow lightweight migration
+        // 1. Allow lightweight migration
         store.setOption(true as NSNumber, forKey: NSMigratePersistentStoresAutomaticallyOption)
         store.setOption(true as NSNumber, forKey: NSInferMappingModelAutomaticallyOption)
 
-        // 5. In-memory override for previews
+        // 2. In-memory override for previews
         if inMemory { store.url = URL(fileURLWithPath: "/dev/null") }
 
         // ---------------------------------------------------------------------
@@ -81,15 +68,10 @@ struct PersistenceController {
             if let error = error {
                 print("❌ Core Data load error: \(error)")
                 print("❌ Store description: \(storeDescription)")
-                if let cloudKitError = error as? CKError {
-                    print("❌ CloudKit error code: \(cloudKitError.code)")
-                    print("❌ CloudKit error description: \(cloudKitError.localizedDescription)")
-                }
                 fatalError("❌ Core Data load error: \(error)")
             } else {
                 print("✅ Core Data store loaded successfully")
                 print("✅ Store URL: \(storeDescription.url?.absoluteString ?? "unknown")")
-                print("✅ CloudKit container: \(storeDescription.cloudKitContainerOptions?.containerIdentifier ?? "none")")
             }
         }
 

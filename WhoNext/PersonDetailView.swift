@@ -36,6 +36,10 @@ struct PersonDetailView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color(nsColor: .windowBackgroundColor))
+        .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("ConversationSaved"))) { _ in
+            // Refresh the managed object context to pick up new conversations
+            viewContext.refreshAllObjects()
+        }
     }
     
     private var headerView: some View {
