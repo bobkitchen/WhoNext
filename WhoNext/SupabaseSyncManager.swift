@@ -92,33 +92,40 @@ class SupabaseSyncManager: ObservableObject {
                 .execute()
                 .value
             
-            // Skip if person already exists in Supabase
-            if !existingResponse.isEmpty {
-                continue
-            }
-            
             let now = ISO8601DateFormatter().string(from: Date())
             let supabasePerson = SupabasePerson(
-                id: nil, // Supabase auto-generates this
+                id: existingResponse.first?.id, // Use existing ID if updating
                 identifier: person.identifier?.uuidString ?? UUID().uuidString,
                 name: person.name,
                 photoBase64: person.photo?.base64EncodedString(),
                 notes: person.notes,
-                createdAt: now,
-                updatedAt: now,
+                createdAt: existingResponse.first?.createdAt ?? now,
+                updatedAt: now, // Always update timestamp
                 deviceId: deviceId,
-                isDeleted: false,  // New records are not deleted
-                deletedAt: nil,    // No deletion timestamp
+                isDeleted: false,
+                deletedAt: nil,
                 role: person.role,
                 timezone: person.timezone,
                 scheduledConversationDate: person.scheduledConversationDate?.ISO8601Format(),
                 isDirectReport: person.isDirectReport
             )
             
-            try await supabase.database
-                .from("people")
-                .insert(supabasePerson)
-                .execute()
+            if existingResponse.isEmpty {
+                // Insert new person
+                try await supabase.database
+                    .from("people")
+                    .insert(supabasePerson)
+                    .execute()
+                print("📤 Uploaded new person: \(person.name ?? "Unknown")")
+            } else {
+                // Update existing person with local changes
+                try await supabase.database
+                    .from("people")
+                    .update(supabasePerson)
+                    .eq("identifier", value: person.identifier?.uuidString ?? "")
+                    .execute()
+                print("📤 Updated existing person: \(person.name ?? "Unknown")")
+            }
         }
     }
     
@@ -142,24 +149,69 @@ class SupabaseSyncManager: ObservableObject {
             let person: Person
             if let existingPerson = try context.fetch(personRequest).first {
                 person = existingPerson
+                
+                // Check if remote data is newer before updating
+                let remoteUpdatedAt = ISO8601DateFormatter().date(from: remotePerson.updatedAt ?? "")
+                let localUpdatedAt = person.lastContactDate // Use last contact date as proxy for local updates
+                
+                // Only update if remote data is newer or if this is a new person
+                if existingPerson == nil || (remoteUpdatedAt != nil && localUpdatedAt != nil && remoteUpdatedAt! > localUpdatedAt!) {
+                    // Update person with remote data only if remote is newer
+                    person.identifier = UUID(uuidString: searchId) ?? UUID()
+                    
+                    // Only update fields if remote data is not empty/nil
+                    if let remoteName = remotePerson.name, !remoteName.isEmpty {
+                        person.name = remoteName
+                    }
+                    if let remoteRole = remotePerson.role, !remoteRole.isEmpty {
+                        person.role = remoteRole
+                    }
+                    if let remoteNotes = remotePerson.notes, !remoteNotes.isEmpty {
+                        person.notes = remoteNotes
+                    }
+                    if let remoteIsDirectReport = remotePerson.isDirectReport {
+                        person.isDirectReport = remoteIsDirectReport
+                    }
+                    if let remoteTimezone = remotePerson.timezone, !remoteTimezone.isEmpty {
+                        person.timezone = remoteTimezone
+                    }
+                    if let remoteDateString = remotePerson.scheduledConversationDate {
+                        person.scheduledConversationDate = ISO8601DateFormatter().date(from: remoteDateString)
+                    }
+                    if let remotePhotoBase64 = remotePerson.photoBase64, !remotePhotoBase64.isEmpty {
+                        person.photo = Data(base64Encoded: remotePhotoBase64)
+                    }
+                }
             } else {
                 person = Person(context: context)
-            }
-            
-            // Update person with remote data
-            person.identifier = UUID(uuidString: searchId) ?? UUID()
-            person.name = remotePerson.name
-            person.role = remotePerson.role
-            person.notes = remotePerson.notes
-            person.isDirectReport = remotePerson.isDirectReport ?? false
-            person.timezone = remotePerson.timezone
-            person.scheduledConversationDate = {
-                if let dateString = remotePerson.scheduledConversationDate {
-                    return ISO8601DateFormatter().date(from: dateString)
+                print("📥 Creating new person from remote data")
+                
+                // Update person with remote data
+                person.identifier = UUID(uuidString: searchId) ?? UUID()
+                
+                // Only update fields if remote data is not empty/nil
+                if let remoteName = remotePerson.name, !remoteName.isEmpty {
+                    person.name = remoteName
                 }
-                return nil
-            }()
-            person.photo = remotePerson.photoBase64 != nil ? Data(base64Encoded: remotePerson.photoBase64!) : nil
+                if let remoteRole = remotePerson.role, !remoteRole.isEmpty {
+                    person.role = remoteRole
+                }
+                if let remoteNotes = remotePerson.notes, !remoteNotes.isEmpty {
+                    person.notes = remoteNotes
+                }
+                if let remoteIsDirectReport = remotePerson.isDirectReport {
+                    person.isDirectReport = remoteIsDirectReport
+                }
+                if let remoteTimezone = remotePerson.timezone, !remoteTimezone.isEmpty {
+                    person.timezone = remoteTimezone
+                }
+                if let remoteDateString = remotePerson.scheduledConversationDate {
+                    person.scheduledConversationDate = ISO8601DateFormatter().date(from: remoteDateString)
+                }
+                if let remotePhotoBase64 = remotePerson.photoBase64, !remotePhotoBase64.isEmpty {
+                    person.photo = Data(base64Encoded: remotePhotoBase64)
+                }
+            }
         }
     }
     
@@ -191,21 +243,16 @@ class SupabaseSyncManager: ObservableObject {
                 .execute()
                 .value
             
-            // Skip if conversation already exists in Supabase
-            if !existingResponse.isEmpty {
-                continue
-            }
-            
             let now = ISO8601DateFormatter().string(from: Date())
             let supabaseConversation = SupabaseConversation(
-                id: nil, // Supabase auto-generates this
+                id: existingResponse.first?.id, // Use existing ID if updating
                 uuid: conversation.uuid?.uuidString ?? UUID().uuidString,
                 personIdentifier: conversation.person?.identifier?.uuidString,
                 date: conversation.date?.ISO8601Format(),
                 notes: conversation.notes,
                 summary: conversation.summary,
-                createdAt: now,
-                updatedAt: now,
+                createdAt: existingResponse.first?.createdAt ?? now,
+                updatedAt: now, // Always update timestamp
                 deviceId: deviceId,
                 isDeleted: false,  // New records are not deleted
                 deletedAt: nil,    // No deletion timestamp
@@ -221,10 +268,22 @@ class SupabaseSyncManager: ObservableObject {
                 legacyId: conversation.legacyId?.ISO8601Format()
             )
             
-            try await supabase.database
-                .from("conversations")
-                .insert(supabaseConversation)
-                .execute()
+            if existingResponse.isEmpty {
+                // Insert new conversation
+                try await supabase.database
+                    .from("conversations")
+                    .insert(supabaseConversation)
+                    .execute()
+                print("📤 Uploaded new conversation for: \(conversation.person?.name ?? "Unknown")")
+            } else {
+                // Update existing conversation with local changes
+                try await supabase.database
+                    .from("conversations")
+                    .update(supabaseConversation)
+                    .eq("uuid", value: conversation.uuid?.uuidString ?? "")
+                    .execute()
+                print("📤 Updated existing conversation for: \(conversation.person?.name ?? "Unknown")")
+            }
         }
     }
     
@@ -245,48 +304,59 @@ class SupabaseSyncManager: ObservableObject {
             let existingConversations = try context.fetch(request)
             let conversation = existingConversations.first ?? Conversation(context: context)
             
-            // Update conversation with remote data
-            conversation.uuid = UUID(uuidString: remoteConversation.uuid) ?? UUID()
-            conversation.date = {
-                if let dateString = remoteConversation.date {
-                    return ISO8601DateFormatter().date(from: dateString)
-                }
-                return nil
-            }()
-            conversation.duration = Int32(remoteConversation.duration ?? 0)
-            conversation.engagementLevel = remoteConversation.engagementLevel
-            conversation.notes = remoteConversation.notes
-            conversation.summary = remoteConversation.summary
-            conversation.analysisVersion = remoteConversation.analysisVersion
-            conversation.keyTopics = remoteConversation.keyTopics
-            conversation.qualityScore = remoteConversation.qualityScore
-            conversation.sentimentLabel = remoteConversation.sentimentLabel
-            conversation.sentimentScore = remoteConversation.sentimentScore
-            conversation.lastAnalyzed = {
-                if let dateString = remoteConversation.lastAnalyzed {
-                    return ISO8601DateFormatter().date(from: dateString)
-                }
-                return nil
-            }()
-            conversation.lastSentimentAnalysis = {
-                if let dateString = remoteConversation.lastSentimentAnalysis {
-                    return ISO8601DateFormatter().date(from: dateString)
-                }
-                return nil
-            }()
-            conversation.legacyId = {
-                if let dateString = remoteConversation.legacyId {
-                    return ISO8601DateFormatter().date(from: dateString)
-                }
-                return nil
-            }()
+            // Check if remote data is newer before updating
+            let remoteUpdatedAt = ISO8601DateFormatter().date(from: remoteConversation.updatedAt ?? "")
+            let localUpdatedAt = conversation.lastAnalyzed ?? conversation.lastSentimentAnalysis
             
-            // Link to person if exists
-            if let personId = remoteConversation.personIdentifier {
-                let personRequest: NSFetchRequest<Person> = NSFetchRequest<Person>(entityName: "Person")
-                personRequest.predicate = NSPredicate(format: "identifier == %@", personId as CVarArg)
-                if let person = try context.fetch(personRequest).first {
-                    conversation.person = person
+            // Only update if remote data is newer or if this is a new conversation
+            if existingConversations.isEmpty || (remoteUpdatedAt != nil && localUpdatedAt != nil && remoteUpdatedAt! > localUpdatedAt!) {
+                // Update conversation with remote data only if remote is newer
+                conversation.uuid = UUID(uuidString: remoteConversation.uuid) ?? UUID()
+                conversation.date = {
+                    if let dateString = remoteConversation.date {
+                        return ISO8601DateFormatter().date(from: dateString)
+                    }
+                    return nil
+                }()
+                conversation.duration = Int32(remoteConversation.duration ?? 0)
+                
+                // Only update fields if remote data is not empty
+                if let remoteEngagementLevel = remoteConversation.engagementLevel, !remoteEngagementLevel.isEmpty {
+                    conversation.engagementLevel = remoteEngagementLevel
+                }
+                if let remoteNotes = remoteConversation.notes, !remoteNotes.isEmpty {
+                    conversation.notes = remoteNotes
+                }
+                if let remoteSummary = remoteConversation.summary, !remoteSummary.isEmpty {
+                    conversation.summary = remoteSummary
+                }
+                if let remoteAnalysisVersion = remoteConversation.analysisVersion, !remoteAnalysisVersion.isEmpty {
+                    conversation.analysisVersion = remoteAnalysisVersion
+                }
+                
+                // Handle numeric fields properly
+                conversation.qualityScore = remoteConversation.qualityScore
+                conversation.sentimentScore = remoteConversation.sentimentScore
+                
+                if let remoteSentimentLabel = remoteConversation.sentimentLabel, !remoteSentimentLabel.isEmpty {
+                    conversation.sentimentLabel = remoteSentimentLabel
+                }
+                
+                // Handle date fields
+                if let remoteLastAnalyzed = remoteConversation.lastAnalyzed {
+                    conversation.lastAnalyzed = ISO8601DateFormatter().date(from: remoteLastAnalyzed)
+                }
+                if let remoteLastSentimentAnalysis = remoteConversation.lastSentimentAnalysis {
+                    conversation.lastSentimentAnalysis = ISO8601DateFormatter().date(from: remoteLastSentimentAnalysis)
+                }
+                
+                // Find the associated person
+                if let personIdentifier = remoteConversation.personIdentifier {
+                    let personRequest: NSFetchRequest<Person> = NSFetchRequest<Person>(entityName: "Person")
+                    personRequest.predicate = NSPredicate(format: "identifier == %@", personIdentifier as CVarArg)
+                    if let associatedPerson = try context.fetch(personRequest).first {
+                        conversation.person = associatedPerson
+                    }
                 }
             }
         }
