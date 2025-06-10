@@ -57,8 +57,12 @@ struct PersistenceController {
         // 1. Allow lightweight migration
         store.setOption(true as NSNumber, forKey: NSMigratePersistentStoresAutomaticallyOption)
         store.setOption(true as NSNumber, forKey: NSInferMappingModelAutomaticallyOption)
+        
+        // 2. Enable persistent history tracking to avoid read-only mode
+        store.setOption(true as NSNumber, forKey: NSPersistentHistoryTrackingKey)
+        store.setOption(true as NSNumber, forKey: NSPersistentStoreRemoteChangeNotificationPostOptionKey)
 
-        // 2. In-memory override for previews
+        // 3. In-memory override for previews
         if inMemory { store.url = URL(fileURLWithPath: "/dev/null") }
 
         // ---------------------------------------------------------------------

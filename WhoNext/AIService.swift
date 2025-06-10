@@ -391,6 +391,10 @@ class AIService {
         print("🔍 [AI] Starting multi-image analysis with \(imageDataArray.count) images")
         print("🔍 [AI] Prompt length: \(prompt.count) characters")
         
+        // Calculate total payload size for logging
+        let totalImageSize = imageDataArray.reduce(0) { $0 + $1.count }
+        print("🔍 [AI] Total image data size: \(totalImageSize / 1024 / 1024)MB")
+        
         let visionURL = "https://api.openai.com/v1/chat/completions"
         
         // Build content array with text prompt and multiple images
@@ -432,6 +436,9 @@ class AIService {
         request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         
+        // Set extended timeout for large image processing
+        request.timeoutInterval = 120.0 // 2 minutes instead of default 60 seconds
+        
         do {
             request.httpBody = try JSONSerialization.data(withJSONObject: requestBody)
         } catch {
@@ -439,8 +446,17 @@ class AIService {
             return
         }
         
-        URLSession.shared.dataTask(with: request) { data, response, error in
+        // Create custom URLSession with extended timeout configuration
+        let sessionConfig = URLSessionConfiguration.default
+        sessionConfig.timeoutIntervalForRequest = 120.0  // 2 minutes for request
+        sessionConfig.timeoutIntervalForResource = 300.0 // 5 minutes for entire resource
+        let customSession = URLSession(configuration: sessionConfig)
+        
+        print("🔍 [AI] Sending request with extended timeout (120s request, 300s resource)")
+        
+        customSession.dataTask(with: request) { data, response, error in
             if let error = error {
+                print("❌ [AI] Request failed with error: \(error.localizedDescription)")
                 completion(.failure(error))
                 return
             }
@@ -479,6 +495,10 @@ class AIService {
         
         print("🔍 [AI] Starting multi-image analysis with \(imageDataArray.count) images")
         print("🔍 [AI] Prompt length: \(prompt.count) characters")
+        
+        // Calculate total payload size for logging
+        let totalImageSize = imageDataArray.reduce(0) { $0 + $1.count }
+        print("🔍 [AI] Total image data size: \(totalImageSize / 1024 / 1024)MB")
         
         let visionURL = "https://api.anthropic.com/v1/messages"
         
@@ -532,6 +552,9 @@ class AIService {
         request.setValue("2023-06-01", forHTTPHeaderField: "anthropic-version")
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         
+        // Set extended timeout for large image processing
+        request.timeoutInterval = 120.0 // 2 minutes instead of default 60 seconds
+        
         do {
             request.httpBody = try JSONSerialization.data(withJSONObject: requestBody)
         } catch {
@@ -539,8 +562,17 @@ class AIService {
             return
         }
         
-        URLSession.shared.dataTask(with: request) { data, response, error in
+        // Create custom URLSession with extended timeout configuration
+        let sessionConfig = URLSessionConfiguration.default
+        sessionConfig.timeoutIntervalForRequest = 120.0  // 2 minutes for request
+        sessionConfig.timeoutIntervalForResource = 300.0 // 5 minutes for entire resource
+        let customSession = URLSession(configuration: sessionConfig)
+        
+        print("🔍 [AI] Sending Claude request with extended timeout (120s request, 300s resource)")
+        
+        customSession.dataTask(with: request) { data, response, error in
             if let error = error {
+                print("❌ [AI] Claude request failed with error: \(error.localizedDescription)")
                 completion(.failure(error))
                 return
             }
@@ -570,21 +602,21 @@ class AIService {
             }
         }.resume()
     }
-}
-
-enum AIError: Error {
-    case missingAPIKey
-    case invalidResponse
-    case apiError(message: String)
     
-    var localizedDescription: String {
-        switch self {
-        case .missingAPIKey:
-            return "OpenAI API key is missing. Please set it in your environment variables or app settings."
-        case .invalidResponse:
-            return "Received an invalid response from the API."
-        case .apiError(let message):
-            return "API Error: \(message)"
+    enum AIError: Error {
+        case missingAPIKey
+        case invalidResponse
+        case apiError(message: String)
+        
+        var localizedDescription: String {
+            switch self {
+            case .missingAPIKey:
+                return "OpenAI API key is missing. Please set it in your environment variables or app settings."
+            case .invalidResponse:
+                return "Received an invalid response from the API."
+            case .apiError(let message):
+                return "API Error: \(message)"
+            }
         }
     }
 }

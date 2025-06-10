@@ -11,6 +11,13 @@ ALTER TABLE conversations
 ADD COLUMN IF NOT EXISTS is_deleted BOOLEAN DEFAULT FALSE,
 ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMPTZ;
 
+-- Add missing device_id columns (required for sync)
+ALTER TABLE people
+ADD COLUMN IF NOT EXISTS device_id TEXT;
+
+ALTER TABLE conversations
+ADD COLUMN IF NOT EXISTS device_id TEXT;
+
 -- Add missing columns that our app expects
 ALTER TABLE people
 ADD COLUMN IF NOT EXISTS identifier TEXT,
@@ -35,9 +42,11 @@ ADD COLUMN IF NOT EXISTS legacy_id TIMESTAMPTZ;
 -- Create indexes for the new columns
 CREATE INDEX IF NOT EXISTS idx_people_is_deleted ON people(is_deleted);
 CREATE INDEX IF NOT EXISTS idx_people_identifier ON people(identifier);
+CREATE INDEX IF NOT EXISTS idx_people_device_id ON people(device_id);
 CREATE INDEX IF NOT EXISTS idx_conversations_is_deleted ON conversations(is_deleted);
 CREATE INDEX IF NOT EXISTS idx_conversations_uuid ON conversations(uuid);
 CREATE INDEX IF NOT EXISTS idx_conversations_person_identifier ON conversations(person_identifier);
+CREATE INDEX IF NOT EXISTS idx_conversations_device_id ON conversations(device_id);
 
 -- Update existing records to have is_deleted = false (if they don't already)
 UPDATE people SET is_deleted = FALSE WHERE is_deleted IS NULL;

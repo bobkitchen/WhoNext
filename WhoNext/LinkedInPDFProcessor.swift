@@ -123,26 +123,19 @@ class LinkedInPDFProcessor: ObservableObject {
         
         updateStatus("Analyzing professional profile with AI...")
         
-        // Convert images to base64
+        // Convert images to compressed base64
         var base64Images: [String] = []
         
         for (index, image) in images.enumerated() {
-            print("🔍 [LinkedIn] Converting image \(index + 1) to base64...")
+            print("🔍 [LinkedIn] Converting and compressing image \(index + 1)...")
             
-            guard let tiffData = image.tiffRepresentation,
-                  let bitmap = NSBitmapImageRep(data: tiffData),
-                  let pngData = bitmap.representation(using: .png, properties: [:]) else {
-                print("❌ [LinkedIn] Failed to convert image \(index) to PNG")
+            guard let compressedBase64 = compressImageToBase64(image, targetSizeKB: 500) else {
+                print("❌ [LinkedIn] Failed to compress image \(index)")
                 continue
             }
             
-            let base64String = pngData.base64EncodedString()
-            base64Images.append(base64String)
-            print("🔍 [LinkedIn] Image \(index + 1) converted to base64, size: \(base64String.count) characters")
-            
-            // Log first 100 characters to verify it's valid base64
-            let preview = String(base64String.prefix(100))
-            print("🔍 [LinkedIn] Base64 preview: \(preview)...")
+            base64Images.append(compressedBase64)
+            print("🔍 [LinkedIn] Image \(index + 1) compressed to base64, size: \(compressedBase64.count) characters (~\(compressedBase64.count / 1024)KB)")
         }
         
         if base64Images.isEmpty {
@@ -154,6 +147,10 @@ class LinkedInPDFProcessor: ObservableObject {
             completion(.failure(error))
             return
         }
+        
+        // Calculate total compressed size
+        let totalSize = base64Images.reduce(0) { $0 + $1.count }
+        print("🔍 [LinkedIn] Total compressed payload size: \(totalSize / 1024)KB (was ~\(images.count * 4000)KB uncompressed)")
         
         // Limit to maximum 8 images to capture more content including education sections
         let imagesToProcess = Array(base64Images.prefix(8))
@@ -211,6 +208,89 @@ class LinkedInPDFProcessor: ObservableObject {
                 completion(result)
             }
         }
+    }
+    
+    private func compressImageToBase64(_ image: NSImage, targetSizeKB: Int) -> String? {
+        // First, resize the image to a more reasonable size for AI processing
+        let resizedImage = resizeImageForAI(image)
+        
+        // Start with high quality and progressively reduce if needed
+        var compressionQuality: Float = 0.8
+        let targetBytes = targetSizeKB * 1024
+        
+        guard let tiffData = resizedImage.tiffRepresentation,
+              let bitmap = NSBitmapImageRep(data: tiffData) else {
+            return nil
+        }
+        
+        // Try different compression levels until we reach target size
+        for attempt in 1...5 {
+            let properties: [NSBitmapImageRep.PropertyKey: Any] = [
+                .compressionFactor: compressionQuality
+            ]
+            
+            guard let jpegData = bitmap.representation(using: .jpeg, properties: properties) else {
+                continue
+            }
+            
+            let base64String = jpegData.base64EncodedString()
+            let currentSizeKB = jpegData.count / 1024
+            
+            print("🔍 [LinkedIn] Compression attempt \(attempt): \(currentSizeKB)KB at quality \(compressionQuality)")
+            
+            // If we're under target size or this is our last attempt, use this version
+            if jpegData.count <= targetBytes || attempt == 5 {
+                print("🔍 [LinkedIn] Final compressed size: \(currentSizeKB)KB (target: \(targetSizeKB)KB)")
+                return base64String
+            }
+            
+            // Reduce quality for next attempt
+            compressionQuality -= 0.15
+            compressionQuality = max(0.1, compressionQuality) // Don't go below 10% quality
+        }
+        
+        // Fallback to PNG if JPEG compression fails
+        print("🔍 [LinkedIn] JPEG compression failed, falling back to PNG")
+        guard let pngData = bitmap.representation(using: .png, properties: [:]) else {
+            return nil
+        }
+        
+        return pngData.base64EncodedString()
+    }
+    
+    private func resizeImageForAI(_ image: NSImage) -> NSImage {
+        let originalSize = image.size
+        
+        // Target maximum dimensions that maintain readability for AI
+        let maxWidth: CGFloat = 1200
+        let maxHeight: CGFloat = 1600
+        
+        // Calculate scaling factor to fit within max dimensions
+        let widthScale = maxWidth / originalSize.width
+        let heightScale = maxHeight / originalSize.height
+        let scale = min(widthScale, heightScale, 1.0) // Don't upscale
+        
+        let newSize = NSSize(
+            width: originalSize.width * scale,
+            height: originalSize.height * scale
+        )
+        
+        print("🔍 [LinkedIn] Resizing image from \(originalSize) to \(newSize) (scale: \(scale))")
+        
+        // If no resizing needed, return original
+        if scale >= 1.0 {
+            return image
+        }
+        
+        let resizedImage = NSImage(size: newSize)
+        resizedImage.lockFocus()
+        
+        // Draw the original image scaled to the new size
+        image.draw(in: NSRect(origin: .zero, size: newSize))
+        
+        resizedImage.unlockFocus()
+        
+        return resizedImage
     }
     
     private func updateStatus(_ status: String) {

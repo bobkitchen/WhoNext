@@ -6,7 +6,7 @@ struct MarkdownView: View {
     var body: some View {
         // Parse and render markdown manually
         VStack(alignment: .leading, spacing: 8) {
-            ForEach(parseMarkdownLines(markdown), id: \.self) { line in
+            ForEach(Array(parseMarkdownLines(markdown).enumerated()), id: \.offset) { index, line in
                 renderLine(line)
             }
         }
