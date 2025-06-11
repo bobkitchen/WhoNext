@@ -103,10 +103,6 @@ Best regards
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
-                Text("Settings")
-                    .font(.largeTitle)
-                    .bold()
-                
                 // Tab selector with modern design
                 HStack(spacing: 0) {
                     TabButton(title: "General", icon: "gear", isSelected: selectedTab == "general") {
@@ -236,6 +232,7 @@ Best regards
                 Picker("AI Provider", selection: $aiProvider) {
                     Text("OpenAI").tag("openai")
                     Text("Claude").tag("claude")
+                    Text("Local LLM (Ollama)").tag("local")
                 }
                 .pickerStyle(.menu)
             }
@@ -282,6 +279,8 @@ Best regards
                         Text("✗ \(error)")
                             .foregroundColor(.red)
                     }
+                } else if aiProvider == "local" {
+                    OllamaManagementView()
                 }
             }
             

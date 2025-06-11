@@ -1,13 +1,23 @@
 import Foundation
+import SwiftUI
 
 enum AIProvider: String, CaseIterable {
     case openai = "openai"
     case claude = "claude"
+    case local = "local"
     
     var displayName: String {
         switch self {
         case .openai: return "OpenAI"
         case .claude: return "Claude"
+        case .local: return "Local LLM (Ollama)"
+        }
+    }
+    
+    var requiresAPIKey: Bool {
+        switch self {
+        case .openai, .claude: return true
+        case .local: return false
         }
     }
 }
@@ -56,25 +66,47 @@ struct ClaudeUsage: Decodable {
     var output_tokens: Int
 }
 
+struct OllamaResponse: Decodable {
+    var id: String
+    var object: String
+    var created: Int
+    var model: String
+    var choices: [OllamaChoice]
+    var usage: OllamaUsage
+}
+
+struct OllamaChoice: Decodable {
+    var index: Int
+    var message: OllamaMessage
+    var finish_reason: String
+}
+
+struct OllamaMessage: Decodable {
+    var role: String
+    var content: String
+}
+
+struct OllamaUsage: Decodable {
+    var prompt_tokens: Int
+    var completion_tokens: Int
+    var total_tokens: Int
+}
+
 class AIService {
     static let shared = AIService()
     
-    private var currentProvider: AIProvider {
-        AIProvider(rawValue: UserDefaults.standard.string(forKey: "aiProvider") ?? "openai") ?? .openai
-    }
+    @AppStorage("selectedAIProvider") var currentProvider: AIProvider = .openai
+    @AppStorage("openAIApiKey") var openAIApiKey: String = ""
+    @AppStorage("claudeApiKey") var claudeApiKey: String = ""
+    @AppStorage("ollamaBaseURL") var ollamaBaseURL: String = "http://localhost:11434"
+    @AppStorage("ollamaModel") var ollamaModel: String = "llama3.1"
+    @AppStorage("ollamaVisionModel") var ollamaVisionModel: String = "llava"
     
-    private var openAIApiKey: String {
-        UserDefaults.standard.string(forKey: "openaiApiKey") ?? ""
-    }
-    
-    private var claudeApiKey: String {
-        UserDefaults.standard.string(forKey: "claudeApiKey") ?? ""
-    }
-    
-    public var apiKey: String {
+    var apiKey: String {
         switch currentProvider {
         case .openai: return openAIApiKey
         case .claude: return claudeApiKey
+        case .local: return ""
         }
     }
     
@@ -86,6 +118,8 @@ class AIService {
             return try await sendMessageOpenAI(message, context: context)
         case .claude:
             return try await sendMessageClaude(message, context: context)
+        case .local:
+            return try await sendMessageOllama(message, context: context)
         }
     }
     
@@ -203,12 +237,61 @@ class AIService {
         }
     }
     
+    private func sendMessageOllama(_ message: String, context: String? = nil) async throws -> String {
+        var messages: [[String: String]] = [
+            ["role": "system", "content": """
+            You are a helpful assistant focused on relationship management and conversation tracking. \
+            You have access to data about people, their roles, scheduled conversations, and conversation history. \
+            When answering questions, you MUST use the provided context to give specific, data-driven responses. \
+            Always reference specific people, dates, and conversations from the context in your responses. \
+            If asked about team members, conversations, or schedules, look at the actual data provided and mention specific details. \
+            If you don't have certain information in the context, clearly state what data is missing.
+            """]
+        ]
+        
+        if let context = context {
+            messages.append(["role": "system", "content": context])
+        }
+        
+        messages.append(["role": "user", "content": message])
+        
+        var request = URLRequest(url: URL(string: "\(ollamaBaseURL)/v1/chat/completions")!)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        
+        let requestBody: [String: Any] = [
+            "model": ollamaModel,
+            "messages": messages,
+            "max_tokens": 1000,
+            "temperature": 0.7
+        ]
+        
+        request.httpBody = try JSONSerialization.data(withJSONObject: requestBody)
+        
+        let (data, response) = try await URLSession.shared.data(for: request)
+        
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw AIError.invalidResponse
+        }
+        
+        if httpResponse.statusCode == 200 {
+            let decodedResponse = try JSONDecoder().decode(OllamaResponse.self, from: data)
+            return decodedResponse.choices.first?.message.content ?? "No response content."
+        } else {
+            let errorResponse = try? JSONSerialization.jsonObject(with: data) as? [String: Any]
+            let errorMessage = (errorResponse?["error"] as? [String: Any])?["message"] as? String
+            throw AIError.apiError(message: errorMessage ?? "Unknown API error")
+        }
+    }
+    
     func analyzeImageWithVision(imageData: String, prompt: String, completion: @escaping (Result<String, Error>) -> Void) {
         switch currentProvider {
         case .openai:
             analyzeImageWithVisionOpenAI(imageData: imageData, prompt: prompt, completion: completion)
         case .claude:
             analyzeImageWithVisionClaude(imageData: imageData, prompt: prompt, completion: completion)
+        case .local:
+            analyzeImageWithVisionOllama(imageData: imageData, prompt: prompt, completion: completion)
         }
     }
     
@@ -373,12 +456,83 @@ class AIService {
         }.resume()
     }
     
+    private func analyzeImageWithVisionOllama(imageData: String, prompt: String, completion: @escaping (Result<String, Error>) -> Void) {
+        let visionURL = "\(ollamaBaseURL)/v1/chat/completions"
+        
+        let requestBody: [String: Any] = [
+            "model": ollamaVisionModel,
+            "messages": [
+                [
+                    "role": "user",
+                    "content": [
+                        [
+                            "type": "text",
+                            "text": prompt
+                        ],
+                        [
+                            "type": "image_url",
+                            "image_url": [
+                                "url": "data:image/png;base64,\(imageData)"
+                            ]
+                        ]
+                    ]
+                ]
+            ],
+            "max_tokens": 2000
+        ]
+        
+        guard let url = URL(string: visionURL) else {
+            completion(.failure(AIError.invalidResponse))
+            return
+        }
+        
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        
+        do {
+            request.httpBody = try JSONSerialization.data(withJSONObject: requestBody)
+        } catch {
+            completion(.failure(error))
+            return
+        }
+        
+        URLSession.shared.dataTask(with: request) { data, response, error in
+            if let error = error {
+                completion(.failure(error))
+                return
+            }
+            
+            guard let data = data,
+                  let httpResponse = response as? HTTPURLResponse else {
+                completion(.failure(AIError.invalidResponse))
+                return
+            }
+            
+            do {
+                if httpResponse.statusCode == 200 {
+                    let decodedResponse = try JSONDecoder().decode(OllamaResponse.self, from: data)
+                    let content = decodedResponse.choices.first?.message.content ?? "No response content."
+                    completion(.success(content))
+                } else {
+                    let errorResponse = try? JSONSerialization.jsonObject(with: data) as? [String: Any]
+                    let errorMessage = (errorResponse?["error"] as? [String: Any])?["message"] as? String
+                    completion(.failure(AIError.apiError(message: errorMessage ?? "Unknown API error")))
+                }
+            } catch {
+                completion(.failure(error))
+            }
+        }.resume()
+    }
+    
     func analyzeMultipleImagesWithVision(imageDataArray: [String], prompt: String, completion: @escaping (Result<String, Error>) -> Void) {
         switch currentProvider {
         case .openai:
             analyzeMultipleImagesWithVisionOpenAI(imageDataArray: imageDataArray, prompt: prompt, completion: completion)
         case .claude:
             analyzeMultipleImagesWithVisionClaude(imageDataArray: imageDataArray, prompt: prompt, completion: completion)
+        case .local:
+            analyzeMultipleImagesWithVisionOllama(imageDataArray: imageDataArray, prompt: prompt, completion: completion)
         }
     }
     
@@ -603,10 +757,110 @@ class AIService {
         }.resume()
     }
     
+    private func analyzeMultipleImagesWithVisionOllama(imageDataArray: [String], prompt: String, completion: @escaping (Result<String, Error>) -> Void) {
+        print("🔍 [AI] Starting multi-image analysis with \(imageDataArray.count) images")
+        print("🔍 [AI] Prompt length: \(prompt.count) characters")
+        
+        // Calculate total payload size for logging
+        let totalImageSize = imageDataArray.reduce(0) { $0 + $1.count }
+        print("🔍 [AI] Total image data size: \(totalImageSize / 1024 / 1024)MB")
+        
+        let visionURL = "\(ollamaBaseURL)/v1/chat/completions"
+        
+        // Build content array with text prompt and multiple images
+        var contentArray: [[String: Any]] = [
+            [
+                "type": "text",
+                "text": prompt
+            ]
+        ]
+        
+        // Add each image to the content array
+        for imageData in imageDataArray {
+            contentArray.append([
+                "type": "image_url",
+                "image_url": [
+                    "url": "data:image/png;base64,\(imageData)"
+                ]
+            ])
+        }
+        
+        let requestBody: [String: Any] = [
+            "model": ollamaVisionModel,
+            "messages": [
+                [
+                    "role": "user",
+                    "content": contentArray
+                ]
+            ],
+            "max_tokens": 3000 // Increased for multiple images
+        ]
+        
+        guard let url = URL(string: visionURL) else {
+            completion(.failure(AIError.invalidResponse))
+            return
+        }
+        
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        
+        // Set extended timeout for large image processing
+        request.timeoutInterval = 120.0 // 2 minutes instead of default 60 seconds
+        
+        do {
+            request.httpBody = try JSONSerialization.data(withJSONObject: requestBody)
+        } catch {
+            completion(.failure(error))
+            return
+        }
+        
+        // Create custom URLSession with extended timeout configuration
+        let sessionConfig = URLSessionConfiguration.default
+        sessionConfig.timeoutIntervalForRequest = 120.0  // 2 minutes for request
+        sessionConfig.timeoutIntervalForResource = 300.0 // 5 minutes for entire resource
+        let customSession = URLSession(configuration: sessionConfig)
+        
+        print("🔍 [AI] Sending Ollama request with extended timeout (120s request, 300s resource)")
+        
+        customSession.dataTask(with: request) { data, response, error in
+            if let error = error {
+                print("❌ [AI] Ollama request failed with error: \(error.localizedDescription)")
+                completion(.failure(error))
+                return
+            }
+            
+            guard let data = data,
+                  let httpResponse = response as? HTTPURLResponse else {
+                completion(.failure(AIError.invalidResponse))
+                return
+            }
+            
+            do {
+                if httpResponse.statusCode == 200 {
+                    let decodedResponse = try JSONDecoder().decode(OllamaResponse.self, from: data)
+                    let content = decodedResponse.choices.first?.message.content ?? "No response content."
+                    print("🔍 [AI] Multi-image analysis successful, response length: \(content.count) characters")
+                    print("🔍 [AI] Response preview: \(String(content.prefix(200)))...")
+                    completion(.success(content))
+                } else {
+                    let errorResponse = try? JSONSerialization.jsonObject(with: data) as? [String: Any]
+                    let errorMessage = (errorResponse?["error"] as? [String: Any])?["message"] as? String
+                    print("❌ [AI] Multi-image analysis failed with status \(httpResponse.statusCode): \(errorMessage ?? "Unknown error")")
+                    completion(.failure(AIError.apiError(message: errorMessage ?? "Unknown API error")))
+                }
+            } catch {
+                print("❌ [AI] Multi-image analysis parsing error: \(error)")
+                completion(.failure(error))
+            }
+        }.resume()
+    }
+    
     enum AIError: Error {
         case missingAPIKey
         case invalidResponse
         case apiError(message: String)
+        case notImplemented
         
         var localizedDescription: String {
             switch self {
@@ -616,6 +870,8 @@ class AIService {
                 return "Received an invalid response from the API."
             case .apiError(let message):
                 return "API Error: \(message)"
+            case .notImplemented:
+                return "This feature is not implemented yet."
             }
         }
     }
