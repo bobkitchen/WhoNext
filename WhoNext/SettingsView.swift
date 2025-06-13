@@ -8,7 +8,9 @@ struct SettingsView: View {
     @Environment(\.managedObjectContext) private var viewContext
     @AppStorage("openaiApiKey") private var apiKey: String = ""
     @AppStorage("claudeApiKey") private var claudeApiKey: String = ""
-    @AppStorage("aiProvider") private var aiProvider: String = "openai"
+    @AppStorage("openrouterApiKey") private var openrouterApiKey: String = ""
+    @AppStorage("openrouterModel") private var openrouterModel: String = "meta-llama/llama-3.1-8b-instruct:free"
+    @AppStorage("aiProvider") private var aiProvider: String = "apple"
     @AppStorage("dismissedPeople") private var dismissedPeopleData: Data = Data()
     @AppStorage("customPreMeetingPrompt") private var customPreMeetingPrompt: String = """
 You are an executive assistant preparing a pre-meeting brief. Your job is to help the user engage with this person confidently by surfacing:
@@ -230,57 +232,113 @@ Best regards
                 Text("AI Provider")
                     .font(.headline)
                 Picker("AI Provider", selection: $aiProvider) {
+                    if #available(iOS 18.1, macOS 15.1, *) {
+                        Text("🍎 Apple Intelligence (On-Device)").tag("apple")
+                    }
                     Text("OpenAI").tag("openai")
                     Text("Claude").tag("claude")
-                    Text("Local LLM (Ollama)").tag("local")
+                    Text("OpenRouter (Free)").tag("openrouter")
                 }
                 .pickerStyle(.menu)
+                
+                // Provider benefits
+                if aiProvider == "apple" {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("✅ Complete Privacy - Processing stays on device")
+                            .font(.caption)
+                            .foregroundColor(.green)
+                        Text("✅ No API costs or internet required")
+                            .font(.caption)
+                            .foregroundColor(.green)
+                        Text("✅ Fast response times")
+                            .font(.caption)
+                            .foregroundColor(.green)
+                        if #unavailable(iOS 18.1, macOS 15.1) {
+                            Text("⚠️ Requires iOS 18.1+ or macOS 15.1+")
+                                .font(.caption)
+                                .foregroundColor(.orange)
+                        }
+                    }
+                }
             }
             
             // API Key Section
-            VStack(alignment: .leading, spacing: 8) {
-                Text("API Key")
-                    .font(.headline)
-                if aiProvider == "openai" {
-                    HStack {
-                        SecureField("sk-...", text: $apiKey)
-                            .textFieldStyle(.roundedBorder)
-                        Button("Validate") {
-                            validateApiKey()
+            if aiProvider != "apple" {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("API Key")
+                        .font(.headline)
+                    if aiProvider == "openai" {
+                        HStack {
+                            SecureField("sk-...", text: $apiKey)
+                                .textFieldStyle(.roundedBorder)
+                            Button("Validate") {
+                                validateApiKey()
+                            }
+                            .disabled(isValidatingKey)
                         }
-                        .disabled(isValidatingKey)
-                    }
-                    if isValidatingKey {
-                        Text("Validating...")
-                            .foregroundColor(.secondary)
-                    } else if isKeyValid {
-                        Text("✓ Valid API Key")
-                            .foregroundColor(.green)
-                    } else if let error = keyError {
-                        Text("✗ \(error)")
-                            .foregroundColor(.red)
-                    }
-                } else if aiProvider == "claude" {
-                    HStack {
-                        SecureField("ck-...", text: $claudeApiKey)
-                            .textFieldStyle(.roundedBorder)
-                        Button("Validate") {
-                            validateClaudeApiKey()
+                        if isValidatingKey {
+                            Text("Validating...")
+                                .foregroundColor(.secondary)
+                        } else if isKeyValid {
+                            Text("✓ Valid API Key")
+                                .foregroundColor(.green)
+                        } else if let error = keyError {
+                            Text("✗ \(error)")
+                                .foregroundColor(.red)
                         }
-                        .disabled(isValidatingClaudeKey)
+                    } else if aiProvider == "claude" {
+                        HStack {
+                            SecureField("ck-...", text: $claudeApiKey)
+                                .textFieldStyle(.roundedBorder)
+                            Button("Validate") {
+                                validateClaudeApiKey()
+                            }
+                            .disabled(isValidatingClaudeKey)
+                        }
+                        if isValidatingClaudeKey {
+                            Text("Validating...")
+                                .foregroundColor(.secondary)
+                        } else if isClaudeKeyValid {
+                            Text("✓ Valid API Key")
+                                .foregroundColor(.green)
+                        } else if let error = claudeKeyError {
+                            Text("✗ \(error)")
+                                .foregroundColor(.red)
+                        }
+                    } else if aiProvider == "openrouter" {
+                        VStack(alignment: .leading, spacing: 8) {
+                            HStack {
+                                SecureField("or-...", text: $openrouterApiKey)
+                                    .textFieldStyle(.roundedBorder)
+                                Button("Get Free Key") {
+                                    if let url = URL(string: "https://openrouter.ai/keys") {
+                                        NSWorkspace.shared.open(url)
+                                    }
+                                }
+                            }
+                            Text("OpenRouter provides free access to Llama 3.1 8B and other models. Vision analysis will fallback to OpenAI if configured.")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                            HStack {
+                                Text("Model")
+                                    .frame(width: 60, alignment: .leading)
+                                Picker("Select Model", selection: $openrouterModel) {
+                                    Text("Llama 3.1 8B (Free)").tag("meta-llama/llama-3.1-8b-instruct:free")
+                                    Text("Llama 3.2 3B (Free)").tag("meta-llama/llama-3.2-3b-instruct:free")
+                                    Text("Mistral 7B (Free)").tag("mistralai/mistral-7b-instruct:free")
+                                    Text("Nous Hermes 2 Mixtral (Free)").tag("nousresearch/hermes-2-pro-mistral-7b:free")
+                                    Text("Phi-3 Mini (Free)").tag("microsoft/phi-3-mini-128k-instruct:free")
+                                    Text("Gemma 2 9B (Free)").tag("google/gemma-2-9b-it:free")
+                                    Text("Qwen 2.5 7B (Free)").tag("qwen/qwen-2.5-7b-instruct:free")
+                                }
+                                .pickerStyle(.menu)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                            }
+                            Text("Current: \(openrouterModel)")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        }
                     }
-                    if isValidatingClaudeKey {
-                        Text("Validating...")
-                            .foregroundColor(.secondary)
-                    } else if isClaudeKeyValid {
-                        Text("✓ Valid API Key")
-                            .foregroundColor(.green)
-                    } else if let error = claudeKeyError {
-                        Text("✗ \(error)")
-                            .foregroundColor(.red)
-                    }
-                } else if aiProvider == "local" {
-                    OllamaManagementView()
                 }
             }
             

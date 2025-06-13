@@ -124,18 +124,18 @@ class LinkedInPDFProcessor: ObservableObject {
         updateStatus("Analyzing professional profile with AI...")
         
         // Convert images to compressed base64
-        var base64Images: [String] = []
+        var base64Images: [(base64: String, format: String)] = []
         
         for (index, image) in images.enumerated() {
             print("🔍 [LinkedIn] Converting and compressing image \(index + 1)...")
             
-            guard let compressedBase64 = compressImageToBase64(image, targetSizeKB: 500) else {
+            guard let compressedImage = compressImageToBase64(image) else {
                 print("❌ [LinkedIn] Failed to compress image \(index)")
                 continue
             }
             
-            base64Images.append(compressedBase64)
-            print("🔍 [LinkedIn] Image \(index + 1) compressed to base64, size: \(compressedBase64.count) characters (~\(compressedBase64.count / 1024)KB)")
+            base64Images.append(compressedImage)
+            print("🔍 [LinkedIn] Image \(index + 1) compressed to base64, size: \(compressedImage.base64.count) characters (~\(compressedImage.base64.count / 1024)KB)")
         }
         
         if base64Images.isEmpty {
@@ -149,25 +149,18 @@ class LinkedInPDFProcessor: ObservableObject {
         }
         
         // Calculate total compressed size
-        let totalSize = base64Images.reduce(0) { $0 + $1.count }
+        let totalSize = base64Images.reduce(0) { $0 + $1.base64.count }
         print("🔍 [LinkedIn] Total compressed payload size: \(totalSize / 1024)KB (was ~\(images.count * 4000)KB uncompressed)")
-        
-        // Limit to maximum 8 images to capture more content including education sections
-        let imagesToProcess = Array(base64Images.prefix(8))
-        if base64Images.count > 8 {
-            print("🔍 [LinkedIn] Limiting to first 8 images (was \(base64Images.count))")
-        }
         
         // Create professional profile analysis prompt
         let profilePrompt = """
-        You are analyzing a LinkedIn profile document. I can see that you're successfully reading work experience details, but you're missing education information that is clearly present.
-
-        CRITICAL: The education section is DEFINITELY present in these images. Look for sections labeled "Education" with university names like:
-        - Geneva Graduate Institute
-        - University of Leicester
-        - Any other schools or institutions
-
-        Please examine EVERY part of ALL images provided and extract information in this format:
+        IMPORTANT: Please respond in English only.
+        
+        You are analyzing a LinkedIn profile document. These images show pages from a LinkedIn profile PDF export.
+        
+        Your task is to extract professional information from these LinkedIn profile pages and create a comprehensive summary.
+        
+        Please examine ALL the images provided and extract information in this format:
 
         PROFESSIONAL SUMMARY:
         Write 2-3 sentences about the person's professional background based on their current role and experience.
@@ -177,46 +170,95 @@ class LinkedInPDFProcessor: ObservableObject {
         • Company Name - Job Title (Date Range)
 
         EDUCATION:
-        IMPORTANT: Look specifically for the word "Education" as a section header, then list ALL educational institutions you can see:
+        Look for the "Education" section and list ALL educational institutions:
         • Institution Name - Degree/Program (Years)
         
-        If you cannot find education information, please tell me exactly what sections you CAN see in the images so I can understand what's happening.
-
         SKILLS & EXPERTISE:
         List any skills, technologies, or areas of expertise mentioned.
 
-        DEBUGGING: If you don't see education information, please list ALL the section headers you can identify in the images (like "Experience", "Education", "Skills", etc.) so I can understand what sections are visible to you.
+        DEBUGGING:
+        Visible sections include: [List all section headers you can see like "About", "Experience", "Education", "Skills", etc.]
 
-        Use plain text only - no markdown formatting. Use CAPS for section headers and • for bullet points.
+        IMPORTANT INSTRUCTIONS:
+        - Respond in English only
+        - Use plain text only - no markdown formatting
+        - Use CAPS for section headers and • for bullet points
+        - If you see multiple pages, analyze ALL of them
+        - Education information is typically on later pages (pages 5-8)
+        - Look carefully for university names, degrees, and graduation years
         """
         
-        // Use the new multiple images method for better analysis
-        if imagesToProcess.count > 1 {
-            print("🔍 [LinkedIn] Processing \(imagesToProcess.count) images with multiple image analysis")
-            aiService.analyzeMultipleImagesWithVision(imageDataArray: imagesToProcess, prompt: profilePrompt) { result in
+        // OpenRouter free tier doesn't support vision - use OpenAI/Claude for LinkedIn PDFs
+        if aiService.currentProvider == .openrouter {
+            // Check if OpenAI is configured as fallback
+            if !aiService.openaiApiKey.isEmpty {
+                print("ℹ️ [LinkedIn] OpenRouter doesn't support vision analysis")
+                print("🔄 [LinkedIn] Using OpenAI for LinkedIn PDF processing")
+                
+                // Temporarily switch to OpenAI for this request
+                let originalProvider = aiService.currentProvider
+                aiService.currentProvider = .openai
+                
+                // Use OpenAI's multi-image processing with full resolution images
+                let fullResImages = Array(base64Images.prefix(5)) // Use more images with OpenAI
+                print("🔍 [LinkedIn] Processing \(fullResImages.count) images with OpenAI vision")
+                
+                aiService.analyzeMultipleImagesWithVision(imageDataArray: fullResImages, prompt: profilePrompt) { [self] result in
+                    // Restore original provider
+                    aiService.currentProvider = originalProvider
+                    
+                    DispatchQueue.main.async {
+                        self.isProcessing = false
+                    }
+                    completion(result)
+                }
+                return
+            } else {
+                // No OpenAI fallback available
+                let errorMessage = """
+                ⚠️ OpenRouter doesn't support vision analysis for LinkedIn PDFs.
+                
+                For reliable LinkedIn processing, please:
+                1. Go to Settings → AI & Prompts
+                2. Add your OpenAI API key
+                3. Select "OpenAI (GPT-4)" as AI Provider
+                4. Try processing again
+                
+                OpenAI's vision models are specifically optimized for document analysis.
+                """
+                
                 DispatchQueue.main.async {
                     self.isProcessing = false
                 }
-                completion(result)
+                completion(.failure(NSError(domain: "LinkedInProcessor", code: 1, userInfo: [NSLocalizedDescriptionKey: errorMessage])))
+                return
             }
-        } else {
-            print("🔍 [LinkedIn] Processing single image")
-            aiService.analyzeImageWithVision(imageData: imagesToProcess[0], prompt: profilePrompt) { result in
-                DispatchQueue.main.async {
-                    self.isProcessing = false
-                }
-                completion(result)
+        }
+        
+        // If we reach here, we're using OpenAI or Claude - proceed normally
+        let imagesToProcess = Array(base64Images.prefix(5)) // Use more images for cloud providers
+        print("🔍 [LinkedIn] Processing \(imagesToProcess.count) images with \(aiService.currentProvider)")
+        
+        aiService.analyzeMultipleImagesWithVision(imageDataArray: imagesToProcess, prompt: profilePrompt) { result in
+            DispatchQueue.main.async {
+                self.isProcessing = false
             }
+            completion(result)
         }
     }
     
-    private func compressImageToBase64(_ image: NSImage, targetSizeKB: Int) -> String? {
+    private func compressImageToBase64(_ image: NSImage) -> (base64: String, format: String)? {
+        // All providers now use high-quality images since we removed local processing
+        let targetSize = 500_000  // 500KB for all cloud providers
+        let maxDimension: CGFloat = 1200  // 1200px max for all providers
+        print("🔍 [LinkedIn] Using high-quality images for cloud processing: \(targetSize/1000)KB max, \(maxDimension)px max")
+        
         // First, resize the image to a more reasonable size for AI processing
-        let resizedImage = resizeImageForAI(image)
+        let resizedImage = resizeImageForAI(image, maxDimension: maxDimension)
         
         // Start with high quality and progressively reduce if needed
         var compressionQuality: Float = 0.8
-        let targetBytes = targetSizeKB * 1024
+        let targetBytes = targetSize
         
         guard let tiffData = resizedImage.tiffRepresentation,
               let bitmap = NSBitmapImageRep(data: tiffData) else {
@@ -240,8 +282,8 @@ class LinkedInPDFProcessor: ObservableObject {
             
             // If we're under target size or this is our last attempt, use this version
             if jpegData.count <= targetBytes || attempt == 5 {
-                print("🔍 [LinkedIn] Final compressed size: \(currentSizeKB)KB (target: \(targetSizeKB)KB)")
-                return base64String
+                print("🔍 [LinkedIn] Final compressed size: \(currentSizeKB)KB (target: \(targetSize/1000)KB)")
+                return (base64: base64String, format: "jpeg")
             }
             
             // Reduce quality for next attempt
@@ -255,20 +297,16 @@ class LinkedInPDFProcessor: ObservableObject {
             return nil
         }
         
-        return pngData.base64EncodedString()
+        return (base64: pngData.base64EncodedString(), format: "png")
     }
     
-    private func resizeImageForAI(_ image: NSImage) -> NSImage {
+    private func resizeImageForAI(_ image: NSImage, maxDimension: CGFloat) -> NSImage {
         let originalSize = image.size
         
-        // Target maximum dimensions that maintain readability for AI
-        let maxWidth: CGFloat = 1200
-        let maxHeight: CGFloat = 1600
-        
         // Calculate scaling factor to fit within max dimensions
-        let widthScale = maxWidth / originalSize.width
-        let heightScale = maxHeight / originalSize.height
-        let scale = min(widthScale, heightScale, 1.0) // Don't upscale
+        let widthScale = min(maxDimension / originalSize.width, 1.0)
+        let heightScale = min(maxDimension / originalSize.height, 1.0)
+        let scale = min(widthScale, heightScale) // Don't upscale
         
         let newSize = NSSize(
             width: originalSize.width * scale,

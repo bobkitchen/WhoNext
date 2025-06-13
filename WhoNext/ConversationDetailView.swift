@@ -19,23 +19,67 @@ struct ConversationDetailView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 24) {
-                // Header
-                headerView
+            VStack(alignment: .leading, spacing: 16) {
+                // Header with Meeting Details title and buttons
+                HStack(alignment: .top) {
+                    Text("Meeting Details")
+                        .font(.headline)
+                    
+                    Spacer()
+                    
+                    // Buttons
+                    HStack(spacing: 12) {
+                        Button(action: {
+                            showingDeleteAlert = true
+                        }) {
+                            Image(systemName: "trash")
+                                .foregroundColor(.red)
+                        }
+                        .buttonStyle(.plain)
+                        .help("Delete this conversation")
+                        
+                        if isEditing {
+                            Button(action: {
+                                loadConversationData() // Reset to original values
+                                isEditing = false
+                            }) {
+                                Text("Cancel")
+                                    .font(.system(size: 13, weight: .medium))
+                                    .foregroundColor(.secondary)
+                                    .padding(.horizontal, 16)
+                                    .padding(.vertical, 6)
+                                    .background(Color.secondary.opacity(0.1))
+                                    .clipShape(RoundedRectangle(cornerRadius: 6))
+                            }
+                            .buttonStyle(.plain)
+                            .help("Cancel editing and discard changes")
+                        }
+                        
+                        Button(action: {
+                            if isEditing {
+                                saveChanges()
+                            } else {
+                                isEditing.toggle()
+                            }
+                        }) {
+                            Text(isEditing ? "Done" : "Edit")
+                                .font(.system(size: 13, weight: .medium))
+                                .foregroundColor(.white)
+                                .padding(.horizontal, 16)
+                                .padding(.vertical, 6)
+                                .background(Color.accentColor)
+                                .clipShape(RoundedRectangle(cornerRadius: 6))
+                        }
+                        .buttonStyle(.plain)
+                        .help(isEditing ? "Save changes and finish editing" : "Edit conversation details")
+                    }
+                }
                 
-                // Meeting Details Section
-                meetingDetailsSection
+                // Meeting Details Content
+                meetingDetailsContent
                 
                 // Summary Section
                 summarySection
-                
-                // Sentiment Analysis Section
-                if let sentiment = sentimentData {
-                    sentimentAnalysisSection(sentiment: sentiment)
-                }
-                
-                // Action Buttons
-                actionButtonsSection
             }
             .padding(24)
         }
@@ -58,56 +102,9 @@ struct ConversationDetailView: View {
         }
     }
     
-    // MARK: - Header View
-    private var headerView: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(isEditing ? "Edit Conversation" : "Conversation Details")
-                        .font(.largeTitle)
-                        .fontWeight(.bold)
-                    
-                    Text("Review and edit conversation details and analysis")
-                        .font(.body)
-                        .foregroundColor(.secondary)
-                }
-                
-                Spacer()
-                
-                HStack(spacing: 12) {
-                    Button(action: {
-                        showingDeleteAlert = true
-                    }) {
-                        Image(systemName: "trash")
-                            .foregroundColor(.red)
-                    }
-                    .buttonStyle(.plain)
-                    .help("Delete this conversation")
-                    
-                    Button(action: {
-                        isEditing.toggle()
-                    }) {
-                        Text(isEditing ? "Done" : "Edit")
-                            .font(.system(size: 13, weight: .medium))
-                            .foregroundColor(.white)
-                            .padding(.horizontal, 16)
-                            .padding(.vertical, 6)
-                            .background(Color.accentColor)
-                            .clipShape(RoundedRectangle(cornerRadius: 6))
-                    }
-                    .buttonStyle(.plain)
-                    .help(isEditing ? "Finish editing" : "Edit conversation details")
-                }
-            }
-        }
-    }
-    
-    // MARK: - Meeting Details Section
-    private var meetingDetailsSection: some View {
+    // MARK: - Meeting Details Content
+    private var meetingDetailsContent: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text("Meeting Details")
-                .font(.headline)
-            
             VStack(alignment: .leading, spacing: 12) {
                 // Title
                 VStack(alignment: .leading, spacing: 8) {
@@ -162,6 +159,41 @@ struct ConversationDetailView: View {
                                 .font(.body)
                         }
                     }
+                    
+                    // Sentiment Analysis (when available and not editing)
+                    if let sentiment = sentimentData, !isEditing {
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("Sentiment")
+                                .font(.subheadline)
+                                .fontWeight(.medium)
+                            
+                            HStack(spacing: 8) {
+                                // Sentiment indicator circle
+                                ZStack {
+                                    Circle()
+                                        .stroke(Color.gray.opacity(0.3), lineWidth: 3)
+                                        .frame(width: 24, height: 24)
+                                    
+                                    Circle()
+                                        .trim(from: 0, to: sentiment.sentimentScore)
+                                        .stroke(sentimentColor(sentiment.overallSentiment), lineWidth: 3)
+                                        .rotationEffect(.degrees(-90))
+                                        .frame(width: 24, height: 24)
+                                }
+                                
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text(sentiment.overallSentiment.capitalized)
+                                        .font(.body)
+                                        .fontWeight(.medium)
+                                        .foregroundColor(sentimentColor(sentiment.overallSentiment))
+                                    
+                                    Text("\(Int(sentiment.sentimentScore * 100))% • \(sentiment.relationshipHealth.capitalized)")
+                                        .font(.caption)
+                                        .foregroundColor(.secondary)
+                                }
+                            }
+                        }
+                    }
                 }
             }
             .padding(16)
@@ -212,155 +244,6 @@ struct ConversationDetailView: View {
                 .clipShape(RoundedRectangle(cornerRadius: 12))
             }
         }
-    }
-    
-    // MARK: - Sentiment Analysis Section
-    private func sentimentAnalysisSection(sentiment: ContextualSentiment) -> some View {
-        VStack(alignment: .leading, spacing: 16) {
-            Text("Sentiment Analysis")
-                .font(.headline)
-                .frame(maxWidth: .infinity, alignment: .leading)
-            
-            VStack(alignment: .leading, spacing: 16) {
-                // Main sentiment overview card
-                HStack(alignment: .top, spacing: 20) {
-                    VStack(alignment: .leading, spacing: 8) {
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text("Overall Sentiment")
-                                .font(.subheadline)
-                                .foregroundColor(.secondary)
-                            Text(sentiment.overallSentiment.capitalized)
-                                .font(.title2)
-                                .fontWeight(.semibold)
-                                .foregroundColor(sentimentColor(sentiment.overallSentiment))
-                        }
-                        
-                        // Sentiment score as progress circle
-                        ZStack {
-                            Circle()
-                                .stroke(Color.gray.opacity(0.3), lineWidth: 4)
-                                .frame(width: 60, height: 60)
-                            
-                            Circle()
-                                .trim(from: 0, to: sentiment.sentimentScore)
-                                .stroke(sentimentColor(sentiment.overallSentiment), lineWidth: 4)
-                                .rotationEffect(.degrees(-90))
-                                .frame(width: 60, height: 60)
-                            
-                            Text("\(Int(sentiment.sentimentScore * 100))")
-                                .font(.headline)
-                                .fontWeight(.bold)
-                        }
-                    }
-                    
-                    Spacer()
-                    
-                    // Key metrics grid
-                    VStack(alignment: .leading, spacing: 12) {
-                        HStack(spacing: 12) {
-                            MetricCard(
-                                title: "Relationship Health",
-                                value: sentiment.relationshipHealth.capitalized,
-                                color: relationshipHealthColor(sentiment.relationshipHealth)
-                            )
-                            
-                            MetricCard(
-                                title: "Engagement",
-                                value: sentiment.engagementLevel.capitalized,
-                                color: engagementColor(sentiment.engagementLevel)
-                            )
-                        }
-                        
-                        HStack(spacing: 12) {
-                            MetricCard(
-                                title: "Communication Style",
-                                value: sentiment.communicationStyle.capitalized,
-                                color: .blue
-                            )
-                            
-                            MetricCard(
-                                title: "Energy Level",
-                                value: sentiment.energyLevel.capitalized,
-                                color: energyColor(sentiment.energyLevel)
-                            )
-                        }
-                    }
-                }
-                .padding(20)
-                .background(Color(nsColor: .controlBackgroundColor))
-                .clipShape(RoundedRectangle(cornerRadius: 12))
-                .frame(maxWidth: .infinity, alignment: .leading)
-                
-                // Additional insights
-                if !sentiment.keyObservations.isEmpty ||
-                   !sentiment.followUpRecommendations.isEmpty ||
-                   !sentiment.supportNeeds.isEmpty ||
-                   !sentiment.riskFactors.isEmpty {
-                    
-                    VStack(alignment: .leading, spacing: 16) {
-                        if !sentiment.keyObservations.isEmpty {
-                            InsightSection(
-                                title: "Key Observations",
-                                items: sentiment.keyObservations,
-                                icon: "eye",
-                                color: .blue
-                            )
-                        }
-                        
-                        if !sentiment.followUpRecommendations.isEmpty {
-                            InsightSection(
-                                title: "Follow-up Recommendations",
-                                items: sentiment.followUpRecommendations,
-                                icon: "arrow.right.circle",
-                                color: .green
-                            )
-                        }
-                        
-                        if !sentiment.supportNeeds.isEmpty {
-                            InsightSection(
-                                title: "Support Needs",
-                                items: sentiment.supportNeeds,
-                                icon: "heart",
-                                color: .orange
-                            )
-                        }
-                        
-                        if !sentiment.riskFactors.isEmpty {
-                            InsightSection(
-                                title: "Risk Factors",
-                                items: sentiment.riskFactors,
-                                icon: "exclamationmark.triangle",
-                                color: .red
-                            )
-                        }
-                    }
-                    .padding(20)
-                    .background(Color(nsColor: .controlBackgroundColor))
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
-                }
-            }
-        }
-    }
-    
-    // MARK: - Action Buttons Section
-    private var actionButtonsSection: some View {
-        HStack {
-            Spacer()
-            
-            if isEditing {
-                Button("Cancel") {
-                    loadConversationData() // Reset to original values
-                    isEditing = false
-                }
-                .buttonStyle(.plain)
-                
-                Button("Save Changes") {
-                    saveChanges()
-                }
-                .buttonStyle(.borderedProminent)
-            }
-        }
-        .padding(.top, 16)
     }
     
     // MARK: - Helper Functions

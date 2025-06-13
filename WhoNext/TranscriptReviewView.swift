@@ -92,12 +92,26 @@ struct TranscriptReviewView: View {
                         Text("Participants")
                             .font(.headline)
                         
-                        Text("No participants detected in transcript. This may be due to transcript format or parsing issues.")
+                        Text("No participants detected in transcript. You can manually add participants below.")
                             .font(.caption)
                             .foregroundColor(.secondary)
                             .padding()
                             .background(Color.yellow.opacity(0.1))
                             .cornerRadius(8)
+                        
+                        // Simple manual participant addition
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("Add Participants Manually")
+                                .font(.subheadline)
+                                .fontWeight(.medium)
+                            
+                            Text("Use the search function in the main app to find and add people to this conversation after saving.")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                                .padding(8)
+                                .background(Color(.textBackgroundColor))
+                                .cornerRadius(6)
+                        }
                     }
                 }
                 

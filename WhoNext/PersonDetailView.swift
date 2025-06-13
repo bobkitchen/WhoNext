@@ -12,7 +12,7 @@ struct PersonDetailView: View {
     @State private var isGeneratingBrief = false
     @State private var preMeetingBrief: [UUID: String] = [:]
     @State private var briefError: String? = nil
-    @AppStorage("openaiApiKey") private var apiKey: String = ""
+    @StateObject private var hybridAI = HybridAIService()
 
     init(person: Person) {
         self.person = person
@@ -339,24 +339,47 @@ struct PersonDetailView: View {
                     Spacer()
                     
                     if let brief = preMeetingBrief[person.identifier ?? UUID()], !brief.isEmpty {
-                        Button(action: {
-                            copyToClipboard(brief)
-                        }) {
-                            HStack(spacing: 4) {
-                                Image(systemName: "doc.on.clipboard")
-                                    .font(.system(size: 10))
-                                Text("Copy")
-                                    .font(.system(size: 10, weight: .medium))
+                        HStack(spacing: 8) {
+                            // Pop Out button
+                            Button(action: {
+                                openPreMeetingBriefWindow(brief)
+                            }) {
+                                HStack(spacing: 4) {
+                                    Image(systemName: "arrow.up.right.square")
+                                        .font(.system(size: 10))
+                                    Text("Pop Out")
+                                        .font(.system(size: 10, weight: .medium))
+                                }
+                                .foregroundColor(.accentColor)
+                                .padding(.horizontal, 12)
+                                .padding(.vertical, 6)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 6)
+                                        .fill(Color.accentColor.opacity(0.1))
+                                )
                             }
-                            .foregroundColor(.accentColor)
-                            .padding(.horizontal, 12)
-                            .padding(.vertical, 6)
-                            .background(
-                                RoundedRectangle(cornerRadius: 6)
-                                    .fill(Color.accentColor.opacity(0.1))
-                            )
+                            .buttonStyle(PlainButtonStyle())
+                            
+                            // Copy button
+                            Button(action: {
+                                copyToClipboard(brief)
+                            }) {
+                                HStack(spacing: 4) {
+                                    Image(systemName: "doc.on.clipboard")
+                                        .font(.system(size: 10))
+                                    Text("Copy")
+                                        .font(.system(size: 10, weight: .medium))
+                                }
+                                .foregroundColor(.accentColor)
+                                .padding(.horizontal, 12)
+                                .padding(.vertical, 6)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 6)
+                                        .fill(Color.accentColor.opacity(0.1))
+                                )
+                            }
+                            .buttonStyle(PlainButtonStyle())
                         }
-                        .buttonStyle(PlainButtonStyle())
                     } else {
                         Button(action: generatePreMeetingBrief) {
                             HStack(spacing: 6) {
@@ -506,17 +529,33 @@ struct PersonDetailView: View {
         window.makeKeyAndOrderFront(nil)
     }
     
+    private func openPreMeetingBriefWindow(_ briefContent: String) {
+        let window = NSWindow(
+            contentRect: NSRect(x: 0, y: 0, width: 600, height: 500),
+            styleMask: [.titled, .closable, .resizable],
+            backing: .buffered,
+            defer: false
+        )
+        window.title = "Pre-Meeting Brief - \(person.name ?? "Unknown")"
+        window.center()
+        window.contentView = NSHostingView(
+            rootView: PreMeetingBriefWindow(
+                personName: person.name ?? "Unknown",
+                briefContent: briefContent,
+                onClose: {
+                    window.close()
+                }
+            )
+        )
+        window.makeKeyAndOrderFront(nil)
+    }
+    
     private func generatePreMeetingBrief() {
-        guard !apiKey.isEmpty else {
-            briefError = "OpenAI API key is required. Please set it in Settings."
-            return
-        }
-        
         isGeneratingBrief = true
         preMeetingBrief[person.identifier ?? UUID()] = nil
         briefError = nil
         
-        PreMeetingBriefService.generateBrief(for: person, apiKey: apiKey) { result in
+        hybridAI.generateBrief(for: person) { result in
             DispatchQueue.main.async {
                 self.isGeneratingBrief = false
                 switch result {

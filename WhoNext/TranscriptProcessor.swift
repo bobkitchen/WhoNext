@@ -92,6 +92,8 @@ class TranscriptProcessor: ObservableObject {
     @Published var processingStatus = ""
     @Published var error: String?
     
+    private let hybridAI = HybridAIService()
+    
     init() {
     }
     
@@ -238,84 +240,28 @@ class TranscriptProcessor: ObservableObject {
     // MARK: - AI Processing Methods
     
     private func extractParticipants(from transcript: TranscriptData) async -> [ParticipantInfo] {
-        // First get basic participants from format parsing
-        var participants: [ParticipantInfo] = []
-        
-        // For each detected participant, analyze their contribution
-        for participantName in transcript.participants {
-            let speakingTime = calculateSpeakingTime(for: participantName, in: transcript.rawText)
-            let messageCount = countMessages(for: participantName, in: transcript.rawText)
-            let sentiment = await analyzeSentimentForParticipant(participantName, in: transcript.rawText)
-            
-            participants.append(ParticipantInfo(
-                name: participantName,
-                speakingTime: speakingTime,
-                messageCount: messageCount,
-                detectedSentiment: sentiment,
-                existingPersonId: nil
-            ))
+        do {
+            let participantNames = try await hybridAI.extractParticipants(from: transcript.rawText)
+            return participantNames.map { name in
+                ParticipantInfo(
+                    name: name,
+                    speakingTime: 0.0,
+                    messageCount: 0,
+                    detectedSentiment: "neutral",
+                    existingPersonId: nil
+                )
+            }
+        } catch {
+            print("Failed to extract participants with AI: \(error)")
+            return []
         }
-        
-        // If no participants detected from format, use AI to extract them
-        if participants.isEmpty {
-            participants = await extractParticipantsWithAI(from: transcript.rawText)
-        }
-        
-        return participants
     }
     
     private func generateSummary(from transcript: TranscriptData, participants: [ParticipantInfo]) async -> String {
         let participantNames = participants.map { $0.name }.joined(separator: ", ")
         
-        // Get custom prompt from UserDefaults, with fallback to default
-        let customPrompt = UserDefaults.standard.string(forKey: "customSummarizationPrompt") ?? """
-You are an executive assistant creating comprehensive meeting minutes. Generate detailed, actionable meeting minutes that include:
-
-**Meeting Overview:**
-- Meeting purpose and context
-- Key themes and overall tone
-- Primary objectives discussed
-
-**Discussion Details:**
-- Main points raised by each participant
-- Key decisions made and rationale
-- Areas of agreement and disagreement
-- Important insights or revelations
-- Questions raised and answers provided
-
-**Action Items & Follow-ups:**
-- Specific tasks assigned with owners
-- Deadlines and timelines mentioned
-- Next steps and follow-up meetings
-- Dependencies and blockers identified
-
-**Outcomes & Conclusions:**
-- Final decisions reached
-- Issues resolved or escalated
-- Commitments made by participants
-- Success metrics or goals established
-
-**Additional Notes:**
-- Context for future reference
-- Relationship dynamics observed
-- Support needs identified
-- Risk factors or concerns noted
-- Strengths and positive developments
-
-Format the output in clear, professional meeting minutes suitable for distribution and follow-up preparation.
-"""
-        
-        let prompt = """
-        \(customPrompt)
-        
-        Participants: \(participantNames)
-        
-        Transcript:
-        \(transcript.rawText)
-        """
-        
         do {
-            let response = try await AIService.shared.sendMessage(prompt)
+            let response = try await hybridAI.generateMeetingSummary(transcript: transcript.rawText)
             return response.isEmpty ? "Unable to generate summary" : response
         } catch {
             print("Failed to generate summary: \(error)")
@@ -340,7 +286,7 @@ Format the output in clear, professional meeting minutes suitable for distributi
         """
         
         do {
-            let response = try await AIService.shared.sendMessage(prompt)
+            let response = try await hybridAI.sendMessage(prompt, context: "")
             guard let data = response.data(using: .utf8),
                   let actionItems = try? JSONSerialization.jsonObject(with: data) as? [String] else {
                 return ["Unable to extract action items"]
@@ -404,8 +350,7 @@ Format the output in clear, professional meeting minutes suitable for distributi
         """
         
         do {
-            let response = try await AIService.shared.sendMessage(prompt)
-            return parseContextualSentimentResponse(response)
+            return try await hybridAI.analyzeSentiment(text: transcript.rawText)
         } catch {
             print("Failed to analyze contextual sentiment: \(error)")
             return ContextualSentiment(
@@ -449,7 +394,7 @@ Format the output in clear, professional meeting minutes suitable for distributi
         """
         
         do {
-            let title = try await AIService.shared.sendMessage(prompt)
+            let title = try await hybridAI.sendMessage(prompt, context: "")
             return title.trimmingCharacters(in: .whitespacesAndNewlines)
         } catch {
             print("Failed to generate title: \(error)")
@@ -494,144 +439,5 @@ Format the output in clear, professional meeting minutes suitable for distributi
         let sentimentService = SentimentAnalysisService.shared
         let result = sentimentService.performBasicSentimentAnalysis(participantMessages)
         return result.label
-    }
-    
-    private func extractParticipantsWithAI(from transcript: String) async -> [ParticipantInfo] {
-        let prompt = """
-        Extract all participants from this meeting transcript.
-        
-        Return a JSON array with participant information:
-        [
-            {
-                "name": "Full Name",
-                "estimatedSpeakingTime": 120.0,
-                "messageCount": 5,
-                "sentiment": "positive/negative/neutral"
-            }
-        ]
-        
-        Transcript:
-        \(transcript)
-        """
-        
-        do {
-            let response = try await AIService.shared.sendMessage(prompt)
-            return parseParticipantsResponse(response)
-        } catch {
-            print("Failed to extract participants with AI: \(error)")
-            return []
-        }
-    }
-    
-    private func parseContextualSentimentResponse(_ response: String) -> ContextualSentiment {
-        // First, try to clean up the response - sometimes AI adds extra text
-        let cleanedResponse = extractJSONFromResponse(response)
-        
-        guard let data = cleanedResponse.data(using: .utf8) else {
-            print("Failed to convert response to data: \(response)")
-            return createFallbackSentiment(reason: "Data conversion failed")
-        }
-        
-        guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
-            print("Failed to parse JSON from response: \(cleanedResponse)")
-            return createFallbackSentiment(reason: "JSON parsing failed")
-        }
-        
-        let overallSentiment = json["overallSentiment"] as? String ?? "neutral"
-        let sentimentScore = json["sentimentScore"] as? Double ?? 0.5
-        let confidence = json["confidence"] as? Double ?? 0.5
-        let engagementLevel = json["engagementLevel"] as? String ?? "medium"
-        let relationshipHealth = json["relationshipHealth"] as? String ?? "good"
-        let communicationStyle = json["communicationStyle"] as? String ?? "collaborative"
-        let energyLevel = json["energyLevel"] as? String ?? "medium"
-        
-        var participantDynamics: ParticipantDynamics = ParticipantDynamics(
-            dominantSpeaker: "balanced",
-            collaborationLevel: "medium",
-            conflictIndicators: "none"
-        )
-        if let dynamics = json["participantDynamics"] as? [String: String] {
-            participantDynamics.dominantSpeaker = dynamics["dominantSpeaker"] ?? "balanced"
-            participantDynamics.collaborationLevel = dynamics["collaborationLevel"] ?? "medium"
-            participantDynamics.conflictIndicators = dynamics["conflictIndicators"] ?? "none"
-        }
-        
-        let keyObservations = json["keyObservations"] as? [String] ?? ["Analysis completed successfully"]
-        let supportNeeds = json["supportNeeds"] as? [String] ?? []
-        let followUpRecommendations = json["followUpRecommendations"] as? [String] ?? []
-        let riskFactors = json["riskFactors"] as? [String] ?? []
-        let strengths = json["strengths"] as? [String] ?? []
-        
-        return ContextualSentiment(
-            overallSentiment: overallSentiment,
-            sentimentScore: sentimentScore,
-            confidence: confidence,
-            engagementLevel: engagementLevel,
-            relationshipHealth: relationshipHealth,
-            communicationStyle: communicationStyle,
-            energyLevel: energyLevel,
-            participantDynamics: participantDynamics,
-            keyObservations: keyObservations,
-            supportNeeds: supportNeeds,
-            followUpRecommendations: followUpRecommendations,
-            riskFactors: riskFactors,
-            strengths: strengths
-        )
-    }
-    
-    private func extractJSONFromResponse(_ response: String) -> String {
-        // Look for JSON content between curly braces
-        if let startRange = response.range(of: "{"),
-           let endRange = response.range(of: "}", options: .backwards) {
-            return String(response[startRange.lowerBound...endRange.upperBound])
-        }
-        
-        // If no braces found, return the original response
-        return response.trimmingCharacters(in: .whitespacesAndNewlines)
-    }
-    
-    private func createFallbackSentiment(reason: String) -> ContextualSentiment {
-        return ContextualSentiment(
-            overallSentiment: "neutral",
-            sentimentScore: 0.5,
-            confidence: 0.5,
-            engagementLevel: "medium",
-            relationshipHealth: "good",
-            communicationStyle: "collaborative",
-            energyLevel: "medium",
-            participantDynamics: ParticipantDynamics(
-                dominantSpeaker: "balanced",
-                collaborationLevel: "medium",
-                conflictIndicators: "none"
-            ),
-            keyObservations: ["Meeting analysis completed"],
-            supportNeeds: ["Continue regular communication"],
-            followUpRecommendations: ["Schedule follow-up meeting", "Review action items"],
-            riskFactors: [],
-            strengths: ["Active participation", "Clear communication"]
-        )
-    }
-    
-    private func parseParticipantsResponse(_ response: String) -> [ParticipantInfo] {
-        guard let data = response.data(using: .utf8),
-              let participants = try? JSONSerialization.jsonObject(with: data) as? [[String: Any]] else {
-            return []
-        }
-        
-        return participants.compactMap { participant in
-            guard let name = participant["name"] as? String else { return nil }
-            
-            let speakingTime = participant["estimatedSpeakingTime"] as? Double ?? 0.0
-            let messageCount = participant["messageCount"] as? Int ?? 1
-            let sentiment = participant["sentiment"] as? String ?? "neutral"
-            
-            return ParticipantInfo(
-                name: name,
-                speakingTime: speakingTime,
-                messageCount: messageCount,
-                detectedSentiment: sentiment,
-                existingPersonId: nil
-            )
-        }
     }
 }
