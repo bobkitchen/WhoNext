@@ -17,6 +17,7 @@ struct TranscriptReviewView: View {
     @State private var manualSearchQuery: String = ""
     @State private var manualSearchResults: [Person] = []
     @State private var manualParticipants: [ParticipantInfo] = []
+    @State private var autoMatchConfirmed: [String: Bool] = [:]
     
     init(processedTranscript: ProcessedTranscript) {
         self.processedTranscript = processedTranscript
@@ -60,33 +61,7 @@ struct TranscriptReviewView: View {
                             GridItem(.flexible())
                         ], spacing: 12) {
                             ForEach(processedTranscript.participants, id: \.name) { participant in
-                                ParticipantCard(
-                                    participant: participant,
-                                    replacementPerson: participantReplacements[participant.name],
-                                    searchQuery: searchQueries[participant.name] ?? "",
-                                    searchResults: searchResults[participant.name] ?? [],
-                                    onToggle: { isSelected in
-                                        if isSelected {
-                                            selectedParticipants.insert(participant)
-                                        } else {
-                                            selectedParticipants.remove(participant)
-                                        }
-                                    },
-                                    onSearchQueryChanged: { query in
-                                        searchQueries[participant.name] = query
-                                        searchPeople(for: participant.name, query: query)
-                                    },
-                                    onPersonSelected: { person in
-                                        participantReplacements[participant.name] = person
-                                        searchQueries[participant.name] = ""
-                                        searchResults[participant.name] = []
-                                    },
-                                    onClearReplacement: {
-                                        participantReplacements[participant.name] = nil
-                                        searchQueries[participant.name] = ""
-                                        searchResults[participant.name] = []
-                                    }
-                                )
+                                participantCard(for: participant)
                             }
                         }
                     }
@@ -143,22 +118,7 @@ struct TranscriptReviewView: View {
                         GridItem(.flexible())
                     ], spacing: 12) {
                         ForEach(manualParticipants, id: \.name) { participant in
-                            ParticipantCard(
-                                participant: participant,
-                                replacementPerson: participantReplacements[participant.name],
-                                searchQuery: "",
-                                searchResults: [],
-                                onToggle: { isSelected in
-                                    if isSelected {
-                                        selectedParticipants.insert(participant)
-                                    } else {
-                                        selectedParticipants.remove(participant)
-                                    }
-                                },
-                                onSearchQueryChanged: { _ in },
-                                onPersonSelected: { _ in },
-                                onClearReplacement: {}
-                            )
+                            participantCard(for: participant)
                         }
                     }
                 }
@@ -467,7 +427,9 @@ struct TranscriptReviewView: View {
         print("🔗 Linking conversation to \(selectedParticipants.count) participants")
         for participant in selectedParticipants {
             print("🔗 Processing participant: \(participant.name)")
-            let person = participantReplacements[participant.name] ?? findOrCreatePerson(named: participant.name, context: context)
+            let person = participantReplacements[participant.name] ?? 
+                          (participant.existingPersonId != nil ? findPersonById(participant.existingPersonId!) : nil) ??
+                          findOrCreatePerson(named: participant.name, context: context)
             print("🔗 Found/created person: \(person.name ?? "Unknown") (ID: \(person.objectID))")
             
             // For the primary person relationship (maintaining backward compatibility)
@@ -608,6 +570,148 @@ struct TranscriptReviewView: View {
         manualSearchResults = []
     }
     
+    private func findPersonById(_ id: UUID) -> Person? {
+        let context = viewContext.persistentStoreCoordinator != nil ? viewContext : PersistenceController.shared.container.viewContext
+        let request = NSFetchRequest<Person>(entityName: "Person")
+        request.predicate = NSPredicate(format: "identifier == %@", id as CVarArg)
+        request.fetchLimit = 1
+        
+        do {
+            return try context.fetch(request).first
+        } catch {
+            print("❌ Error finding person by ID: \(error)")
+            return nil
+        }
+    }
+    
+    private func participantCard(for participant: ParticipantInfo) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                // Avatar
+                Circle()
+                    .fill(sentimentColor(participant.detectedSentiment))
+                    .frame(width: 40, height: 40)
+                    .overlay(
+                        Text(String(participant.name.prefix(1)))
+                            .font(.headline)
+                            .foregroundColor(.white)
+                    )
+                
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(participant.name)
+                        .font(.headline)
+                    
+                    // Show auto-match status or replacement person
+                    if let replacementPerson = participantReplacements[participant.name] {
+                        Text("Linked to: \(replacementPerson.name ?? "Unknown")")
+                            .font(.caption)
+                            .foregroundColor(.green)
+                    } else if let existingPersonId = participant.existingPersonId {
+                        // Show auto-matched person
+                        if let autoMatchedPerson = findPersonById(existingPersonId) {
+                            HStack {
+                                Image(systemName: "checkmark.circle.fill")
+                                    .foregroundColor(.green)
+                                    .font(.caption)
+                                Text("Auto-matched: \(autoMatchedPerson.name ?? "Unknown")")
+                                    .font(.caption)
+                                    .foregroundColor(.green)
+                            }
+                        }
+                    } else {
+                        Text("Neutral")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                }
+                
+                Spacer()
+                
+                // Checkbox
+                Button(action: {
+                    if selectedParticipants.contains(where: { $0.name == participant.name }) {
+                        selectedParticipants.remove(participant)
+                    } else {
+                        selectedParticipants.insert(participant)
+                    }
+                }) {
+                    Image(systemName: selectedParticipants.contains(where: { $0.name == participant.name }) ? "checkmark.circle.fill" : "circle")
+                        .foregroundColor(selectedParticipants.contains(where: { $0.name == participant.name }) ? .blue : .gray)
+                        .font(.title2)
+                }
+                .buttonStyle(PlainButtonStyle())
+            }
+            .padding(.horizontal)
+            .padding(.vertical, 8)
+            .background(Color.gray.opacity(0.1))
+            .cornerRadius(8)
+            
+            // Search field for this participant (only show if no replacement is set and no auto-match confirmed)
+            if participantReplacements[participant.name] == nil && 
+               !(participant.existingPersonId != nil && autoMatchConfirmed[participant.name] == true) {
+                TextField("Search for correct person...", text: Binding(
+                    get: { searchQueries[participant.name] ?? "" },
+                    set: { newValue in
+                        searchQueries[participant.name] = newValue
+                        searchPeople(for: participant.name, query: newValue)
+                    }
+                ))
+                .textFieldStyle(RoundedBorderTextFieldStyle())
+                .padding(.horizontal)
+                
+                // Search results
+                if let results = searchResults[participant.name], !results.isEmpty {
+                    LazyVStack(alignment: .leading, spacing: 4) {
+                        ForEach(results, id: \.objectID) { person in
+                            Button(action: {
+                                participantReplacements[participant.name] = person
+                                searchQueries[participant.name] = ""
+                                searchResults[participant.name] = []
+                            }) {
+                                HStack {
+                                    Text(person.name ?? "Unknown")
+                                        .foregroundColor(.primary)
+                                    Spacer()
+                                    Text(person.role ?? "")
+                                        .font(.caption)
+                                        .foregroundColor(.secondary)
+                                }
+                                .padding(.horizontal)
+                                .padding(.vertical, 4)
+                                .background(Color.gray.opacity(0.05))
+                                .cornerRadius(4)
+                            }
+                            .buttonStyle(PlainButtonStyle())
+                        }
+                    }
+                    .padding(.horizontal)
+                }
+            }
+            
+            // Auto-match confirmation buttons (only show if auto-matched but not confirmed)
+            if let existingPersonId = participant.existingPersonId,
+               participantReplacements[participant.name] == nil,
+               autoMatchConfirmed[participant.name] != true,
+               let autoMatchedPerson = findPersonById(existingPersonId) {
+                HStack {
+                    Button("Confirm Match") {
+                        autoMatchConfirmed[participant.name] = true
+                        // Set the replacement to the auto-matched person
+                        participantReplacements[participant.name] = autoMatchedPerson
+                    }
+                    .buttonStyle(.borderedProminent)
+                    
+                    Button("Find Different Person") {
+                        // Clear auto-match and show search field
+                        autoMatchConfirmed[participant.name] = false
+                    }
+                    .buttonStyle(.bordered)
+                }
+                .padding(.horizontal)
+            }
+        }
+    }
+    
     // MARK: - Helper Views
     
     struct MetricCard: View {
@@ -708,118 +812,6 @@ struct TranscriptReviewView: View {
         case "medium": return .blue
         case "low": return .gray
         default: return .gray
-        }
-    }
-}
-
-// MARK: - ParticipantCard
-
-struct ParticipantCard: View {
-    let participant: ParticipantInfo
-    let replacementPerson: Person?
-    let searchQuery: String
-    let searchResults: [Person]
-    let onToggle: (Bool) -> Void
-    let onSearchQueryChanged: (String) -> Void
-    let onPersonSelected: (Person) -> Void
-    let onClearReplacement: () -> Void
-    @State private var isSelected = true
-    @State private var localSearchQuery = ""
-    
-    var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack(spacing: 12) {
-                // Avatar placeholder
-                Circle()
-                    .fill(Color.blue.gradient)
-                    .frame(width: 40, height: 40)
-                    .overlay {
-                        Text(participant.name.prefix(1).uppercased())
-                            .font(.headline)
-                            .fontWeight(.semibold)
-                            .foregroundColor(.white)
-                    }
-                
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(participant.name)
-                        .font(.subheadline)
-                        .fontWeight(.medium)
-                    
-                    if let replacementPerson = replacementPerson {
-                        HStack(spacing: 4) {
-                            Image(systemName: "arrow.right")
-                                .font(.caption)
-                            Text(replacementPerson.name ?? "Unknown")
-                                .font(.caption)
-                                .foregroundColor(.blue)
-                        }
-                    }
-                    
-                    Text(participant.detectedSentiment.capitalized)
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                }
-                
-                Spacer()
-                
-                Toggle("", isOn: $isSelected)
-                    .labelsHidden()
-                    .onChange(of: isSelected) { _, newValue in
-                        onToggle(newValue)
-                    }
-            }
-            
-            // Search section
-            if replacementPerson == nil {
-                HStack(spacing: 8) {
-                    TextField("Search for correct person...", text: $localSearchQuery)
-                        .textFieldStyle(.roundedBorder)
-                        .font(.caption)
-                        .onSubmit {
-                            print("🔍 ParticipantCard onSubmit triggered with: '\(localSearchQuery)'")
-                            onSearchQueryChanged(localSearchQuery)
-                        }
-                        .onChange(of: localSearchQuery) { _, newValue in
-                            print("🔍 ParticipantCard search query changed: '\(newValue)'")
-                            if newValue.count > 2 {
-                                print("🔍 Triggering search for: '\(newValue)'")
-                                onSearchQueryChanged(newValue)
-                            }
-                        }
-                    
-                    if !searchResults.isEmpty {
-                        Menu {
-                            ForEach(searchResults.indices, id: \.self) { index in
-                                Button(action: {
-                                    onPersonSelected(searchResults[index])
-                                    localSearchQuery = ""
-                                }) {
-                                    Text(searchResults[index].name ?? "Unknown")
-                                }
-                            }
-                        } label: {
-                            Text("Select (\(searchResults.count))")
-                                .font(.caption)
-                        }
-                        .menuStyle(.borderlessButton)
-                    }
-                }
-            } else {
-                HStack {
-                    Button("Change Person") {
-                        onClearReplacement()
-                        localSearchQuery = ""
-                    }
-                    .buttonStyle(.link)
-                    .font(.caption)
-                }
-            }
-        }
-        .padding(12)
-        .background(Color(.controlBackgroundColor))
-        .cornerRadius(8)
-        .onAppear {
-            localSearchQuery = searchQuery
         }
     }
 }

@@ -9,15 +9,13 @@ class TranscriptImportWindowManager: ObservableObject {
     private init() {}
     
     func presentWindow() {
-        // If window already exists, bring it to front
-        if let existingController = windowController,
-           let window = existingController.window {
-            window.makeKeyAndOrderFront(nil)
-            NSApp.activate(ignoringOtherApps: true)
-            return
+        // Close existing window if it exists to ensure fresh state
+        if let existingController = windowController {
+            existingController.close()
+            windowController = nil
         }
         
-        // Create new window
+        // Always create new window with fresh state
         let contentView = TranscriptImportWindowView()
         let hostingController = NSHostingController(rootView: contentView)
         

@@ -166,18 +166,15 @@ class TranscriptProcessor: ObservableObject {
     
     public func detectTranscriptFormat(_ text: String) -> TranscriptFormat {
         let lowerText = text.lowercased()
+        print("🔍 Detecting transcript format for text preview: \(String(text.prefix(100)))...")
         
         // Check for Zoom patterns
         if lowerText.contains("zoom") || text.contains("00:") || text.contains("PM") || text.contains("AM") {
+            print("🔍 Detected format: .zoom")
             return .zoom
         }
         
-        // Check for Teams patterns
-        if lowerText.contains("teams") || lowerText.contains("microsoft") {
-            return .teams
-        }
-        
-        // Check for speaker patterns (Name: or [Name])
+        // Check for speaker patterns (Name: or [Name]) BEFORE Teams check
         let speakerPatterns = [
             "^[A-Za-z ]+:",
             "\\[[A-Za-z ]+\\]",
@@ -185,26 +182,37 @@ class TranscriptProcessor: ObservableObject {
         ]
         
         for pattern in speakerPatterns {
-            if text.range(of: pattern, options: .regularExpression) != nil {
+            if text.range(of: pattern, options: [.regularExpression]) != nil {
+                print("🔍 Detected format: .generic (matched pattern: \(pattern))")
                 return .generic
             }
         }
         
+        // Check for Teams patterns
+        if lowerText.contains("teams") || lowerText.contains("microsoft") {
+            print("🔍 Detected format: .teams")
+            return .teams
+        }
+        
+        print("🔍 Detected format: .manual")
         return .manual
     }
     
     private func extractParticipantNames(from text: String, format: TranscriptFormat) -> [String] {
         var participants = Set<String>()
         let lines = text.components(separatedBy: .newlines)
+        print("🔍 Extracting participant names from \(lines.count) lines for format: \(format)")
         
         switch format {
         case .zoom, .generic:
             // Look for "Name:" pattern
             for line in lines {
-                if let colonIndex = line.firstIndex(of: ":") {
-                    let name = String(line[..<colonIndex]).trimmingCharacters(in: .whitespacesAndNewlines)
+                let trimmedLine = line.trimmingCharacters(in: .whitespacesAndNewlines)
+                if let colonIndex = trimmedLine.firstIndex(of: ":") {
+                    let name = String(trimmedLine[..<colonIndex]).trimmingCharacters(in: .whitespacesAndNewlines)
                     if isValidParticipantName(name) {
                         participants.insert(name)
+                        print("🔍 Found participant via colon pattern: '\(name)'")
                     }
                 }
             }
@@ -219,30 +227,32 @@ class TranscriptProcessor: ObservableObject {
                         let name = String(text[range]).trimmingCharacters(in: .whitespacesAndNewlines)
                         if isValidParticipantName(name) {
                             participants.insert(name)
+                            print("🔍 Found participant via bracket pattern: '\(name)'")
                         }
                     }
                 }
             }
             
         case .manual:
-            // For manual notes, try to extract from common patterns
-            // Look for "Name said" or "Name mentioned" patterns
-            let namePatterns = [
-                "([A-Z][a-z]+(?:\\s+[A-Z][a-z]+)*) said",
-                "([A-Z][a-z]+(?:\\s+[A-Z][a-z]+)*) mentioned",
-                "([A-Z][a-z]+(?:\\s+[A-Z][a-z]+)*) asked",
-                "([A-Z][a-z]+(?:\\s+[A-Z][a-z]+)*) responded",
-                "([A-Z][a-z]+(?:\\s+[A-Z][a-z]+)*) noted"
+            // For manual notes, try multiple patterns but focus on actual speakers
+            let allPatterns = [
+                // Colon patterns (most reliable for speakers)
+                "^([A-Z][a-z]+(?:\\s+[A-Z][a-z]+)*):",
+                // Dash patterns
+                "^([A-Z][a-z]+(?:\\s+[A-Z][a-z]+)*) -",
+                // Parenthetical patterns for speaker labels
+                "^\\(([A-Z][a-z]+(?:\\s+[A-Z][a-z]+)*)\\)"
             ]
             
-            for pattern in namePatterns {
-                if let regex = try? NSRegularExpression(pattern: pattern) {
+            for pattern in allPatterns {
+                if let regex = try? NSRegularExpression(pattern: pattern, options: [.anchorsMatchLines]) {
                     let matches = regex.matches(in: text, range: NSRange(text.startIndex..., in: text))
                     for match in matches {
                         if let range = Range(match.range(at: 1), in: text) {
                             let name = String(text[range]).trimmingCharacters(in: .whitespacesAndNewlines)
                             if isValidParticipantName(name) {
                                 participants.insert(name)
+                                print("🔍 Found participant via pattern '\(pattern)': '\(name)'")
                             }
                         }
                     }
@@ -270,8 +280,22 @@ class TranscriptProcessor: ObservableObject {
             return false
         }
         
-        // Must contain at least one letter
-        return trimmedName.contains { $0.isLetter }
+        // Must contain at least one letter and be a reasonable name length
+        guard trimmedName.contains(where: { $0.isLetter }),
+              trimmedName.count <= 30 else { // Shorter max length for names
+            return false
+        }
+        
+        // Should not contain quotes or other punctuation that suggests it's content, not a name
+        guard !trimmedName.contains("\""),
+              !trimmedName.contains("'"),
+              !trimmedName.contains("?"),
+              !trimmedName.contains("!"),
+              !trimmedName.contains(".") else {
+            return false
+        }
+        
+        return true
     }
     
     private func estimateDuration(from text: String) -> TimeInterval? {
@@ -292,15 +316,7 @@ class TranscriptProcessor: ObservableObject {
             let participantNames = try await hybridAI.extractParticipants(from: transcript.rawText)
             print("🔍 AI returned \(participantNames.count) participants: \(participantNames)")
             if !participantNames.isEmpty {
-                return participantNames.map { name in
-                    ParticipantInfo(
-                        name: name,
-                        speakingTime: 0.0,
-                        messageCount: 0,
-                        detectedSentiment: "neutral",
-                        existingPersonId: nil
-                    )
-                }
+                return await createParticipantInfoWithMatching(from: participantNames)
             }
         } catch {
             print("🔍 AI participant extraction failed: \(error)")
@@ -310,15 +326,107 @@ class TranscriptProcessor: ObservableObject {
         // Fallback to simple parsing based on transcript format
         let fallbackNames = extractParticipantNames(from: transcript.rawText, format: transcript.detectedFormat)
         print("🔍 Manual parsing found \(fallbackNames.count) participants: \(fallbackNames)")
-        return fallbackNames.map { name in
-            ParticipantInfo(
+        return await createParticipantInfoWithMatching(from: fallbackNames)
+    }
+    
+    private func createParticipantInfoWithMatching(from names: [String]) async -> [ParticipantInfo] {
+        var participantInfos: [ParticipantInfo] = []
+        
+        for name in names {
+            // Skip if this is Bob (the user)
+            if name.lowercased().contains("bob") {
+                print("🔍 Skipping user's own name: \(name)")
+                continue
+            }
+            
+            let matchedPerson = await findBestMatch(for: name)
+            let participantInfo = ParticipantInfo(
                 name: name,
                 speakingTime: 0.0,
                 messageCount: 0,
                 detectedSentiment: "neutral",
-                existingPersonId: nil
+                existingPersonId: matchedPerson?.identifier
             )
+            participantInfos.append(participantInfo)
+            
+            if let match = matchedPerson {
+                print("🔍 Auto-matched '\(name)' to existing person: '\(match.name ?? "Unknown")' (confidence: high)")
+            } else {
+                print("🔍 No match found for '\(name)' - will need manual selection")
+            }
         }
+        
+        return participantInfos
+    }
+    
+    private func findBestMatch(for participantName: String) async -> Person? {
+        return await MainActor.run {
+            let context = PersistenceController.shared.container.viewContext
+            let request = NSFetchRequest<Person>(entityName: "Person")
+            
+            do {
+                let allPeople = try context.fetch(request)
+                print("🔍 Searching \(allPeople.count) people for match to '\(participantName)'")
+                
+                var bestMatch: Person?
+                var bestScore = 0.0
+                
+                for person in allPeople {
+                    guard let personName = person.name else { continue }
+                    
+                    let score = calculateNameSimilarity(participantName, personName)
+                    print("🔍 Comparing '\(participantName)' vs '\(personName)': score \(String(format: "%.2f", score))")
+                    
+                    // Require a minimum confidence threshold
+                    if score > bestScore && score >= 0.7 {
+                        bestScore = score
+                        bestMatch = person
+                    }
+                }
+                
+                if let match = bestMatch {
+                    print("🔍 Best match for '\(participantName)': '\(match.name ?? "Unknown")' (score: \(String(format: "%.2f", bestScore)))")
+                }
+                
+                return bestMatch
+            } catch {
+                print("🔍 Error fetching people for matching: \(error)")
+                return nil
+            }
+        }
+    }
+    
+    private func calculateNameSimilarity(_ name1: String, _ name2: String) -> Double {
+        let cleanName1 = name1.lowercased().trimmingCharacters(in: .whitespacesAndNewlines)
+        let cleanName2 = name2.lowercased().trimmingCharacters(in: .whitespacesAndNewlines)
+        
+        // Exact match
+        if cleanName1 == cleanName2 {
+            return 1.0
+        }
+        
+        // Check if one name contains the other (for first name matches)
+        if cleanName1.contains(cleanName2) || cleanName2.contains(cleanName1) {
+            return 0.8
+        }
+        
+        // Split into components and check for partial matches
+        let components1 = cleanName1.components(separatedBy: .whitespaces)
+        let components2 = cleanName2.components(separatedBy: .whitespaces)
+        
+        var matchingComponents = 0
+        for comp1 in components1 {
+            for comp2 in components2 {
+                if comp1 == comp2 || comp1.contains(comp2) || comp2.contains(comp1) {
+                    matchingComponents += 1
+                    break
+                }
+            }
+        }
+        
+        // Calculate score based on matching components
+        let maxComponents = max(components1.count, components2.count)
+        return Double(matchingComponents) / Double(maxComponents)
     }
     
     private func generateSummary(from transcript: TranscriptData, participants: [ParticipantInfo]) async -> String {

@@ -230,20 +230,36 @@ class HybridAIService: ObservableObject {
             fallthrough
         case .openRouter, .openAI:
             let prompt = """
-            Extract the names of all participants from this meeting transcript.
-            Return only a JSON array of participant names as strings.
+            Extract the names of all SPEAKERS/PARTICIPANTS from this meeting transcript.
+            Only include people who are actually speaking in the meeting, not people mentioned in conversation.
+            Look for names that appear before colons (Name:) or in speaker labels.
+            Do NOT include names that are only mentioned within the conversation content.
+            
+            Return only a JSON array of actual speaker names as strings.
             
             Transcript:
             \(transcript)
             
-            Example response: ["John Smith", "Jane Doe", "Bob Johnson"]
+            Example response: ["John Smith", "Jane Doe"]
+            
+            Only return the JSON array, nothing else.
             """
             
             let response = try await sendMessage(prompt, context: "")
             print("🤖 AI participant extraction response: \(response)")
             
+            // Clean up response - remove markdown code blocks if present
+            let cleanedResponse = response
+                .replacingOccurrences(of: "```json\n", with: "")
+                .replacingOccurrences(of: "```json", with: "")
+                .replacingOccurrences(of: "\n```", with: "")
+                .replacingOccurrences(of: "```", with: "")
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+            
+            print("🤖 Cleaned response: \(cleanedResponse)")
+            
             // Try to parse JSON response
-            guard let data = response.data(using: .utf8) else {
+            guard let data = cleanedResponse.data(using: .utf8) else {
                 print("🤖 Failed to convert response to data")
                 throw HybridAIError.allProvidersFailed
             }
@@ -390,13 +406,19 @@ extension AIService {
     
     func extractParticipants(from transcript: String) async throws -> [String] {
         let prompt = """
-        Extract the names of all participants from this meeting transcript.
-        Return only a JSON array of participant names as strings.
+        Extract the names of all SPEAKERS/PARTICIPANTS from this meeting transcript.
+        Only include people who are actually speaking in the meeting, not people mentioned in conversation.
+        Look for names that appear before colons (Name:) or in speaker labels.
+        Do NOT include names that are only mentioned within the conversation content.
+        
+        Return only a JSON array of actual speaker names as strings.
         
         Transcript:
         \(transcript)
         
-        Example response: ["John Smith", "Jane Doe", "Bob Johnson"]
+        Example response: ["John Smith", "Jane Doe"]
+        
+        Only return the JSON array, nothing else.
         """
         
         let response = try await sendMessage(prompt, context: "")
