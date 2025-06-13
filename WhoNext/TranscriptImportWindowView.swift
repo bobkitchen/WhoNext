@@ -19,6 +19,8 @@ struct TranscriptImportWindowView: View {
                             Button("Back") {
                                 showingReviewScreen = false
                                 self.processedTranscript = nil
+                                transcriptText = ""
+                                processor.error = nil
                             }
                         }
                     }
@@ -146,6 +148,11 @@ struct TranscriptImportWindowView: View {
                     Text(processor.error ?? "")
                 }
             }
+        }
+        .onAppear {
+            transcriptText = ""
+            processedTranscript = nil
+            processor.error = nil
         }
     }
 }

@@ -151,7 +151,11 @@ struct TranscriptInputView: View {
                 Text(processor.error ?? "")
             }
         }
-        .sheet(isPresented: $showingReviewScreen) {
+        .sheet(isPresented: $showingReviewScreen, onDismiss: {
+            processedTranscript = nil
+            transcriptText = ""
+            processor.error = nil
+        }) {
             if let processedTranscript = processedTranscript {
                 TranscriptReviewView(processedTranscript: processedTranscript)
                     .environment(\.managedObjectContext, viewContext)

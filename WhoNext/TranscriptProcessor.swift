@@ -203,7 +203,7 @@ class TranscriptProcessor: ObservableObject {
             for line in lines {
                 if let colonIndex = line.firstIndex(of: ":") {
                     let name = String(line[..<colonIndex]).trimmingCharacters(in: .whitespacesAndNewlines)
-                    if !name.isEmpty && name.count < 50 { // Reasonable name length
+                    if isValidParticipantName(name) {
                         participants.insert(name)
                     }
                 }
@@ -217,17 +217,61 @@ class TranscriptProcessor: ObservableObject {
                 for match in matches {
                     if let range = Range(match.range(at: 1), in: text) {
                         let name = String(text[range]).trimmingCharacters(in: .whitespacesAndNewlines)
-                        participants.insert(name)
+                        if isValidParticipantName(name) {
+                            participants.insert(name)
+                        }
                     }
                 }
             }
             
         case .manual:
-            // For manual notes, we'll let AI extract participants
-            break
+            // For manual notes, try to extract from common patterns
+            // Look for "Name said" or "Name mentioned" patterns
+            let namePatterns = [
+                "([A-Z][a-z]+(?:\\s+[A-Z][a-z]+)*) said",
+                "([A-Z][a-z]+(?:\\s+[A-Z][a-z]+)*) mentioned",
+                "([A-Z][a-z]+(?:\\s+[A-Z][a-z]+)*) asked",
+                "([A-Z][a-z]+(?:\\s+[A-Z][a-z]+)*) responded",
+                "([A-Z][a-z]+(?:\\s+[A-Z][a-z]+)*) noted"
+            ]
+            
+            for pattern in namePatterns {
+                if let regex = try? NSRegularExpression(pattern: pattern) {
+                    let matches = regex.matches(in: text, range: NSRange(text.startIndex..., in: text))
+                    for match in matches {
+                        if let range = Range(match.range(at: 1), in: text) {
+                            let name = String(text[range]).trimmingCharacters(in: .whitespacesAndNewlines)
+                            if isValidParticipantName(name) {
+                                participants.insert(name)
+                            }
+                        }
+                    }
+                }
+            }
         }
         
+        print("🔍 Extracted participants: \(Array(participants).sorted())")
         return Array(participants).sorted()
+    }
+    
+    private func isValidParticipantName(_ name: String) -> Bool {
+        // Filter out common non-names
+        let invalidNames = ["Meeting", "Transcript", "Zoom", "Teams", "Recording", "Host", "Participant", "Unknown", "System", "Admin", "Moderator"]
+        let trimmedName = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        
+        // Basic validation
+        guard !trimmedName.isEmpty,
+              trimmedName.count >= 2,
+              trimmedName.count <= 50,
+              !invalidNames.contains(trimmedName),
+              !trimmedName.contains("@"),
+              !trimmedName.contains("http"),
+              !trimmedName.allSatisfy({ $0.isNumber }) else {
+            return false
+        }
+        
+        // Must contain at least one letter
+        return trimmedName.contains { $0.isLetter }
     }
     
     private func estimateDuration(from text: String) -> TimeInterval? {
@@ -240,20 +284,40 @@ class TranscriptProcessor: ObservableObject {
     // MARK: - AI Processing Methods
     
     private func extractParticipants(from transcript: TranscriptData) async -> [ParticipantInfo] {
+        print("🔍 Starting participant extraction for format: \(transcript.detectedFormat)")
+        print("🔍 Transcript preview: \(String(transcript.rawText.prefix(200)))...")
+        
         do {
+            print("🔍 Attempting AI participant extraction...")
             let participantNames = try await hybridAI.extractParticipants(from: transcript.rawText)
-            return participantNames.map { name in
-                ParticipantInfo(
-                    name: name,
-                    speakingTime: 0.0,
-                    messageCount: 0,
-                    detectedSentiment: "neutral",
-                    existingPersonId: nil
-                )
+            print("🔍 AI returned \(participantNames.count) participants: \(participantNames)")
+            if !participantNames.isEmpty {
+                return participantNames.map { name in
+                    ParticipantInfo(
+                        name: name,
+                        speakingTime: 0.0,
+                        messageCount: 0,
+                        detectedSentiment: "neutral",
+                        existingPersonId: nil
+                    )
+                }
             }
         } catch {
-            print("Failed to extract participants with AI: \(error)")
-            return []
+            print("🔍 AI participant extraction failed: \(error)")
+        }
+        
+        print("🔍 Falling back to manual parsing...")
+        // Fallback to simple parsing based on transcript format
+        let fallbackNames = extractParticipantNames(from: transcript.rawText, format: transcript.detectedFormat)
+        print("🔍 Manual parsing found \(fallbackNames.count) participants: \(fallbackNames)")
+        return fallbackNames.map { name in
+            ParticipantInfo(
+                name: name,
+                speakingTime: 0.0,
+                messageCount: 0,
+                detectedSentiment: "neutral",
+                existingPersonId: nil
+            )
         }
     }
     

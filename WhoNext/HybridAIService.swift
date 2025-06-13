@@ -213,7 +213,10 @@ class HybridAIService: ObservableObject {
     
     // MARK: - Participant Extraction
     func extractParticipants(from transcript: String) async throws -> [String] {
-        switch preferredProvider {
+        let provider = preferredProvider
+        print(" [HybridAI] Preferred provider for participant extraction: \(provider)")
+        
+        switch provider {
         case .appleIntelligence:
             if #available(iOS 18.1, macOS 15.5, *),
                let appleService = appleIntelligenceService {
@@ -226,7 +229,57 @@ class HybridAIService: ObservableObject {
             }
             fallthrough
         case .openRouter, .openAI:
-            return try await aiService.extractParticipants(from: transcript)
+            let prompt = """
+            Extract the names of all participants from this meeting transcript.
+            Return only a JSON array of participant names as strings.
+            
+            Transcript:
+            \(transcript)
+            
+            Example response: ["John Smith", "Jane Doe", "Bob Johnson"]
+            """
+            
+            let response = try await sendMessage(prompt, context: "")
+            print("🤖 AI participant extraction response: \(response)")
+            
+            // Try to parse JSON response
+            guard let data = response.data(using: .utf8) else {
+                print("🤖 Failed to convert response to data")
+                throw HybridAIError.allProvidersFailed
+            }
+            
+            do {
+                let decoder = JSONDecoder()
+                let participants = try decoder.decode([String].self, from: data)
+                print("🤖 Successfully parsed \(participants.count) participants: \(participants)")
+                return participants
+            } catch {
+                print("🤖 JSON parsing failed: \(error)")
+                print("🤖 Raw response was: \(response)")
+                
+                // Try to extract from response manually if JSON parsing fails
+                let lines = response.components(separatedBy: .newlines)
+                var extractedNames: [String] = []
+                
+                for line in lines {
+                    // Look for quoted names
+                    let quotedPattern = "\"([^\"]+)\""
+                    if let regex = try? NSRegularExpression(pattern: quotedPattern) {
+                        let matches = regex.matches(in: line, range: NSRange(line.startIndex..., in: line))
+                        for match in matches {
+                            if let range = Range(match.range(at: 1), in: line) {
+                                let name = String(line[range]).trimmingCharacters(in: .whitespacesAndNewlines)
+                                if name.count > 1 && name.contains(" ") {
+                                    extractedNames.append(name)
+                                }
+                            }
+                        }
+                    }
+                }
+                
+                print("🤖 Manual extraction found \(extractedNames.count) names: \(extractedNames)")
+                return extractedNames
+            }
         case .none:
             throw HybridAIError.noProviderAvailable
         }
@@ -348,7 +401,7 @@ extension AIService {
         
         let response = try await sendMessage(prompt, context: "")
         
-        // Parse JSON response
+        // Try to parse JSON response
         guard let data = response.data(using: .utf8) else {
             throw HybridAIError.allProvidersFailed
         }

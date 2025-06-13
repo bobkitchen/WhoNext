@@ -14,6 +14,9 @@ struct TranscriptReviewView: View {
     @State private var searchQueries: [String: String] = [:]
     @State private var searchResults: [String: [Person]] = [:]
     @State private var showSummaryEditor = false
+    @State private var manualSearchQuery: String = ""
+    @State private var manualSearchResults: [Person] = []
+    @State private var manualParticipants: [ParticipantInfo] = []
     
     init(processedTranscript: ProcessedTranscript) {
         self.processedTranscript = processedTranscript
@@ -47,11 +50,11 @@ struct TranscriptReviewView: View {
                 }
                 
                 // Participants Section
-                if !processedTranscript.participants.isEmpty {
-                    VStack(alignment: .leading, spacing: 12) {
-                        Text("Participants (\(selectedParticipants.count))")
-                            .font(.headline)
-                        
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("Participants (\(selectedParticipants.count))")
+                        .font(.headline)
+                    
+                    if !processedTranscript.participants.isEmpty {
                         LazyVGrid(columns: [
                             GridItem(.flexible()),
                             GridItem(.flexible())
@@ -87,30 +90,75 @@ struct TranscriptReviewView: View {
                             }
                         }
                     }
-                } else {
-                    VStack(alignment: .leading, spacing: 12) {
-                        Text("Participants")
-                            .font(.headline)
-                        
+                    
+                    if selectedParticipants.isEmpty {
                         Text("No participants detected in transcript. You can manually add participants below.")
                             .font(.caption)
                             .foregroundColor(.secondary)
                             .padding()
                             .background(Color.yellow.opacity(0.1))
                             .cornerRadius(8)
-                        
-                        // Simple manual participant addition
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text("Add Participants Manually")
-                                .font(.subheadline)
-                                .fontWeight(.medium)
+                    }
+                    
+                    // Manual search and add section
+                    VStack(alignment: .leading, spacing: 8) {
+                        HStack(spacing: 8) {
+                            TextField("Search for a participant...", text: $manualSearchQuery)
+                                .textFieldStyle(.roundedBorder)
+                                .onSubmit {
+                                    if manualSearchQuery.count > 2 {
+                                        searchPeopleManual(query: manualSearchQuery)
+                                    }
+                                }
+                                .onChange(of: manualSearchQuery) { _, newValue in
+                                    if newValue.count > 2 {
+                                        searchPeopleManual(query: newValue)
+                                    } else {
+                                        manualSearchResults = []
+                                    }
+                                }
                             
-                            Text("Use the search function in the main app to find and add people to this conversation after saving.")
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-                                .padding(8)
-                                .background(Color(.textBackgroundColor))
-                                .cornerRadius(6)
+                            if !manualSearchResults.isEmpty {
+                                Menu {
+                                    ForEach(manualSearchResults.indices, id: \.self) { idx in
+                                        Button(action: {
+                                            let person = manualSearchResults[idx]
+                                            addManualParticipant(for: person)
+                                        }) {
+                                            Text(manualSearchResults[idx].name ?? "Unknown")
+                                        }
+                                    }
+                                } label: {
+                                    Text("Add (\(manualSearchResults.count))")
+                                        .font(.caption)
+                                }
+                                .menuStyle(.borderlessButton)
+                            }
+                        }
+                    }
+                    
+                    // Display manually added participants
+                    LazyVGrid(columns: [
+                        GridItem(.flexible()),
+                        GridItem(.flexible())
+                    ], spacing: 12) {
+                        ForEach(manualParticipants, id: \.name) { participant in
+                            ParticipantCard(
+                                participant: participant,
+                                replacementPerson: participantReplacements[participant.name],
+                                searchQuery: "",
+                                searchResults: [],
+                                onToggle: { isSelected in
+                                    if isSelected {
+                                        selectedParticipants.insert(participant)
+                                    } else {
+                                        selectedParticipants.remove(participant)
+                                    }
+                                },
+                                onSearchQueryChanged: { _ in },
+                                onPersonSelected: { _ in },
+                                onClearReplacement: {}
+                            )
                         }
                     }
                 }
@@ -526,6 +574,38 @@ struct TranscriptReviewView: View {
             print("🔍 Error searching people: \(error)")
             searchResults[participantName] = []
         }
+    }
+    
+    private func searchPeopleManual(query: String) {
+        // Reuse existing Core Data search logic without participant-specific dictionaries
+        let context = viewContext.persistentStoreCoordinator != nil ? viewContext : PersistenceController.shared.container.viewContext
+        if query.isEmpty {
+            manualSearchResults = []
+            return
+        }
+        let request = NSFetchRequest<Person>(entityName: "Person")
+        request.predicate = NSPredicate(format: "name CONTAINS[cd] %@", query)
+        request.sortDescriptors = [NSSortDescriptor(key: "name", ascending: true)]
+        request.fetchLimit = 10
+        do {
+            manualSearchResults = try context.fetch(request)
+        } catch {
+            print("🔍 Error searching manual people: \(error)")
+            manualSearchResults = []
+        }
+    }
+    
+    private func addManualParticipant(for person: Person) {
+        let name = person.name ?? "Unknown"
+        let newParticipant = ParticipantInfo(name: name, speakingTime: 0, messageCount: 0, detectedSentiment: "neutral", existingPersonId: person.identifier)
+        // Avoid duplicates
+        guard !manualParticipants.contains(newParticipant) else { return }
+        manualParticipants.append(newParticipant)
+        selectedParticipants.insert(newParticipant)
+        participantReplacements[name] = person // mark as resolved so inner search hidden
+        // Clear search state
+        manualSearchQuery = ""
+        manualSearchResults = []
     }
     
     // MARK: - Helper Views
