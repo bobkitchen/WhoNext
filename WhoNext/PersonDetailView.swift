@@ -43,98 +43,135 @@ struct PersonDetailView: View {
     }
     
     private var headerView: some View {
-        HStack(alignment: .top, spacing: 20) {
-            // Avatar
+        HStack(alignment: .top, spacing: 24) {
+            // Enhanced Avatar with liquid glass styling
             ZStack {
-                Circle()
-                    .fill(Color(nsColor: .systemGray).opacity(0.15))
-                    .frame(width: 64, height: 64)
-                
                 if let data = person.photo, let image = NSImage(data: data) {
                     Image(nsImage: image)
                         .resizable()
-                        .scaledToFill()
+                        .aspectRatio(contentMode: .fill)
+                        .frame(width: 72, height: 72)
                         .clipShape(Circle())
-                        .frame(width: 64, height: 64)
+                        .overlay {
+                            Circle()
+                                .stroke(.primary.opacity(0.1), lineWidth: 1)
+                        }
+                        .shadow(color: .black.opacity(0.1), radius: 4, x: 0, y: 2)
                 } else {
-                    Text(person.initials)
-                        .font(.system(size: 20, weight: .medium, design: .rounded))
-                        .foregroundColor(.secondary)
+                    Circle()
+                        .fill(Color.accentColor.opacity(0.15))
+                        .frame(width: 72, height: 72)
+                        .overlay {
+                            Circle()
+                                .stroke(Color.accentColor.opacity(0.3), lineWidth: 1)
+                        }
+                        .overlay {
+                            Text(person.initials)
+                                .font(.system(size: 24, weight: .semibold, design: .rounded))
+                                .foregroundStyle(Color.accentColor)
+                        }
+                        .shadow(color: Color.accentColor.opacity(0.2), radius: 4, x: 0, y: 2)
                 }
             }
             
-            // Person Info
-            VStack(alignment: .leading, spacing: 6) {
+            // Person Info with enhanced typography
+            VStack(alignment: .leading, spacing: 8) {
                 Text(person.name ?? "Unnamed")
-                    .font(.system(size: 22, weight: .bold))
-                    .foregroundColor(.primary)
+                    .font(.system(size: 24, weight: .bold, design: .rounded))
+                    .foregroundStyle(.primary)
                 
                 if let role = person.role, !role.isEmpty {
                     Text(role)
-                        .font(.system(size: 14, weight: .medium))
-                        .foregroundColor(.secondary)
+                        .font(.system(size: 15, weight: .medium))
+                        .foregroundStyle(.secondary)
                 }
                 
-                if let timezone = person.timezone, !timezone.isEmpty {
-                    HStack(spacing: 6) {
-                        Image(systemName: "clock")
-                            .font(.system(size: 12))
-                            .foregroundColor(.secondary)
-                        Text(timezone)
-                            .font(.system(size: 12))
-                            .foregroundColor(.secondary)
+                VStack(alignment: .leading, spacing: 4) {
+                    if let timezone = person.timezone, !timezone.isEmpty {
+                        HStack(spacing: 8) {
+                            Image(systemName: "clock.fill")
+                                .font(.system(size: 12, weight: .medium))
+                                .foregroundStyle(.secondary)
+                                .symbolRenderingMode(.hierarchical)
+                            Text(timezone)
+                                .font(.system(size: 13, weight: .medium))
+                                .foregroundStyle(.secondary)
+                        }
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background {
+                            Capsule()
+                                .fill(.secondary.opacity(0.1))
+                        }
                     }
-                }
-                
-                if (person.value(forKey: "isDirectReport") as? Bool) == true {
-                    HStack(spacing: 6) {
-                        Image(systemName: "person.badge.key")
-                            .font(.system(size: 12))
-                            .foregroundColor(.blue)
-                        Text("Direct Report")
-                            .font(.system(size: 12, weight: .medium))
-                            .foregroundColor(.blue)
+                    
+                    if (person.value(forKey: "isDirectReport") as? Bool) == true {
+                        HStack(spacing: 8) {
+                            Image(systemName: "person.badge.key.fill")
+                                .font(.system(size: 12, weight: .medium))
+                                .foregroundStyle(.blue)
+                                .symbolRenderingMode(.hierarchical)
+                            Text("Direct Report")
+                                .font(.system(size: 13, weight: .semibold))
+                                .foregroundStyle(.blue)
+                        }
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background {
+                            Capsule()
+                                .fill(.blue.opacity(0.1))
+                                .overlay {
+                                    Capsule()
+                                        .stroke(.blue.opacity(0.2), lineWidth: 0.5)
+                                }
+                        }
                     }
                 }
             }
             
             Spacer()
             
-            // Action Buttons
-            HStack(spacing: 8) {
-                // LinkedIn Search Button
+            // More subtle and integrated action buttons
+            HStack(spacing: 12) {
                 Button(action: searchLinkedIn) {
                     HStack(spacing: 6) {
                         Image(systemName: "magnifyingglass")
-                            .font(.system(size: 11))
-                        Text("Find on LinkedIn")
                             .font(.system(size: 11, weight: .medium))
+                        Text("LinkedIn")
+                            .font(.system(size: 12, weight: .medium))
                     }
-                    .foregroundColor(.white)
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 6)
-                    .background(Color.blue)
-                    .clipShape(RoundedRectangle(cornerRadius: 6))
+                    .foregroundStyle(.secondary)
                 }
-                .buttonStyle(PlainButtonStyle())
+                .liquidGlassButton(
+                    style: .tertiary,
+                    cornerRadius: 6,
+                    elevation: .low,
+                    padding: EdgeInsets(top: 6, leading: 10, bottom: 6, trailing: 10)
+                )
                 
-                // Edit Button
                 Button(action: openEditWindow) {
                     HStack(spacing: 6) {
                         Image(systemName: "pencil")
-                            .font(.system(size: 11))
-                        Text("Edit")
                             .font(.system(size: 11, weight: .medium))
+                        Text("Edit")
+                            .font(.system(size: 12, weight: .medium))
                     }
-                    .foregroundColor(.white)
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 6)
-                    .background(Color.accentColor)
-                    .clipShape(RoundedRectangle(cornerRadius: 6))
+                    .foregroundStyle(.secondary)
                 }
-                .buttonStyle(PlainButtonStyle())
+                .liquidGlassButton(
+                    style: .tertiary,
+                    cornerRadius: 6,
+                    elevation: .low,
+                    padding: EdgeInsets(top: 6, leading: 10, bottom: 6, trailing: 10)
+                )
             }
         }
+        .liquidGlassCard(
+            cornerRadius: 16,
+            elevation: .medium,
+            padding: EdgeInsets(top: 24, leading: 24, bottom: 24, trailing: 24),
+            isInteractive: false
+        )
     }
     
     @ViewBuilder
@@ -158,7 +195,7 @@ struct PersonDetailView: View {
             
             if let notes = person.notes, !notes.isEmpty {
                 ScrollView {
-                    Text(notes)
+                    Text(AttributedString(MarkdownHelper.attributedString(from: notes)))
                         .font(.system(size: 14))
                         .foregroundColor(.primary)
                         .textSelection(.enabled)
@@ -574,23 +611,31 @@ struct PersonDetailView: View {
     }
     
     private func searchLinkedIn() {
-        // Construct LinkedIn search URL with person's name and role
-        var searchQuery = person.name ?? ""
-        
-        if let role = person.role, !role.isEmpty {
-            searchQuery += " " + role
-        }
-        
-        // URL encode the search query
-        let encodedQuery = searchQuery.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? ""
-        
-        // LinkedIn search URL
-        let linkedInSearchURL = "https://www.linkedin.com/search/results/people/?keywords=\(encodedQuery)"
-        
-        // Open LinkedIn search in default browser
-        if let url = URL(string: linkedInSearchURL) {
-            NSWorkspace.shared.open(url)
-        }
+        // Open LinkedIn capture window
+        let window = NSWindow(
+            contentRect: NSRect(x: 0, y: 0, width: 900, height: 700),
+            styleMask: [.titled, .closable, .resizable],
+            backing: .buffered,
+            defer: false
+        )
+        window.title = "LinkedIn Profile Capture - \(person.name ?? "Unknown")"
+        window.center()
+        window.isReleasedWhenClosed = false
+        window.contentView = NSHostingView(
+            rootView: LinkedInCaptureWindow(
+                person: person,
+                onClose: {
+                    window.close()
+                },
+                onSave: { summary in
+                    // Update person's notes with the captured summary
+                    self.person.notes = summary
+                    try? self.viewContext.save()
+                }
+            )
+            .environment(\.managedObjectContext, viewContext)
+        )
+        window.makeKeyAndOrderFront(nil)
     }
 }
 

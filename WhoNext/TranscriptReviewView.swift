@@ -338,8 +338,10 @@ struct TranscriptReviewView: View {
                 
                 Spacer(minLength: 100)
             }
-            .padding()
+            .padding(24)
         }
+        .frame(minWidth: 800, maxWidth: .infinity, minHeight: 600, maxHeight: .infinity)
+        .background(Color(.windowBackgroundColor))
         .safeAreaInset(edge: .bottom) {
             // Bottom Action Bar
             HStack(spacing: 16) {

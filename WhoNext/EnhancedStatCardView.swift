@@ -19,6 +19,7 @@ struct EnhancedStatCardView: View {
                     .font(.system(size: 20, weight: .semibold))
                     .foregroundColor(color)
                     .symbolRenderingMode(.hierarchical)
+                    .symbolEffect(.pulse.wholeSymbol, options: .repeating, value: animateValue)
                 
                 Spacer()
                 
@@ -40,7 +41,8 @@ struct EnhancedStatCardView: View {
                     .font(.system(size: 28, weight: .bold, design: .rounded))
                     .foregroundColor(.primary)
                     .scaleEffect(animateValue ? 1.05 : 1.0)
-                    .animation(.spring(response: 0.3, dampingFraction: 0.6), value: animateValue)
+                    .animation(.liquidGlassSpring, value: animateValue)
+                    .contentTransition(.numericText())
                 
                 Text(subtitle)
                     .font(.caption)
@@ -48,61 +50,36 @@ struct EnhancedStatCardView: View {
                     .lineLimit(1)
             }
         }
-        .padding(16)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(
-            ZStack {
-                // Base background
-                RoundedRectangle(cornerRadius: 16)
-                    .fill(Color(NSColor.controlBackgroundColor))
-                
-                // Gradient overlay
-                LinearGradient(
-                    colors: [
-                        color.opacity(isHovered ? 0.12 : 0.08),
-                        color.opacity(0.02)
-                    ],
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                )
-                .cornerRadius(16)
-                
-                // Border
-                RoundedRectangle(cornerRadius: 16)
-                    .strokeBorder(
-                        LinearGradient(
-                            colors: [
-                                color.opacity(0.3),
-                                color.opacity(0.1)
-                            ],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        ),
-                        lineWidth: 1
-                    )
-            }
-        )
-        .shadow(
-            color: color.opacity(isHovered ? 0.15 : 0.05),
-            radius: isHovered ? 12 : 8,
-            x: 0,
-            y: isHovered ? 6 : 4
+        .liquidGlassCard(
+            cornerRadius: 16,
+            elevation: isHovered ? .high : .medium,
+            padding: EdgeInsets(top: 20, leading: 20, bottom: 20, trailing: 20),
+            isInteractive: true
         )
         .scaleEffect(isHovered ? 1.02 : 1.0)
-        .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isHovered)
+        .animation(.liquidGlass, value: isHovered)
         .onHover { hovering in
             isHovered = hovering
-            if hovering {
+        }
+        .onAppear {
+            // Animate value on appear
+            withAnimation(.liquidGlass.delay(0.1)) {
                 animateValue = true
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+            }
+            
+            // Reset animation after a delay
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                withAnimation(.liquidGlass) {
                     animateValue = false
                 }
             }
         }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(title): \(value)")
+        .accessibilityHint(subtitle)
     }
 }
 
-// Enhanced Circular Progress Indicator
 struct CircularProgressView: View {
     let progress: Double
     let color: Color
@@ -113,59 +90,45 @@ struct CircularProgressView: View {
         ZStack {
             // Background circle
             Circle()
-                .stroke(color.opacity(0.15), lineWidth: 4)
+                .stroke(color.opacity(0.2), lineWidth: 3)
             
-            // Progress circle with gradient and glow
+            // Progress circle
             Circle()
                 .trim(from: 0, to: animatedProgress)
                 .stroke(
                     AngularGradient(
-                        colors: [
-                            color,
-                            color.opacity(0.8),
-                            color,
-                            color.opacity(0.6)
-                        ],
+                        gradient: Gradient(colors: [color.opacity(0.5), color]),
                         center: .center,
-                        startAngle: .degrees(0),
-                        endAngle: .degrees(360)
+                        startAngle: .degrees(-90),
+                        endAngle: .degrees(270)
                     ),
-                    style: StrokeStyle(lineWidth: 4, lineCap: .round)
+                    style: StrokeStyle(lineWidth: 3, lineCap: .round)
                 )
                 .rotationEffect(.degrees(-90))
-                .shadow(color: color.opacity(0.3), radius: 2, x: 0, y: 0)
-                .scaleEffect(isAnimating ? 1.05 : 1.0)
-                .animation(.easeInOut(duration: 0.1).repeatCount(1), value: isAnimating)
+                .animation(.liquidGlassSpring.delay(0.2), value: animatedProgress)
             
-            // Percentage text
+            // Center text
             Text("\(Int(progress * 100))%")
-                .font(.system(size: 10, weight: .bold, design: .rounded))
+                .font(.system(size: 10, weight: .semibold, design: .rounded))
                 .foregroundColor(color)
                 .scaleEffect(isAnimating ? 1.1 : 1.0)
-                .animation(.easeInOut(duration: 0.1).repeatCount(1), value: isAnimating)
+                .animation(.liquidGlassSpring, value: isAnimating)
         }
         .onAppear {
-            withAnimation(.spring(response: 0.8, dampingFraction: 0.6).delay(0.2)) {
+            withAnimation(.liquidGlassSpring.delay(0.3)) {
                 animatedProgress = progress
+                isAnimating = true
             }
             
-            // Pulse animation on appear
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                isAnimating = true
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                withAnimation(.liquidGlass) {
                     isAnimating = false
                 }
             }
         }
-        .onChange(of: progress) { oldValue, newProgress in
-            withAnimation(.spring(response: 0.6, dampingFraction: 0.8)) {
+        .onChange(of: progress) { newProgress in
+            withAnimation(.liquidGlass) {
                 animatedProgress = newProgress
-            }
-            
-            // Pulse on change
-            isAnimating = true
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
-                isAnimating = false
             }
         }
     }

@@ -186,10 +186,24 @@ Best regards
     private func automateEmailCreation(person: Person, subject: String, body: String) {
         print("Starting keyboard automation")
         
+        // Check if we have accessibility permissions
+        let trusted = AXIsProcessTrusted()
+        if !trusted {
+            print("❌ Accessibility permissions not granted - falling back to AppleScript")
+            print("⏳ Waiting additional time for Outlook to be fully ready...")
+            DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
+                self.automateWithAppleScript(person: person, subject: subject, body: body)
+            }
+            return
+        }
+        
         // Create CGEventSource
         guard let eventSource = CGEventSource(stateID: .hidSystemState) else {
             print("Failed to create event source")
-            fallbackToCopyPaste(subject: subject, body: body)
+            print("⏳ Waiting additional time for Outlook to be fully ready...")
+            DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
+                self.automateWithAppleScript(person: person, subject: subject, body: body)
+            }
             return
         }
         
@@ -245,6 +259,56 @@ Best regards
                     }
                 }
             }
+        }
+    }
+    
+    private func automateWithAppleScript(person: Person, subject: String, body: String) {
+        print("🍎 Using AppleScript automation for Outlook")
+        
+        // Generate email address from person's name
+        let nameParts = (person.name ?? "").components(separatedBy: " ")
+        let firstName = nameParts.first?.lowercased() ?? ""
+        let lastName = nameParts.count > 1 ? nameParts.last?.lowercased() ?? "" : ""
+        let emailAddress = "\(firstName).\(lastName)@rescue.org"
+        
+        executeAppleScript(person: person, emailAddress: emailAddress, subject: subject, body: body)
+    }
+    
+    private func executeAppleScript(person: Person, emailAddress: String, subject: String, body: String) {
+        // Create AppleScript to automate email creation
+        let script = """
+        tell application "Microsoft Outlook"
+            activate
+            delay 5
+            try
+                set newMessage to make new outgoing message with properties {subject:"\(subject)"}
+                tell newMessage
+                    make new recipient at end of to recipients with properties {email address:{address:"\(emailAddress)"}}
+                    set content to "\(body)"
+                end tell
+                open newMessage
+            on error errMsg
+                -- If direct approach fails, try using System Events
+                tell application "System Events"
+                    tell process "Microsoft Outlook"
+                        key code 45 using command down -- Cmd+N for new email
+                    end tell
+                end tell
+            end try
+        end tell
+        """
+        
+        // Run AppleScript
+        var error: NSDictionary?
+        let scriptObject = NSAppleScript(source: script)
+        scriptObject?.executeAndReturnError(&error)
+        
+        if let error = error {
+            print("❌ AppleScript error: \(error)")
+            print("🔄 Falling back to clipboard method")
+            fallbackToCopyPaste(subject: subject, body: body)
+        } else {
+            print("✅ AppleScript email creation successful")
         }
     }
     

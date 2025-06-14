@@ -20,7 +20,7 @@ class TranscriptImportWindowManager: ObservableObject {
         let hostingController = NSHostingController(rootView: contentView)
         
         let window = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 800, height: 600),
+            contentRect: NSRect(x: 0, y: 0, width: 1200, height: 800),
             styleMask: [.titled, .closable, .miniaturizable, .resizable],
             backing: .buffered,
             defer: false
@@ -29,10 +29,16 @@ class TranscriptImportWindowManager: ObservableObject {
         window.title = "Import Transcript"
         window.contentViewController = hostingController
         window.center()
+        
+        // Clear any saved frame and set new size
+        UserDefaults.standard.removeObject(forKey: "NSWindow Frame TranscriptImportWindow")
+        window.setFrame(NSRect(x: 0, y: 0, width: 1200, height: 800), display: false)
+        window.center()
         window.setFrameAutosaveName("TranscriptImportWindow")
         
-        // Set minimum size
-        window.minSize = NSSize(width: 600, height: 400)
+        // Set minimum and preferred size
+        window.minSize = NSSize(width: 900, height: 600)
+        window.maxSize = NSSize(width: 1600, height: 1200)
         
         windowController = NSWindowController(window: window)
         windowController?.showWindow(nil)

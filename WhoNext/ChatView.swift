@@ -290,10 +290,11 @@ struct ChatView: View {
                     .disabled(chatSession.inputText.isEmpty || chatSession.isLoading)
                 }
                 .padding(12)
-                .background(
-                    RoundedRectangle(cornerRadius: 16)
-                        .fill(Color(NSColor.controlBackgroundColor))
-                        .shadow(color: .black.opacity(0.05), radius: 5, x: 0, y: -2)
+                .liquidGlassCard(
+                    cornerRadius: 16,
+                    elevation: .medium,
+                    padding: EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0),
+                    isInteractive: false
                 )
                 .padding(.horizontal, 12)
                 .padding(.bottom, 4)

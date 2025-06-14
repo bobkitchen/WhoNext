@@ -9,6 +9,7 @@ struct PersonEditView: View {
     @State private var editingName: String = ""
     @State private var editingRole: String = ""
     @State private var editingTimezone: String = ""
+    @State private var showingTimezoneDropdown: Bool = false
     @State private var editingNotes: String = ""
     @State private var isDirectReport: Bool = false
     @State private var editingPhotoData: Data? = nil
@@ -20,15 +21,7 @@ struct PersonEditView: View {
     var onCancel: (() -> Void)?
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 24) {
-            // Header
-            HStack {
-                Text("Edit Person")
-                    .font(.system(size: 20, weight: .bold))
-                Spacer()
-            }
-            .padding(.bottom, 8)
-            
+        VStack(alignment: .leading, spacing: 20) {
             ScrollView {
                 VStack(alignment: .leading, spacing: 20) {
                     // Photo Section
@@ -114,8 +107,47 @@ struct PersonEditView: View {
                                 Text("Timezone")
                                     .font(.system(size: 14, weight: .medium))
                                     .foregroundColor(.secondary)
-                                TextField("Enter timezone", text: $editingTimezone)
-                                    .textFieldStyle(.roundedBorder)
+                                
+                                VStack(alignment: .leading, spacing: 0) {
+                                    TextField("Type to search timezone", text: $editingTimezone)
+                                        .textFieldStyle(.roundedBorder)
+                                        .onChange(of: editingTimezone) { _ in
+                                            showingTimezoneDropdown = !editingTimezone.isEmpty && !filteredTimezones.isEmpty
+                                        }
+                                    
+                                    if showingTimezoneDropdown && !filteredTimezones.isEmpty {
+                                        ScrollView {
+                                            LazyVStack(alignment: .leading, spacing: 2) {
+                                                ForEach(filteredTimezones.prefix(8), id: \.self) { timezone in
+                                                    Button(action: {
+                                                        editingTimezone = timezone
+                                                        showingTimezoneDropdown = false
+                                                    }) {
+                                                        Text(timezone)
+                                                            .font(.system(size: 13))
+                                                            .foregroundColor(.primary)
+                                                            .frame(maxWidth: .infinity, alignment: .leading)
+                                                            .padding(.horizontal, 8)
+                                                            .padding(.vertical, 4)
+                                                    }
+                                                    .buttonStyle(PlainButtonStyle())
+                                                    .background(Color.clear)
+                                                    .onHover { isHovered in
+                                                        // Add hover effect if needed
+                                                    }
+                                                }
+                                            }
+                                        }
+                                        .frame(maxHeight: 120)
+                                        .background(Color(nsColor: .controlBackgroundColor))
+                                        .clipShape(RoundedRectangle(cornerRadius: 6))
+                                        .overlay(
+                                            RoundedRectangle(cornerRadius: 6)
+                                                .stroke(Color.gray.opacity(0.3), lineWidth: 1)
+                                        )
+                                        .padding(.top, 2)
+                                    }
+                                }
                             }
                             
                             Toggle("Direct Report", isOn: $isDirectReport)
@@ -158,16 +190,41 @@ struct PersonEditView: View {
                             .transition(.opacity.combined(with: .scale))
                         }
                         
-                        TextEditor(text: $editingNotes)
-                            .font(.system(size: 14))
-                            .frame(minHeight: showingLinkedInDropZone ? 100 : 120)
-                            .padding(8)
-                            .background(Color(nsColor: .textBackgroundColor))
-                            .clipShape(RoundedRectangle(cornerRadius: 8))
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 8)
-                                    .stroke(Color.gray.opacity(0.3), lineWidth: 1)
-                            )
+                        // Markdown Preview (if notes contain markdown formatting)
+                        if !editingNotes.isEmpty && editingNotes.contains("**") {
+                            VStack(alignment: .leading, spacing: 8) {
+                                Text("Preview:")
+                                    .font(.system(size: 12, weight: .semibold))
+                                    .foregroundStyle(.secondary)
+                                
+                                ScrollView {
+                                    Text(AttributedString(MarkdownHelper.attributedString(from: editingNotes)))
+                                        .font(.system(size: 14))
+                                        .textSelection(.enabled)
+                                        .frame(maxWidth: .infinity, alignment: .leading)
+                                        .padding(12)
+                                }
+                                .frame(minHeight: 200)
+                                .background(Color(nsColor: .controlBackgroundColor))
+                                .clipShape(RoundedRectangle(cornerRadius: 8))
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 8)
+                                        .stroke(Color.gray.opacity(0.2), lineWidth: 1)
+                                )
+                            }
+                        } else {
+                            // Show TextEditor only when no markdown formatting is detected
+                            TextEditor(text: $editingNotes)
+                                .font(.system(size: 14))
+                                .frame(minHeight: 200)
+                                .padding(8)
+                                .background(Color(nsColor: .textBackgroundColor))
+                                .clipShape(RoundedRectangle(cornerRadius: 8))
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 8)
+                                        .stroke(Color.gray.opacity(0.3), lineWidth: 1)
+                                )
+                        }
                         
                         // Helper text
                         if !showingLinkedInDropZone {
@@ -214,6 +271,14 @@ struct PersonEditView: View {
         }
         .onAppear {
             loadPersonData()
+        }
+    }
+    
+    var filteredTimezones: [String] {
+        if editingTimezone.isEmpty {
+            return TimeZone.knownTimeZoneIdentifiers.sorted()
+        } else {
+            return TimeZone.knownTimeZoneIdentifiers.sorted().filter { $0.lowercased().contains(editingTimezone.lowercased()) }
         }
     }
     

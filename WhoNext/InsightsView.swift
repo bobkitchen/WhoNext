@@ -30,13 +30,15 @@ struct InsightsView: View {
                 HStack(alignment: .top, spacing: 24) {
                     ChatView()
                         .frame(minWidth: 400, maxHeight: 480)
-                        .padding()
-                        .background(Color(NSColor.controlBackgroundColor))
-                        .cornerRadius(16)
-                        .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 2)
+                        .liquidGlassCard(
+                            cornerRadius: 20,
+                            elevation: .medium,
+                            padding: EdgeInsets(top: 20, leading: 20, bottom: 20, trailing: 20),
+                            isInteractive: true
+                        )
                         .alignmentGuide(.top) { d in d[.top] } // Align top with cards
                     
-                    VStack(spacing: 24) {
+                    VStack(spacing: 20) {
                         EnhancedStatCardView(
                             icon: "flag.fill",
                             title: "Cycle Progress",
@@ -67,61 +69,77 @@ struct InsightsView: View {
                 
                 // Upcoming 1:1s Section
                 VStack(alignment: .leading, spacing: 16) {
-                    HStack(spacing: 8) {
-                        Image("icon_calendar")
-                            .resizable()
-                            .frame(width: 24, height: 24)
-                        Text("Upcoming 1:1s")
+                    HStack(spacing: 12) {
+                        Image(systemName: "calendar.badge.clock")
+                            .font(.system(size: 20, weight: .medium))
+                            .foregroundStyle(Color.accentColor)
+                            .symbolRenderingMode(.hierarchical)
                         
-                        if !upcomingMeetingsThisWeek.isEmpty {
-                            Text("(\(min(upcomingMeetingsThisWeek.count, 2)))")
-                                .foregroundColor(.secondary)
-                        }
+                        Text("Upcoming 1:1s")
+                            .font(.system(size: 20, weight: .semibold, design: .rounded))
+                            .foregroundStyle(.primary)
+                        
+                        Text("(\(upcomingMeetingsThisWeek.count))")
+                            .font(.system(size: 16, weight: .medium, design: .rounded))
+                            .foregroundStyle(.secondary)
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 4)
+                            .background {
+                                Capsule()
+                                    .fill(.secondary.opacity(0.1))
+                            }
+                        
+                        Spacer()
                     }
-                    .font(.system(size: 20, weight: .semibold, design: .rounded))
+                    .liquidGlassSectionHeader()
                     
                     if upcomingMeetingsThisWeek.isEmpty {
-                        HStack {
-                            Spacer()
-                            VStack(spacing: 8) {
-                                Image(systemName: "calendar")
-                                    .font(.system(size: 32))
-                                    .foregroundColor(.blue.opacity(0.5))
-                                Text("No meetings scheduled")
-                                    .foregroundStyle(.secondary)
-                            }
-                            .padding(.vertical, 20)
-                            Spacer()
+                        VStack(spacing: 12) {
+                            Image(systemName: "calendar.badge.clock")
+                                .font(.system(size: 32, weight: .light))
+                                .foregroundStyle(.secondary)
+                                .symbolRenderingMode(.hierarchical)
+                            
+                            Text("No upcoming meetings")
+                                .font(.system(size: 16, weight: .medium))
+                                .foregroundStyle(.secondary)
+                            
+                            Text("Your calendar is clear for this week")
+                                .font(.system(size: 14))
+                                .foregroundStyle(.tertiary)
                         }
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 32)
+                        .liquidGlassCard(
+                            cornerRadius: 16,
+                            elevation: .low,
+                            padding: EdgeInsets(top: 24, leading: 24, bottom: 24, trailing: 24),
+                            isInteractive: false
+                        )
                     } else {
                         LazyVGrid(columns: [
                             GridItem(.flexible(), spacing: 16),
                             GridItem(.flexible(), spacing: 16)
                         ], spacing: 16) {
-                            ForEach(Array(upcomingMeetingsThisWeek.prefix(2))) { meeting in
+                            ForEach(upcomingMeetingsThisWeek, id: \.id) { meeting in
                                 UpcomingMeetingCard(
                                     meeting: meeting,
                                     matchedPerson: people.first { person in
-                                        guard let personName = person.name else { return false }
-                                        return meeting.title.localizedCaseInsensitiveContains(personName) ||
-                                               (meeting.attendees?.contains { attendee in
-                                                   attendee.localizedCaseInsensitiveContains(personName)
-                                               } ?? false)
-                                    },
-                                    onSelect: {
-                                        if let matchedPerson = people.first(where: { person in
-                                            guard let personName = person.name else { return false }
-                                            return meeting.title.localizedCaseInsensitiveContains(personName) ||
-                                                   (meeting.attendees?.contains { attendee in
-                                                       attendee.localizedCaseInsensitiveContains(personName)
-                                                   } ?? false)
-                                        }) {
-                                            selectedPerson = matchedPerson
-                                            selectedPersonID = matchedPerson.identifier
-                                            selectedTab = .people
-                                        }
+                                        meeting.attendees?.contains { attendee in
+                                            attendee.lowercased().contains(person.name?.lowercased() ?? "")
+                                        } ?? false
                                     }
-                                )
+                                ) {
+                                    if let matchedPerson = people.first(where: { person in
+                                        meeting.attendees?.contains { attendee in
+                                            attendee.lowercased().contains(person.name?.lowercased() ?? "")
+                                        } ?? false
+                                    }) {
+                                        selectedPerson = matchedPerson
+                                        selectedPersonID = matchedPerson.identifier
+                                        selectedTab = .people
+                                    }
+                                }
                             }
                         }
                     }
@@ -570,95 +588,92 @@ Best regards
             
             // Wait for Outlook to be ready, then automate
             DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
-                self.automateEmailCreation(subject: subject, body: body)
+                self.waitForOutlookAndExecute(subject: subject, body: body)
             }
         }
     }
     
-    private func automateEmailCreation(subject: String, body: String) {
-        print("Starting keyboard automation")
+    private func waitForOutlookAndExecute(subject: String, body: String, attempt: Int = 1) {
+        print("🔍 Checking if Outlook is ready (attempt \(attempt)/5)...")
         
-        // Create CGEventSource
-        guard let eventSource = CGEventSource(stateID: .hidSystemState) else {
-            print("Failed to create event source")
+        // Check if Outlook is running using NSWorkspace
+        let runningApps = NSWorkspace.shared.runningApplications
+        let outlookRunning = runningApps.contains { app in
+            app.bundleIdentifier == "com.microsoft.Outlook" && app.isActive
+        }
+        
+        if outlookRunning {
+            print("✅ Outlook is running and active - proceeding with AppleScript")
+            executeAppleScript(emailAddress: "\(person.name?.components(separatedBy: " ").first?.lowercased() ?? "").\(person.name?.components(separatedBy: " ").last?.lowercased() ?? "")@rescue.org", subject: subject, body: body)
+        } else if attempt < 5 {
+            print("⏳ Outlook not ready yet, waiting 2 seconds... (attempt \(attempt)/5)")
+            DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
+                self.waitForOutlookAndExecute(subject: subject, body: body, attempt: attempt + 1)
+            }
+        } else {
+            print("❌ Outlook failed to become ready after 5 attempts - falling back to clipboard")
+            fallbackToClipboard(subject: subject, body: body)
+        }
+    }
+    
+    private func executeAppleScript(emailAddress: String, subject: String, body: String) {
+        print("🍎 Using AppleScript automation for Outlook")
+        
+        // Check if we have accessibility permissions for System Events
+        let trusted = AXIsProcessTrusted()
+        if !trusted {
+            print("❌ Accessibility permissions required for System Events - falling back to clipboard")
             fallbackToClipboard(subject: subject, body: body)
             return
         }
         
-        // Helper function to create and post keyboard events
-        func sendKeyboardShortcut(keyCode: CGKeyCode, flags: CGEventFlags) {
-            guard let keyDown = CGEvent(keyboardEventSource: eventSource, virtualKey: keyCode, keyDown: true),
-                  let keyUp = CGEvent(keyboardEventSource: eventSource, virtualKey: keyCode, keyDown: false) else {
-                return
+        let appleScript = """
+        tell application "System Events"
+            tell process "Microsoft Outlook"
+                -- Bring Outlook to front
+                set frontmost to true
+                delay 2
+                
+                -- Send Cmd+N to create new email
+                key code 45 using command down
+                delay 3
+                
+                -- Type email address (cursor should be in To field)
+                keystroke "\(emailAddress)"
+                delay 1
+                
+                -- Tab to subject field
+                key code 48
+                delay 0.5
+                
+                -- Type subject
+                keystroke "\(subject)"
+                delay 0.5
+                
+                -- Tab to body field
+                key code 48
+                delay 0.5
+                
+                -- Type body
+                keystroke "\(body)"
+            end tell
+        end tell
+        """
+        
+        var error: NSDictionary?
+        if let scriptObject = NSAppleScript(source: appleScript) {
+            let output = scriptObject.executeAndReturnError(&error)
+            if let error = error {
+                print("❌ AppleScript error: \(error)")
+                print("🔄 Falling back to clipboard method")
+                fallbackToClipboard(subject: subject, body: body)
+            } else {
+                print("✅ AppleScript email creation successful")
             }
-            keyDown.flags = flags
-            keyUp.flags = flags
-            keyDown.post(tap: .cghidEventTap)
-            keyUp.post(tap: .cghidEventTap)
-            Thread.sleep(forTimeInterval: 0.1)
+        } else {
+            print("❌ Failed to create AppleScript")
+            fallbackToClipboard(subject: subject, body: body)
         }
-        
-        // Helper function to type text
-        func typeText(_ text: String) {
-            for char in text {
-                if let event = CGEvent(keyboardEventSource: eventSource, virtualKey: 0, keyDown: true) {
-                    event.keyboardSetUnicodeString(stringLength: 1, unicodeString: [char.utf16.first!])
-                    event.post(tap: .cghidEventTap)
-                }
-                if let event = CGEvent(keyboardEventSource: eventSource, virtualKey: 0, keyDown: false) {
-                    event.keyboardSetUnicodeString(stringLength: 1, unicodeString: [char.utf16.first!])
-                    event.post(tap: .cghidEventTap)
-                }
-                Thread.sleep(forTimeInterval: 0.01)
-            }
-        }
-        
-        // Send Cmd+N to create new email
-        print("Sending Cmd+N to create new email")
-        sendKeyboardShortcut(keyCode: 45, flags: .maskCommand) // 45 is 'N'
-        
-        // Wait for new email window
-        Thread.sleep(forTimeInterval: 1.5)
-        
-        // Click or ensure focus is in To: field
-        // Send Tab then Shift+Tab to ensure we're in the first field (To:)
-        print("Ensuring focus in To: field")
-        sendKeyboardShortcut(keyCode: 48, flags: []) // Tab
-        Thread.sleep(forTimeInterval: 0.1)
-        sendKeyboardShortcut(keyCode: 48, flags: .maskShift) // Shift+Tab back to To:
-        Thread.sleep(forTimeInterval: 0.2)
-        
-        // Generate email address from person's name
-        let nameParts = (person.name ?? "").components(separatedBy: " ")
-        let firstName = nameParts.first?.lowercased() ?? ""
-        let lastName = nameParts.count > 1 ? nameParts.last?.lowercased() ?? "" : ""
-        let emailAddress = "\(firstName).\(lastName)@rescue.org"
-        
-        // Type email address in To: field (cursor starts there)
-        print("Typing email address: \(emailAddress)")
-        typeText(emailAddress)
-        Thread.sleep(forTimeInterval: 0.3)
-        
-        // Tab to subject field
-        print("Tabbing to subject field")
-        sendKeyboardShortcut(keyCode: 48, flags: []) // 48 is Tab
-        Thread.sleep(forTimeInterval: 0.2)
-        
-        // Type subject
-        print("Typing subject")
-        typeText(subject)
-        Thread.sleep(forTimeInterval: 0.2)
-        
-        // Tab to body field
-        print("Tabbing to body field")
-        sendKeyboardShortcut(keyCode: 48, flags: []) // 48 is Tab
-        Thread.sleep(forTimeInterval: 0.2)
-        
-        // Type body
-        print("Typing body")
-        typeText(body)
-        
-        print("Email automation completed")
     }
     
     private func fallbackToClipboard(subject: String, body: String) {
@@ -674,7 +689,7 @@ Best regards
         if let outlookURL = workspace.urlForApplication(withBundleIdentifier: outlookBundleID) {
             workspace.openApplication(at: outlookURL, configuration: NSWorkspace.OpenConfiguration()) { _, _ in
                 DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
-                    showEmailInstructions = true
+                    self.showEmailInstructions = true
                 }
             }
         }
@@ -864,112 +879,137 @@ struct UpcomingMeetingCard: View {
     }
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: 16) {
             HStack(spacing: 12) {
-                // Avatar or icon with calendar indicator
+                // Enhanced Avatar with liquid glass styling
                 ZStack(alignment: .bottomTrailing) {
                     if let person = matchedPerson {
-                        Circle()
-                            .fill(LinearGradient(
-                                colors: [Color.blue, Color.blue.opacity(0.7)],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            ))
-                            .frame(width: 40, height: 40)
-                            .overlay(
-                                Text(person.initials)
-                                    .foregroundColor(.white)
-                                    .font(.system(size: 16, weight: .medium))
-                            )
+                        if let photoData = person.photo, let nsImage = NSImage(data: photoData) {
+                            Image(nsImage: nsImage)
+                                .resizable()
+                                .aspectRatio(contentMode: .fill)
+                                .frame(width: 44, height: 44)
+                                .clipShape(Circle())
+                                .overlay {
+                                    Circle()
+                                        .stroke(.primary.opacity(0.1), lineWidth: 0.5)
+                                }
+                        } else {
+                            Circle()
+                                .fill(Color.accentColor.opacity(0.15))
+                                .frame(width: 44, height: 44)
+                                .overlay {
+                                    Circle()
+                                        .stroke(Color.accentColor.opacity(0.3), lineWidth: 1)
+                                }
+                                .overlay {
+                                    Text(person.initials)
+                                        .font(.system(size: 16, weight: .semibold, design: .rounded))
+                                        .foregroundStyle(Color.accentColor)
+                                }
+                        }
                     } else {
                         Circle()
-                            .fill(Color.gray.opacity(0.2))
-                            .frame(width: 40, height: 40)
-                            .overlay(
+                            .fill(.secondary.opacity(0.1))
+                            .frame(width: 44, height: 44)
+                            .overlay {
+                                Circle()
+                                    .stroke(.secondary.opacity(0.2), lineWidth: 1)
+                            }
+                            .overlay {
                                 Image(systemName: "person.fill")
-                                    .font(.system(size: 20))
-                                    .foregroundColor(.gray)
-                            )
+                                    .font(.system(size: 18, weight: .medium))
+                                    .foregroundStyle(.secondary)
+                            }
                     }
                     
-                    // Calendar indicator
+                    // Enhanced calendar indicator
                     Circle()
-                        .fill(Color.green)
-                        .frame(width: 12, height: 12)
-                        .overlay(
+                        .fill(.green)
+                        .frame(width: 14, height: 14)
+                        .overlay {
                             Circle()
-                                .stroke(Color(NSColor.controlBackgroundColor), lineWidth: 2)
-                        )
+                                .stroke(.background, lineWidth: 2)
+                        }
+                        .shadow(color: .green.opacity(0.3), radius: 2, x: 0, y: 1)
                 }
                 
                 VStack(alignment: .leading, spacing: 4) {
                     Text(meeting.title)
-                        .font(.system(size: 14, weight: .semibold))
-                        .foregroundColor(.primary)
-                        .lineLimit(1)
+                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundStyle(.primary)
+                        .lineLimit(2)
+                        .multilineTextAlignment(.leading)
                     
                     if let person = matchedPerson {
                         if let role = person.role, !role.isEmpty {
                             Text(role)
-                                .font(.caption)
-                                .foregroundColor(.secondary)
+                                .font(.system(size: 12, weight: .medium))
+                                .foregroundStyle(.secondary)
                                 .lineLimit(1)
                         }
                     } else {
                         Text("External meeting")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
+                            .font(.system(size: 12, weight: .medium))
+                            .foregroundStyle(.secondary)
                     }
                 }
                 
                 Spacer()
             }
             
-            Divider()
-                .opacity(0.5)
-            
-            // Time and date info
-            HStack {
-                Image(systemName: "clock.fill")
-                    .font(.caption)
-                    .foregroundColor(.orange)
-                
-                Text(timeUntilMeeting)
-                    .font(.caption)
-                    .fontWeight(.medium)
-                    .foregroundColor(.orange)
+            // Enhanced time and date info
+            HStack(spacing: 8) {
+                HStack(spacing: 6) {
+                    Image(systemName: "clock.fill")
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundStyle(.orange)
+                        .symbolRenderingMode(.hierarchical)
+                    
+                    Text(timeUntilMeeting)
+                        .font(.system(size: 12, weight: .semibold, design: .rounded))
+                        .foregroundStyle(.orange)
+                }
+                .padding(.horizontal, 8)
+                .padding(.vertical, 4)
+                .background {
+                    Capsule()
+                        .fill(.orange.opacity(0.1))
+                        .overlay {
+                            Capsule()
+                                .stroke(.orange.opacity(0.2), lineWidth: 0.5)
+                        }
+                }
                 
                 Spacer()
                 
                 Text(meeting.startDate, style: .time)
-                    .font(.caption2)
-                    .foregroundColor(.secondary)
+                    .font(.system(size: 12, weight: .medium, design: .rounded))
+                    .foregroundStyle(.secondary)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background {
+                        Capsule()
+                            .fill(.secondary.opacity(0.08))
+                    }
             }
         }
-        .padding(16)
-        .frame(height: 120)
-        .background(
-            RoundedRectangle(cornerRadius: 14)
-                .fill(Color(NSColor.controlBackgroundColor))
-                .shadow(
-                    color: isHovered ? .black.opacity(0.1) : .black.opacity(0.05),
-                    radius: isHovered ? 12 : 8,
-                    x: 0,
-                    y: isHovered ? 4 : 2
-                )
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 14)
-                .stroke(
-                    isHovered ? Color.blue.opacity(0.3) : Color.gray.opacity(0.1),
-                    lineWidth: 1
-                )
+        .liquidGlassCard(
+            cornerRadius: 16,
+            elevation: isHovered ? .high : .medium,
+            padding: EdgeInsets(top: 16, leading: 16, bottom: 16, trailing: 16),
+            isInteractive: true
         )
         .scaleEffect(isHovered ? 1.02 : 1.0)
-        .animation(.easeInOut(duration: 0.2), value: isHovered)
+        .animation(.liquidGlass, value: isHovered)
         .onHover { hovering in
             isHovered = hovering
         }
-        .onTapGesture { onSelect() }
+        .onTapGesture { 
+            onSelect() 
+        }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("Meeting: \(meeting.title)")
+        .accessibilityHint("Tap to view person details. \(timeUntilMeeting)")
     }
 }
