@@ -34,9 +34,9 @@ class HybridAIService: ObservableObject {
         if #available(iOS 18.1, macOS 15.5, *) {
             #if canImport(FoundationModels)
             let available = appleIntelligenceService != nil
-            print(" [HybridAI] Apple Intelligence check - service exists: \(available)")
+            // print(" [HybridAI] Apple Intelligence check - service exists: \(available)")
             if let service = appleIntelligenceService {
-                print(" [HybridAI] Apple Intelligence service initialized successfully")
+                // print(" [HybridAI] Apple Intelligence service initialized successfully")
             }
             return available
             #else
@@ -50,7 +50,7 @@ class HybridAIService: ObservableObject {
     }
     
     var preferredProvider: HybridAIProvider {
-        print(" [HybridAI] Provider selection - aiProvider: '\(aiProvider)', Apple Intelligence available: \(isAppleIntelligenceAvailable)")
+        // print(" [HybridAI] Provider selection - aiProvider: '\(aiProvider)', Apple Intelligence available: \(isAppleIntelligenceAvailable)")
         print(" [HybridAI] API Keys - OpenRouter: \(!openrouterApiKey.isEmpty), OpenAI: \(!openaiApiKey.isEmpty)")
         
         // Handle legacy "local" setting by treating it as "apple"

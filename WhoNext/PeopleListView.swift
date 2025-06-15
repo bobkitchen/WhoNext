@@ -10,7 +10,30 @@ struct PeopleListView: View {
         animation: nil
     ) private var people: FetchedResults<Person>
 
-    @State private var showingAddPersonSheet = false
+    private func openAddPersonWindow() {
+        let window = NSWindow(
+            contentRect: NSRect(x: 0, y: 0, width: 500, height: 600),
+            styleMask: [.titled, .closable, .resizable],
+            backing: .buffered,
+            defer: false
+        )
+        window.title = "Add Person"
+        let contentView = NSHostingView(rootView: AddPersonWindow(
+            context: viewContext,
+            onSave: { person in
+                viewContext.insert(person)
+                try? viewContext.save()
+                selectedPerson = person
+                window.close()
+            },
+            onCancel: {
+                window.close()
+            }
+        ))
+        contentView.translatesAutoresizingMaskIntoConstraints = false
+        window.contentView = contentView
+        window.makeKeyAndOrderFront(nil)
+    }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -19,7 +42,7 @@ struct PeopleListView: View {
                 "People",
                 subtitle: "\(people.count) contacts",
                 actionTitle: "Add",
-                action: { showingAddPersonSheet = true }
+                action: openAddPersonWindow
             )
             
             // People List or Empty State
@@ -46,7 +69,7 @@ struct PeopleListView: View {
                             .padding(.horizontal, 40)
                     }
                     
-                    Button(action: { showingAddPersonSheet = true }) {
+                    Button(action: openAddPersonWindow) {
                         HStack(spacing: 8) {
                             Image(systemName: "plus.circle.fill")
                                 .font(.system(size: 14))
@@ -85,43 +108,11 @@ struct PeopleListView: View {
         }
         .onAppear {
             NotificationCenter.default.addObserver(forName: .triggerAddPerson, object: nil, queue: .main) { _ in
-                showingAddPersonSheet = true
+                openAddPersonWindow()
             }
         }
         .onDisappear {
             NotificationCenter.default.removeObserver(self, name: .triggerAddPerson, object: nil)
-        }
-        .sheet(isPresented: $showingAddPersonSheet) {
-            AddPersonView { name, role, timezone, isDirectReport, notes, photoData in
-                let newPerson = Person(context: viewContext)
-                let newId = UUID()
-                newPerson.identifier = newId
-                newPerson.name = name
-                newPerson.role = role
-                newPerson.timezone = timezone
-                newPerson.isDirectReport = isDirectReport
-                newPerson.notes = notes
-                if let photoData = photoData {
-                    newPerson.photo = photoData
-                }
-                do {
-                    try viewContext.save()
-                    // Set the selection to the new person by identifier
-                    DispatchQueue.main.async {
-                        // Find the new person in the context after save
-                        let fetchRequest = NSFetchRequest<Person>(entityName: "Person")
-                        fetchRequest.predicate = NSPredicate(format: "identifier == %@", newId as CVarArg)
-                        if let results = try? viewContext.fetch(fetchRequest), let savedPerson = results.first {
-                            selectedPerson = savedPerson
-                        } else {
-                            selectedPerson = newPerson // fallback
-                        }
-                    }
-                } catch {
-                    // Handle error
-                }
-                showingAddPersonSheet = false
-            }
         }
         .onChange(of: people.map { $0.identifier }) { oldValue, newValue in
             // Defensive: re-sync selectedPerson by identifier if needed
