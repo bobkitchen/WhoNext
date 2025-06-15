@@ -90,12 +90,27 @@ struct LiquidGlassButtonStyle: ButtonStyle {
     let size: LiquidGlassButtonSize
     
     func makeBody(configuration: Configuration) -> some View {
+        LiquidGlassButton(
+            configuration: configuration,
+            variant: variant,
+            size: size
+        )
+    }
+}
+
+struct LiquidGlassButton: View {
+    let configuration: ButtonStyle.Configuration
+    let variant: LiquidGlassButtonVariant
+    let size: LiquidGlassButtonSize
+    @State private var isHovered = false
+    
+    var body: some View {
         configuration.label
             .font(size.font)
             .padding(size.padding)
             .background {
                 RoundedRectangle(cornerRadius: size.cornerRadius)
-                    .fill(variant.backgroundMaterial(for: configuration.isPressed))
+                    .fill(variant.backgroundMaterial(for: configuration.isPressed || isHovered))
                     .overlay {
                         RoundedRectangle(cornerRadius: size.cornerRadius)
                             .stroke(variant.strokeColor, lineWidth: 0.5)
@@ -107,9 +122,13 @@ struct LiquidGlassButtonStyle: ButtonStyle {
                         y: configuration.isPressed ? 1 : 2
                     )
             }
-            .foregroundStyle(variant.foregroundColor)
+            .foregroundStyle(variant.foregroundColor(for: configuration.isPressed || isHovered))
             .scaleEffect(configuration.isPressed ? 0.96 : 1.0)
             .animation(.liquidGlassFast, value: configuration.isPressed)
+            .animation(.liquidGlassFast, value: isHovered)
+            .onHover { hovering in
+                isHovered = hovering
+            }
     }
 }
 
@@ -389,33 +408,33 @@ enum LiquidGlassElevation {
 enum LiquidGlassButtonVariant {
     case primary, secondary, tertiary, destructive
     
-    func backgroundMaterial(for isPressed: Bool) -> AnyShapeStyle {
+    func backgroundMaterial(for isPressedOrHovered: Bool) -> AnyShapeStyle {
         switch self {
         case .primary:
-            return AnyShapeStyle(isPressed ? Color.accentColor.opacity(0.8) : Color.accentColor)
+            return AnyShapeStyle(isPressedOrHovered ? Color.accentColor.opacity(0.8) : Color.accentColor)
         case .secondary:
-            if isPressed {
-                return AnyShapeStyle(Material.ultraThinMaterial.opacity(0.8))
+            if isPressedOrHovered {
+                return AnyShapeStyle(Color.accentColor.opacity(0.8))
             } else {
-                return AnyShapeStyle(Material.ultraThinMaterial)
+                return AnyShapeStyle(Color.gray.opacity(0.2))
             }
         case .tertiary:
-            if isPressed {
+            if isPressedOrHovered {
                 return AnyShapeStyle(Color.primary.opacity(0.08))
             } else {
                 return AnyShapeStyle(Color.primary.opacity(0.05))
             }
         case .destructive:
-            return AnyShapeStyle(isPressed ? Color.red.opacity(0.8) : Color.red)
+            return AnyShapeStyle(isPressedOrHovered ? Color.red.opacity(0.8) : Color.red)
         }
     }
     
-    var foregroundColor: Color {
+    func foregroundColor(for isPressedOrHovered: Bool) -> Color {
         switch self {
         case .primary, .destructive:
             return .white
         case .secondary, .tertiary:
-            return .primary
+            return isPressedOrHovered ? .white : .primary
         }
     }
     
@@ -423,7 +442,9 @@ enum LiquidGlassButtonVariant {
         switch self {
         case .primary, .destructive:
             return .clear
-        case .secondary, .tertiary:
+        case .secondary:
+            return .primary.opacity(0.08)
+        case .tertiary:
             return .primary.opacity(0.1)
         }
     }
@@ -434,7 +455,9 @@ enum LiquidGlassButtonVariant {
             return Color.accentColor.opacity(0.3)
         case .destructive:
             return .red.opacity(0.3)
-        case .secondary, .tertiary:
+        case .secondary:
+            return .black.opacity(0.05)
+        case .tertiary:
             return .black.opacity(0.1)
         }
     }
@@ -598,7 +621,7 @@ struct LiquidGlassButtonModifier: ViewModifier {
                         y: elevation.shadowOffset
                     )
             }
-            .foregroundStyle(style.foregroundColor)
+            .foregroundStyle(style.foregroundColor(for: false))
     }
 }
 

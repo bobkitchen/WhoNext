@@ -147,7 +147,7 @@ struct TranscriptReviewView: View {
                                 Button("Edit Summary") {
                                     showSummaryEditor.toggle()
                                 }
-                                .buttonStyle(.bordered)
+                                .buttonStyle(LiquidGlassButtonStyle(variant: .secondary, size: .small))
                             }
                             .padding(12)
                         }
@@ -165,7 +165,7 @@ struct TranscriptReviewView: View {
                             Button("Done") {
                                 showSummaryEditor = false
                             }
-                            .buttonStyle(.borderedProminent)
+                            .buttonStyle(LiquidGlassButtonStyle(variant: .primary, size: .small))
                         }
                         
                         ZStack(alignment: .topLeading) {
@@ -348,7 +348,7 @@ struct TranscriptReviewView: View {
                 Button("Cancel") {
                     dismiss()
                 }
-                .buttonStyle(.bordered)
+                .buttonStyle(LiquidGlassButtonStyle(variant: .secondary, size: .medium))
                 
                 Spacer()
                 
@@ -356,7 +356,7 @@ struct TranscriptReviewView: View {
                     saveConversation()
                     dismiss()
                 }
-                .buttonStyle(.borderedProminent)
+                .buttonStyle(LiquidGlassButtonStyle(variant: .primary, size: .medium))
                 .disabled(editedTitle.isEmpty || selectedParticipants.isEmpty)
             }
             .padding()
@@ -696,18 +696,18 @@ struct TranscriptReviewView: View {
                autoMatchConfirmed[participant.name] != true,
                let autoMatchedPerson = findPersonById(existingPersonId) {
                 HStack {
-                    Button("Confirm Match") {
+                    Button("Use \(autoMatchedPerson.name ?? "Unknown")") {
                         autoMatchConfirmed[participant.name] = true
                         // Set the replacement to the auto-matched person
                         participantReplacements[participant.name] = autoMatchedPerson
                     }
-                    .buttonStyle(.borderedProminent)
+                    .buttonStyle(LiquidGlassButtonStyle(variant: .primary, size: .small))
                     
                     Button("Find Different Person") {
                         // Clear auto-match and show search field
                         autoMatchConfirmed[participant.name] = false
                     }
-                    .buttonStyle(.bordered)
+                    .buttonStyle(LiquidGlassButtonStyle(variant: .secondary, size: .small))
                 }
                 .padding(.horizontal)
             }

@@ -306,13 +306,13 @@ struct NewConversationWindowView: View {
                     closeWindow()
                 }
                 .keyboardShortcut(.cancelAction)
-                .buttonStyle(.bordered)
+                .buttonStyle(LiquidGlassButtonStyle(variant: .secondary, size: .medium))
 
                 Button("Save Conversation") {
                     saveConversation()
                 }
                 .keyboardShortcut(.defaultAction)
-                .buttonStyle(.borderedProminent)
+                .buttonStyle(LiquidGlassButtonStyle(variant: .primary, size: .medium))
                 .disabled(selectedPerson == nil)
             }
             .padding(.horizontal, 24)

@@ -140,14 +140,8 @@ struct PersonDetailView: View {
                         Text("LinkedIn")
                             .font(.system(size: 12, weight: .medium))
                     }
-                    .foregroundStyle(.secondary)
                 }
-                .liquidGlassButton(
-                    style: .tertiary,
-                    cornerRadius: 6,
-                    elevation: .low,
-                    padding: EdgeInsets(top: 6, leading: 10, bottom: 6, trailing: 10)
-                )
+                .buttonStyle(LiquidGlassButtonStyle(variant: .secondary, size: .small))
                 
                 Button(action: openEditWindow) {
                     HStack(spacing: 6) {
@@ -156,14 +150,8 @@ struct PersonDetailView: View {
                         Text("Edit")
                             .font(.system(size: 12, weight: .medium))
                     }
-                    .foregroundStyle(.secondary)
                 }
-                .liquidGlassButton(
-                    style: .tertiary,
-                    cornerRadius: 6,
-                    elevation: .low,
-                    padding: EdgeInsets(top: 6, leading: 10, bottom: 6, trailing: 10)
-                )
+                .buttonStyle(LiquidGlassButtonStyle(variant: .secondary, size: .small))
             }
         }
         .liquidGlassCard(

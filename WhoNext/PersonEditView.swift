@@ -61,12 +61,12 @@ struct PersonEditView: View {
                                 Button("Choose Photo") {
                                     showingPhotoPicker = true
                                 }
-                                .buttonStyle(.bordered)
+                                .buttonStyle(LiquidGlassButtonStyle(variant: .secondary, size: .small))
                                 
                                 Button("Paste from Clipboard") {
                                     pasteImageFromClipboard()
                                 }
-                                .buttonStyle(.bordered)
+                                .buttonStyle(LiquidGlassButtonStyle(variant: .secondary, size: .small))
                                 .disabled(!canPasteImage())
                                 
                                 if editingPhotoImage != nil {
@@ -74,8 +74,7 @@ struct PersonEditView: View {
                                         editingPhotoData = nil
                                         editingPhotoImage = nil
                                     }
-                                    .buttonStyle(.bordered)
-                                    .foregroundColor(.red)
+                                    .buttonStyle(LiquidGlassButtonStyle(variant: .destructive, size: .small))
                                 }
                             }
                         }
@@ -242,7 +241,7 @@ struct PersonEditView: View {
                 Button("Cancel") {
                     onCancel?()
                 }
-                .buttonStyle(.bordered)
+                .buttonStyle(LiquidGlassButtonStyle(variant: .secondary, size: .medium))
                 
                 Spacer()
                 
@@ -250,7 +249,7 @@ struct PersonEditView: View {
                     saveChanges()
                     onSave?()
                 }
-                .buttonStyle(.borderedProminent)
+                .buttonStyle(LiquidGlassButtonStyle(variant: .primary, size: .medium))
                 .disabled(editingName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
             }
             .padding(.top, 8)

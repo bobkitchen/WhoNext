@@ -274,6 +274,7 @@ Best regards
                             Button("Validate") {
                                 validateApiKey()
                             }
+                            .buttonStyle(LiquidGlassButtonStyle(variant: .secondary, size: .small))
                             .disabled(isValidatingKey)
                         }
                         if isValidatingKey {
@@ -293,6 +294,7 @@ Best regards
                             Button("Validate") {
                                 validateClaudeApiKey()
                             }
+                            .buttonStyle(LiquidGlassButtonStyle(variant: .secondary, size: .small))
                             .disabled(isValidatingClaudeKey)
                         }
                         if isValidatingClaudeKey {
@@ -557,7 +559,7 @@ Best regards
                         importSuccess = nil
                         importCSV()
                     }
-                    .buttonStyle(.borderedProminent)
+                    .buttonStyle(LiquidGlassButtonStyle(variant: .secondary, size: .medium))
                     
                     if let error = importError {
                         Label(error, systemImage: "xmark.circle.fill")
@@ -589,12 +591,12 @@ Best regards
                     Button("Request Calendar Access") {
                         requestCalendarAccess()
                     }
-                    .buttonStyle(.borderedProminent)
+                    .buttonStyle(LiquidGlassButtonStyle(variant: .secondary, size: .medium))
                     
                     Button("Refresh Calendars") {
                         loadAvailableCalendars()
                     }
-                    .buttonStyle(.bordered)
+                    .buttonStyle(LiquidGlassButtonStyle(variant: .secondary, size: .medium))
                 }
                 
                 // Calendar Selection
@@ -701,7 +703,7 @@ Best regards
                             await supabaseSync.syncNow(context: viewContext)
                         }
                     }
-                    .buttonStyle(.borderedProminent)
+                    .buttonStyle(LiquidGlassButtonStyle(variant: .secondary, size: .medium))
                     .disabled(supabaseSync.isSyncing)
                     
                     // Deduplication Button
@@ -720,7 +722,7 @@ Best regards
                             }
                         }
                     }
-                    .buttonStyle(.bordered)
+                    .buttonStyle(LiquidGlassButtonStyle(variant: .secondary, size: .medium))
                     .disabled(supabaseSync.isSyncing)
                     .foregroundColor(.orange)
                     
@@ -740,7 +742,7 @@ Best regards
                             }
                         }
                     }
-                    .buttonStyle(.bordered)
+                    .buttonStyle(LiquidGlassButtonStyle(variant: .secondary, size: .medium))
                     .disabled(supabaseSync.isSyncing)
                     .foregroundColor(.red)
                     

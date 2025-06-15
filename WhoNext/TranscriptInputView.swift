@@ -132,14 +132,14 @@ struct TranscriptInputView: View {
                     Button("Cancel") {
                         dismiss()
                     }
-                    .buttonStyle(.bordered)
+                    .buttonStyle(LiquidGlassButtonStyle(variant: .secondary, size: .medium))
                     
                     Spacer()
                     
                     Button("Process Transcript") {
                         processTranscript()
                     }
-                    .buttonStyle(.borderedProminent)
+                    .buttonStyle(LiquidGlassButtonStyle(variant: .primary, size: .medium))
                     .disabled(transcriptText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || processor.isProcessing)
                 }
             }

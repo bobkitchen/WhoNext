@@ -37,6 +37,7 @@ struct AddPersonView: View {
                     }
                     Button("Choose Photo") { showingPhotoPicker = true }
                         .font(.system(size: 12))
+                        .buttonStyle(LiquidGlassButtonStyle(variant: .secondary, size: .small))
                 }
                 VStack(alignment: .leading, spacing: 6) {
                     TextField("Full Name", text: $name)
@@ -78,6 +79,8 @@ struct AddPersonView: View {
                 Button("Cancel") {
                     presentationMode.wrappedValue.dismiss()
                 }
+                .buttonStyle(LiquidGlassButtonStyle(variant: .secondary, size: .medium))
+                
                 Button("Add") {
                     if !name.trimmingCharacters(in: .whitespaces).isEmpty {
                         onSave(name.trimmingCharacters(in: .whitespaces),
@@ -88,6 +91,7 @@ struct AddPersonView: View {
                                photoData)
                     }
                 }
+                .buttonStyle(LiquidGlassButtonStyle(variant: .primary, size: .medium))
                 .keyboardShortcut(.defaultAction)
                 .disabled(name.trimmingCharacters(in: .whitespaces).isEmpty)
             }

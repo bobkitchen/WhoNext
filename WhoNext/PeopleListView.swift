@@ -71,11 +71,11 @@ struct PeopleListView: View {
                             ) {
                                 PersonRowView(
                                     person: person,
-                                    isSelected: selectedPerson == person
+                                    isSelected: selectedPerson == person,
+                                    onDelete: { deletePerson(person) }
                                 )
                             }
                         }
-                        .onDelete(perform: deletePeople)
                     }
                     .padding(.horizontal, 8)
                     .padding(.vertical, 8)
@@ -142,18 +142,12 @@ struct PeopleListView: View {
         viewContext.delete(person)
         try? viewContext.save()
     }
-    
-    private func deletePeople(at offsets: IndexSet) {
-        offsets.forEach { index in
-            viewContext.delete(people[index])
-        }
-        try? viewContext.save()
-    }
 }
 
 struct PersonRowView: View {
     let person: Person
     let isSelected: Bool
+    let onDelete: () -> Void
     @State private var isHovered = false
     
     var body: some View {
@@ -224,6 +218,24 @@ struct PersonRowView: View {
                             Capsule()
                                 .fill(.secondary.opacity(0.1))
                         }
+                }
+                
+                // Delete button (appears on hover or selection)
+                if isSelected || isHovered {
+                    Button(action: onDelete) {
+                        Image(systemName: "trash")
+                            .font(.system(size: 11, weight: .regular))
+                            .foregroundStyle(.secondary)
+                            .frame(width: 16, height: 16)
+                    }
+                    .buttonStyle(.plain)
+                    .opacity(0.6)
+                    .transition(.opacity.combined(with: .scale(scale: 0.8)))
+                    .animation(.liquidGlassFast, value: isSelected || isHovered)
+                    .accessibilityLabel("Delete \(person.name ?? "person")")
+                    .onHover { hovering in
+                        // Subtle hover effect on the delete button itself
+                    }
                 }
             }
             .opacity(isSelected || isHovered ? 1.0 : 0.7)

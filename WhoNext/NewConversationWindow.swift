@@ -104,7 +104,7 @@ struct NewConversationWindow: View {
                 }
                 .disabled(selectedPerson == nil)
                 .keyboardShortcut(.defaultAction)
-                .buttonStyle(.borderedProminent)
+                .buttonStyle(LiquidGlassButtonStyle(variant: .primary, size: .medium))
             }
         }
         .padding()

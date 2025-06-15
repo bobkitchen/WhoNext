@@ -133,7 +133,7 @@ struct TranscriptImportWindowView: View {
                                 }
                             }
                         }
-                        .buttonStyle(.borderedProminent)
+                        .buttonStyle(LiquidGlassButtonStyle(variant: .primary, size: .medium))
                         .disabled(transcriptText.isEmpty || processor.isProcessing)
                     }
                     .padding(.bottom)

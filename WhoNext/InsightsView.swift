@@ -488,7 +488,7 @@ struct GlobalNewConversationView: View {
                     saveConversation()
                 }
                 .disabled(selectedPerson == nil || notes.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-                .buttonStyle(.borderedProminent)
+                .buttonStyle(LiquidGlassButtonStyle(variant: .primary, size: .medium))
             }
         }
         .padding(20)
