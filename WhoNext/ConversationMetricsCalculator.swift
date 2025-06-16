@@ -1,6 +1,8 @@
 import Foundation
 import CoreData
 
+// MARK: - Metrics Caching
+
 // MARK: - Duration Analytics Models
 
 struct ConversationMetrics {
@@ -96,6 +98,44 @@ enum RelationshipType {
 class ConversationMetricsCalculator {
     static let shared = ConversationMetricsCalculator()
     
+    // MARK: - Caching Properties
+    private var metricsCache: [UUID: PersonMetrics] = [:]
+    private var cacheTimestamps: [UUID: Date] = [:]
+    private var aggregateCache: (averageDuration: Double, totalConversations: Int, averageHealthScore: Double)?
+    private var aggregateCacheTimestamp: Date?
+    private let cacheExpirationInterval: TimeInterval = 600 // 10 minutes
+    
+    // MARK: - Caching Methods
+    
+    private func getCachedMetrics(for personId: UUID) -> PersonMetrics? {
+        guard let cached = metricsCache[personId],
+              let timestamp = cacheTimestamps[personId],
+              Date().timeIntervalSince(timestamp) < cacheExpirationInterval else {
+            return nil
+        }
+        return cached
+    }
+    
+    private func cacheMetrics(_ metrics: PersonMetrics, for personId: UUID) {
+        metricsCache[personId] = metrics
+        cacheTimestamps[personId] = Date()
+    }
+    
+    func invalidateMetricsCache() {
+        metricsCache.removeAll()
+        cacheTimestamps.removeAll()
+        aggregateCache = nil
+        aggregateCacheTimestamp = nil
+    }
+    
+    func invalidateMetricsCache(for personId: UUID) {
+        metricsCache.removeValue(forKey: personId)
+        cacheTimestamps.removeValue(forKey: personId)
+        // Invalidate aggregate cache when individual person metrics change
+        aggregateCache = nil
+        aggregateCacheTimestamp = nil
+    }
+    
     // MARK: - Relationship Type Classification
     
     /// Classify relationship type based on person attributes
@@ -120,6 +160,12 @@ class ConversationMetricsCalculator {
     
     /// Calculate comprehensive metrics for a person's conversations with relationship context
     func calculateMetrics(for person: Person) -> PersonMetrics? {
+        // Check cache first
+        if let personId = person.identifier,
+           let cached = getCachedMetrics(for: personId) {
+            return cached
+        }
+        
         guard let conversations = person.conversations?.allObjects as? [Conversation],
               !conversations.isEmpty else {
             return nil
@@ -150,7 +196,7 @@ class ConversationMetricsCalculator {
         
         let contextualInsights = generateContextualInsights(for: person, relationshipType: relationshipType, metrics: metrics)
         
-        return PersonMetrics(
+        let result = PersonMetrics(
             person: person,
             metrics: metrics,
             healthScore: healthScore,
@@ -161,6 +207,13 @@ class ConversationMetricsCalculator {
             isOverdue: isOverdue,
             contextualInsights: contextualInsights
         )
+        
+        // Cache the result
+        if let personId = person.identifier {
+            cacheMetrics(result, for: personId)
+        }
+        
+        return result
     }
     
     /// Calculate metrics for a collection of conversations with relationship context
@@ -427,10 +480,14 @@ class ConversationMetricsCalculator {
     
     // MARK: - Batch Analytics
     
-    /// Calculate metrics for all people with conversations
+    /// Calculate metrics for all people with conversations (optimized with prefetching)
     func calculateAllPersonMetrics(context: NSManagedObjectContext) -> [PersonMetrics] {
         let request = NSFetchRequest<Person>(entityName: "Person")
         request.predicate = NSPredicate(format: "conversations.@count > 0")
+        // Prefetch conversations to avoid N+1 queries
+        request.relationshipKeyPathsForPrefetching = ["conversations"]
+        request.fetchBatchSize = 50
+        request.sortDescriptors = [NSSortDescriptor(keyPath: \Person.name, ascending: true)]
         
         do {
             let people = try context.fetch(request)
@@ -441,8 +498,15 @@ class ConversationMetricsCalculator {
         }
     }
     
-    /// Get aggregate statistics across all relationships
+    /// Get aggregate statistics across all relationships (cached)
     func getAggregateStatistics(context: NSManagedObjectContext) -> (averageDuration: Double, totalConversations: Int, averageHealthScore: Double) {
+        // Check cache first
+        if let cached = aggregateCache,
+           let timestamp = aggregateCacheTimestamp,
+           Date().timeIntervalSince(timestamp) < cacheExpirationInterval {
+            return cached
+        }
+        
         let allMetrics = calculateAllPersonMetrics(context: context)
         
         guard !allMetrics.isEmpty else {
@@ -457,6 +521,12 @@ class ConversationMetricsCalculator {
         let totalHealthScore = allMetrics.map { $0.healthScore }.reduce(0, +)
         let averageHealthScore = totalHealthScore / Double(allMetrics.count)
         
-        return (averageDuration, totalConversations, averageHealthScore)
+        let result = (averageDuration, totalConversations, averageHealthScore)
+        
+        // Cache the result
+        aggregateCache = result
+        aggregateCacheTimestamp = Date()
+        
+        return result
     }
 }

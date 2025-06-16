@@ -112,20 +112,6 @@ struct TranscriptInputView: View {
                     .cornerRadius(12)
                 }
                 
-                // Error Display
-                if let error = processor.error {
-                    HStack {
-                        Image(systemName: "exclamationmark.triangle.fill")
-                            .foregroundColor(.red)
-                        
-                        Text(error)
-                            .font(.subheadline)
-                            .foregroundColor(.red)
-                    }
-                    .padding()
-                    .background(Color.red.opacity(0.1))
-                    .cornerRadius(8)
-                }
                 
                 // Action Buttons
                 HStack(spacing: 16) {
@@ -145,16 +131,11 @@ struct TranscriptInputView: View {
             }
             .padding()
             .navigationTitle("Import Transcript")
-            .alert("Processing Error", isPresented: .constant(processor.error != nil)) {
-                Button("OK") { }
-            } message: {
-                Text(processor.error ?? "")
-            }
+            .errorAlert(ErrorManager.shared)
         }
         .sheet(isPresented: $showingReviewScreen, onDismiss: {
             processedTranscript = nil
             transcriptText = ""
-            processor.error = nil
         }) {
             if let processedTranscript = processedTranscript {
                 TranscriptReviewView(processedTranscript: processedTranscript)

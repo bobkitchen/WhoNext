@@ -90,7 +90,6 @@ struct SentimentScore {
 class TranscriptProcessor: ObservableObject {
     @Published var isProcessing = false
     @Published var processingStatus = ""
-    @Published var error: String?
     
     private let hybridAI = HybridAIService()
     
@@ -101,7 +100,6 @@ class TranscriptProcessor: ObservableObject {
     
     func processTranscript(_ rawText: String) async -> ProcessedTranscript? {
         isProcessing = true
-        error = nil
         
         do {
             // Step 1: Parse and detect format
@@ -143,7 +141,7 @@ class TranscriptProcessor: ObservableObject {
             return processedTranscript
             
         } catch {
-            self.error = "Processing failed: \(error.localizedDescription)"
+            ErrorManager.shared.handle(error, context: "Failed to process transcript")
             isProcessing = false
             return nil
         }

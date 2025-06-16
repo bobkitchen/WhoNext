@@ -126,7 +126,7 @@ struct CircularProgressView: View {
                 }
             }
         }
-        .onChange(of: progress) { newProgress in
+        .onChange(of: progress) { _, newProgress in
             withAnimation(.liquidGlass) {
                 animatedProgress = newProgress
             }

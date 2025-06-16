@@ -6,21 +6,34 @@ struct PersonDetailView: View {
     @ObservedObject var person: Person
     @Environment(\.managedObjectContext) private var viewContext
     @Environment(\.openWindow) private var openWindow
+    @EnvironmentObject var appStateManager: AppStateManager
 
-    @FetchRequest private var conversations: FetchedResults<Conversation>
+    private var conversationManager: ConversationStateManager {
+        return appStateManager.conversationManager
+    }
+    
+    private var conversations: [Conversation] {
+        // Try to get from conversation manager first
+        let managerConversations = conversationManager.getConversations(for: person)
+        if !managerConversations.isEmpty {
+            return managerConversations
+        }
+        
+        // Fallback to direct Core Data access if manager is empty
+        return (person.conversations?.allObjects as? [Conversation] ?? [])
+            .sorted { ($0.date ?? Date.distantPast) > ($1.date ?? Date.distantPast) }
+    }
 
-    @State private var isGeneratingBrief = false
     @State private var preMeetingBrief: [UUID: String] = [:]
-    @State private var briefError: String? = nil
+    @State private var fallbackIsGenerating = false
     @StateObject private var hybridAI = HybridAIService()
 
     init(person: Person) {
         self.person = person
-        _conversations = FetchRequest(
-            sortDescriptors: [NSSortDescriptor(keyPath: \Conversation.date, ascending: false)],
-            predicate: NSPredicate(format: "person == %@", person),
-            animation: .default
-        )
+    }
+    
+    private var isGenerating: Bool {
+        return appStateManager.isGeneratingContent
     }
 
     var body: some View {
@@ -36,9 +49,14 @@ struct PersonDetailView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color(nsColor: .windowBackgroundColor))
+        .errorAlert(ErrorManager.shared)
+        .onAppear {
+            // Load conversations for this person when view appears
+            conversationManager.loadConversations(for: person)
+        }
         .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("ConversationSaved"))) { _ in
-            // Refresh the managed object context to pick up new conversations
-            viewContext.refreshAllObjects()
+            // Reload conversations when new ones are saved
+            conversationManager.loadConversations(for: person)
         }
     }
     
@@ -406,28 +424,13 @@ struct PersonDetailView: View {
                             .buttonStyle(PlainButtonStyle())
                         }
                     } else {
-                        Button(action: generatePreMeetingBrief) {
-                            HStack(spacing: 6) {
-                                if isGeneratingBrief {
-                                    ProgressView()
-                                        .scaleEffect(0.8)
-                                } else {
-                                    Image(systemName: "sparkles")
-                                        .font(.system(size: 10))
-                                }
-                                Text(isGeneratingBrief ? "Generating..." : "Generate")
-                                    .font(.system(size: 10, weight: .medium))
-                            }
-                            .foregroundColor(.white)
-                            .padding(.horizontal, 12)
-                            .padding(.vertical, 6)
-                            .background(
-                                RoundedRectangle(cornerRadius: 6)
-                                    .fill(Color.accentColor)
-                            )
-                        }
-                        .buttonStyle(PlainButtonStyle())
-                        .disabled(isGeneratingBrief)
+                        LoadingButton(
+                            title: "Generate",
+                            loadingTitle: "Generating...",
+                            isLoading: isGenerating,
+                            style: .primary,
+                            action: generatePreMeetingBrief
+                        )
                     }
                 }
             }
@@ -507,7 +510,7 @@ struct PersonDetailView: View {
                 // Conversation List
                 LazyVStack(spacing: 12) {
                     ForEach(conversations) { conversation in
-                        ConversationRowView(conversation: conversation)
+                        ConversationRowView(conversation: conversation, conversationManager: conversationManager)
                     }
                 }
             }
@@ -576,18 +579,17 @@ struct PersonDetailView: View {
     }
     
     private func generatePreMeetingBrief() {
-        isGeneratingBrief = true
+        appStateManager.setGeneratingContent(true)
         preMeetingBrief[person.identifier ?? UUID()] = nil
-        briefError = nil
         
         hybridAI.generateBrief(for: person) { result in
             DispatchQueue.main.async {
-                self.isGeneratingBrief = false
+                self.appStateManager.setGeneratingContent(false)
                 switch result {
                 case .success(let brief):
                     self.preMeetingBrief[self.person.identifier ?? UUID()] = brief
                 case .failure(let error):
-                    self.briefError = error.localizedDescription
+                    ErrorManager.shared.handle(error, context: "Failed to generate pre-meeting brief")
                 }
             }
         }
@@ -629,6 +631,7 @@ struct PersonDetailView: View {
 
 struct ConversationRowView: View {
     let conversation: Conversation
+    let conversationManager: ConversationStateManager
     @Environment(\.managedObjectContext) private var viewContext
     
     var body: some View {
@@ -793,7 +796,7 @@ struct ConversationRowView: View {
         window.title = "Conversation - \(conversationTitle)"
         window.isReleasedWhenClosed = false
         window.contentView = NSHostingView(
-            rootView: ConversationDetailView(conversation: conversation)
+            rootView: ConversationDetailView(conversation: conversation, conversationManager: conversationManager)
                 .environment(\.managedObjectContext, viewContext)
         )
         window.makeKeyAndOrderFront(nil)

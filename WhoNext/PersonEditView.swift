@@ -110,7 +110,7 @@ struct PersonEditView: View {
                                 VStack(alignment: .leading, spacing: 0) {
                                     TextField("Type to search timezone", text: $editingTimezone)
                                         .textFieldStyle(.roundedBorder)
-                                        .onChange(of: editingTimezone) { _ in
+                                        .onChange(of: editingTimezone) { _, _ in
                                             showingTimezoneDropdown = !editingTimezone.isEmpty && !filteredTimezones.isEmpty
                                         }
                                     

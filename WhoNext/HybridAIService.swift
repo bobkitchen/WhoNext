@@ -35,7 +35,7 @@ class HybridAIService: ObservableObject {
             #if canImport(FoundationModels)
             let available = appleIntelligenceService != nil
             // print(" [HybridAI] Apple Intelligence check - service exists: \(available)")
-            if let service = appleIntelligenceService {
+            if appleIntelligenceService != nil {
                 // print(" [HybridAI] Apple Intelligence service initialized successfully")
             }
             return available

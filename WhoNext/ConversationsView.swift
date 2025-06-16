@@ -2,6 +2,7 @@ import SwiftUI
 import CoreData
 
 struct ConversationsView: View {
+    var conversationManager: ConversationStateManager?
     @Environment(\.managedObjectContext) private var viewContext
     @FetchRequest(
         sortDescriptors: [NSSortDescriptor(keyPath: \Conversation.date, ascending: false)],
@@ -43,7 +44,7 @@ struct ConversationsView: View {
         .navigationTitle("Conversations")
         .sheet(isPresented: $isPresentingDetail) {
             if let conversation = selectedConversation {
-                ConversationDetailView(conversation: conversation, isInitiallyEditing: false)
+                ConversationDetailView(conversation: conversation, conversationManager: conversationManager, isInitiallyEditing: false)
             }
         }
     }

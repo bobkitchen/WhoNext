@@ -68,7 +68,7 @@ struct GlobalNewConversationSheet: View {
                                             Text(person.name ?? "")
                                                 .foregroundColor(.primary)
                                             if let role = person.role, !role.isEmpty {
-                                                Text("(") + Text(role) + Text(")")
+                                                Text("(\(role))")
                                                     .foregroundColor(.secondary)
                                                     .font(.caption)
                                             }

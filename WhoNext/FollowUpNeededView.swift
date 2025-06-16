@@ -57,7 +57,7 @@ extension FollowUpNeededView {
     private var suggestedPeople: [Person] {
         let filtered = people.filter { person in
             // Exclude people without names, direct reports, and dismissed people
-            guard let name = person.name,
+            guard person.name != nil,
                   !person.isDirectReport,
                   let personID = person.identifier,
                   !dismissedPeopleIDs.contains(personID) else {

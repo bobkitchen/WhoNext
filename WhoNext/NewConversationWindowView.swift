@@ -5,6 +5,7 @@ struct NewConversationWindowView: View {
     var preselectedPerson: Person? = nil
     var onSave: (() -> Void)?
     var onCancel: (() -> Void)?
+    var conversationManager: ConversationStateManager?
 
     @Environment(\.managedObjectContext) private var viewContext
     @FetchRequest(
@@ -26,8 +27,9 @@ struct NewConversationWindowView: View {
         return people.filter { $0.name?.localizedCaseInsensitiveContains(trimmed) == true }
     }
 
-    init(preselectedPerson: Person? = nil, onSave: (() -> Void)? = nil, onCancel: (() -> Void)? = nil) {
+    init(preselectedPerson: Person? = nil, conversationManager: ConversationStateManager? = nil, onSave: (() -> Void)? = nil, onCancel: (() -> Void)? = nil) {
         self.preselectedPerson = preselectedPerson
+        self.conversationManager = conversationManager
         self.onSave = onSave
         self.onCancel = onCancel
         // SwiftUI @State can't be initialized directly here, so preselection is handled in .onAppear
@@ -194,18 +196,29 @@ struct NewConversationWindowView: View {
     
     private func saveConversation() {
         if let person = selectedPerson {
-            let newConversation = Conversation(context: viewContext)
-            newConversation.date = date
-            newConversation.notes = notes
-            newConversation.setValue(Int16(duration), forKey: "duration")
-            newConversation.person = person
-            do {
-                try viewContext.save()
-                onSave?()
-                closeWindow()
-            } catch {
-                print("Failed to save conversation: \(error)")
+            if let conversationManager = conversationManager {
+                // Use ConversationStateManager
+                conversationManager.createConversation(
+                    for: person,
+                    notes: notes,
+                    duration: Int32(duration),
+                    date: date
+                )
+            } else {
+                // Fallback to direct Core Data
+                let newConversation = Conversation(context: viewContext)
+                newConversation.date = date
+                newConversation.notes = notes
+                newConversation.setValue(Int16(duration), forKey: "duration")
+                newConversation.person = person
+                do {
+                    try viewContext.save()
+                } catch {
+                    ErrorManager.shared.handle(error, context: "Failed to save conversation")
+                }
             }
+            onSave?()
+            closeWindow()
         }
     }
     

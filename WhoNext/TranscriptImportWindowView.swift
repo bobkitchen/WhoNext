@@ -20,7 +20,6 @@ struct TranscriptImportWindowView: View {
                                 showingReviewScreen = false
                                 self.processedTranscript = nil
                                 transcriptText = ""
-                                processor.error = nil
                             }
                         }
                     }
@@ -125,7 +124,13 @@ struct TranscriptImportWindowView: View {
                         
                         Spacer()
                         
-                        Button("Process Transcript") {
+                        LoadingButton(
+                            title: "Process Transcript",
+                            loadingTitle: "Processing...",
+                            isLoading: processor.isProcessing,
+                            style: .primary,
+                            isDisabled: transcriptText.isEmpty
+                        ) {
                             Task {
                                 if let processed = await processor.processTranscript(transcriptText) {
                                     processedTranscript = processed
@@ -133,26 +138,17 @@ struct TranscriptImportWindowView: View {
                                 }
                             }
                         }
-                        .buttonStyle(LiquidGlassButtonStyle(variant: .primary, size: .medium))
-                        .disabled(transcriptText.isEmpty || processor.isProcessing)
                     }
                     .padding(.bottom)
                 }
                 .padding()
                 .navigationTitle("")
-                .alert("Processing Error", isPresented: .constant(processor.error != nil)) {
-                    Button("OK") { 
-                        processor.error = nil
-                    }
-                } message: {
-                    Text(processor.error ?? "")
-                }
+                .errorAlert(ErrorManager.shared)
             }
         }
         .onAppear {
             transcriptText = ""
             processedTranscript = nil
-            processor.error = nil
         }
     }
 }

@@ -1,7 +1,7 @@
 import SwiftUI
 
-struct CenterNavigationView: View {
-    @ObservedObject var appState: AppState
+struct CenterNavigationView<T: StateManagement>: View {
+    @ObservedObject var appState: T
     
     var body: some View {
         HStack(spacing: 0) {
@@ -9,21 +9,27 @@ struct CenterNavigationView: View {
                 icon: "chart.line.uptrend.xyaxis",
                 title: "Insights",
                 isSelected: appState.selectedTab == .insights,
-                action: { appState.selectedTab = .insights }
+                action: { 
+                    appState.selectedTab = .insights 
+                }
             )
             
             NavigationTabButton(
                 icon: "person.2",
                 title: "People", 
                 isSelected: appState.selectedTab == .people,
-                action: { appState.selectedTab = .people }
+                action: { 
+                    appState.selectedTab = .people 
+                }
             )
             
             NavigationTabButton(
                 icon: "chart.bar.fill",
                 title: "Analytics",
                 isSelected: appState.selectedTab == .analytics,
-                action: { appState.selectedTab = .analytics }
+                action: { 
+                    appState.selectedTab = .analytics 
+                }
             )
         }
         .padding(2)
@@ -60,5 +66,6 @@ struct NavigationTabButton: View {
 }
 
 #Preview {
-    CenterNavigationView(appState: AppState())
+    let context = PersistenceController.shared.container.viewContext
+    CenterNavigationView(appState: AppStateManager(viewContext: context))
 }

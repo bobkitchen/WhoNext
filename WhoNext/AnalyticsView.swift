@@ -3,7 +3,7 @@ import CoreData
 import AppKit
 
 struct AnalyticsView: View {
-    @EnvironmentObject var appState: AppState
+    @EnvironmentObject var appStateManager: AppStateManager
     @Environment(\.managedObjectContext) private var viewContext
     @FetchRequest(
         entity: Person.entity(),
@@ -44,7 +44,6 @@ struct AnalyticsView: View {
                     
                     let metrics = ConversationMetricsCalculator.shared.calculateAllPersonMetrics(context: self.viewContext)
                     let stats = computeAggregateStats(from: metrics)
-                    let insights = generatePriorityInsights(from: metrics)
                     
                     // Aggregate Statistics
                     LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 3), spacing: 16) {
@@ -184,9 +183,9 @@ struct AnalyticsView: View {
                     // Timeline with safer implementation
                     TimelineView(people: Array(people), timeframe: selectedTimeframe) { person in
                         // Navigate to the person in People tab
-                        appState.selectedTab = .people
-                        appState.selectedPerson = person
-                        appState.selectedPersonID = person.identifier
+                        appStateManager.selectedTab = .people
+                        appStateManager.selectedPerson = person
+                        appStateManager.selectedPersonID = person.identifier
                     }
                     .padding(.horizontal, 32)
                 }
@@ -285,8 +284,8 @@ struct AnalyticsView: View {
         }
         
         // Find the earliest conversation date to determine our data range
-        let earliestDate = allConversations.compactMap { $0.date }.min() ?? Date()
-        let currentDate = Date()
+        // Note: These values are computed but not currently used in the chart rendering
+        // They could be used for axis configuration in future improvements
         
         // Group conversations by week and calculate health scores for each week
         for conversation in allConversations {

@@ -3,6 +3,7 @@ import SwiftUI
 
 struct ConversationDetailView: View {
     var conversation: Conversation
+    var conversationManager: ConversationStateManager?
     var isInitiallyEditing: Bool = false
 
     @Environment(\.managedObjectContext) private var viewContext
@@ -374,14 +375,19 @@ struct ConversationDetailView: View {
     }
     
     private func deleteConversation() {
-        viewContext.delete(conversation)
-        
-        do {
-            try viewContext.save()
-            dismiss()
-        } catch {
-            print("Failed to delete conversation: \(error)")
+        if let conversationManager = conversationManager {
+            // Use ConversationStateManager
+            conversationManager.deleteConversation(conversation)
+        } else {
+            // Fallback to direct Core Data
+            viewContext.delete(conversation)
+            do {
+                try viewContext.save()
+            } catch {
+                ErrorManager.shared.handle(error, context: "Failed to delete conversation")
+            }
         }
+        dismiss()
     }
     
     // MARK: - Static Methods

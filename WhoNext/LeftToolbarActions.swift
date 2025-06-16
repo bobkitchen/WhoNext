@@ -1,7 +1,7 @@
 import SwiftUI
 
-struct LeftToolbarActions: View {
-    @ObservedObject var appState: AppState
+struct LeftToolbarActions<T: StateManagement>: View {
+    @ObservedObject var appState: T
     
     var body: some View {
         HStack(spacing: 12) {
@@ -48,5 +48,6 @@ struct LeftToolbarActions: View {
 }
 
 #Preview {
-    LeftToolbarActions(appState: AppState())
+    let context = PersistenceController.shared.container.viewContext
+    LeftToolbarActions(appState: AppStateManager(viewContext: context))
 }

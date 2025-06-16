@@ -1,7 +1,7 @@
 import SwiftUI
 
-struct RightToolbarActions: View {
-    @ObservedObject var appState: AppState
+struct RightToolbarActions<T: StateManagement>: View {
+    @ObservedObject var appState: T
     @Binding var searchText: String
     @Environment(\.openWindow) private var openWindow
     
@@ -30,8 +30,9 @@ struct RightToolbarActions: View {
 }
 
 #Preview {
+    let context = PersistenceController.shared.container.viewContext
     RightToolbarActions(
-        appState: AppState(),
+        appState: AppStateManager(viewContext: context),
         searchText: .constant("")
     )
 }

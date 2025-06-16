@@ -10,14 +10,13 @@ extension Notification.Name {
 }
 
 struct ContentView: View {
-    @StateObject private var appState = AppState()
     @Environment(\.managedObjectContext) private var viewContext
     @Environment(\.openWindow) private var openWindow
+    @StateObject private var appStateManager: AppStateManager
     @State private var searchText = ""
     @State private var showingNewConversationSheet = false
     @State private var columnVisibility: NavigationSplitViewVisibility = .all
     @State private var selectedItem: NavigationItem = .home
-    @State private var selectedPerson: Person?
     @State private var people: [Person] = []
     @State private var showingAddPerson = false
 
@@ -26,37 +25,59 @@ struct ContentView: View {
         case insights
         case people
     }
+    
+    init() {
+        let context = PersistenceController.shared.container.viewContext
+        _appStateManager = StateObject(wrappedValue: AppStateManager(viewContext: context))
+    }
 
     var body: some View {
         NavigationStack {
             VStack {
-                if appState.selectedTab == .people {
+                if appStateManager.selectedTab == .people {
                     HStack(spacing: 0) {
                         PeopleListView(
-                            selectedPerson: $appState.selectedPerson
+                            selectedPerson: Binding(
+                                get: { appStateManager.selectedPerson },
+                                set: { appStateManager.selectedPerson = $0 }
+                            )
                         )
                         .frame(width: 300)
                         .frame(maxHeight: .infinity)
+                        .loadingOverlay(
+                            isLoading: appStateManager.isLoadingPeople,
+                            text: "Loading people..."
+                        )
                         
-                        if let person = appState.selectedPerson {
+                        if let person = appStateManager.selectedPerson {
                             PersonDetailView(person: person)
                                 .id(person.identifier) // Force re-init on person change
                                 .frame(maxWidth: .infinity)
+                                .environmentObject(appStateManager)
                         } else {
                             Text("Select a person")
                                 .foregroundStyle(.secondary)
                                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                         }
                     }
-                } else if appState.selectedTab == .insights {
+                } else if appStateManager.selectedTab == .insights {
                     InsightsView(
-                        selectedPersonID: $appState.selectedPersonID,
-                        selectedPerson: $appState.selectedPerson,
-                        selectedTab: $appState.selectedTab
+                        selectedPersonID: Binding(
+                            get: { appStateManager.selectedPersonID },
+                            set: { appStateManager.selectedPersonID = $0 }
+                        ),
+                        selectedPerson: Binding(
+                            get: { appStateManager.selectedPerson },
+                            set: { appStateManager.selectedPerson = $0 }
+                        ),
+                        selectedTab: Binding(
+                            get: { appStateManager.selectedTab },
+                            set: { appStateManager.selectedTab = $0 }
+                        )
                     )
-                } else if appState.selectedTab == .analytics {
+                } else if appStateManager.selectedTab == .analytics {
                     AnalyticsView()
-                        .environmentObject(appState)
+                        .environmentObject(appStateManager)
                 }
             }
             .navigationTitle("")
@@ -72,26 +93,29 @@ struct ContentView: View {
         }
 #endif
         .toolbar {
+            // Use new state manager
             // Far left: New Conversation and New Person (compact)
             ToolbarItem(placement: .navigation) {
-                LeftToolbarActions(appState: appState)
+                LeftToolbarActions(appState: appStateManager)
             }
             
             // Center: Main navigation (Insights/People/Analytics) with liquid glass styling
             ToolbarItem(placement: .principal) {
-                CenterNavigationView(appState: appState)
+                CenterNavigationView(appState: appStateManager)
             }
             
             // Far right: Search bar and settings with better spacing
             ToolbarItem(placement: .automatic) {
                 RightToolbarActions(
-                    appState: appState,
+                    appState: appStateManager,
                     searchText: $searchText
                 )
             }
         }
+        .errorAlert(appStateManager.errorManager)
         .sheet(isPresented: $showingAddPerson) {
             AddPersonView { name, role, _, isDirectReport, timezone, photo in
+                // Create person using legacy approach for now
                 let newPerson = Person(context: viewContext)
                 newPerson.identifier = UUID()
                 newPerson.name = name
@@ -100,21 +124,33 @@ struct ContentView: View {
                 newPerson.timezone = timezone
                 newPerson.photo = photo
                 
-                try? viewContext.save()
-                fetchPeople()
-                showingAddPerson = false
+                do {
+                    try viewContext.save()
+                    fetchPeople()
+                    showingAddPerson = false
+                    
+                    // Use AppStateManager for selection
+                    appStateManager.selectPerson(newPerson)
+                } catch {
+                    // Use AppStateManager error handling
+                    appStateManager.errorManager.handle(error, context: "Failed to create person")
+                }
             }
         }
     }
     
     private func fetchPeople() {
+        appStateManager.setLoadingPeople(true)
+        
         let request = NSFetchRequest<Person>(entityName: "Person")
         request.sortDescriptors = [NSSortDescriptor(keyPath: \Person.name, ascending: true)]
         
         do {
             people = try viewContext.fetch(request)
         } catch {
-            print("Error fetching people: \(error)")
+            appStateManager.errorManager.handle(error, context: "Failed to fetch people")
         }
+        
+        appStateManager.setLoadingPeople(false)
     }
 }

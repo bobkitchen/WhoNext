@@ -130,19 +130,13 @@ struct PreMeetingBriefWindow: View {
     private func renderInlineMarkdown(_ text: String) -> Text {
         // Simple approach: split on ** and alternate between normal and bold
         let parts = text.components(separatedBy: "**")
-        var result = Text("")
         
-        for (index, part) in parts.enumerated() {
-            if index % 2 == 0 {
-                // Even index = normal text
-                result = result + Text(part)
-            } else {
-                // Odd index = bold text
-                result = result + Text(part).fontWeight(.bold)
-            }
+        // Use reduce to build the text properly
+        return parts.enumerated().reduce(Text("")) { result, element in
+            let (index, part) = element
+            let partText = index % 2 == 0 ? Text(part) : Text(part).fontWeight(.bold)
+            return result + partText
         }
-        
-        return result
     }
 }
 

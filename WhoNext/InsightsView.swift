@@ -303,7 +303,7 @@ Best regards
         
         var error: NSDictionary?
         if let scriptObject = NSAppleScript(source: appleScript) {
-            let output = scriptObject.executeAndReturnError(&error)
+            scriptObject.executeAndReturnError(&error)
             if let error = error {
                 print("❌ AppleScript error: \(error)")
                 print("🔄 Falling back to clipboard method")
@@ -405,7 +405,7 @@ Best regards
                         }
                     }
                     
-                    if let scheduled = person.scheduledConversationDate {
+                    if person.scheduledConversationDate != nil {
                         HStack(spacing: 4) {
                             Image(systemName: "calendar.circle.fill")
                                 .font(.caption2)

@@ -309,7 +309,7 @@ class SentimentAnalysisService {
         
         // Extract named entities as potential topics
         tagger.enumerateTags(in: text.startIndex..<text.endIndex, unit: .word, scheme: .nameType) { tag, tokenRange in
-            if let tag = tag {
+            if tag != nil {
                 let token = String(text[tokenRange])
                 if token.count > 2 && !token.allSatisfy({ $0.isNumber }) {
                     topics.insert(token.lowercased())
