@@ -31,22 +31,10 @@ class HybridAIService: ObservableObject {
     
     // MARK: - Provider Selection
     var isAppleIntelligenceAvailable: Bool {
-        if #available(iOS 18.1, macOS 15.5, *) {
-            #if canImport(FoundationModels)
-            let available = appleIntelligenceService != nil
-            // print(" [HybridAI] Apple Intelligence check - service exists: \(available)")
-            if appleIntelligenceService != nil {
-                // print(" [HybridAI] Apple Intelligence service initialized successfully")
-            }
-            return available
-            #else
-            print(" [HybridAI] FoundationModels cannot import")
-            return false
-            #endif
-        } else {
-            print(" [HybridAI] macOS version too old for Apple Intelligence")
+        guard let appleService = appleIntelligenceService else {
             return false
         }
+        return appleService.isFoundationModelsAvailable
     }
     
     var preferredProvider: HybridAIProvider {
