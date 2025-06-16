@@ -135,6 +135,7 @@ struct ContentView: View {
                         )
                     }
                     .buttonStyle(PlainButtonStyle())
+                    .help("Insights")
                     
                     Button(action: { appState.selectedTab = .people }) {
                         HStack(spacing: 6) {
@@ -152,6 +153,7 @@ struct ContentView: View {
                         )
                     }
                     .buttonStyle(PlainButtonStyle())
+                    .help("People")
                     
                     Button(action: { appState.selectedTab = .analytics }) {
                         HStack(spacing: 6) {
@@ -169,6 +171,7 @@ struct ContentView: View {
                         )
                     }
                     .buttonStyle(PlainButtonStyle())
+                    .help("Analytics")
                 }
                 .padding(2)
                 .liquidGlassBackground(cornerRadius: 10, elevation: .medium)
@@ -193,6 +196,7 @@ struct ContentView: View {
                             .foregroundColor(.primary)
                     }
                     .buttonStyle(PlainButtonStyle())
+                    .help("Settings")
                     .padding(.horizontal, 4)
                 }
                 .padding(.horizontal, 8)
