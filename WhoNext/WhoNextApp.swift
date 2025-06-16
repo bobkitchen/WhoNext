@@ -12,6 +12,12 @@ struct WhoNextApp: App {
                 .onAppear {
                     // Initialize sentiment analysis on app startup
                     initializeSentimentAnalysis()
+                    
+                    // Trigger initial sync on app launch
+                    triggerLaunchSync()
+                    
+                    // Setup app resume sync
+                    setupAppResumeSync()
                 }
         }
         .windowStyle(.titleBar)
@@ -55,6 +61,28 @@ struct WhoNextApp: App {
         // Log migration status
         let status = SentimentAnalysisMigration.getMigrationStatus(context: context)
         print("📊 Sentiment Analysis Status: \(status.message)")
+    }
+    
+    /// Trigger sync on app launch to ensure fresh data
+    private func triggerLaunchSync() {
+        print("🚀 App Launch: Triggering sync to ensure fresh data...")
+        Task {
+            await SupabaseSyncManager.shared.syncWithSupabase(context: persistenceController.container.viewContext)
+        }
+    }
+    
+    /// Setup app resume sync for when app comes back to foreground
+    private func setupAppResumeSync() {
+        NotificationCenter.default.addObserver(
+            forName: NSApplication.didBecomeActiveNotification,
+            object: nil,
+            queue: .main
+        ) { _ in
+            print("🔄 App resumed: Triggering sync...")
+            Task {
+                await SupabaseSyncManager.shared.syncWithSupabase(context: persistenceController.container.viewContext)
+            }
+        }
     }
 }
 

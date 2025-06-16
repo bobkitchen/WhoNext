@@ -101,6 +101,8 @@ Best regards
 
     @State private var selectedTab = "general"
     @State private var refreshTrigger = false
+    @State private var diagnosticsResult: String?
+    @State private var isRunningDiagnostics = false
 
     var body: some View {
         ScrollView {
@@ -796,6 +798,89 @@ Best regards
             .padding()
             .background(Color(NSColor.controlBackgroundColor))
             .cornerRadius(8)
+            
+            // Sync Diagnostics Section
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Sync Diagnostics")
+                    .font(.headline)
+                Text("Troubleshoot sync issues between devices")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                
+                Button(isRunningDiagnostics ? "Running..." : "Run Diagnostics") {
+                    runSyncDiagnostics()
+                }
+                .buttonStyle(BorderedProminentButtonStyle())
+                .disabled(isRunningDiagnostics)
+                
+                Button("🔄 Fresh Start - Clear Local & Download from Cloud") {
+                    Task {
+                        await freshStartFromCloud()
+                    }
+                }
+                .buttonStyle(BorderedProminentButtonStyle())
+                .foregroundColor(.purple)
+                
+                Button("☢️ NUCLEAR RESET - Force Perfect Sync") {
+                    Task {
+                        await nuclearReset()
+                    }
+                }
+                .buttonStyle(BorderedProminentButtonStyle())
+                .foregroundColor(.red)
+                
+                Button("💥 TRUE NUCLEAR - Debug Version") {
+                    Task {
+                        await trueNuclearReset()
+                    }
+                }
+                .buttonStyle(BorderedProminentButtonStyle())
+                .foregroundColor(.black)
+                
+                Button("🔧 Reset Device Attribution") {
+                    Task {
+                        await resetDeviceAttribution()
+                    }
+                }
+                .buttonStyle(BorderedProminentButtonStyle())
+                .foregroundColor(.orange)
+                
+                Button("🔗 Fix Conversation Relationships") {
+                    Task {
+                        await fixConversationRelationships()
+                    }
+                }
+                .buttonStyle(BorderedProminentButtonStyle())
+                .foregroundColor(.blue)
+                
+                Button("🧹 Advanced Orphan Cleanup") {
+                    Task {
+                        await advancedOrphanCleanup()
+                    }
+                }
+                .buttonStyle(BorderedProminentButtonStyle())
+                .foregroundColor(.purple)
+                
+                if let diagnosticsResult = diagnosticsResult {
+                    ScrollView {
+                        Text(diagnosticsResult)
+                            .font(.system(.caption, design: .monospaced))
+                            .textSelection(.enabled)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                    .frame(maxHeight: 200)
+                    .padding(8)
+                    .background(Color(NSColor.textBackgroundColor))
+                    .cornerRadius(4)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 4)
+                            .stroke(Color.gray.opacity(0.3), lineWidth: 1)
+                    )
+                }
+            }
+            .padding()
+            .background(Color(NSColor.controlBackgroundColor))
+            .cornerRadius(8)
         }
     }
     
@@ -837,6 +922,10 @@ Best regards
             return "Calendar access restricted"
         case .notDetermined:
             return "Calendar access not requested"
+        case .fullAccess:
+            return "Full calendar access granted"
+        case .writeOnly:
+            return "Write-only calendar access granted"
         @unknown default:
             return "Unknown calendar status"
         }
@@ -1263,6 +1352,625 @@ Best regards
         components.append(currentComponent)
         
         return components
+    }
+    
+    private func runSyncDiagnostics() {
+        guard !isRunningDiagnostics else { return }
+        
+        isRunningDiagnostics = true
+        diagnosticsResult = "Running diagnostics..."
+        
+        Task {
+            let results = await SyncDiagnostics.shared.runDiagnostics(context: viewContext)
+            
+            await MainActor.run {
+                diagnosticsResult = results.joined(separator: "\n")
+                isRunningDiagnostics = false
+            }
+        }
+    }
+    
+    private func freshStartFromCloud() async {
+        diagnosticsResult = "Starting fresh start from cloud..."
+        
+        do {
+            // Step 1: Delete ALL local people and conversations
+            diagnosticsResult = "🗑️ Clearing all local data..."
+            
+            // Delete all conversations first (due to relationships)
+            let conversationRequest: NSFetchRequest<Conversation> = NSFetchRequest<Conversation>(entityName: "Conversation")
+            let allConversations = try viewContext.fetch(conversationRequest)
+            for conversation in allConversations {
+                viewContext.delete(conversation)
+            }
+            
+            // Delete all people
+            let peopleRequest: NSFetchRequest<Person> = NSFetchRequest<Person>(entityName: "Person")
+            let allPeople = try viewContext.fetch(peopleRequest)
+            for person in allPeople {
+                viewContext.delete(person)
+            }
+            
+            // Save the deletions
+            try viewContext.save()
+            diagnosticsResult = "✅ Local data cleared. Now downloading from cloud..."
+            
+            // Step 2: Download everything fresh from Supabase
+            try await supabaseSync.downloadRemoteChanges(context: viewContext)
+            
+            // Step 3: Save the downloaded data
+            try viewContext.save()
+            
+            diagnosticsResult = "🎉 Fresh start completed! All data downloaded from cloud. Run diagnostics to verify."
+            
+        } catch {
+            diagnosticsResult = "❌ Fresh start failed: \(error.localizedDescription)"
+        }
+    }
+    
+    private func nuclearReset() async {
+        diagnosticsResult = "☢️ NUCLEAR RESET: Completely wiping local data and rebuilding from cloud..."
+        
+        do {
+            let supabase = SupabaseConfig.shared.client
+            
+            // Step 1: Nuclear deletion of ALL Core Data
+            diagnosticsResult = "🧹 Step 1/4: Completely wiping ALL local data..."
+            
+            // Delete ALL entities in the right order (relationships first)
+            let conversationRequest: NSFetchRequest<NSFetchRequestResult> = NSFetchRequest(entityName: "Conversation")
+            let deleteConversationsRequest = NSBatchDeleteRequest(fetchRequest: conversationRequest)
+            try viewContext.execute(deleteConversationsRequest)
+            
+            let peopleRequest: NSFetchRequest<NSFetchRequestResult> = NSFetchRequest(entityName: "Person")
+            let deletePeopleRequest = NSBatchDeleteRequest(fetchRequest: peopleRequest)
+            try viewContext.execute(deletePeopleRequest)
+            
+            // Reset the context
+            viewContext.reset()
+            try viewContext.save()
+            
+            diagnosticsResult = "✅ Step 2/4: Downloading ONLY non-deleted people from cloud..."
+            
+            // Step 2: Download all people (no soft delete filtering)
+            let remotePeople: [SupabasePerson] = try await supabase.database
+                .from("people")
+                .select()
+                .execute()
+                .value
+            
+            // Create people with proper identifiers
+            for remotePerson in remotePeople {
+                let person = Person(context: viewContext)
+                person.identifier = UUID(uuidString: remotePerson.identifier) ?? UUID()
+                person.name = remotePerson.name
+                person.role = remotePerson.role
+                person.notes = remotePerson.notes
+                person.isDirectReport = remotePerson.isDirectReport ?? false
+                person.timezone = remotePerson.timezone
+                
+                if let dateString = remotePerson.scheduledConversationDate {
+                    person.scheduledConversationDate = ISO8601DateFormatter().date(from: dateString)
+                }
+                
+                if let photoBase64 = remotePerson.photoBase64, !photoBase64.isEmpty {
+                    person.photo = Data(base64Encoded: photoBase64)
+                }
+            }
+            
+            try viewContext.save()
+            diagnosticsResult = "✅ Step 3/4: Downloading ONLY non-deleted conversations from cloud..."
+            
+            // Step 3: Download all conversations and rebuild relationships
+            let remoteConversations: [SupabaseConversation] = try await supabase.database
+                .from("conversations")
+                .select()
+                .execute()
+                .value
+            
+            // Get all people for relationship building
+            let allPeopleRequest: NSFetchRequest<Person> = NSFetchRequest<Person>(entityName: "Person")
+            let allPeople = try viewContext.fetch(allPeopleRequest)
+            var peopleMap: [String: Person] = [:]
+            for person in allPeople {
+                if let identifier = person.identifier?.uuidString {
+                    peopleMap[identifier] = person
+                }
+            }
+            
+            // Create conversations with proper relationships
+            for remoteConv in remoteConversations {
+                let conversation = Conversation(context: viewContext)
+                conversation.uuid = UUID(uuidString: remoteConv.uuid) ?? UUID()
+                conversation.notes = remoteConv.notes
+                conversation.summary = remoteConv.summary
+                conversation.duration = Int32(remoteConv.duration ?? 0)
+                conversation.engagementLevel = remoteConv.engagementLevel
+                conversation.analysisVersion = remoteConv.analysisVersion
+                conversation.qualityScore = remoteConv.qualityScore
+                conversation.sentimentLabel = remoteConv.sentimentLabel
+                conversation.sentimentScore = remoteConv.sentimentScore
+                
+                if let dateString = remoteConv.date {
+                    conversation.date = ISO8601DateFormatter().date(from: dateString)
+                }
+                
+                if let lastAnalyzedString = remoteConv.lastAnalyzed {
+                    conversation.lastAnalyzed = ISO8601DateFormatter().date(from: lastAnalyzedString)
+                }
+                
+                if let lastSentimentString = remoteConv.lastSentimentAnalysis {
+                    conversation.lastSentimentAnalysis = ISO8601DateFormatter().date(from: lastSentimentString)
+                }
+                
+                // Rebuild relationship
+                if let personIdentifier = remoteConv.personIdentifier,
+                   let person = peopleMap[personIdentifier] {
+                    conversation.person = person
+                }
+            }
+            
+            try viewContext.save()
+            diagnosticsResult = "✅ Step 4/4: Clearing device attributions for proper sync..."
+            
+            // Step 4: Clear all device attributions so sync works properly
+            try await supabase.database
+                .from("people")
+                .update(["device_id": Optional<String>.none])
+                .not("device_id", operator: .is, value: "null") // WHERE clause: only update non-null device_ids
+                .execute()
+            
+            diagnosticsResult = "🎉 NUCLEAR RESET COMPLETE! All data rebuilt from cloud. Run diagnostics to verify."
+            
+        } catch {
+            diagnosticsResult = "❌ Nuclear reset failed: \(error.localizedDescription)"
+        }
+    }
+    
+    private func resetDeviceAttribution() async {
+        diagnosticsResult = "Resetting device attribution..."
+        
+        do {
+            // Clear device_id for ALL people in Supabase, then let each device claim their own
+            let supabase = SupabaseConfig.shared.client
+            
+            diagnosticsResult = "🧹 Clearing all device attributions in cloud..."
+            
+            // Update all people to have null device_id
+            try await supabase.database
+                .from("people")
+                .update(["device_id": Optional<String>.none])
+                .not("device_id", operator: .is, value: "null") // Only update non-null ones
+                .execute()
+            
+            diagnosticsResult = "✅ Device attributions cleared. Now syncing to re-establish proper attribution..."
+            
+            // Now sync - this will re-attribute people to the devices that have them locally
+            await supabaseSync.syncNow(context: viewContext)
+            
+            diagnosticsResult = "🎉 Device attribution reset completed! Run diagnostics to see the new attribution."
+            
+        } catch {
+            diagnosticsResult = "❌ Device attribution reset failed: \(error.localizedDescription)"
+        }
+    }
+    
+    private func fixConversationRelationships() async {
+        diagnosticsResult = "🔗 Analyzing conversation relationships..."
+        
+        do {
+            let supabase = SupabaseConfig.shared.client
+            
+            // Get all remote conversations with their person identifiers
+            let remoteConversations: [SupabaseConversation] = try await supabase.database
+                .from("conversations")
+                .select()
+                .execute()
+                .value
+            
+            // Get all local conversations and people
+            let conversationRequest: NSFetchRequest<Conversation> = NSFetchRequest<Conversation>(entityName: "Conversation")
+            let localConversations = try viewContext.fetch(conversationRequest)
+            
+            let peopleRequest: NSFetchRequest<Person> = NSFetchRequest<Person>(entityName: "Person")
+            let localPeople = try viewContext.fetch(peopleRequest)
+            
+            diagnosticsResult = "📊 Analysis: \(remoteConversations.count) remote, \(localConversations.count) local conversations, \(localPeople.count) people"
+            
+            // Create lookup maps
+            var peopleMap: [String: Person] = [:]
+            var localConvMap: [String: Conversation] = [:]
+            
+            for person in localPeople {
+                if let identifier = person.identifier?.uuidString {
+                    peopleMap[identifier] = person
+                }
+            }
+            
+            for conversation in localConversations {
+                if let uuid = conversation.uuid?.uuidString {
+                    localConvMap[uuid] = conversation
+                }
+            }
+            
+            var fixedCount = 0
+            var missingPeople = 0
+            var missingConversations = 0
+            var alreadyLinked = 0
+            
+            // Analyze and fix relationships
+            for remoteConv in remoteConversations {
+                guard let personIdentifier = remoteConv.personIdentifier else { continue }
+                
+                // Find the local conversation by UUID
+                guard let conversation = localConvMap[remoteConv.uuid] else {
+                    missingConversations += 1
+                    continue
+                }
+                
+                // Find the person by identifier
+                guard let person = peopleMap[personIdentifier] else {
+                    missingPeople += 1
+                    continue
+                }
+                
+                // Check and fix the relationship
+                if conversation.person != person {
+                    conversation.person = person
+                    fixedCount += 1
+                    print("🔗 Fixed: \(remoteConv.uuid) -> \(person.name ?? "Unknown")")
+                } else {
+                    alreadyLinked += 1
+                }
+            }
+            
+            // Handle conversations that exist locally but not remotely (orphaned without remote reference)
+            var orphanedLocalConversations = 0
+            for conversation in localConversations {
+                if conversation.person == nil {
+                    // This conversation has no person relationship
+                    let remoteExists = remoteConversations.contains { $0.uuid == conversation.uuid?.uuidString }
+                    if !remoteExists {
+                        orphanedLocalConversations += 1
+                        print("⚠️ Orphaned local conversation: \(conversation.uuid?.uuidString ?? "unknown") with no remote reference")
+                    }
+                }
+            }
+            
+            // Save the fixes
+            if fixedCount > 0 {
+                try viewContext.save()
+            }
+            
+            // Detailed results
+            var resultLines: [String] = []
+            resultLines.append("🔗 RELATIONSHIP REPAIR RESULTS:")
+            resultLines.append("   ✅ Fixed relationships: \(fixedCount)")
+            resultLines.append("   ✅ Already linked: \(alreadyLinked)")
+            resultLines.append("   ⚠️ Missing people: \(missingPeople)")
+            resultLines.append("   ⚠️ Missing conversations: \(missingConversations)")
+            resultLines.append("   ⚠️ Orphaned local conversations: \(orphanedLocalConversations)")
+            
+            if fixedCount > 0 {
+                resultLines.append("")
+                resultLines.append("🎉 Successfully fixed \(fixedCount) relationships!")
+                resultLines.append("Run diagnostics again to verify the improvements.")
+            } else if missingPeople > 0 || missingConversations > 0 {
+                resultLines.append("")
+                resultLines.append("⚠️ Some conversations couldn't be linked due to missing data.")
+                resultLines.append("Consider running 'Fresh Start' to rebuild from cloud.")
+            } else {
+                resultLines.append("")
+                resultLines.append("✅ All linkable relationships are already correct.")
+            }
+            
+            diagnosticsResult = resultLines.joined(separator: "\n")
+            
+        } catch {
+            diagnosticsResult = "❌ Failed to fix conversation relationships: \(error.localizedDescription)"
+        }
+    }
+    
+    private func advancedOrphanCleanup() async {
+        diagnosticsResult = "🧹 Starting advanced orphan cleanup analysis..."
+        
+        do {
+            let supabase = SupabaseConfig.shared.client
+            
+            // Get all remote conversations and people
+            let remoteConversations: [SupabaseConversation] = try await supabase.database
+                .from("conversations")
+                .select()
+                .execute()
+                .value
+            
+            let remotePeople: [SupabasePerson] = try await supabase.database
+                .from("people")
+                .select()
+                .execute()
+                .value
+            
+            // Get all local data
+            let conversationRequest: NSFetchRequest<Conversation> = NSFetchRequest<Conversation>(entityName: "Conversation")
+            let localConversations = try viewContext.fetch(conversationRequest)
+            
+            let peopleRequest: NSFetchRequest<Person> = NSFetchRequest<Person>(entityName: "Person")
+            let localPeople = try viewContext.fetch(peopleRequest)
+            
+            // Create lookup maps
+            let remoteConvUUIDs = Set(remoteConversations.map { $0.uuid })
+            let remotePeopleIDs = Set(remotePeople.compactMap { $0.identifier })
+            let localPeopleMap: [String: Person] = Dictionary(localPeople.compactMap { person in
+                guard let id = person.identifier?.uuidString else { return nil }
+                return (id, person)
+            }, uniquingKeysWith: { first, _ in first })
+            
+            var cleanupResults: [String] = []
+            var fixedConversations = 0
+            var removedOrphans = 0
+            
+            cleanupResults.append("🔍 ADVANCED ORPHAN ANALYSIS:")
+            cleanupResults.append("   Remote conversations: \(remoteConversations.count)")
+            cleanupResults.append("   Remote people: \(remotePeople.count)")
+            cleanupResults.append("   Local conversations: \(localConversations.count)")
+            cleanupResults.append("   Local people: \(localPeople.count)")
+            cleanupResults.append("")
+            
+            // Strategy 1: Fix conversations that exist remotely but are orphaned locally
+            for remoteConv in remoteConversations {
+                if let localConv = localConversations.first(where: { $0.uuid?.uuidString == remoteConv.uuid }),
+                   localConv.person == nil,
+                   let personId = remoteConv.personIdentifier,
+                   let person = localPeopleMap[personId] {
+                    
+                    localConv.person = person
+                    fixedConversations += 1
+                    print("🔗 Strategy 1 - Fixed: \(remoteConv.uuid) -> \(person.name ?? "Unknown")")
+                }
+            }
+            
+            // Strategy 2: Identify truly orphaned local conversations
+            var trulyOrphaned: [Conversation] = []
+            for localConv in localConversations {
+                if localConv.person == nil {
+                    let hasRemoteReference = remoteConvUUIDs.contains(localConv.uuid?.uuidString ?? "")
+                    if !hasRemoteReference {
+                        trulyOrphaned.append(localConv)
+                    }
+                }
+            }
+            
+            cleanupResults.append("📊 CLEANUP STRATEGIES:")
+            cleanupResults.append("   Strategy 1 - Remote match fixes: \(fixedConversations)")
+            cleanupResults.append("   Strategy 2 - Truly orphaned found: \(trulyOrphaned.count)")
+            cleanupResults.append("")
+            
+            // Strategy 3: Try to match orphaned conversations by date/content similarity
+            var matchedByHeuristics = 0
+            for orphan in trulyOrphaned {
+                // Try to find a person by matching conversation date with recent activity
+                if let convDate = orphan.date {
+                    let candidates = localPeople.filter { person in
+                        // Look for people who had activity around the same time
+                        if let lastContact = person.lastContactDate {
+                            let timeDiff = abs(convDate.timeIntervalSince(lastContact))
+                            return timeDiff < 86400 * 7 // Within 7 days
+                        }
+                        return false
+                    }
+                    
+                    // If we found exactly one candidate, it's likely a match
+                    if candidates.count == 1 {
+                        orphan.person = candidates.first
+                        matchedByHeuristics += 1
+                        print("🎯 Strategy 3 - Heuristic match: \(orphan.uuid?.uuidString ?? "unknown") -> \(candidates.first?.name ?? "Unknown")")
+                    }
+                }
+            }
+            
+            cleanupResults.append("   Strategy 3 - Heuristic matches: \(matchedByHeuristics)")
+            cleanupResults.append("")
+            
+            // Save all fixes
+            let totalFixed = fixedConversations + matchedByHeuristics
+            if totalFixed > 0 {
+                try viewContext.save()
+                cleanupResults.append("✅ SUCCESSFULLY FIXED \(totalFixed) ORPHANED CONVERSATIONS!")
+            } else {
+                cleanupResults.append("ℹ️ No orphaned conversations could be automatically fixed.")
+            }
+            
+            // Show remaining orphans
+            let remainingOrphans = localConversations.filter { $0.person == nil }.count
+            cleanupResults.append("")
+            cleanupResults.append("📈 FINAL STATUS:")
+            cleanupResults.append("   Remaining orphaned conversations: \(remainingOrphans)")
+            
+            if remainingOrphans > 0 {
+                cleanupResults.append("")
+                cleanupResults.append("💡 RECOMMENDATIONS:")
+                cleanupResults.append("   • Run diagnostics to see current state")
+                cleanupResults.append("   • Consider 'Fresh Start' if issues persist")
+                cleanupResults.append("   • Manual review may be needed for complex cases")
+            } else {
+                cleanupResults.append("   🎉 ALL CONVERSATIONS NOW HAVE PROPER RELATIONSHIPS!")
+            }
+            
+            diagnosticsResult = cleanupResults.joined(separator: "\n")
+            
+        } catch {
+            diagnosticsResult = "❌ Advanced orphan cleanup failed: \(error.localizedDescription)"
+        }
+    }
+    
+    private func trueNuclearReset() async {
+        var output: [String] = []
+        output.append("💥 TRUE NUCLEAR RESET - Debug Mode")
+        output.append(String(repeating: "=", count: 50))
+        
+        do {
+            let supabase = SupabaseConfig.shared.client
+            
+            // STEP 1: Show exactly what's in the cloud BEFORE we do anything
+            output.append("")
+            output.append("🔍 STEP 1: CLOUD INVENTORY")
+            
+            let allRemotePeople: [SupabasePerson] = try await supabase.database
+                .from("people")
+                .select()
+                .execute()
+                .value
+            
+            let nonDeletedPeople = allRemotePeople.filter { !($0.isDeleted ?? false) }
+            let deletedPeople = allRemotePeople.filter { $0.isDeleted ?? false }
+            
+            output.append("   Total people in cloud: \(allRemotePeople.count)")
+            output.append("   Non-deleted: \(nonDeletedPeople.count)")
+            output.append("   Deleted: \(deletedPeople.count)")
+            
+            // Show first few non-deleted people
+            output.append("")
+            output.append("📋 First 5 non-deleted people in cloud:")
+            for (i, person) in nonDeletedPeople.prefix(5).enumerated() {
+                output.append("   \(i+1). \(person.name ?? "Unknown") (ID: \(person.identifier))")
+            }
+            
+            diagnosticsResult = output.joined(separator: "\n")
+            
+            // STEP 2: Wipe local completely
+            output.append("")
+            output.append("🧹 STEP 2: WIPING LOCAL DATA")
+            
+            let conversationRequest: NSFetchRequest<NSFetchRequestResult> = NSFetchRequest(entityName: "Conversation")
+            let deleteConversationsRequest = NSBatchDeleteRequest(fetchRequest: conversationRequest)
+            try viewContext.execute(deleteConversationsRequest)
+            
+            let peopleRequest: NSFetchRequest<NSFetchRequestResult> = NSFetchRequest(entityName: "Person")
+            let deletePeopleRequest = NSBatchDeleteRequest(fetchRequest: peopleRequest)
+            try viewContext.execute(deletePeopleRequest)
+            
+            viewContext.reset()
+            try viewContext.save()
+            
+            output.append("   ✅ All local data deleted")
+            diagnosticsResult = output.joined(separator: "\n")
+            
+            // STEP 3: Download exactly what we found in step 1
+            output.append("")
+            output.append("📥 STEP 3: DOWNLOADING NON-DELETED PEOPLE")
+            output.append("   Creating \(nonDeletedPeople.count) people locally...")
+            
+            var createdCount = 0
+            for remotePerson in nonDeletedPeople {
+                let person = Person(context: viewContext)
+                person.identifier = UUID(uuidString: remotePerson.identifier) ?? UUID()
+                person.name = remotePerson.name
+                person.role = remotePerson.role
+                person.notes = remotePerson.notes
+                person.isDirectReport = remotePerson.isDirectReport ?? false
+                person.timezone = remotePerson.timezone
+                
+                if let dateString = remotePerson.scheduledConversationDate {
+                    person.scheduledConversationDate = ISO8601DateFormatter().date(from: dateString)
+                }
+                
+                if let photoBase64 = remotePerson.photoBase64, !photoBase64.isEmpty {
+                    person.photo = Data(base64Encoded: photoBase64)
+                }
+                
+                createdCount += 1
+            }
+            
+            try viewContext.save()
+            output.append("   ✅ Created \(createdCount) people locally")
+            diagnosticsResult = output.joined(separator: "\n")
+            
+            // STEP 4: Download conversations
+            output.append("")
+            output.append("📥 STEP 4: DOWNLOADING CONVERSATIONS")
+            
+            let allRemoteConversations: [SupabaseConversation] = try await supabase.database
+                .from("conversations")
+                .select()
+                .execute()
+                .value
+            
+            let nonDeletedConversations = allRemoteConversations.filter { !($0.isDeleted ?? false) }
+            
+            output.append("   Total conversations in cloud: \(allRemoteConversations.count)")
+            output.append("   Non-deleted: \(nonDeletedConversations.count)")
+            output.append("   Creating \(nonDeletedConversations.count) conversations locally...")
+            
+            // Get all people for relationship building
+            let allLocalPeopleRequest: NSFetchRequest<Person> = NSFetchRequest<Person>(entityName: "Person")
+            let allLocalPeople = try viewContext.fetch(allLocalPeopleRequest)
+            var peopleMap: [String: Person] = [:]
+            for person in allLocalPeople {
+                if let identifier = person.identifier?.uuidString {
+                    peopleMap[identifier] = person
+                }
+            }
+            
+            var conversationsCreated = 0
+            var conversationsLinked = 0
+            
+            for remoteConv in nonDeletedConversations {
+                let conversation = Conversation(context: viewContext)
+                conversation.uuid = UUID(uuidString: remoteConv.uuid) ?? UUID()
+                conversation.notes = remoteConv.notes
+                conversation.summary = remoteConv.summary
+                conversation.duration = Int32(remoteConv.duration ?? 0)
+                
+                if let dateString = remoteConv.date {
+                    conversation.date = ISO8601DateFormatter().date(from: dateString)
+                }
+                
+                // Link to person
+                if let personIdentifier = remoteConv.personIdentifier,
+                   let person = peopleMap[personIdentifier] {
+                    conversation.person = person
+                    conversationsLinked += 1
+                }
+                
+                conversationsCreated += 1
+            }
+            
+            try viewContext.save()
+            
+            output.append("   ✅ Created \(conversationsCreated) conversations")
+            output.append("   ✅ Linked \(conversationsLinked) to people")
+            
+            // STEP 5: Final verification
+            output.append("")
+            output.append("🎯 STEP 5: FINAL VERIFICATION")
+            
+            let finalPeopleRequest: NSFetchRequest<Person> = NSFetchRequest<Person>(entityName: "Person")
+            let finalPeopleCount = try viewContext.count(for: finalPeopleRequest)
+            
+            let finalConversationRequest: NSFetchRequest<Conversation> = NSFetchRequest<Conversation>(entityName: "Conversation")
+            let finalConversationCount = try viewContext.count(for: finalConversationRequest)
+            
+            output.append("   Final local people: \(finalPeopleCount)")
+            output.append("   Final local conversations: \(finalConversationCount)")
+            output.append("")
+            
+            if finalPeopleCount == nonDeletedPeople.count {
+                output.append("✅ SUCCESS: Local count matches cloud non-deleted count!")
+            } else {
+                output.append("❌ MISMATCH: Local (\(finalPeopleCount)) != Cloud non-deleted (\(nonDeletedPeople.count))")
+            }
+            
+            output.append("")
+            output.append("🎉 TRUE NUCLEAR RESET COMPLETE!")
+            output.append("This device should now have EXACTLY \(nonDeletedPeople.count) people.")
+            
+            diagnosticsResult = output.joined(separator: "\n")
+            
+        } catch {
+            output.append("")
+            output.append("❌ TRUE NUCLEAR RESET FAILED: \(error.localizedDescription)")
+            diagnosticsResult = output.joined(separator: "\n")
+        }
     }
 }
 

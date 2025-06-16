@@ -26,9 +26,11 @@ class SupabaseSyncManager: ObservableObject {
         #endif
     }()
     private var cancellables = Set<AnyCancellable>()
+    private var syncTimer: Timer?
     
     private init() {
         setupRealtimeSubscriptions()
+        setupPeriodicSync()
     }
     
     // MARK: - Core Data Integration
@@ -102,8 +104,8 @@ class SupabaseSyncManager: ObservableObject {
                 createdAt: existingResponse.first?.createdAt ?? now,
                 updatedAt: now, // Always update timestamp
                 deviceId: deviceId,
-                isDeleted: false,
-                deletedAt: nil,
+                isDeleted: nil, // No longer used
+                deletedAt: nil, // No longer used
                 role: person.role,
                 timezone: person.timezone,
                 scheduledConversationDate: person.scheduledConversationDate?.ISO8601Format(),
@@ -135,7 +137,6 @@ class SupabaseSyncManager: ObservableObject {
         let response: [SupabasePerson] = try await supabase.database
             .from("people")
             .select()
-            .eq("is_deleted", value: false)  // Only get non-deleted records
             .execute()
             .value
         
@@ -254,8 +255,8 @@ class SupabaseSyncManager: ObservableObject {
                 createdAt: existingResponse.first?.createdAt ?? now,
                 updatedAt: now, // Always update timestamp
                 deviceId: deviceId,
-                isDeleted: false,  // New records are not deleted
-                deletedAt: nil,    // No deletion timestamp
+                isDeleted: nil,  // No longer used
+                deletedAt: nil,  // No longer used
                 duration: conversation.duration > 0 ? Int(conversation.duration) : nil,
                 engagementLevel: conversation.engagementLevel,
                 analysisVersion: conversation.analysisVersion,
@@ -293,7 +294,6 @@ class SupabaseSyncManager: ObservableObject {
         let response: [SupabaseConversation] = try await supabase.database
             .from("conversations")
             .select()
-            .eq("is_deleted", value: false)  // Only get non-deleted records
             .execute()
             .value
         
@@ -364,9 +364,35 @@ class SupabaseSyncManager: ObservableObject {
     
     // MARK: - Real-time Subscriptions
     private func setupRealtimeSubscriptions() {
-        // TODO: Implement real-time subscriptions when Supabase Swift SDK API is stable
-        // For now, we'll rely on manual sync
-        print("Real-time subscriptions will be implemented in a future update")
+        print("🔄 Real-time sync setup deferred - using periodic sync instead")
+        // Note: Supabase Swift SDK real-time API is complex and version-dependent
+        // For now, we'll use app launch + app resume sync as our real-time solution
+        // TODO: Implement proper real-time subscriptions when API is more stable
+    }
+    
+    // MARK: - Periodic Sync
+    private func setupPeriodicSync() {
+        print("⏰ Setting up periodic sync every 5 minutes...")
+        
+        // Create a timer that syncs every 5 minutes
+        syncTimer = Timer.scheduledTimer(withTimeInterval: 300.0, repeats: true) { [weak self] _ in
+            Task { @MainActor in
+                print("⏰ Periodic sync triggered")
+                guard let self = self,
+                      let context = PersistenceController.shared.container.viewContext as NSManagedObjectContext? else { return }
+                await self.syncWithSupabase(context: context)
+            }
+        }
+        
+        // Ensure timer runs in all run loop modes
+        if let timer = syncTimer {
+            RunLoop.current.add(timer, forMode: .common)
+        }
+    }
+    
+    deinit {
+        syncTimer?.invalidate()
+        syncTimer = nil
     }
     
     // MARK: - Manual Sync Trigger
@@ -425,169 +451,101 @@ class SupabaseSyncManager: ObservableObject {
     private func uploadLocalChanges(context: NSManagedObjectContext) async throws {
         try await uploadPeopleToSupabase(context: context)
         try await uploadConversationsToSupabase(context: context)
-        try await syncLocalDeletionsToSupabase(context: context)
+        try await deleteRemovedPeopleFromSupabase(context: context)
+        try await deleteRemovedConversationsFromSupabase(context: context)
     }
     
     public func downloadRemoteChanges(context: NSManagedObjectContext) async throws {
         try await downloadPeopleFromSupabase(context: context)
         try await downloadConversationsFromSupabase(context: context)
-        try await syncRemoteDeletionsToLocal(context: context)
     }
     
-    private func syncLocalDeletionsToSupabase(context: NSManagedObjectContext) async throws {
-        print("🗑️ Syncing local deletions to Supabase using soft deletes...")
+    // MARK: - True Deletion (Hard Delete)
+    private func deleteRemovedPeopleFromSupabase(context: NSManagedObjectContext) async throws {
+        print("🗑️ Hard deleting people removed locally from Supabase...")
         
+        // Get local people identifiers
         let localPeopleRequest: NSFetchRequest<Person> = NSFetchRequest<Person>(entityName: "Person")
         let localPeople = try context.fetch(localPeopleRequest)
-        let localPeopleNames = Set(localPeople.compactMap { $0.name?.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() }.filter { !$0.isEmpty })
+        let localPeopleIdentifiers = Set(localPeople.compactMap { $0.identifier?.uuidString })
         
-        print("🔍 Debug: Found \(localPeople.count) local people with \(localPeopleNames.count) valid names")
+        print("🔍 Local people count: \(localPeople.count)")
         
-        // Debug: Show sample local names
-        print("🔍 Sample local names:")
-        for (index, name) in localPeopleNames.prefix(3).enumerated() {
-            print("  Local \(index + 1): '\(name)'")
-        }
-        
-        // Get all remote people that are NOT marked as deleted
+        // Get all remote people
         let remotePeople: [SupabasePerson] = try await supabase.database
             .from("people")
             .select()
-            .eq("is_deleted", value: false)
             .execute()
             .value
         
-        let remotePeopleNames = Set(remotePeople.compactMap { $0.name?.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() }.filter { !$0.isEmpty })
-        
-        print("🔍 Debug: Found \(remotePeople.count) remote people with \(remotePeopleNames.count) valid names")
-        
-        // Debug: Show sample remote names
-        print("🔍 Sample remote names:")
-        for (index, name) in remotePeopleNames.prefix(3).enumerated() {
-            print("  Remote \(index + 1): '\(name)'")
-        }
+        print("🔍 Remote people count: \(remotePeople.count)")
         
         // Find people that exist remotely but not locally (deleted locally)
-        let deletedPeopleNames = remotePeopleNames.subtracting(localPeopleNames)
-        
-        print("🔍 Debug: \(deletedPeopleNames.count) people appear to be deleted locally")
-        
-        // SAFETY CHECK: If more than 50% of records would be deleted, something is wrong
-        let deletionPercentage = remotePeople.count > 0 ? Double(deletedPeopleNames.count) / Double(remotePeople.count) : 0
-        
-        if deletionPercentage > 0.5 && deletedPeopleNames.count > 5 {
-            print("⚠️ SAFETY: Refusing to soft delete \(deletedPeopleNames.count) people (\(Int(deletionPercentage * 100))% of total)")
-            print("⚠️ This suggests a sync issue, not actual deletions. Skipping deletion sync for safety.")
-            return
-        }
-        
-        // If this seems wrong, let's investigate further
-        if deletedPeopleNames.count > 10 {
-            print("⚠️ Warning: Large number of deletions detected. First few local names:")
-            for (index, name) in localPeopleNames.prefix(5).enumerated() {
-                print("  Local \(index + 1): \(name)")
-            }
-            print("⚠️ First few remote names:")
-            for (index, name) in remotePeopleNames.prefix(5).enumerated() {
-                print("  Remote \(index + 1): \(name)")
-            }
-        }
-        
-        // Only proceed if the number of deletions seems reasonable (allow up to 25 at once)
-        if deletedPeopleNames.count > 25 {
-            print("⚠️ SAFETY: Refusing to soft delete \(deletedPeopleNames.count) people at once")
-            print("⚠️ This seems like too many deletions. Please verify manually.")
-            return
-        }
-        
-        // Mark them as deleted in Supabase (soft delete) - match by name
-        var deletedPeopleCount = 0
-        for deletedName in deletedPeopleNames {
-            do {
-                let now = ISO8601DateFormatter().string(from: Date())
-                
-                // Find the remote person by name and soft delete them
-                let matchingRemotePeople = remotePeople.filter { 
-                    $0.name?.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() == deletedName 
-                }
-                
-                for remotePerson in matchingRemotePeople {
+        var deletedCount = 0
+        for remotePerson in remotePeople {
+            let remoteIdentifier = remotePerson.identifier
+            
+            // If this remote person doesn't exist locally, delete it from cloud
+            if !localPeopleIdentifiers.contains(remoteIdentifier) {
+                do {
                     try await supabase.database
                         .from("people")
-                        .update(["is_deleted": true])
-                        .eq("identifier", value: remotePerson.identifier)
+                        .delete()
+                        .eq("identifier", value: remoteIdentifier)
                         .execute()
                     
-                    try await supabase.database
-                        .from("people")
-                        .update(["deleted_at": now])
-                        .eq("identifier", value: remotePerson.identifier)
-                        .execute()
-                        
-                    deletedPeopleCount += 1
-                    print("🗑️ Soft deleted person: \(deletedName)")
+                    deletedCount += 1
+                    print("🗑️ Hard deleted person: \(remotePerson.name ?? "Unknown") (ID: \(remoteIdentifier))")
+                } catch {
+                    print("❌ Failed to delete person \(remotePerson.name ?? "Unknown"): \(error)")
                 }
-            } catch {
-                print("❌ Failed to soft delete person \(deletedName): \(error)")
             }
         }
         
-        // Skip conversation deletion for now since we're fixing the core issue
-        print("🗑️ Soft deletion sync completed: \(deletedPeopleCount) people")
+        print("🗑️ Hard deletion completed: \(deletedCount) people permanently removed from cloud")
     }
     
-    private func syncRemoteDeletionsToLocal(context: NSManagedObjectContext) async throws {
-        print("🗑️ Syncing remote deletions to local...")
+    private func deleteRemovedConversationsFromSupabase(context: NSManagedObjectContext) async throws {
+        print("🗑️ Hard deleting conversations removed locally from Supabase...")
         
-        // Get all remote people that ARE marked as deleted
-        let deletedRemotePeople: [SupabasePerson] = try await supabase.database
-            .from("people")
-            .select()
-            .eq("is_deleted", value: true)
-            .execute()
-            .value
-        
-        let deletedRemotePeopleIdentifiers = Set(deletedRemotePeople.compactMap { $0.identifier })
-        
-        // Get all local people
-        let localPeopleRequest: NSFetchRequest<Person> = NSFetchRequest<Person>(entityName: "Person")
-        let localPeople = try context.fetch(localPeopleRequest)
-        
-        // Find and delete local people that are marked as deleted remotely
-        var deletedLocalPeople = 0
-        for person in localPeople {
-            if let identifier = person.identifier?.uuidString,
-               deletedRemotePeopleIdentifiers.contains(identifier) {
-                context.delete(person)
-                deletedLocalPeople += 1
-            }
-        }
-        
-        // Do the same for conversations
-        let deletedRemoteConversations: [SupabaseConversation] = try await supabase.database
-            .from("conversations")
-            .select()
-            .eq("is_deleted", value: true)
-            .execute()
-            .value
-        
-        let deletedRemoteConversationUUIDs = Set(deletedRemoteConversations.map { $0.uuid })
-        
+        // Get local conversation UUIDs
         let localConversationsRequest: NSFetchRequest<Conversation> = NSFetchRequest<Conversation>(entityName: "Conversation")
         let localConversations = try context.fetch(localConversationsRequest)
+        let localConversationUUIDs = Set(localConversations.compactMap { $0.uuid?.uuidString })
         
-        // Find and delete local conversations that are marked as deleted remotely
-        var deletedLocalConversations = 0
-        for conversation in localConversations {
-            if let uuid = conversation.uuid?.uuidString,
-               deletedRemoteConversationUUIDs.contains(uuid) {
-                context.delete(conversation)
-                deletedLocalConversations += 1
+        print("🔍 Local conversations count: \(localConversations.count)")
+        
+        // Get all remote conversations
+        let remoteConversations: [SupabaseConversation] = try await supabase.database
+            .from("conversations")
+            .select()
+            .execute()
+            .value
+        
+        print("🔍 Remote conversations count: \(remoteConversations.count)")
+        
+        // Find conversations that exist remotely but not locally (deleted locally)
+        var deletedCount = 0
+        for remoteConversation in remoteConversations {
+            let remoteUUID = remoteConversation.uuid
+            
+            // If this remote conversation doesn't exist locally, delete it from cloud
+            if !localConversationUUIDs.contains(remoteUUID) {
+                do {
+                    try await supabase.database
+                        .from("conversations")
+                        .delete()
+                        .eq("uuid", value: remoteUUID)
+                        .execute()
+                    
+                    deletedCount += 1
+                    print("🗑️ Hard deleted conversation: \(remoteUUID)")
+                } catch {
+                    print("❌ Failed to delete conversation \(remoteUUID): \(error)")
+                }
             }
         }
         
-        if deletedLocalPeople > 0 || deletedLocalConversations > 0 {
-            print("🗑️ Remote deletion sync completed: \(deletedLocalPeople) people, \(deletedLocalConversations) conversations")
-        }
+        print("🗑️ Hard deletion completed: \(deletedCount) conversations permanently removed from cloud")
     }
 }
