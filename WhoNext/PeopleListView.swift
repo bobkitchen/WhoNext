@@ -24,6 +24,10 @@ struct PeopleListView: View {
                 viewContext.insert(person)
                 try? viewContext.save()
                 selectedPerson = person
+                
+                // Trigger sync to upload new person
+                ProperSyncManager.shared.triggerSync()
+                
                 window.close()
             },
             onCancel: {
@@ -130,8 +134,11 @@ struct PeopleListView: View {
         if selectedPerson == person {
             selectedPerson = nil
         }
-        viewContext.delete(person)
-        try? viewContext.save()
+        
+        // Use proper sync manager to handle deletion
+        Task {
+            await ProperSyncManager.shared.deletePerson(person, context: viewContext)
+        }
     }
 }
 

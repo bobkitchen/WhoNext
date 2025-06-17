@@ -124,11 +124,16 @@ struct GlobalNewConversationSheet: View {
     private func saveConversation() {
         guard let person = selectedPerson else { return }
         let newConversation = Conversation(context: viewContext)
+        newConversation.uuid = UUID()
         newConversation.date = date
         newConversation.notes = notes
         newConversation.person = person
         do {
             try viewContext.save()
+            
+            // Trigger sync to upload new conversation
+            ProperSyncManager.shared.triggerSync()
+            
             isPresented = false
             notes = ""
             date = Date()

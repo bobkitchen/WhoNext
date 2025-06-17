@@ -217,6 +217,8 @@ struct AddPersonWindow: View {
                     newPerson.timezone = editingTimezone.trimmingCharacters(in: .whitespacesAndNewlines)
                     newPerson.isDirectReport = isDirectReport
                     newPerson.notes = editingNotes.trimmingCharacters(in: .whitespacesAndNewlines)
+                    newPerson.createdAt = Date() // Set creation timestamp for sync
+                    newPerson.modifiedAt = Date() // Set initial modification timestamp
                     
                     if let photoData = editingPhotoData {
                         newPerson.photo = photoData

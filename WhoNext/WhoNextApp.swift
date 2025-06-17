@@ -15,9 +15,6 @@ struct WhoNextApp: App {
                     
                     // Trigger initial sync on app launch
                     triggerLaunchSync()
-                    
-                    // Setup app resume sync
-                    setupAppResumeSync()
                 }
         }
         .windowStyle(.titleBar)
@@ -66,24 +63,9 @@ struct WhoNextApp: App {
     /// Trigger sync on app launch to ensure fresh data
     private func triggerLaunchSync() {
         print("🚀 App Launch: Triggering sync to ensure fresh data...")
-        Task {
-            await SupabaseSyncManager.shared.syncWithSupabase(context: persistenceController.container.viewContext)
-        }
+        ProperSyncManager.shared.triggerSync()
     }
     
-    /// Setup app resume sync for when app comes back to foreground
-    private func setupAppResumeSync() {
-        NotificationCenter.default.addObserver(
-            forName: NSApplication.didBecomeActiveNotification,
-            object: nil,
-            queue: .main
-        ) { _ in
-            print("🔄 App resumed: Triggering sync...")
-            Task {
-                await SupabaseSyncManager.shared.syncWithSupabase(context: persistenceController.container.viewContext)
-            }
-        }
-    }
 }
 
 extension Notification.Name {

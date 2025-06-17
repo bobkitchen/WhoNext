@@ -803,8 +803,10 @@ struct ConversationRowView: View {
     }
     
     private func deleteConversation() {
-        viewContext.delete(conversation)
-        try? viewContext.save()
+        // Use ProperSyncManager for proper deletion sync
+        Task {
+            await ProperSyncManager.shared.deleteConversation(conversation, context: viewContext)
+        }
     }
     
     private let dayFormatter: DateFormatter = {

@@ -122,8 +122,14 @@ struct NewConversationWindow: View {
         newConversation.notesRTF = try? richNotes.data(from: NSRange(location: 0, length: richNotes.length), documentAttributes: [.documentType: NSAttributedString.DocumentType.rtf])
         newConversation.person = person
         newConversation.uuid = UUID()
+        newConversation.createdAt = Date() // Set creation timestamp for sync
+        newConversation.modifiedAt = Date() // Set initial modification timestamp
         do {
             try viewContext.save()
+            
+            // Trigger sync to upload new conversation
+            ProperSyncManager.shared.triggerSync()
+            
             isPresented = false
         } catch {
             print("Failed to save conversation: \(error)")

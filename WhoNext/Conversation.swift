@@ -19,6 +19,12 @@ public class Conversation: NSManagedObject {
     @NSManaged public var sentimentScore: Double
     @NSManaged public var person: Person?
     @NSManaged public var notesRTF: Data?
+    
+    // Sync-related timestamp fields
+    @NSManaged public var createdAt: Date?
+    @NSManaged public var modifiedAt: Date?
+    @NSManaged public var isSoftDeleted: Bool
+    @NSManaged public var deletedAt: Date?
 
     public var notesAttributedString: NSAttributedString? {
         get {

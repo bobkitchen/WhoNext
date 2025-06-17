@@ -43,7 +43,7 @@ class SyncDiagnostics {
         results.append("🌐 CONNECTIVITY TEST:")
         do {
             let startTime = Date()
-            let response = try await supabase.database
+            let response = try await supabase
                 .from("people")
                 .select("id", count: .exact)
                 .limit(1)
@@ -62,14 +62,14 @@ class SyncDiagnostics {
         results.append("☁️ REMOTE DATA:")
         do {
             // Count people
-            let peopleResponse = try await supabase.database
+            let peopleResponse = try await supabase
                 .from("people")
                 .select("id", count: .exact)
                 .execute()
             results.append("   Remote People: \(peopleResponse.count ?? 0)")
             
             // Count conversations
-            let conversationResponse = try await supabase.database
+            let conversationResponse = try await supabase
                 .from("conversations")
                 .select("id", count: .exact)
                 .execute()
@@ -83,7 +83,7 @@ class SyncDiagnostics {
         // 5. Sample Remote Data
         results.append("📋 SAMPLE REMOTE DATA:")
         do {
-            let samplePeople: [SupabasePerson] = try await supabase.database
+            let samplePeople: [SupabasePerson] = try await supabase
                 .from("people")
                 .select()
                 .limit(3)
@@ -106,7 +106,7 @@ class SyncDiagnostics {
         // 6. Device-specific data
         results.append("📱 DEVICE-SPECIFIC DATA:")
         do {
-            let devicePeople: [SupabasePerson] = try await supabase.database
+            let devicePeople: [SupabasePerson] = try await supabase
                 .from("people")
                 .select()
                 .eq("device_id", value: deviceId)
@@ -129,7 +129,7 @@ class SyncDiagnostics {
         results.append("🔍 DEVICE ATTRIBUTION ANALYSIS:")
         do {
             // Get all devices and their counts
-            let allPeople: [SupabasePerson] = try await supabase.database
+            let allPeople: [SupabasePerson] = try await supabase
                 .from("people")
                 .select()
                 .execute()

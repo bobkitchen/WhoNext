@@ -97,7 +97,7 @@ Best regards
         animation: .default
     ) private var conversations: FetchedResults<Conversation>
     
-    @StateObject private var supabaseSync = SupabaseSyncManager.shared
+    @StateObject private var properSync = ProperSyncManager.shared
 
     @State private var selectedTab = "general"
     @State private var refreshTrigger = false
@@ -673,13 +673,13 @@ Best regards
                     // Sync Status
                     HStack {
                         Circle()
-                            .fill(supabaseSync.isSyncing ? .blue : (supabaseSync.error != nil ? .red : .green))
+                            .fill(properSync.isSyncing ? .blue : .green)
                             .frame(width: 8, height: 8)
-                        Text(supabaseSync.syncStatus)
+                        Text(properSync.syncStatus)
                             .font(.caption)
                             .foregroundColor(.secondary)
                         Spacer()
-                        if let lastSync = supabaseSync.lastSyncDate {
+                        if let lastSync = properSync.lastSyncDate {
                             Text("Last sync: \(lastSync, formatter: DateFormatter.timeOnly)")
                                 .font(.caption2)
                                 .foregroundColor(.secondary)
@@ -687,79 +687,39 @@ Best regards
                     }
                     
                     // Progress Bar (when syncing)
-                    if supabaseSync.isSyncing {
+                    if properSync.isSyncing {
                         VStack(alignment: .leading, spacing: 4) {
-                            ProgressView(value: supabaseSync.syncProgress)
+                            ProgressView()
                                 .progressViewStyle(LinearProgressViewStyle())
-                            if !supabaseSync.syncStep.isEmpty {
-                                Text(supabaseSync.syncStep)
-                                    .font(.caption2)
-                                    .foregroundColor(.secondary)
-                            }
                         }
                     }
                     
                     // Sync Button
-                    Button(supabaseSync.isSyncing ? "Syncing..." : "Sync Now") {
-                        Task {
-                            await supabaseSync.syncNow(context: viewContext)
-                        }
+                    Button(properSync.isSyncing ? "Syncing..." : "Sync Now") {
+                        properSync.triggerSync()
                     }
                     .buttonStyle(LiquidGlassButtonStyle(variant: .secondary, size: .medium))
-                    .disabled(supabaseSync.isSyncing)
+                    .disabled(properSync.isSyncing)
                     
-                    // Deduplication Button
-                    Button(supabaseSync.isSyncing ? "Deduplicating..." : "Remove Duplicates") {
-                        Task {
-                            do {
-                                try await supabaseSync.deduplicateAllData(context: viewContext)
-                                // Force refresh of the view to update conversation count
-                                await MainActor.run {
-                                    // Trigger a view refresh by updating the environment
-                                    try? viewContext.save()
-                                    refreshTrigger.toggle()
-                                }
-                            } catch {
-                                print("Deduplication failed: \(error)")
-                            }
-                        }
+                    // Note: Deduplication is handled by proper sync now
+                    Text("✨ Automatic deduplication is built into the new sync system")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                        .italic()
+                    
+                    // Data Recovery Button
+                    Button("🚨 Trigger Full Sync") {
+                        properSync.triggerSync()
                     }
                     .buttonStyle(LiquidGlassButtonStyle(variant: .secondary, size: .medium))
-                    .disabled(supabaseSync.isSyncing)
-                    .foregroundColor(.orange)
+                    .disabled(properSync.isSyncing)
+                    .foregroundColor(.blue)
                     
-                    // EMERGENCY: Data Recovery Button
-                    Button("🚨 Check Supabase for Data") {
-                        Task {
-                            do {
-                                // Force download everything from Supabase to restore local data
-                                try await supabaseSync.downloadRemoteChanges(context: viewContext)
-                                await MainActor.run {
-                                    try? viewContext.save()
-                                    refreshTrigger.toggle()
-                                }
-                                print("✅ Data recovery attempt completed")
-                            } catch {
-                                print("❌ Data recovery failed: \(error)")
-                            }
-                        }
-                    }
-                    .buttonStyle(LiquidGlassButtonStyle(variant: .secondary, size: .medium))
-                    .disabled(supabaseSync.isSyncing)
-                    .foregroundColor(.red)
-                    
-                    // Error Display
-                    if let error = supabaseSync.error {
-                        Label(error, systemImage: "xmark.circle.fill")
-                            .foregroundColor(.red)
+                    // Status Display
+                    if properSync.syncStatus != "Ready" && !properSync.isSyncing {
+                        Text(properSync.syncStatus)
                             .font(.caption)
-                    }
-                    
-                    // Success Display (only show if not currently syncing)
-                    if let success = supabaseSync.success, !supabaseSync.isSyncing {
-                        Label(success, systemImage: "checkmark.circle.fill")
-                            .foregroundColor(.green)
-                            .font(.caption)
+                            .foregroundColor(properSync.syncStatus.contains("failed") ? .red : .green)
                     }
                 }
                 .padding(.vertical, 8)
@@ -1396,7 +1356,7 @@ Best regards
             diagnosticsResult = "✅ Local data cleared. Now downloading from cloud..."
             
             // Step 2: Download everything fresh from Supabase
-            try await supabaseSync.downloadRemoteChanges(context: viewContext)
+            properSync.triggerSync()
             
             // Step 3: Save the downloaded data
             try viewContext.save()
@@ -1546,7 +1506,7 @@ Best regards
             diagnosticsResult = "✅ Device attributions cleared. Now syncing to re-establish proper attribution..."
             
             // Now sync - this will re-attribute people to the devices that have them locally
-            await supabaseSync.syncNow(context: viewContext)
+            properSync.triggerSync()
             
             diagnosticsResult = "🎉 Device attribution reset completed! Run diagnostics to see the new attribution."
             
@@ -1821,8 +1781,8 @@ Best regards
                 .execute()
                 .value
             
-            let nonDeletedPeople = allRemotePeople.filter { !($0.isDeleted ?? false) }
-            let deletedPeople = allRemotePeople.filter { $0.isDeleted ?? false }
+            let nonDeletedPeople = allRemotePeople.filter { !($0.isSoftDeleted ?? false) }
+            let deletedPeople = allRemotePeople.filter { $0.isSoftDeleted ?? false }
             
             output.append("   Total people in cloud: \(allRemotePeople.count)")
             output.append("   Non-deleted: \(nonDeletedPeople.count)")
@@ -1895,7 +1855,7 @@ Best regards
                 .execute()
                 .value
             
-            let nonDeletedConversations = allRemoteConversations.filter { !($0.isDeleted ?? false) }
+            let nonDeletedConversations = allRemoteConversations.filter { !($0.isSoftDeleted ?? false) }
             
             output.append("   Total conversations in cloud: \(allRemoteConversations.count)")
             output.append("   Non-deleted: \(nonDeletedConversations.count)")

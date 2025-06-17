@@ -304,6 +304,7 @@ struct PersonEditView: View {
         person.notes = editingNotes.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? nil : editingNotes.trimmingCharacters(in: .whitespacesAndNewlines)
         person.isDirectReport = isDirectReport
         person.photo = editingPhotoData
+        person.modifiedAt = Date() // Mark as modified for sync
         
         do {
             try viewContext.save()

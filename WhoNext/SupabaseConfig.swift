@@ -28,7 +28,7 @@ struct SupabasePerson: Codable {
     let createdAt: String?
     let updatedAt: String?
     let deviceId: String?
-    let isDeleted: Bool?
+    let isSoftDeleted: Bool?
     let deletedAt: String?
     let role: String?
     let timezone: String?
@@ -44,7 +44,7 @@ struct SupabasePerson: Codable {
         case createdAt = "created_at"
         case updatedAt = "updated_at"
         case deviceId = "device_id"
-        case isDeleted = "is_deleted"
+        case isSoftDeleted = "is_deleted"
         case deletedAt = "deleted_at"
         case role
         case timezone
@@ -63,7 +63,7 @@ struct SupabaseConversation: Codable {
     let createdAt: String?
     let updatedAt: String?
     let deviceId: String?
-    let isDeleted: Bool?
+    let isSoftDeleted: Bool?
     let deletedAt: String?
     let duration: Int?
     let engagementLevel: String?
@@ -86,7 +86,7 @@ struct SupabaseConversation: Codable {
         case createdAt = "created_at"
         case updatedAt = "updated_at"
         case deviceId = "device_id"
-        case isDeleted = "is_deleted"
+        case isSoftDeleted = "is_deleted"
         case deletedAt = "deleted_at"
         case duration
         case engagementLevel = "engagement_level"

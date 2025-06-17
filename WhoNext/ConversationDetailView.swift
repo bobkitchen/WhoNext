@@ -360,6 +360,7 @@ struct ConversationDetailView: View {
         }
         
         conversation.notes = updatedNotes
+        conversation.modifiedAt = Date() // Mark as modified for sync
         
         // Save to Core Data
         do {
@@ -375,17 +376,9 @@ struct ConversationDetailView: View {
     }
     
     private func deleteConversation() {
-        if let conversationManager = conversationManager {
-            // Use ConversationStateManager
-            conversationManager.deleteConversation(conversation)
-        } else {
-            // Fallback to direct Core Data
-            viewContext.delete(conversation)
-            do {
-                try viewContext.save()
-            } catch {
-                ErrorManager.shared.handle(error, context: "Failed to delete conversation")
-            }
+        // Use ProperSyncManager for proper deletion sync
+        Task {
+            await ProperSyncManager.shared.deleteConversation(conversation, context: viewContext)
         }
         dismiss()
     }

@@ -87,13 +87,13 @@ class ConversationStateManager: ObservableObject {
     }
     
     func deleteConversation(_ conversation: Conversation) {
-        viewContext.delete(conversation)
-        
-        do {
-            try viewContext.save()
-            conversations.removeAll { $0.uuid == conversation.uuid }
-        } catch {
-            errorManager.handle(error, context: "Failed to delete conversation")
+        // Use ProperSyncManager for proper deletion sync
+        Task {
+            await ProperSyncManager.shared.deleteConversation(conversation, context: viewContext)
+            // Remove from local array after successful deletion
+            await MainActor.run {
+                conversations.removeAll { $0.uuid == conversation.uuid }
+            }
         }
     }
     

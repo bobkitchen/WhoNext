@@ -12,6 +12,12 @@ public class Person: NSManagedObject {
     @NSManaged public var scheduledConversationDate: Date?
     @NSManaged public var timezone: String?
     @NSManaged public var conversations: NSSet?
+    
+    // Sync-related timestamp fields
+    @NSManaged public var createdAt: Date?
+    @NSManaged public var modifiedAt: Date?
+    @NSManaged public var isSoftDeleted: Bool
+    @NSManaged public var deletedAt: Date?
 
     // Guarantee that every newly-inserted Person gets a unique identifier
     public override func awakeFromInsert() {

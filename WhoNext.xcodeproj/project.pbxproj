@@ -426,7 +426,7 @@
 				CODE_SIGN_ENTITLEMENTS = WhoNext/WhoNext.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 006;
+				CURRENT_PROJECT_VERSION = 003;
 				DEVELOPMENT_ASSET_PATHS = "\"WhoNext/Preview Content\"";
 				DEVELOPMENT_TEAM = ZW6EQ2JWKC;
 				ENABLE_HARDENED_RUNTIME = YES;
@@ -439,7 +439,7 @@
 					"@executable_path/../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 15.5;
-				MARKETING_VERSION = .4;
+				MARKETING_VERSION = .5;
 				PRODUCT_BUNDLE_IDENTIFIER = com.bobk.WhoNext;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -456,7 +456,7 @@
 				CODE_SIGN_ENTITLEMENTS = WhoNext/WhoNext.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 006;
+				CURRENT_PROJECT_VERSION = 003;
 				DEVELOPMENT_ASSET_PATHS = "\"WhoNext/Preview Content\"";
 				DEVELOPMENT_TEAM = ZW6EQ2JWKC;
 				ENABLE_HARDENED_RUNTIME = YES;
@@ -469,7 +469,7 @@
 					"@executable_path/../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 15.5;
-				MARKETING_VERSION = .4;
+				MARKETING_VERSION = .5;
 				PRODUCT_BUNDLE_IDENTIFIER = com.bobk.WhoNext;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -594,7 +594,7 @@
 			repositoryURL = "https://github.com/supabase/supabase-swift";
 			requirement = {
 				kind = upToNextMajorVersion;
-				minimumVersion = 1.0.0;
+				minimumVersion = 2.0.0;
 			};
 		};
 		7A1FD56B2DBC07E30089D3DA /* XCRemoteSwiftPackageReference "Down" */ = {
