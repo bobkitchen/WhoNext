@@ -147,7 +147,9 @@ struct GlobalNewConversationView: View {
             try viewContext.save()
             
             // Trigger immediate sync for new conversation
-            ProperSyncManager.shared.triggerSync()
+            Task {
+                await RobustSyncManager.shared.performSync()
+            }
         } catch {
             print("Failed to save conversation: \(error)")
         }

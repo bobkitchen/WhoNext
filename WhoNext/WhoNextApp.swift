@@ -63,7 +63,17 @@ struct WhoNextApp: App {
     /// Trigger sync on app launch to ensure fresh data
     private func triggerLaunchSync() {
         print("🚀 App Launch: Triggering sync to ensure fresh data...")
-        ProperSyncManager.shared.triggerSync()
+        Task {
+            let result = await RobustSyncManager.shared.performSync()
+            switch result {
+            case .success(let stats):
+                print("✅ Launch sync completed: \(stats.totalOperations) operations in \(String(format: "%.1f", stats.duration))s")
+            case .failure(let error):
+                print("❌ Launch sync failed: \(error.errorDescription ?? "Unknown error")")
+            case .partial(let stats, let errors):
+                print("⚠️ Launch sync partial: \(stats.totalOperations) operations, \(errors.count) errors")
+            }
+        }
     }
     
 }

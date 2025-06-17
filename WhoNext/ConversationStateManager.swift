@@ -82,7 +82,9 @@ class ConversationStateManager: ObservableObject {
             try viewContext.save()
             
             // Trigger immediate sync for new conversation
-            ProperSyncManager.shared.triggerSync()
+            Task {
+                await RobustSyncManager.shared.performSync()
+            }
             
             loadConversations(for: person)
         } catch {
@@ -91,9 +93,9 @@ class ConversationStateManager: ObservableObject {
     }
     
     func deleteConversation(_ conversation: Conversation) {
-        // Use ProperSyncManager for proper deletion sync
+        // Use RobustSyncManager for proper deletion sync
         Task {
-            await ProperSyncManager.shared.deleteConversation(conversation, context: viewContext)
+            await RobustSyncManager.shared.deleteConversation(conversation, context: viewContext)
             // Remove from local array after successful deletion
             await MainActor.run {
                 conversations.removeAll { $0.uuid == conversation.uuid }

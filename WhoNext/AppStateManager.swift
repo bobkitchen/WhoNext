@@ -99,7 +99,7 @@ class AppStateManager: ObservableObject {
             try viewContext.save()
             
             // Trigger immediate sync for new person
-            ProperSyncManager.shared.triggerSync()
+            RobustSyncManager.shared.triggerSync()
             
             invalidatePeopleCache() // Invalidate cache when new person is added
             return person

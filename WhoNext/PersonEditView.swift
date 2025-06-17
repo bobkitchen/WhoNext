@@ -310,7 +310,7 @@ struct PersonEditView: View {
             try viewContext.save()
             
             // Trigger immediate sync for updates
-            ProperSyncManager.shared.triggerSync()
+            RobustSyncManager.shared.triggerSync()
         } catch {
             print("Failed to save person: \(error)")
         }

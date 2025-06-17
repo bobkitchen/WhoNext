@@ -26,7 +26,9 @@ struct PeopleListView: View {
                 selectedPerson = person
                 
                 // Trigger sync to upload new person
-                ProperSyncManager.shared.triggerSync()
+                Task {
+                    await RobustSyncManager.shared.performSync()
+                }
                 
                 window.close()
             },
@@ -135,9 +137,12 @@ struct PeopleListView: View {
             selectedPerson = nil
         }
         
-        // Use proper sync manager to handle deletion
+        // Delete person and sync
+        viewContext.delete(person)
+        try? viewContext.save()
+        
         Task {
-            await ProperSyncManager.shared.deletePerson(person, context: viewContext)
+            await RobustSyncManager.shared.performSync()
         }
     }
 }

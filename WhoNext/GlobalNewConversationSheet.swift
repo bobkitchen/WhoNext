@@ -132,7 +132,7 @@ struct GlobalNewConversationSheet: View {
             try viewContext.save()
             
             // Trigger sync to upload new conversation
-            ProperSyncManager.shared.triggerSync()
+            RobustSyncManager.shared.triggerSync()
             
             isPresented = false
             notes = ""

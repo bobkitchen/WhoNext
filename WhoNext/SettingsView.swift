@@ -97,12 +97,13 @@ Best regards
         animation: .default
     ) private var conversations: FetchedResults<Conversation>
     
-    @StateObject private var properSync = ProperSyncManager.shared
+    @StateObject private var robustSync = RobustSyncManager.shared
 
     @State private var selectedTab = "general"
     @State private var refreshTrigger = false
     @State private var diagnosticsResult: String?
     @State private var isRunningDiagnostics = false
+    @State private var showSyncResetConfirmation = false
 
     var body: some View {
         ScrollView {
@@ -670,57 +671,62 @@ Best regards
                     .foregroundColor(.secondary)
                 
                 VStack(alignment: .leading, spacing: 12) {
-                    // Sync Status
+                    // Sync Status with Progress
                     HStack {
                         Circle()
-                            .fill(properSync.isSyncing ? .blue : .green)
+                            .fill(robustSync.isSyncing ? .blue : .green)
                             .frame(width: 8, height: 8)
-                        Text(properSync.syncStatus)
-                            .font(.caption)
-                            .foregroundColor(.secondary)
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(robustSync.syncStatus)
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                            if robustSync.isSyncing && robustSync.syncProgress > 0 {
+                                ProgressView(value: robustSync.syncProgress)
+                                    .frame(width: 200)
+                            }
+                        }
                         Spacer()
-                        if let lastSync = properSync.lastSyncDate {
+                        if let lastSync = robustSync.lastSuccessfulSync {
                             Text("Last sync: \(lastSync, formatter: DateFormatter.timeOnly)")
                                 .font(.caption2)
                                 .foregroundColor(.secondary)
                         }
                     }
                     
-                    // Progress Bar (when syncing)
-                    if properSync.isSyncing {
-                        VStack(alignment: .leading, spacing: 4) {
-                            ProgressView()
-                                .progressViewStyle(LinearProgressViewStyle())
+                    // Sync Result Display
+                    if let result = robustSync.lastSyncResult {
+                        switch result {
+                        case .success(let stats):
+                            Text("✅ Last sync: \(stats.totalOperations) operations in \(String(format: "%.1f", stats.duration))s")
+                                .font(.caption)
+                                .foregroundColor(.green)
+                        case .failure(let error):
+                            Text("❌ Last sync failed: \(error.errorDescription ?? "Unknown error")")
+                                .font(.caption)
+                                .foregroundColor(.red)
+                        case .partial(let stats, let errors):
+                            Text("⚠️ Partial sync: \(stats.totalOperations) operations, \(errors.count) errors")
+                                .font(.caption)
+                                .foregroundColor(.orange)
                         }
                     }
                     
                     // Sync Button
-                    Button(properSync.isSyncing ? "Syncing..." : "Sync Now") {
-                        properSync.triggerSync()
+                    Button(robustSync.isSyncing ? "Syncing..." : "Sync Now") {
+                        Task {
+                            await robustSync.performSync()
+                        }
                     }
-                    .buttonStyle(LiquidGlassButtonStyle(variant: .secondary, size: .medium))
-                    .disabled(properSync.isSyncing)
+                    .buttonStyle(LiquidGlassButtonStyle(variant: .primary, size: .medium))
+                    .disabled(robustSync.isSyncing)
                     
                     // Note: Deduplication is handled by proper sync now
-                    Text("✨ Automatic deduplication is built into the new sync system")
+                    Text("✨ Automatic deduplication and conflict resolution built-in")
                         .font(.caption)
                         .foregroundColor(.secondary)
                         .italic()
                     
-                    // Data Recovery Button
-                    Button("🚨 Trigger Full Sync") {
-                        properSync.triggerSync()
-                    }
-                    .buttonStyle(LiquidGlassButtonStyle(variant: .secondary, size: .medium))
-                    .disabled(properSync.isSyncing)
-                    .foregroundColor(.blue)
-                    
-                    // Status Display
-                    if properSync.syncStatus != "Ready" && !properSync.isSyncing {
-                        Text(properSync.syncStatus)
-                            .font(.caption)
-                            .foregroundColor(properSync.syncStatus.contains("failed") ? .red : .green)
-                    }
+                    // Status Display handled above in sync result display
                 }
                 .padding(.vertical, 8)
             }
@@ -759,67 +765,54 @@ Best regards
             .background(Color(NSColor.controlBackgroundColor))
             .cornerRadius(8)
             
-            // Sync Diagnostics Section
-            VStack(alignment: .leading, spacing: 8) {
-                Text("Sync Diagnostics")
+            // Sync Troubleshooting Section
+            VStack(alignment: .leading, spacing: 12) {
+                Text("Troubleshooting")
                     .font(.headline)
-                Text("Troubleshoot sync issues between devices")
+                Text("Fix sync issues and data problems")
                     .font(.caption)
                     .foregroundColor(.secondary)
                 
-                Button(isRunningDiagnostics ? "Running..." : "Run Diagnostics") {
-                    runSyncDiagnostics()
+                VStack(spacing: 8) {
+                    Button(isRunningDiagnostics ? "Running..." : "Check Sync Status") {
+                        runSyncDiagnostics()
+                    }
+                    .buttonStyle(LiquidGlassButtonStyle(variant: .secondary, size: .medium))
+                    .disabled(isRunningDiagnostics)
+                    
+                    Button("Fix Sync Issues") {
+                        Task {
+                            await smartSyncFix()
+                        }
+                    }
+                    .buttonStyle(LiquidGlassButtonStyle(variant: .primary, size: .medium))
+                    .help("Automatically diagnose and fix common sync problems")
                 }
-                .buttonStyle(BorderedProminentButtonStyle())
-                .disabled(isRunningDiagnostics)
                 
-                Button("🔄 Fresh Start - Clear Local & Download from Cloud") {
-                    Task {
-                        await freshStartFromCloud()
+                // Advanced options (collapsible)
+                DisclosureGroup("Advanced Options") {
+                    VStack(spacing: 8) {
+                        Button("Complete Reset from Cloud") {
+                            showSyncResetConfirmation = true
+                        }
+                        .buttonStyle(LiquidGlassButtonStyle(variant: .destructive, size: .medium))
+                        .alert("Complete Reset", isPresented: $showSyncResetConfirmation) {
+                            Button("Reset", role: .destructive) {
+                                Task { await trueNuclearReset() }
+                            }
+                            Button("Cancel", role: .cancel) { }
+                        } message: {
+                            Text("This will delete all local data and re-download everything from the cloud. Use only if other fixes don't work.")
+                        }
+                        
+                        Button("Reset Sync State") {
+                            robustSync.resetSyncState()
+                        }
+                        .buttonStyle(LiquidGlassButtonStyle(variant: .secondary, size: .small))
+                        .help("Force a full sync on next sync operation")
                     }
                 }
-                .buttonStyle(BorderedProminentButtonStyle())
-                .foregroundColor(.purple)
-                
-                Button("☢️ NUCLEAR RESET - Force Perfect Sync") {
-                    Task {
-                        await nuclearReset()
-                    }
-                }
-                .buttonStyle(BorderedProminentButtonStyle())
-                .foregroundColor(.red)
-                
-                Button("💥 TRUE NUCLEAR - Debug Version") {
-                    Task {
-                        await trueNuclearReset()
-                    }
-                }
-                .buttonStyle(BorderedProminentButtonStyle())
-                .foregroundColor(.black)
-                
-                Button("🔧 Reset Device Attribution") {
-                    Task {
-                        await resetDeviceAttribution()
-                    }
-                }
-                .buttonStyle(BorderedProminentButtonStyle())
-                .foregroundColor(.orange)
-                
-                Button("🔗 Fix Conversation Relationships") {
-                    Task {
-                        await fixConversationRelationships()
-                    }
-                }
-                .buttonStyle(BorderedProminentButtonStyle())
-                .foregroundColor(.blue)
-                
-                Button("🧹 Advanced Orphan Cleanup") {
-                    Task {
-                        await advancedOrphanCleanup()
-                    }
-                }
-                .buttonStyle(BorderedProminentButtonStyle())
-                .foregroundColor(.purple)
+                .padding(.top, 8)
                 
                 if let diagnosticsResult = diagnosticsResult {
                     ScrollView {
@@ -1356,7 +1349,9 @@ Best regards
             diagnosticsResult = "✅ Local data cleared. Now downloading from cloud..."
             
             // Step 2: Download everything fresh from Supabase
-            properSync.triggerSync()
+            Task {
+                await robustSync.performSync()
+            }
             
             // Step 3: Save the downloaded data
             try viewContext.save()
@@ -1506,7 +1501,9 @@ Best regards
             diagnosticsResult = "✅ Device attributions cleared. Now syncing to re-establish proper attribution..."
             
             // Now sync - this will re-attribute people to the devices that have them locally
-            properSync.triggerSync()
+            Task {
+                await robustSync.performSync()
+            }
             
             diagnosticsResult = "🎉 Device attribution reset completed! Run diagnostics to see the new attribution."
             
@@ -1761,6 +1758,79 @@ Best regards
         } catch {
             diagnosticsResult = "❌ Advanced orphan cleanup failed: \(error.localizedDescription)"
         }
+    }
+    
+    private func smartSyncFix() async {
+        diagnosticsResult = "🔍 Analyzing sync issues..."
+        
+        // Step 1: Run diagnostics to identify the problem
+        let results = await SyncDiagnostics.shared.runDiagnostics(context: viewContext)
+        
+        // Parse the diagnostic results to determine the best fix
+        let diagnosticText = results.joined(separator: "\n")
+        
+        // Check for common issues and apply appropriate fixes
+        if diagnosticText.contains("Local People: 0") && diagnosticText.contains("Remote People:") {
+            let remoteCount = extractRemoteCount(from: diagnosticText, entity: "People")
+            if remoteCount > 0 {
+                diagnosticsResult = "🔄 Found \(remoteCount) people in cloud but 0 locally. Downloading from cloud..."
+                await freshStartFromCloud()
+                return
+            }
+        }
+        
+        if diagnosticText.contains("Orphaned (no person):") {
+            let orphanCount = extractOrphanCount(from: diagnosticText)
+            if orphanCount > 0 {
+                diagnosticsResult = "🔗 Found \(orphanCount) orphaned conversations. Fixing relationships..."
+                await fixConversationRelationships()
+                return
+            }
+        }
+        
+        if diagnosticText.contains("People from this device: 0") {
+            diagnosticsResult = "📱 Device attribution issue detected. Resetting device attribution..."
+            await resetDeviceAttribution()
+            return
+        }
+        
+        // If no specific issue found, just trigger a normal sync
+        diagnosticsResult = "✅ No major sync issues detected. Running normal sync..."
+        Task {
+            let result = await robustSync.performSync()
+            await MainActor.run {
+                switch result {
+                case .success(let stats):
+                    diagnosticsResult = "✅ Sync completed successfully: \(stats.totalOperations) operations"
+                case .failure(let error):
+                    diagnosticsResult = "❌ Sync failed: \(error.errorDescription ?? "Unknown error")"
+                case .partial(let stats, let errors):
+                    diagnosticsResult = "⚠️ Partial sync: \(stats.totalOperations) operations, \(errors.count) errors"
+                }
+            }
+        }
+    }
+    
+    private func extractRemoteCount(from text: String, entity: String) -> Int {
+        let pattern = "Remote \(entity): (\\d+)"
+        let regex = try? NSRegularExpression(pattern: pattern)
+        let range = NSRange(text.startIndex..<text.endIndex, in: text)
+        if let match = regex?.firstMatch(in: text, range: range),
+           let countRange = Range(match.range(at: 1), in: text) {
+            return Int(String(text[countRange])) ?? 0
+        }
+        return 0
+    }
+    
+    private func extractOrphanCount(from text: String) -> Int {
+        let pattern = "Orphaned \\(no person\\): (\\d+)"
+        let regex = try? NSRegularExpression(pattern: pattern)
+        let range = NSRange(text.startIndex..<text.endIndex, in: text)
+        if let match = regex?.firstMatch(in: text, range: range),
+           let countRange = Range(match.range(at: 1), in: text) {
+            return Int(String(text[countRange])) ?? 0
+        }
+        return 0
     }
     
     private func trueNuclearReset() async {

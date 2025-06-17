@@ -367,7 +367,7 @@ struct ConversationDetailView: View {
             try viewContext.save()
             
             // Trigger immediate sync for conversation updates
-            ProperSyncManager.shared.triggerSync()
+            RobustSyncManager.shared.triggerSync()
             
             isEditing = false
             showingSaveConfirmation = true
@@ -380,9 +380,9 @@ struct ConversationDetailView: View {
     }
     
     private func deleteConversation() {
-        // Use ProperSyncManager for proper deletion sync
+        // Use RobustSyncManager for proper deletion sync
         Task {
-            await ProperSyncManager.shared.deleteConversation(conversation, context: viewContext)
+            await RobustSyncManager.shared.deleteConversation(conversation, context: viewContext)
         }
         dismiss()
     }

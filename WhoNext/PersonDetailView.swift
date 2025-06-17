@@ -624,7 +624,7 @@ struct PersonDetailView: View {
                     try? self.viewContext.save()
                     
                     // Trigger immediate sync for person notes update
-                    ProperSyncManager.shared.triggerSync()
+                    RobustSyncManager.shared.triggerSync()
                 }
             )
             .environment(\.managedObjectContext, viewContext)
@@ -807,9 +807,9 @@ struct ConversationRowView: View {
     }
     
     private func deleteConversation() {
-        // Use ProperSyncManager for proper deletion sync
+        // Use RobustSyncManager for proper deletion sync
         Task {
-            await ProperSyncManager.shared.deleteConversation(conversation, context: viewContext)
+            await RobustSyncManager.shared.deleteConversation(conversation, context: viewContext)
         }
     }
     
