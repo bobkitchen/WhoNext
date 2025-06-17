@@ -446,6 +446,10 @@ struct TranscriptReviewView: View {
         // Save context
         do {
             try context.save()
+            
+            // Trigger immediate sync for new conversation and people
+            ProperSyncManager.shared.triggerSync()
+            
             print("✅ Conversation saved successfully with enhanced sentiment data")
             
             // Debug: Verify the conversation was actually saved

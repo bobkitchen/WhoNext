@@ -126,6 +126,10 @@ struct ContentView: View {
                 
                 do {
                     try viewContext.save()
+                    
+                    // Trigger immediate sync for new person
+                    ProperSyncManager.shared.triggerSync()
+                    
                     fetchPeople()
                     showingAddPerson = false
                     

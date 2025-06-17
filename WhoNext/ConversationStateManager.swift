@@ -80,6 +80,10 @@ class ConversationStateManager: ObservableObject {
         
         do {
             try viewContext.save()
+            
+            // Trigger immediate sync for new conversation
+            ProperSyncManager.shared.triggerSync()
+            
             loadConversations(for: person)
         } catch {
             errorManager.handle(error, context: "Failed to create conversation")

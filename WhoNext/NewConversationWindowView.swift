@@ -213,6 +213,9 @@ struct NewConversationWindowView: View {
                 newConversation.person = person
                 do {
                     try viewContext.save()
+                    
+                    // Trigger immediate sync for new conversation
+                    ProperSyncManager.shared.triggerSync()
                 } catch {
                     ErrorManager.shared.handle(error, context: "Failed to save conversation")
                 }

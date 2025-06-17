@@ -145,6 +145,9 @@ struct GlobalNewConversationView: View {
         conversation.uuid = UUID()
         do {
             try viewContext.save()
+            
+            // Trigger immediate sync for new conversation
+            ProperSyncManager.shared.triggerSync()
         } catch {
             print("Failed to save conversation: \(error)")
         }

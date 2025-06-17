@@ -426,13 +426,14 @@
 				CODE_SIGN_ENTITLEMENTS = WhoNext/WhoNext.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 003;
+				CURRENT_PROJECT_VERSION = 005;
 				DEVELOPMENT_ASSET_PATHS = "\"WhoNext/Preview Content\"";
 				DEVELOPMENT_TEAM = ZW6EQ2JWKC;
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "$(SRCROOT)/WhoNext/Info.plist";
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.business";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -456,13 +457,14 @@
 				CODE_SIGN_ENTITLEMENTS = WhoNext/WhoNext.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 003;
+				CURRENT_PROJECT_VERSION = 005;
 				DEVELOPMENT_ASSET_PATHS = "\"WhoNext/Preview Content\"";
 				DEVELOPMENT_TEAM = ZW6EQ2JWKC;
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "$(SRCROOT)/WhoNext/Info.plist";
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.business";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",

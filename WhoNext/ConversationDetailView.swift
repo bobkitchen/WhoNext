@@ -365,6 +365,10 @@ struct ConversationDetailView: View {
         // Save to Core Data
         do {
             try viewContext.save()
+            
+            // Trigger immediate sync for conversation updates
+            ProperSyncManager.shared.triggerSync()
+            
             isEditing = false
             showingSaveConfirmation = true
             

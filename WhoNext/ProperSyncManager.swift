@@ -74,12 +74,6 @@ class ProperSyncManager: ObservableObject {
     }
     
     private func uploadPeopleChanges(context: NSManagedObjectContext) async throws {
-        // For initial sync, don't upload existing people - they're already in Supabase
-        if lastPeopleSync == Date.distantPast {
-            print("📤 Skipping initial upload - people already exist in Supabase")
-            return
-        }
-        
         let request: NSFetchRequest<Person> = NSFetchRequest<Person>(entityName: "Person")
         let localPeople = try context.fetch(request)
         
@@ -224,12 +218,6 @@ class ProperSyncManager: ObservableObject {
     }
     
     private func uploadConversationsChanges(context: NSManagedObjectContext) async throws {
-        // For initial sync, don't upload existing conversations - they're already in Supabase
-        if lastConversationsSync == Date.distantPast {
-            print("📤 Skipping initial upload - conversations already exist in Supabase")
-            return
-        }
-        
         let request: NSFetchRequest<Conversation> = NSFetchRequest<Conversation>(entityName: "Conversation")
         let localConversations = try context.fetch(request)
         

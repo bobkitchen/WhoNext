@@ -620,7 +620,11 @@ struct PersonDetailView: View {
                 onSave: { summary in
                     // Update person's notes with the captured summary
                     self.person.notes = summary
+                    self.person.modifiedAt = Date()
                     try? self.viewContext.save()
+                    
+                    // Trigger immediate sync for person notes update
+                    ProperSyncManager.shared.triggerSync()
                 }
             )
             .environment(\.managedObjectContext, viewContext)
