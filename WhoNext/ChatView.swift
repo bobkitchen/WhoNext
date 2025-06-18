@@ -346,98 +346,15 @@ struct ChatView: View {
     }
     
     private func generateContext(for message: String) -> String {
-        // Check if this is a simple greeting or casual message
-        let casualMessages = ["hello", "hi", "hey", "good morning", "good afternoon", "good evening", 
-                             "how are you", "what's up", "thanks", "thank you", "bye", "goodbye"]
-        let isSimpleMessage = casualMessages.contains { message.lowercased().contains($0) }
+        // Use centralized context service with current AI provider
+        let context = ChatContextService.generateContext(
+            for: message, 
+            people: people, 
+            provider: hybridAI.preferredProvider
+        )
         
-        // For simple greetings, return minimal context
-        if isSimpleMessage {
-            print("🔍 [Context] Simple greeting detected, using minimal context")
-            return "You are a helpful AI assistant for a team management app called WhoNext."
-        }
-        
-        // Check if the message is asking about work history or specific people
-        let isWorkHistoryQuery = message.lowercased().contains("work") || 
-                                message.lowercased().contains("msf") || 
-                                message.lowercased().contains("microsoft") ||
-                                message.lowercased().contains("employ") ||
-                                message.lowercased().contains("job")
-        
-        let isPersonQuery = message.lowercased().contains("who") ||
-                           message.lowercased().contains("person") ||
-                           message.lowercased().contains("team") ||
-                           message.lowercased().contains("people")
-        
-        // Only include full context for specific queries
-        if !isWorkHistoryQuery && !isPersonQuery {
-            print("🔍 [Context] General query, using basic context")
-            return "You are a helpful AI assistant for a team management app called WhoNext. The user has \(people.count) team members in their database."
-        }
-        
-        print("🔍 [Context] Specific query detected, generating full context")
-        var context = "Team Members and Conversations:\n\n"
-        
-        var includedPeople = 0
-        var tempContext = ""
-        
-        for person in people {
-            let name = person.name ?? "Unknown"
-            let role = person.role ?? "Unknown"
-            let isDirectReport = person.isDirectReport
-            let timezone = person.timezone ?? "Unknown"
-            let scheduledDate = person.scheduledConversationDate
-            let conversations = person.conversations as? Set<Conversation> ?? []
-            
-            // Skip people without notes if this is a work history query
-            if isWorkHistoryQuery && (person.notes?.isEmpty ?? true) {
-                print("🔍 [Context] Skipping \(name) - no notes for work history query")
-                continue
-            }
-            
-            print("🔍 [Context] Including \(name) - has notes: \(!(person.notes?.isEmpty ?? true))")
-            includedPeople += 1
-            
-            tempContext += "Person: \(name)\n"
-            tempContext += "Role: \(role)\n"
-            tempContext += "Direct Report: \(isDirectReport)\n"
-            tempContext += "Timezone: \(timezone)\n"
-            
-            // Add person's background notes
-            if let personNotes = person.notes, !personNotes.isEmpty {
-                tempContext += "Background Notes: \(personNotes)\n"
-            }
-            
-            if let scheduledDate = scheduledDate {
-                tempContext += "Next Scheduled Conversation: \(scheduledDate.formatted())\n"
-            }
-            
-            tempContext += "Number of Past Conversations: \(conversations.count)\n"
-            
-            if !conversations.isEmpty {
-                tempContext += "Recent Conversations:\n"
-                let sortedConversations = conversations.sorted { 
-                    ($0.date ?? .distantPast) > ($1.date ?? .distantPast)
-                }
-                for conversation in sortedConversations.prefix(3) {
-                    if let date = conversation.date {
-                        tempContext += "- Date: \(date.formatted())\n"
-                        if let summary = conversation.summary {
-                            tempContext += "  Summary: \(summary)\n"
-                        }
-                        if let notes = conversation.notes {
-                            tempContext += "  Notes: \(notes)\n"
-                        }
-                    }
-                }
-            }
-            tempContext += "\n"
-        }
-        
-        context += "Number of People Included: \(includedPeople)\n\n"
-        context += tempContext
-        
-        return context
+        // Optimize context for the current provider
+        return ChatContextService.optimizeContextForProvider(context, provider: hybridAI.preferredProvider)
     }
     
     private func fetchPeople() {

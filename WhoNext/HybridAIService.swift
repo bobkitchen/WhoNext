@@ -2,8 +2,6 @@ import Foundation
 import SwiftUI
 
 class HybridAIService: ObservableObject {
-    @AppStorage("openaiApiKey") private var openaiApiKey: String = ""
-    @AppStorage("openrouterApiKey") private var openrouterApiKey: String = ""
     @AppStorage("aiProvider") private var aiProvider: String = "apple" {
         didSet {
             // Trigger UI update when provider changes
@@ -11,11 +9,23 @@ class HybridAIService: ObservableObject {
         }
     }
     
+    // Secure API key access
+    private var openaiApiKey: String {
+        SecureStorage.getAPIKey(for: .openai)
+    }
+    
+    private var openrouterApiKey: String {
+        SecureStorage.getAPIKey(for: .openrouter)
+    }
+    
     private var appleIntelligenceService: AppleIntelligenceService?
     private var aiService: AIService
     
     init() {
         self.aiService = AIService()
+        
+        // Migrate API keys to secure storage
+        SecureStorage.migrateFromUserDefaults()
         
         // Migrate legacy "local" setting to "apple"
         if aiProvider == "local" {
@@ -133,8 +143,9 @@ class HybridAIService: ObservableObject {
     func generateBrief(for person: Person, completion: @escaping (Result<String, Error>) -> Void) {
         Task {
             do {
+                // Use the enhanced context generation
+                let context = PreMeetingBriefContextHelper.generateContext(for: person)
                 let personData = [person]
-                let context = "Pre-meeting preparation for \(person.name ?? "Unknown")"
                 let brief = try await generatePreMeetingBrief(personData: personData, context: context)
                 completion(.success(brief))
             } catch {
@@ -363,33 +374,70 @@ extension AIService {
     }
     
     func generatePreMeetingBrief(personData: [Person], context: String) async throws -> String {
-        let peopleInfo = personData.map { person in
-            """
-            **\(person.name ?? "Unknown")**
-            - Role: \(person.role ?? "N/A")
-            - Notes: \(person.notes ?? "N/A")
-            """
-        }.joined(separator: "\n\n")
+        // Get the user's custom prompt
+        let customPrompt = UserDefaults.standard.string(forKey: "customPreMeetingPrompt") ?? """
+You are an executive assistant preparing a comprehensive pre-meeting intelligence brief. Analyze the conversation history and generate actionable insights to help the user engage confidently and build stronger relationships.
+
+## Required Analysis Sections:
+
+**🎯 MEETING FOCUS**
+- Primary topics likely to be discussed based on recent patterns
+- Key decisions or follow-ups pending from previous conversations
+- Strategic priorities this person is currently focused on
+
+**🔍 RELATIONSHIP INTELLIGENCE** 
+- Communication style and preferences observed
+- Working relationship trajectory and current dynamic
+- Personal interests, motivations, or concerns mentioned
+- Trust level and rapport-building opportunities
+
+**⚡ ACTIONABLE INSIGHTS**
+- Specific tasks, commitments, or deadlines to reference
+- Wins, achievements, or positive developments to acknowledge  
+- Challenges, concerns, or support needs to address
+- Conversation starters that demonstrate you remember past discussions
+
+**📈 PATTERNS & TRENDS**
+- Evolution of topics or priorities over time
+- Meeting frequency patterns and optimal timing
+- Engagement levels and conversation quality trends
+- Any recurring themes or persistent issues
+
+**🎪 STRATEGIC RECOMMENDATIONS**
+- Key talking points to strengthen the relationship
+- Questions to ask that show engagement and care
+- Potential challenges to navigate carefully
+- Follow-up actions to propose or discuss
+
+## Output Guidelines:
+- Be specific with dates, quotes, and concrete details
+- Prioritize recent conversations but reference historical context
+- Include both professional and personal rapport-building elements
+- Highlight gaps where information is missing or unclear
+- Format with clear headers and bullet points for easy scanning
+
+Generate a comprehensive brief that enables confident, relationship-building engagement:
+"""
         
-        let prompt = """
-        Generate a comprehensive pre-meeting brief based on the following information:
+        // Enhanced prompt with analysis instructions
+        let enhancedPrompt = """
+\(customPrompt)
+
+CONTEXT TO ANALYZE:
+\(context)
+
+ANALYSIS INSTRUCTIONS:
+- Extract specific insights, patterns, and actionable intelligence from the conversation history
+- Identify relationship dynamics, communication preferences, and working styles  
+- Highlight any recurring themes, concerns, or opportunities mentioned across conversations
+- Note any commitments, deadlines, or follow-up items that need attention
+- Suggest specific talking points that would demonstrate understanding and build rapport
+- Be specific with dates, details, and quotes when relevant
+
+Generate a comprehensive pre-meeting brief following the format above.
+"""
         
-        Meeting Context: \(context)
-        
-        Participants:
-        \(peopleInfo)
-        
-        Please provide:
-        ## Meeting Overview
-        ## Key Participants
-        ## Discussion Topics
-        ## Preparation Recommendations
-        ## Potential Talking Points
-        
-        Format with markdown headers and bullet points for easy reading.
-        """
-        
-        return try await sendMessage(prompt, context: "")
+        return try await sendMessage(enhancedPrompt, context: "")
     }
     
     func extractParticipants(from transcript: String) async throws -> [String] {

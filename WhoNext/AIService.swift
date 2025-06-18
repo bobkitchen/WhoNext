@@ -69,10 +69,23 @@ class AIService {
     static let shared = AIService()
     
     @AppStorage("currentProvider") var currentProvider: AIProvider = .openai
-    @AppStorage("openaiApiKey") var openaiApiKey: String = ""
-    @AppStorage("claudeApiKey") var claudeApiKey: String = ""
-    @AppStorage("openrouterApiKey") var openrouterApiKey: String = ""
     @AppStorage("openrouterModel") var openrouterModel: String = "meta-llama/llama-3.1-8b-instruct:free"
+    
+    // Secure API key access
+    var openaiApiKey: String {
+        get { SecureStorage.getAPIKey(for: .openai) }
+        set { SecureStorage.setAPIKey(newValue, for: .openai) }
+    }
+    
+    var claudeApiKey: String {
+        get { SecureStorage.getAPIKey(for: .claude) }
+        set { SecureStorage.setAPIKey(newValue, for: .claude) }
+    }
+    
+    var openrouterApiKey: String {
+        get { SecureStorage.getAPIKey(for: .openrouter) }
+        set { SecureStorage.setAPIKey(newValue, for: .openrouter) }
+    }
     
     var apiKey: String {
         switch currentProvider {
@@ -82,7 +95,10 @@ class AIService {
         }
     }
     
-    init() { }
+    init() {
+        // Migrate keys from UserDefaults to secure storage on first run
+        SecureStorage.migrateFromUserDefaults()
+    }
     
     func sendMessage(_ message: String, context: String? = nil) async throws -> String {
         print("🔍 [AIService] Using provider: \(currentProvider)")

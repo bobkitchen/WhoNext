@@ -6,23 +6,56 @@ import Supabase
 
 struct SettingsView: View {
     @Environment(\.managedObjectContext) private var viewContext
-    @AppStorage("openaiApiKey") private var apiKey: String = ""
-    @AppStorage("claudeApiKey") private var claudeApiKey: String = ""
-    @AppStorage("openrouterApiKey") private var openrouterApiKey: String = ""
+    // Secure API key storage with @State bindings
+    @State private var apiKey: String = ""
+    @State private var claudeApiKey: String = ""
+    @State private var openrouterApiKey: String = ""
+    @State private var hasLoadedKeys = false
     @AppStorage("openrouterModel") private var openrouterModel: String = "meta-llama/llama-3.1-8b-instruct:free"
     @AppStorage("aiProvider") private var aiProvider: String = "apple"
     @AppStorage("dismissedPeople") private var dismissedPeopleData: Data = Data()
     @AppStorage("customPreMeetingPrompt") private var customPreMeetingPrompt: String = """
-You are an executive assistant preparing a pre-meeting brief. Your job is to help the user engage with this person confidently by surfacing:
-- Key personal details or preferences shared in past conversations
-- Trends or changes in topics over time
-- Any agreed tasks, deadlines, or follow-ups
-- Recent wins, challenges, or important events
-- Anything actionable or worth mentioning for the next meeting
+You are an executive assistant preparing a comprehensive pre-meeting intelligence brief. Analyze the conversation history and generate actionable insights to help the user engage confidently and build stronger relationships.
 
-Use the provided context to be specific and actionable. Highlight details that would help the user build rapport and recall important facts. If any information is missing, state so.
+## Required Analysis Sections:
 
-Pre-Meeting Brief:
+**🎯 MEETING FOCUS**
+- Primary topics likely to be discussed based on recent patterns
+- Key decisions or follow-ups pending from previous conversations
+- Strategic priorities this person is currently focused on
+
+**🔍 RELATIONSHIP INTELLIGENCE** 
+- Communication style and preferences observed
+- Working relationship trajectory and current dynamic
+- Personal interests, motivations, or concerns mentioned
+- Trust level and rapport-building opportunities
+
+**⚡ ACTIONABLE INSIGHTS**
+- Specific tasks, commitments, or deadlines to reference
+- Wins, achievements, or positive developments to acknowledge  
+- Challenges, concerns, or support needs to address
+- Conversation starters that demonstrate you remember past discussions
+
+**📈 PATTERNS & TRENDS**
+- Evolution of topics or priorities over time
+- Meeting frequency patterns and optimal timing
+- Engagement levels and conversation quality trends
+- Any recurring themes or persistent issues
+
+**🎪 STRATEGIC RECOMMENDATIONS**
+- Key talking points to strengthen the relationship
+- Questions to ask that show engagement and care
+- Potential challenges to navigate carefully
+- Follow-up actions to propose or discuss
+
+## Output Guidelines:
+- Be specific with dates, quotes, and concrete details
+- Prioritize recent conversations but reference historical context
+- Include both professional and personal rapport-building elements
+- Highlight gaps where information is missing or unclear
+- Format with clear headers and bullet points for easy scanning
+
+Generate a comprehensive brief that enables confident, relationship-building engagement:
 """
     @AppStorage("customSummarizationPrompt") private var customSummarizationPrompt: String = """
 You are an executive assistant creating comprehensive meeting minutes. Generate detailed, actionable meeting minutes that include:
@@ -81,6 +114,7 @@ Best regards
     @State private var pastedPeopleText: String = ""
     @State private var showResetConfirmation = false
     @State private var showDeleteOrphanedConfirmation = false
+    @State private var showAdvancedSyncOptions = false
     @State private var availableCalendars: [EKCalendar] = []
     @State private var selectedCalendarID: String = ""
     @AppStorage("selectedCalendarID") private var storedCalendarID: String = ""
@@ -105,6 +139,10 @@ Best regards
     @State private var diagnosticsResult: String?
     @State private var isRunningDiagnostics = false
     @State private var showSyncResetConfirmation = false
+    @State private var directReportTestResult: String?
+    @State private var testPersonForSync: Person?
+    @State private var showForceUploadOption = false
+    @State private var showForceDownloadOption = false
 
     var body: some View {
         ScrollView {
@@ -163,6 +201,41 @@ Best regards
             .padding(.vertical, 20)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .onAppear {
+            if !hasLoadedKeys {
+                apiKey = SecureStorage.getAPIKey(for: .openai)
+                claudeApiKey = SecureStorage.getAPIKey(for: .claude)
+                openrouterApiKey = SecureStorage.getAPIKey(for: .openrouter)
+                hasLoadedKeys = true
+            }
+        }
+        .onChange(of: apiKey) { _, newValue in
+            if hasLoadedKeys {
+                if newValue.isEmpty {
+                    SecureStorage.clearAPIKey(for: .openai)
+                } else {
+                    SecureStorage.setAPIKey(newValue, for: .openai)
+                }
+            }
+        }
+        .onChange(of: claudeApiKey) { _, newValue in
+            if hasLoadedKeys {
+                if newValue.isEmpty {
+                    SecureStorage.clearAPIKey(for: .claude)
+                } else {
+                    SecureStorage.setAPIKey(newValue, for: .claude)
+                }
+            }
+        }
+        .onChange(of: openrouterApiKey) { _, newValue in
+            if hasLoadedKeys {
+                if newValue.isEmpty {
+                    SecureStorage.clearAPIKey(for: .openrouter)
+                } else {
+                    SecureStorage.setAPIKey(newValue, for: .openrouter)
+                }
+            }
+        }
     }
     
     // MARK: - Tab Button Component
@@ -663,73 +736,93 @@ Best regards
     // MARK: - Sync Settings
     private var syncSettingsView: some View {
         VStack(alignment: .leading, spacing: 20) {
-            // Supabase Sync Section
-            VStack(alignment: .leading, spacing: 8) {
-                Text("Supabase Sync")
+            // Cloud Sync Section
+            VStack(alignment: .leading, spacing: 12) {
+                Text("Cloud Sync")
                     .font(.headline)
-                Text("Real-time sync across all your devices")
+                Text("Keep your data synchronized across all devices")
                     .font(.caption)
                     .foregroundColor(.secondary)
                 
                 VStack(alignment: .leading, spacing: 12) {
-                    // Sync Status with Progress
-                    HStack {
-                        Circle()
-                            .fill(robustSync.isSyncing ? .blue : .green)
-                            .frame(width: 8, height: 8)
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(robustSync.syncStatus)
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-                            if robustSync.isSyncing && robustSync.syncProgress > 0 {
-                                ProgressView(value: robustSync.syncProgress)
-                                    .frame(width: 200)
+                    // Sync Status Row
+                    HStack(spacing: 12) {
+                        // Status indicator with better colors
+                        HStack(spacing: 8) {
+                            Circle()
+                                .fill(robustSync.isSyncing ? Color.orange : getStatusColor())
+                                .frame(width: 10, height: 10)
+                            
+                            VStack(alignment: .leading, spacing: 2) {
+                                if robustSync.isSyncing {
+                                    Text("Syncing...")
+                                        .font(.subheadline)
+                                        .foregroundColor(.primary)
+                                    if robustSync.syncProgress > 0 {
+                                        ProgressView(value: robustSync.syncProgress)
+                                            .frame(width: 150)
+                                    }
+                                } else if let lastSyncResult = robustSync.lastSyncResult {
+                                    switch lastSyncResult {
+                                    case .success(let stats):
+                                        Text("Sync completed successfully")
+                                            .font(.subheadline)
+                                            .foregroundColor(.primary)
+                                        Text("Last sync: \(stats.totalOperations) operations in \(String(format: "%.1f", stats.duration))s")
+                                            .font(.caption)
+                                            .foregroundColor(.secondary)
+                                    case .failure(let error):
+                                        Text("Sync failed")
+                                            .font(.subheadline)
+                                            .foregroundColor(.red)
+                                        Text(error.errorDescription ?? "Unknown error")
+                                            .font(.caption)
+                                            .foregroundColor(.secondary)
+                                    case .partial(let stats, let errors):
+                                        Text("Partial sync completed")
+                                            .font(.subheadline)
+                                            .foregroundColor(.orange)
+                                        Text("\(stats.totalOperations) operations, \(errors.count) errors")
+                                            .font(.caption)
+                                            .foregroundColor(.secondary)
+                                    }
+                                } else {
+                                    Text("Ready to sync")
+                                        .font(.subheadline)
+                                        .foregroundColor(.secondary)
+                                }
+                                
+                                if let lastSync = robustSync.lastSuccessfulSync {
+                                    Text("Last successful: \(lastSync, formatter: RelativeDateTimeFormatter())")
+                                        .font(.caption)
+                                        .foregroundColor(.secondary)
+                                }
                             }
                         }
+                        
                         Spacer()
-                        if let lastSync = robustSync.lastSuccessfulSync {
-                            Text("Last sync: \(lastSync, formatter: DateFormatter.timeOnly)")
-                                .font(.caption2)
-                                .foregroundColor(.secondary)
+                        
+                        // Sync Button
+                        Button(robustSync.isSyncing ? "Syncing..." : "Sync Now") {
+                            Task {
+                                await robustSync.performSync()
+                            }
                         }
+                        .buttonStyle(LiquidGlassButtonStyle(variant: .primary, size: .medium))
+                        .disabled(robustSync.isSyncing)
                     }
                     
-                    // Sync Result Display
-                    if let result = robustSync.lastSyncResult {
-                        switch result {
-                        case .success(let stats):
-                            Text("✅ Last sync: \(stats.totalOperations) operations in \(String(format: "%.1f", stats.duration))s")
-                                .font(.caption)
-                                .foregroundColor(.green)
-                        case .failure(let error):
-                            Text("❌ Last sync failed: \(error.errorDescription ?? "Unknown error")")
-                                .font(.caption)
-                                .foregroundColor(.red)
-                        case .partial(let stats, let errors):
-                            Text("⚠️ Partial sync: \(stats.totalOperations) operations, \(errors.count) errors")
-                                .font(.caption)
-                                .foregroundColor(.orange)
-                        }
+                    // Feature callout
+                    HStack {
+                        Image(systemName: "checkmark.circle.fill")
+                            .foregroundColor(.green)
+                            .font(.caption)
+                        Text("Smart conflict resolution and data deduplication")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
                     }
-                    
-                    // Sync Button
-                    Button(robustSync.isSyncing ? "Syncing..." : "Sync Now") {
-                        Task {
-                            await robustSync.performSync()
-                        }
-                    }
-                    .buttonStyle(LiquidGlassButtonStyle(variant: .primary, size: .medium))
-                    .disabled(robustSync.isSyncing)
-                    
-                    // Note: Deduplication is handled by proper sync now
-                    Text("✨ Automatic deduplication and conflict resolution built-in")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                        .italic()
-                    
-                    // Status Display handled above in sync result display
                 }
-                .padding(.vertical, 8)
+                .padding(.vertical, 4)
             }
             .padding()
             .background(Color(NSColor.controlBackgroundColor))
@@ -766,73 +859,112 @@ Best regards
             .background(Color(NSColor.controlBackgroundColor))
             .cornerRadius(8)
             
-            // Sync Troubleshooting Section
+            // Sync Health Section
             VStack(alignment: .leading, spacing: 12) {
-                Text("Troubleshooting")
+                Text("Sync Health")
                     .font(.headline)
-                Text("Fix sync issues and data problems")
+                Text("Monitor and maintain data synchronization across your devices")
                     .font(.caption)
                     .foregroundColor(.secondary)
                 
-                VStack(spacing: 8) {
-                    Button(isRunningDiagnostics ? "Running..." : "Check Sync Status") {
+                // Main troubleshooting actions
+                HStack(spacing: 12) {
+                    Button(isRunningDiagnostics ? "Checking..." : "Check Status") {
                         runSyncDiagnostics()
                     }
                     .buttonStyle(LiquidGlassButtonStyle(variant: .secondary, size: .medium))
                     .disabled(isRunningDiagnostics)
+                    .help("Run diagnostics to check for sync issues")
                     
-                    Button("Fix Sync Issues") {
+                    Button("Auto-Fix Issues") {
                         Task {
                             await smartSyncFix()
                         }
                     }
                     .buttonStyle(LiquidGlassButtonStyle(variant: .primary, size: .medium))
-                    .help("Automatically diagnose and fix common sync problems")
+                    .help("Automatically detect and resolve common sync problems")
                 }
                 
-                // Advanced options (collapsible)
-                DisclosureGroup("Advanced Options") {
-                    VStack(spacing: 8) {
-                        Button("Complete Reset from Cloud") {
-                            showSyncResetConfirmation = true
-                        }
-                        .buttonStyle(LiquidGlassButtonStyle(variant: .destructive, size: .medium))
-                        .alert("Complete Reset", isPresented: $showSyncResetConfirmation) {
-                            Button("Reset", role: .destructive) {
-                                Task { await trueNuclearReset() }
+                // Developer/Advanced options (much more hidden)
+                if showAdvancedSyncOptions {
+                    Divider()
+                        .padding(.vertical, 8)
+                    
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Advanced Recovery Options")
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                        
+                        Text("⚠️ These options should only be used when guided by support")
+                            .font(.caption)
+                            .foregroundColor(.orange)
+                            .padding(.bottom, 4)
+                        
+                        HStack(spacing: 8) {
+                            Button("Reset from Cloud") {
+                                showSyncResetConfirmation = true
                             }
-                            Button("Cancel", role: .cancel) { }
-                        } message: {
-                            Text("This will delete all local data and re-download everything from the cloud. Use only if other fixes don't work.")
-                        }
-                        .alert("Delete Orphaned Conversations", isPresented: $showDeleteOrphanedConfirmation) {
-                            Button("Delete All", role: .destructive) {
-                                Task {
-                                    let deletedCount = await robustSync.deleteAllOrphanedConversations(context: viewContext)
-                                    diagnosticsResult = "🗑️ Deleted \(deletedCount) orphaned conversations"
-                                    // Refresh the conversation count
-                                    refreshTrigger.toggle()
-                                }
+                            .buttonStyle(LiquidGlassButtonStyle(variant: .destructive, size: .small))
+                            .help("Delete all local data and rebuild from cloud")
+                            
+                            Button("Reset Sync State") {
+                                robustSync.resetSyncState()
+                                diagnosticsResult = "✅ Sync state reset - next sync will be comprehensive"
                             }
-                            Button("Cancel", role: .cancel) { }
-                        } message: {
-                            Text("This will permanently delete ALL conversations that are not linked to a person. Based on diagnostics, this appears to be 18 conversations. This cannot be undone.")
+                            .buttonStyle(LiquidGlassButtonStyle(variant: .secondary, size: .small))
+                            .help("Force a complete sync on next operation")
                         }
                         
-                        Button("Reset Sync State") {
-                            robustSync.resetSyncState()
+                        // Hide the orphaned conversations button unless there's actually an issue
+                        if diagnosticsResult?.contains("Orphaned") == true {
+                            Button("Clean Orphaned Data") {
+                                showDeleteOrphanedConfirmation = true
+                            }
+                            .buttonStyle(LiquidGlassButtonStyle(variant: .destructive, size: .small))
+                            .help("Remove conversations that aren't linked to people")
+                        }
+                        
+                        // Direct Report Sync Test
+                        Button("Test Direct Report Sync") {
+                            Task {
+                                await testDirectReportSync()
+                            }
                         }
                         .buttonStyle(LiquidGlassButtonStyle(variant: .secondary, size: .small))
-                        .help("Force a full sync on next sync operation")
-                        
-                        Button("Delete ALL Orphaned Conversations") {
-                            showDeleteOrphanedConfirmation = true
-                        }
-                        .buttonStyle(LiquidGlassButtonStyle(variant: .destructive, size: .small))
-                        .help("Permanently delete all conversations without people links")
+                        .help("Check if direct report status is syncing correctly")
                     }
                 }
-                .padding(.top, 8)
+                
+                // Toggle for advanced options
+                Button(showAdvancedSyncOptions ? "Hide Advanced Options" : "Show Advanced Options") {
+                    showAdvancedSyncOptions.toggle()
+                }
+                .buttonStyle(.plain)
+                .font(.caption)
+                .foregroundColor(.secondary)
+                .padding(.top, 4)
+                
+                // Alerts
+                .alert("Complete Reset", isPresented: $showSyncResetConfirmation) {
+                    Button("Reset", role: .destructive) {
+                        Task { await trueNuclearReset() }
+                    }
+                    Button("Cancel", role: .cancel) { }
+                } message: {
+                    Text("This will delete all local data and rebuild from the cloud. Only use if guided by support.")
+                }
+                .alert("Clean Orphaned Data", isPresented: $showDeleteOrphanedConfirmation) {
+                    Button("Clean", role: .destructive) {
+                        Task {
+                            let deletedCount = await robustSync.deleteAllOrphanedConversations(context: viewContext)
+                            diagnosticsResult = "🗑️ Cleaned \(deletedCount) orphaned conversations"
+                            refreshTrigger.toggle()
+                        }
+                    }
+                    Button("Cancel", role: .cancel) { }
+                } message: {
+                    Text("This will remove conversations that aren't properly linked to people. This action cannot be undone.")
+                }
                 
                 if let diagnosticsResult = diagnosticsResult {
                     ScrollView {
@@ -854,6 +986,18 @@ Best regards
             .padding()
             .background(Color(NSColor.controlBackgroundColor))
             .cornerRadius(8)
+        }
+    }
+    
+    private func getStatusColor() -> Color {
+        guard let result = robustSync.lastSyncResult else { return .gray }
+        switch result {
+        case .success:
+            return .green
+        case .failure:
+            return .red
+        case .partial:
+            return .orange
         }
     }
     
@@ -2019,6 +2163,181 @@ Best regards
         } catch {
             output.append("")
             output.append("❌ TRUE NUCLEAR RESET FAILED: \(error.localizedDescription)")
+            diagnosticsResult = output.joined(separator: "\n")
+        }
+    }
+    
+    // MARK: - Direct Report Sync Test
+    private func testDirectReportSync() async {
+        var output: [String] = []
+        output.append("🧪 DIRECT REPORT SYNC TEST")
+        output.append(String(repeating: "=", count: 50))
+        
+        do {
+            let supabase = SupabaseConfig.shared.client
+            
+            // STEP 1: Find a local person with isDirectReport = true
+            output.append("")
+            output.append("🔍 STEP 1: FINDING LOCAL DIRECT REPORTS")
+            
+            let directReportRequest: NSFetchRequest<Person> = NSFetchRequest<Person>(entityName: "Person")
+            directReportRequest.predicate = NSPredicate(format: "isDirectReport == true")
+            let localDirectReports = try viewContext.fetch(directReportRequest)
+            
+            output.append("   Found \(localDirectReports.count) local direct reports:")
+            for person in localDirectReports.prefix(5) {
+                output.append("   • \(person.name ?? "Unknown") - Local: \(person.isDirectReport)")
+            }
+            
+            if localDirectReports.isEmpty {
+                output.append("")
+                output.append("❌ NO DIRECT REPORTS FOUND LOCALLY")
+                output.append("💡 Try setting someone as a direct report first, then run this test")
+                diagnosticsResult = output.joined(separator: "\n")
+                return
+            }
+            
+            // Select the first direct report for testing
+            let testPerson = localDirectReports.first!
+            let personIdentifier = testPerson.identifier?.uuidString ?? ""
+            
+            output.append("")
+            output.append("🎯 TESTING PERSON: \(testPerson.name ?? "Unknown")")
+            output.append("   Local ID: \(personIdentifier)")
+            output.append("   Local isDirectReport: \(testPerson.isDirectReport)")
+            
+            diagnosticsResult = output.joined(separator: "\n")
+            
+            // STEP 2: Check what's in the remote Supabase database
+            output.append("")
+            output.append("☁️ STEP 2: CHECKING REMOTE DATABASE")
+            
+            let remotePeople: [SupabasePerson] = try await supabase.database
+                .from("people")
+                .select()
+                .eq("identifier", value: personIdentifier)
+                .execute()
+                .value
+            
+            if let remotePerson = remotePeople.first {
+                output.append("   Found in remote database:")
+                output.append("   • Name: \(remotePerson.name ?? "Unknown")")
+                output.append("   • Remote isDirectReport: \(remotePerson.isDirectReport ?? false)")
+                output.append("   • Device ID: \(remotePerson.deviceId ?? "none")")
+                output.append("   • Updated at: \(remotePerson.updatedAt ?? "unknown")")
+                
+                // STEP 3: Compare values
+                output.append("")
+                output.append("🔄 STEP 3: COMPARISON")
+                
+                let localValue = testPerson.isDirectReport
+                let remoteValue = remotePerson.isDirectReport ?? false
+                
+                if localValue == remoteValue {
+                    output.append("   ✅ VALUES MATCH!")
+                    output.append("   Local: \(localValue), Remote: \(remoteValue)")
+                } else {
+                    output.append("   ❌ MISMATCH DETECTED!")
+                    output.append("   Local: \(localValue)")
+                    output.append("   Remote: \(remoteValue)")
+                    output.append("")
+                    output.append("🔧 SYNC OPTIONS:")
+                    output.append("   A) Force Upload (update remote with local value)")
+                    output.append("   B) Force Download (update local with remote value)")
+                }
+                
+            } else {
+                output.append("   ❌ PERSON NOT FOUND IN REMOTE DATABASE")
+                output.append("   This person may need to be synced to the cloud first")
+                output.append("")
+                output.append("💡 Try running a full sync first")
+            }
+            
+            // STEP 4: Additional diagnostics
+            output.append("")
+            output.append("📊 STEP 4: ADDITIONAL DIAGNOSTICS")
+            
+            // Count all local direct reports
+            let allDirectReportsRequest: NSFetchRequest<Person> = NSFetchRequest<Person>(entityName: "Person")
+            allDirectReportsRequest.predicate = NSPredicate(format: "isDirectReport == true")
+            let localDirectReportCount = try viewContext.count(for: allDirectReportsRequest)
+            
+            // Count remote direct reports
+            let allRemotePeople: [SupabasePerson] = try await supabase.database
+                .from("people")
+                .select()
+                .eq("is_direct_report", value: true)
+                .execute()
+                .value
+            
+            output.append("   Total local direct reports: \(localDirectReportCount)")
+            output.append("   Total remote direct reports: \(allRemotePeople.count)")
+            
+            if localDirectReportCount != allRemotePeople.count {
+                output.append("")
+                output.append("⚠️ DIRECT REPORT COUNT MISMATCH")
+                output.append("   This suggests sync issues with direct report status")
+                
+                // STEP 5: Find the discrepancies
+                output.append("")
+                output.append("🔍 STEP 5: FINDING DISCREPANCIES")
+                
+                // Get all local direct report identifiers
+                let localDirectReports = try viewContext.fetch(allDirectReportsRequest)
+                let localIdentifiers = Set(localDirectReports.compactMap { $0.identifier?.uuidString })
+                
+                // Get all remote direct report identifiers
+                let remoteIdentifiers = Set(allRemotePeople.map { $0.identifier })
+                
+                // Find people who are direct reports remotely but not locally
+                let onlyRemote = remoteIdentifiers.subtracting(localIdentifiers)
+                let onlyLocal = localIdentifiers.subtracting(remoteIdentifiers)
+                
+                if !onlyRemote.isEmpty {
+                    output.append("   🌐 People marked as direct reports ONLY in remote:")
+                    for identifier in onlyRemote {
+                        if let remotePerson = allRemotePeople.first(where: { $0.identifier == identifier }) {
+                            output.append("     • \(remotePerson.name ?? "Unknown") (ID: \(identifier))")
+                        }
+                    }
+                }
+                
+                if !onlyLocal.isEmpty {
+                    output.append("   💾 People marked as direct reports ONLY locally:")
+                    for identifier in onlyLocal {
+                        if let localPerson = localDirectReports.first(where: { $0.identifier?.uuidString == identifier }) {
+                            output.append("     • \(localPerson.name ?? "Unknown") (ID: \(identifier))")
+                        }
+                    }
+                }
+                
+                // Check for people who exist in both but have different direct report status
+                let commonIdentifiers = localIdentifiers.intersection(remoteIdentifiers)
+                var statusMismatches: [String] = []
+                
+                for identifier in commonIdentifiers {
+                    if let localPerson = localDirectReports.first(where: { $0.identifier?.uuidString == identifier }),
+                       let remotePerson = allRemotePeople.first(where: { $0.identifier == identifier }) {
+                        let localStatus = localPerson.isDirectReport
+                        let remoteStatus = remotePerson.isDirectReport ?? false
+                        if localStatus != remoteStatus {
+                            statusMismatches.append("     • \(localPerson.name ?? "Unknown"): Local=\(localStatus), Remote=\(remoteStatus)")
+                        }
+                    }
+                }
+                
+                if !statusMismatches.isEmpty {
+                    output.append("   ⚠️ Status mismatches for existing people:")
+                    statusMismatches.forEach { output.append($0) }
+                }
+            }
+            
+            diagnosticsResult = output.joined(separator: "\n")
+            
+        } catch {
+            output.append("")
+            output.append("❌ DIRECT REPORT SYNC TEST FAILED:")
+            output.append("   \(error.localizedDescription)")
             diagnosticsResult = output.joined(separator: "\n")
         }
     }

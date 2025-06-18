@@ -48,9 +48,9 @@ class AppleIntelligenceService: ObservableObject {
         #endif
     }
     
-    /// Truncates context to fit Foundation Models' 4096 token limit
+    /// Truncates context to fit Foundation Models' 32k token limit
     /// Roughly estimates 1 token = 4 characters for safety
-    private func truncateContextForFoundationModels(_ context: String, maxTokens: Int = 3000) -> String {
+    private func truncateContextForFoundationModels(_ context: String, maxTokens: Int = 30000) -> String {
         let maxCharacters = maxTokens * 4 // Conservative estimate: 1 token ≈ 4 characters
         
         if context.count <= maxCharacters {
@@ -59,9 +59,36 @@ class AppleIntelligenceService: ObservableObject {
         
         print("⚠️ [AppleIntelligence] Context too long (\(context.count) chars), truncating to \(maxCharacters) chars")
         
-        // Truncate and add notice
-        let truncated = String(context.prefix(maxCharacters))
-        return truncated + "\n\n[Note: Context truncated for on-device processing]"
+        // Intelligent truncation: keep recent conversations and person metadata
+        let lines = context.components(separatedBy: .newlines)
+        var result: [String] = []
+        var currentLength = 0
+        
+        // Always include the header and person metadata (first ~10 lines)
+        for (index, line) in lines.enumerated() {
+            if index < 10 || currentLength + line.count <= maxCharacters {
+                result.append(line)
+                currentLength += line.count
+            } else {
+                break
+            }
+        }
+        
+        // If we have space, add recent conversations
+        if currentLength < Int(Double(maxCharacters) * 0.8) {
+            let remainingLines = Array(lines.dropFirst(result.count))
+            for line in remainingLines {
+                if currentLength + line.count <= maxCharacters {
+                    result.append(line)
+                    currentLength += line.count
+                } else {
+                    break
+                }
+            }
+        }
+        
+        let truncated = result.joined(separator: "\n")
+        return truncated + "\n\n[Note: Context intelligently truncated to prioritize recent conversations]"
     }
     
     // MARK: - Sentiment Analysis
@@ -144,32 +171,46 @@ class AppleIntelligenceService: ObservableObject {
                 print("🤖 [AppleIntelligence] Generating pre-meeting brief with Foundation Models")
                 
                 if #available(macOS 26.0, *) {
-                    // Create a language model session with specialized instructions
-                    let session = LanguageModelSession(instructions: """
-                    You are a professional assistant for a team management app called WhoNext. 
-                    You help users understand their team members' backgrounds, work history, and professional relationships.
+                    // Get the user's custom prompt from UserDefaults
+                    let customPrompt = UserDefaults.standard.string(forKey: "customPreMeetingPrompt") ?? """
+You are an executive assistant preparing a pre-meeting brief. Your job is to help the user engage with this person confidently by surfacing:
+- Key personal details or preferences shared in past conversations
+- Trends or changes in topics over time
+- Any agreed tasks, deadlines, or follow-ups
+- Recent wins, challenges, or important events
+- Anything actionable or worth mentioning for the next meeting
+
+Use the provided context to be specific and actionable. Highlight details that would help the user build rapport and recall important facts. If any information is missing, state so.
+
+Pre-Meeting Brief:
+"""
                     
-                    Guidelines:
-                    - Be concise and direct in your responses
-                    - Focus on the specific information requested
-                    - When discussing work history, organize information chronologically
-                    - If asked about specific people, provide relevant details about their roles and experience
-                    - If context is limited, acknowledge what information is available
+                    // Create a session with minimal instructions to let the custom prompt take control
+                    let session = LanguageModelSession(instructions: """
+                    You are a helpful assistant that follows instructions precisely and provides detailed, actionable responses based on the context provided.
                     """)
                     
-                    // Prepare a more structured prompt
+                    // Use the custom prompt with the full context
+                    let enhancedContext = truncateContextForFoundationModels(context)
                     let prompt = """
-                    User Question: What is the pre-meeting brief?
+\(customPrompt)
+
+CONTEXT TO ANALYZE:
+\(enhancedContext)
+
+ANALYSIS INSTRUCTIONS:
+- Extract specific insights, patterns, and actionable intelligence from the conversation history
+- Identify relationship dynamics, communication preferences, and working styles
+- Highlight any recurring themes, concerns, or opportunities mentioned across conversations
+- Note any commitments, deadlines, or follow-up items that need attention
+- Suggest specific talking points that would demonstrate understanding and build rapport
+- Be specific with dates, details, and quotes when relevant
+
+Generate a comprehensive pre-meeting brief following the format above.
+"""
                     
-                    Available Context:
-                    \(truncateContextForFoundationModels(context))
-                    
-                    Person data: \(String(describing: personData))
-                    
-                    Please provide a focused, helpful response based on the available information. If the context doesn't contain enough information to fully answer the question, acknowledge this and provide what details are available.
-                    """
-                    
-                    print("🤖 [AppleIntelligence] Sending prompt to Foundation Models...")
+                    print("🤖 [AppleIntelligence] Sending enhanced prompt to Foundation Models...")
+                    print("🤖 [AppleIntelligence] Context length: \(enhancedContext.count) characters")
                     
                     // Send the prompt and get response using correct method
                     let response = try await session.respond(to: prompt, options: GenerationOptions())

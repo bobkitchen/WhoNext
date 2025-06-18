@@ -1,6 +1,7 @@
 import SwiftUI
 import CoreData
 import UniformTypeIdentifiers
+import AppKit
 
 struct PersonDetailView: View {
     @ObservedObject var person: Person
@@ -27,6 +28,7 @@ struct PersonDetailView: View {
     @State private var preMeetingBrief: [UUID: String] = [:]
     @State private var fallbackIsGenerating = false
     @StateObject private var hybridAI = HybridAIService()
+    @State private var preMeetingBriefWindowController: PreMeetingBriefWindowController?
 
     init(person: Person) {
         self.person = person
@@ -57,6 +59,10 @@ struct PersonDetailView: View {
         .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("ConversationSaved"))) { _ in
             // Reload conversations when new ones are saved
             conversationManager.loadConversations(for: person)
+        }
+        .onDisappear {
+            // Clean up any open pre-meeting brief window when view disappears
+            closePreMeetingBriefWindow()
         }
     }
     
@@ -558,24 +564,24 @@ struct PersonDetailView: View {
     }
     
     private func openPreMeetingBriefWindow(_ briefContent: String) {
-        let window = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 600, height: 500),
-            styleMask: [.titled, .closable, .resizable],
-            backing: .buffered,
-            defer: false
-        )
-        window.title = "Pre-Meeting Brief - \(person.name ?? "Unknown")"
-        window.center()
-        window.contentView = NSHostingView(
-            rootView: PreMeetingBriefWindow(
-                personName: person.name ?? "Unknown",
-                briefContent: briefContent,
-                onClose: {
-                    window.close()
-                }
-            )
-        )
-        window.makeKeyAndOrderFront(nil)
+        // Close existing window if open
+        closePreMeetingBriefWindow()
+        
+        let windowController = PreMeetingBriefWindowController(
+            personName: person.name ?? "Unknown",
+            briefContent: briefContent
+        ) { [self] in
+            // This closure is called when the window is closed
+            preMeetingBriefWindowController = nil
+        }
+        
+        preMeetingBriefWindowController = windowController
+        windowController.showWindow(nil)
+    }
+    
+    private func closePreMeetingBriefWindow() {
+        preMeetingBriefWindowController?.close()
+        preMeetingBriefWindowController = nil
     }
     
     private func generatePreMeetingBrief() {
@@ -855,5 +861,54 @@ struct ConversationRowView: View {
         default:
             return .secondary
         }
+    }
+}
+
+// MARK: - PreMeetingBriefWindowController
+class PreMeetingBriefWindowController: NSWindowController {
+    private let onClose: () -> Void
+    
+    init(personName: String, briefContent: String, onClose: @escaping () -> Void) {
+        self.onClose = onClose
+        
+        let window = NSWindow(
+            contentRect: NSRect(x: 0, y: 0, width: 600, height: 500),
+            styleMask: [.titled, .closable, .resizable],
+            backing: .buffered,
+            defer: false
+        )
+        
+        super.init(window: window)
+        
+        window.title = "Pre-Meeting Brief - \(personName)"
+        window.center()
+        window.isReleasedWhenClosed = false
+        window.delegate = self
+        
+        window.contentView = NSHostingView(
+            rootView: PreMeetingBriefWindow(
+                personName: personName,
+                briefContent: briefContent,
+                onClose: { [weak self] in
+                    self?.close()
+                }
+            )
+        )
+    }
+    
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+    
+    override func close() {
+        super.close()
+        onClose()
+    }
+}
+
+// MARK: - NSWindowDelegate
+extension PreMeetingBriefWindowController: NSWindowDelegate {
+    func windowWillClose(_ notification: Notification) {
+        onClose()
     }
 }

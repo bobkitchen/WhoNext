@@ -232,7 +232,7 @@ struct PopoutChatView: View {
         chatSession.errorMessage = nil
         
         do {
-            let context = generateContext()
+            let context = generateContext(for: messageToSend)
             let response = try await AIService.shared.sendMessage(messageToSend, context: context)
             let aiMessage = ChatMessage(content: response, isUser: false, timestamp: Date())
             chatSession.messages.append(aiMessage)
@@ -245,54 +245,17 @@ struct PopoutChatView: View {
         chatSession.isLoading = false
     }
     
-    private func generateContext() -> String {
-        var context = "Team Members and Conversations:\n\n"
+    private func generateContext(for message: String) -> String {
+        // Use the same centralized context service as main chat
+        let hybridAI = HybridAIService()
+        let context = ChatContextService.generateContext(
+            for: message, 
+            people: people, 
+            provider: hybridAI.preferredProvider
+        )
         
-        for person in people {
-            let name = person.name ?? "Unknown"
-            let role = person.role ?? "Unknown"
-            let isDirectReport = person.isDirectReport
-            let timezone = person.timezone ?? "Unknown"
-            let scheduledDate = person.scheduledConversationDate
-            let conversations = person.conversations as? Set<Conversation> ?? []
-            
-            context += "Person: \(name)\n"
-            context += "Role: \(role)\n"
-            context += "Direct Report: \(isDirectReport)\n"
-            context += "Timezone: \(timezone)\n"
-            
-            // Add person's background notes
-            if let personNotes = person.notes, !personNotes.isEmpty {
-                context += "Background Notes: \(personNotes)\n"
-            }
-            
-            if let scheduledDate = scheduledDate {
-                context += "Next Scheduled Conversation: \(scheduledDate.formatted())\n"
-            }
-            
-            context += "Number of Past Conversations: \(conversations.count)\n"
-            
-            if !conversations.isEmpty {
-                context += "Recent Conversations:\n"
-                let sortedConversations = conversations.sorted { 
-                    ($0.date ?? .distantPast) > ($1.date ?? .distantPast)
-                }
-                for conversation in sortedConversations.prefix(3) {
-                    if let date = conversation.date {
-                        context += "- Date: \(date.formatted())\n"
-                        if let summary = conversation.summary {
-                            context += "  Summary: \(summary)\n"
-                        }
-                        if let notes = conversation.notes {
-                            context += "  Notes: \(notes)\n"
-                        }
-                    }
-                }
-            }
-            context += "\n"
-        }
-        
-        return context
+        // Optimize context for the current provider
+        return ChatContextService.optimizeContextForProvider(context, provider: hybridAI.preferredProvider)
     }
     
     private func fetchPeople() {
