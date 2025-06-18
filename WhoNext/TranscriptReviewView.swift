@@ -388,9 +388,10 @@ struct TranscriptReviewView: View {
         let conversation = Conversation(context: context)
         conversation.uuid = UUID()
         conversation.date = Date()
-        conversation.summary = editedSummary
-        // Store the detailed notes properly (not the title)
-        conversation.notes = editedSummary // The detailed meeting notes
+        // Store the title in the summary field (this is what shows in conversation lists)
+        conversation.summary = editedTitle
+        // Store the detailed meeting content in the notes field
+        conversation.notes = editedSummary
         conversation.duration = 30 // Default duration
         
         print("🔧 Created conversation with:")
