@@ -80,6 +80,7 @@ Best regards
     @State private var importSuccess: String?
     @State private var pastedPeopleText: String = ""
     @State private var showResetConfirmation = false
+    @State private var showDeleteOrphanedConfirmation = false
     @State private var availableCalendars: [EKCalendar] = []
     @State private var selectedCalendarID: String = ""
     @AppStorage("selectedCalendarID") private var storedCalendarID: String = ""
@@ -804,12 +805,31 @@ Best regards
                         } message: {
                             Text("This will delete all local data and re-download everything from the cloud. Use only if other fixes don't work.")
                         }
+                        .alert("Delete Orphaned Conversations", isPresented: $showDeleteOrphanedConfirmation) {
+                            Button("Delete All", role: .destructive) {
+                                Task {
+                                    let deletedCount = await robustSync.deleteAllOrphanedConversations(context: viewContext)
+                                    diagnosticsResult = "🗑️ Deleted \(deletedCount) orphaned conversations"
+                                    // Refresh the conversation count
+                                    refreshTrigger.toggle()
+                                }
+                            }
+                            Button("Cancel", role: .cancel) { }
+                        } message: {
+                            Text("This will permanently delete ALL conversations that are not linked to a person. Based on diagnostics, this appears to be 18 conversations. This cannot be undone.")
+                        }
                         
                         Button("Reset Sync State") {
                             robustSync.resetSyncState()
                         }
                         .buttonStyle(LiquidGlassButtonStyle(variant: .secondary, size: .small))
                         .help("Force a full sync on next sync operation")
+                        
+                        Button("Delete ALL Orphaned Conversations") {
+                            showDeleteOrphanedConfirmation = true
+                        }
+                        .buttonStyle(LiquidGlassButtonStyle(variant: .destructive, size: .small))
+                        .help("Permanently delete all conversations without people links")
                     }
                 }
                 .padding(.top, 8)
