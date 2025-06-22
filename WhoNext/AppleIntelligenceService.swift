@@ -119,29 +119,29 @@ class AppleIntelligenceService: ObservableObject {
                 // Create a language model session with specialized instructions
                 if #available(macOS 26.0, *) {
                     let session = LanguageModelSession(instructions: """
-                    You are a professional assistant for a team management app called WhoNext. 
-                    You help users understand their team members' backgrounds, work history, and professional relationships.
-                    
-                    Guidelines:
-                    - Be concise and direct in your responses
-                    - Focus on the specific information requested
-                    - When discussing work history, organize information chronologically
-                    - If asked about specific people, provide relevant details about their roles and experience
-                    - If context is limited, acknowledge what information is available
-                    """)
-                    
-                    // Prepare a more structured prompt
-                    let prompt = """
-                    User Question: What is the meeting summary?
-                    
-                    Available Context:
-                    \(truncateContextForFoundationModels(transcript))
+                You are a professional assistant for a team management app called WhoNext. 
+                You help users understand their team members' backgrounds, work history, and professional relationships.
+                
+                Guidelines:
+                - Be concise and direct in your responses
+                - Focus on the specific information requested
+                - When discussing work history, organize information chronologically
+                - If asked about specific people, provide relevant details about their roles and experience
+                - If context is limited, acknowledge what information is available
+                """)
+                
+                // Prepare a more structured prompt
+                let prompt = """
+                User Question: What is the meeting summary?
+                
+                Available Context:
+                \(truncateContextForFoundationModels(transcript))
 
-                    Please provide a focused, helpful response based on the available information. If the context doesn't contain enough information to fully answer the question, acknowledge this and provide what details are available.
-                    """
-                    
-                    print("🤖 [AppleIntelligence] Sending transcript to Foundation Models for summary...")
-                    
+                Please provide a focused, helpful response based on the available information. If the context doesn't contain enough information to fully answer the question, acknowledge this and provide what details are available.
+                """
+                
+                print("🤖 [AppleIntelligence] Sending transcript to Foundation Models for summary...")
+                
                     // Send the prompt and get response using correct method
                     let response = try await session.respond(to: prompt, options: GenerationOptions())
                     
@@ -170,8 +170,7 @@ class AppleIntelligenceService: ObservableObject {
             do {
                 print("🤖 [AppleIntelligence] Generating pre-meeting brief with Foundation Models")
                 
-                if #available(macOS 26.0, *) {
-                    // Get the user's custom prompt from UserDefaults
+                // Get the user's custom prompt from UserDefaults
                     let customPrompt = UserDefaults.standard.string(forKey: "customPreMeetingPrompt") ?? """
 You are an executive assistant preparing a pre-meeting brief. Your job is to help the user engage with this person confidently by surfacing:
 - Key personal details or preferences shared in past conversations
@@ -186,9 +185,10 @@ Pre-Meeting Brief:
 """
                     
                     // Create a session with minimal instructions to let the custom prompt take control
-                    let session = LanguageModelSession(instructions: """
-                    You are a helpful assistant that follows instructions precisely and provides detailed, actionable responses based on the context provided.
-                    """)
+                    if #available(macOS 26.0, *) {
+                        let session = LanguageModelSession(instructions: """
+                        You are a helpful assistant that follows instructions precisely and provides detailed, actionable responses based on the context provided.
+                        """)
                     
                     // Use the custom prompt with the full context
                     let enhancedContext = truncateContextForFoundationModels(context)
@@ -244,8 +244,8 @@ Generate a comprehensive pre-meeting brief following the format above.
             do {
                 print("🤖 [AppleIntelligence] Starting chat enhancement with Foundation Models")
                 
+                // Create a language model session with specialized instructions
                 if #available(macOS 26.0, *) {
-                    // Create a language model session with specialized instructions
                     let session = LanguageModelSession(instructions: """
                     You are a professional assistant for a team management app called WhoNext. 
                     You help users understand their team members' backgrounds, work history, and professional relationships.
@@ -302,8 +302,8 @@ Generate a comprehensive pre-meeting brief following the format above.
             do {
                 print("🤖 [AppleIntelligence] Extracting participants with Foundation Models")
                 
+                // Create a language model session with specialized instructions
                 if #available(macOS 26.0, *) {
-                    // Create a language model session with specialized instructions
                     let session = LanguageModelSession(instructions: """
                     You are a professional assistant for a team management app called WhoNext. 
                     You help users understand their team members' backgrounds, work history, and professional relationships.

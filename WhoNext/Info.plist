@@ -19,7 +19,7 @@
 	<key>CFBundleVersion</key>
 	<string>2</string>
 	<key>LSMinimumSystemVersion</key>
-	<string>11.0</string>
+	<string>15.5</string>
 	<key>NSCalendarsUsageDescription</key>
 	<string>WhoNext needs read-only access to your calendar to surface upcoming 1:1 meetings.</string>
 	<key>NSAppleEventsUsageDescription</key>

@@ -111,7 +111,7 @@ struct AddPersonWindow: View {
                                         .onTapGesture {
                                             showingTimezoneDropdown = true
                                         }
-                                        .onChange(of: editingTimezone) { _ in
+                                        .onChange(of: editingTimezone) {
                                             showingTimezoneDropdown = !editingTimezone.isEmpty
                                         }
                                     

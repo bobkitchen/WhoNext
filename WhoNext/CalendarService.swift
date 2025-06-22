@@ -65,7 +65,7 @@ class CalendarService: ObservableObject {
 
     private func logAvailableCalendars() {
         let calendars = eventStore.calendars(for: .event)
-        for cal in calendars {
+        for _ in calendars {
         }
     }
 

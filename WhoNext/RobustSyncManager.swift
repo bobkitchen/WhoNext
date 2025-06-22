@@ -131,8 +131,8 @@ class RobustSyncManager: ObservableObject {
     private let operationQueue = OperationQueue()
     
     // Real-time sync properties (temporarily disabled for compatibility)
-    private var peopleChannel: RealtimeChannel?
-    private var conversationsChannel: RealtimeChannel?
+    private var peopleChannel: RealtimeChannelV2?
+    private var conversationsChannel: RealtimeChannelV2?
     private var isRealtimeEnabled = false
     
     // Conflict resolution
@@ -642,11 +642,11 @@ class RobustSyncManager: ObservableObject {
         isRealtimeEnabled = false
         
         if let peopleChannel = peopleChannel {
-            try? await peopleChannel.unsubscribe()
+            await peopleChannel.unsubscribe()
         }
         
         if let conversationsChannel = conversationsChannel {
-            try? await conversationsChannel.unsubscribe()
+            await conversationsChannel.unsubscribe()
         }
         
         await updateSyncStatus("Real-time sync disabled")
@@ -1344,7 +1344,7 @@ class RobustSyncManager: ObservableObject {
             }
         }
         
-        throw SyncError.retryExhausted
+        throw lastError ?? SyncError.retryExhausted
     }
     
     private func shouldRetryError(_ error: Error) -> Bool {

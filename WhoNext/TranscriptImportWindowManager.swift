@@ -5,6 +5,7 @@ class TranscriptImportWindowManager: ObservableObject {
     static let shared = TranscriptImportWindowManager()
     
     private var windowController: NSWindowController?
+    private var windowDelegate: WindowDelegate?
     
     private init() {}
     
@@ -48,9 +49,11 @@ class TranscriptImportWindowManager: ObservableObject {
         window.makeKeyAndOrderFront(nil)
         
         // Handle window closing
-        window.delegate = WindowDelegate { [weak self] in
+        windowDelegate = WindowDelegate { [weak self] in
             self?.windowController = nil
+            self?.windowDelegate = nil
         }
+        window.delegate = windowDelegate
     }
 }
 

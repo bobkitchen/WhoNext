@@ -716,7 +716,7 @@ Best regards
                     let authStatus = EKEventStore.authorizationStatus(for: .event)
                     HStack {
                         Circle()
-                            .fill(authStatus == .authorized ? .green : .red)
+                            .fill(authStatus == .fullAccess ? .green : .red)
                             .frame(width: 8, height: 8)
                         Text(calendarStatusText(authStatus))
                             .font(.caption)
@@ -727,7 +727,7 @@ Best regards
         }
         .onAppear {
             selectedCalendarID = storedCalendarID
-            if EKEventStore.authorizationStatus(for: .event) == .authorized {
+            if EKEventStore.authorizationStatus(for: .event) == .fullAccess {
                 loadAvailableCalendars()
             }
         }
@@ -1032,7 +1032,7 @@ Best regards
     private func calendarStatusText(_ status: EKAuthorizationStatus) -> String {
         switch status {
         case .authorized:
-            return "Calendar access granted"
+            return "Calendar access granted (deprecated)"
         case .denied:
             return "Calendar access denied"
         case .restricted:
@@ -1552,7 +1552,7 @@ Best regards
             diagnosticsResult = "✅ Step 2/4: Downloading ONLY non-deleted people from cloud..."
             
             // Step 2: Download all people (no soft delete filtering)
-            let remotePeople: [SupabasePerson] = try await supabase.database
+            let remotePeople: [SupabasePerson] = try await supabase
                 .from("people")
                 .select()
                 .execute()
@@ -1581,7 +1581,7 @@ Best regards
             diagnosticsResult = "✅ Step 3/4: Downloading ONLY non-deleted conversations from cloud..."
             
             // Step 3: Download all conversations and rebuild relationships
-            let remoteConversations: [SupabaseConversation] = try await supabase.database
+            let remoteConversations: [SupabaseConversation] = try await supabase
                 .from("conversations")
                 .select()
                 .execute()
@@ -1633,7 +1633,7 @@ Best regards
             diagnosticsResult = "✅ Step 4/4: Clearing device attributions for proper sync..."
             
             // Step 4: Clear all device attributions so sync works properly
-            try await supabase.database
+            try await supabase
                 .from("people")
                 .update(["device_id": Optional<String>.none])
                 .not("device_id", operator: .is, value: "null") // WHERE clause: only update non-null device_ids
@@ -1656,7 +1656,7 @@ Best regards
             diagnosticsResult = "🧹 Clearing all device attributions in cloud..."
             
             // Update all people to have null device_id
-            try await supabase.database
+            try await supabase
                 .from("people")
                 .update(["device_id": Optional<String>.none])
                 .not("device_id", operator: .is, value: "null") // Only update non-null ones
@@ -1683,7 +1683,7 @@ Best regards
             let supabase = SupabaseConfig.shared.client
             
             // Get all remote conversations with their person identifiers
-            let remoteConversations: [SupabaseConversation] = try await supabase.database
+            let remoteConversations: [SupabaseConversation] = try await supabase
                 .from("conversations")
                 .select()
                 .execute()
@@ -1799,13 +1799,13 @@ Best regards
             let supabase = SupabaseConfig.shared.client
             
             // Get all remote conversations and people
-            let remoteConversations: [SupabaseConversation] = try await supabase.database
+            let remoteConversations: [SupabaseConversation] = try await supabase
                 .from("conversations")
                 .select()
                 .execute()
                 .value
             
-            let remotePeople: [SupabasePerson] = try await supabase.database
+            let remotePeople: [SupabasePerson] = try await supabase
                 .from("people")
                 .select()
                 .execute()
@@ -2009,7 +2009,7 @@ Best regards
             output.append("")
             output.append("🔍 STEP 1: CLOUD INVENTORY")
             
-            let allRemotePeople: [SupabasePerson] = try await supabase.database
+            let allRemotePeople: [SupabasePerson] = try await supabase
                 .from("people")
                 .select()
                 .execute()
@@ -2083,7 +2083,7 @@ Best regards
             output.append("")
             output.append("📥 STEP 4: DOWNLOADING CONVERSATIONS")
             
-            let allRemoteConversations: [SupabaseConversation] = try await supabase.database
+            let allRemoteConversations: [SupabaseConversation] = try await supabase
                 .from("conversations")
                 .select()
                 .execute()
@@ -2212,7 +2212,7 @@ Best regards
             output.append("")
             output.append("☁️ STEP 2: CHECKING REMOTE DATABASE")
             
-            let remotePeople: [SupabasePerson] = try await supabase.database
+            let remotePeople: [SupabasePerson] = try await supabase
                 .from("people")
                 .select()
                 .eq("identifier", value: personIdentifier)
@@ -2263,7 +2263,7 @@ Best regards
             let localDirectReportCount = try viewContext.count(for: allDirectReportsRequest)
             
             // Count remote direct reports
-            let allRemotePeople: [SupabasePerson] = try await supabase.database
+            let allRemotePeople: [SupabasePerson] = try await supabase
                 .from("people")
                 .select()
                 .eq("is_direct_report", value: true)
