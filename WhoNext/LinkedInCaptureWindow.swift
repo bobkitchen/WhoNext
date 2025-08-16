@@ -183,7 +183,7 @@ struct LinkedInCaptureWindow: View {
             case .browsing:
                 Spacer()
                 
-                Button("Capture Profile") {
+                Button(action: {
                     print("🔍 Capture Profile button pressed")
                     if let webView = currentWebView {
                         print("✅ WebView found, starting capture")
@@ -191,51 +191,126 @@ struct LinkedInCaptureWindow: View {
                     } else {
                         print("❌ No WebView available for capture")
                     }
+                }) {
+                    HStack(spacing: 8) {
+                        Image(systemName: "camera.fill")
+                            .font(.system(size: 14, weight: .medium))
+                        Text("Capture Profile")
+                            .font(.system(size: 14, weight: .semibold))
+                    }
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 20)
+                    .padding(.vertical, 10)
+                    .background(
+                        RoundedRectangle(cornerRadius: 10)
+                            .fill(Color.accentColor)
+                            .shadow(color: Color.accentColor.opacity(0.3), radius: 4, x: 0, y: 2)
+                    )
                 }
-                .padding(EdgeInsets(top: 10, leading: 20, bottom: 10, trailing: 20))
-                .background(Color.accentColor)
-                .foregroundColor(.white)
-                .cornerRadius(8)
+                .buttonStyle(PlainButtonStyle())
                 .disabled(isProcessing)
+                .opacity(isProcessing ? 0.6 : 1.0)
+                .scaleEffect(isProcessing ? 0.95 : 1.0)
+                .animation(.easeInOut(duration: 0.1), value: isProcessing)
                 
             case .processing:
                 Spacer()
                 
-                Button("Cancel") {
+                Button(action: {
                     captureState = .browsing
                     isProcessing = false
+                }) {
+                    HStack(spacing: 6) {
+                        Image(systemName: "xmark.circle")
+                            .font(.system(size: 13))
+                        Text("Cancel")
+                            .font(.system(size: 13, weight: .medium))
+                    }
+                    .foregroundColor(.primary)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 8)
+                    .background(
+                        RoundedRectangle(cornerRadius: 8)
+                            .fill(Color(nsColor: .controlBackgroundColor))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 8)
+                                    .stroke(Color.gray.opacity(0.3), lineWidth: 1)
+                            )
+                    )
                 }
-                .padding(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
-                .background(Color.gray.opacity(0.2))
-                .cornerRadius(8)
+                .buttonStyle(PlainButtonStyle())
                 
             case .reviewing:
-                Button("Back to LinkedIn") {
+                Button(action: {
                     captureState = .browsing
                     aiSummary = ""
+                }) {
+                    HStack(spacing: 6) {
+                        Image(systemName: "arrow.left")
+                            .font(.system(size: 12))
+                        Text("Back to LinkedIn")
+                            .font(.system(size: 13, weight: .medium))
+                    }
+                    .foregroundColor(.primary)
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 8)
+                    .background(
+                        RoundedRectangle(cornerRadius: 8)
+                            .fill(Color(nsColor: .controlBackgroundColor))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 8)
+                                    .stroke(Color.gray.opacity(0.3), lineWidth: 1)
+                            )
+                    )
                 }
-                .padding(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
-                .background(Color.gray.opacity(0.2))
-                .cornerRadius(8)
+                .buttonStyle(PlainButtonStyle())
                 
                 Spacer()
                 
                 HStack(spacing: 12) {
-                    Button("Edit More") {
+                    Button(action: {
                         // Keep in review mode for further editing
+                    }) {
+                        HStack(spacing: 6) {
+                            Image(systemName: "pencil")
+                                .font(.system(size: 12))
+                            Text("Edit More")
+                                .font(.system(size: 13, weight: .medium))
+                        }
+                        .foregroundColor(.primary)
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 8)
+                        .background(
+                            RoundedRectangle(cornerRadius: 8)
+                                .fill(Color(nsColor: .controlBackgroundColor))
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 8)
+                                        .stroke(Color.gray.opacity(0.3), lineWidth: 1)
+                                )
+                        )
                     }
-                    .padding(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
-                    .background(Color.gray.opacity(0.2))
-                    .cornerRadius(8)
+                    .buttonStyle(PlainButtonStyle())
                     
-                    Button("Save & Close") {
+                    Button(action: {
                         onSave(aiSummary)
                         onClose()
+                    }) {
+                        HStack(spacing: 6) {
+                            Image(systemName: "checkmark.circle.fill")
+                                .font(.system(size: 13))
+                            Text("Save & Close")
+                                .font(.system(size: 13, weight: .semibold))
+                        }
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 8)
+                        .background(
+                            RoundedRectangle(cornerRadius: 8)
+                                .fill(Color.accentColor)
+                                .shadow(color: Color.accentColor.opacity(0.3), radius: 3, x: 0, y: 1)
+                        )
                     }
-                    .padding(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
-                    .background(Color.accentColor)
-                    .foregroundColor(.white)
-                    .cornerRadius(8)
+                    .buttonStyle(PlainButtonStyle())
                 }
             }
         }
