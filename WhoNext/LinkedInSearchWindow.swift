@@ -107,7 +107,7 @@ struct LinkedInSearchWindow: View {
                         Text("Extracted Profile Data")
                             .font(.system(size: 18, weight: .semibold))
                         
-                        Group {
+                        SwiftUI.Group {
                             ProfileDataRow(label: "Name", value: data.name)
                             ProfileDataRow(label: "Job Title", value: data.headline)
                             ProfileDataRow(label: "Location", value: data.location)

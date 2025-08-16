@@ -162,7 +162,7 @@ struct LiquidGlassTextField: View {
                     .foregroundStyle(.primary)
             }
             
-            Group {
+            SwiftUI.Group {
                 if isSecure {
                     SecureField(placeholder, text: $text)
                         .textFieldStyle(.plain)

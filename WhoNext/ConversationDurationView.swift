@@ -164,20 +164,20 @@ struct ConversationDurationView: View {
     }
     
     private func trendIndicator(direction: String) -> some View {
-        Group {
-            switch direction {
-            case "improving":
-                Image(systemName: "arrow.up.circle.fill")
-                    .foregroundColor(.green)
-            case "declining":
-                Image(systemName: "arrow.down.circle.fill")
-                    .foregroundColor(.red)
-            default:
-                Image(systemName: "minus.circle.fill")
-                    .foregroundColor(.gray)
-            }
+        switch direction {
+        case "improving":
+            Image(systemName: "arrow.up.circle.fill")
+                .foregroundColor(.green)
+                .font(.caption)
+        case "declining":
+            Image(systemName: "arrow.down.circle.fill")
+                .foregroundColor(.red)
+                .font(.caption)
+        default:
+            Image(systemName: "minus.circle.fill")
+                .foregroundColor(.gray)
+                .font(.caption)
         }
-        .font(.caption)
     }
     
     private func formatTotalDuration(_ minutes: Double) -> String {

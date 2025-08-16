@@ -165,6 +165,10 @@ Best regards
                         selectedTab = "calendar"
                     }
                     
+                    TabButton(title: "Recording", icon: "record.circle", isSelected: selectedTab == "recording") {
+                        selectedTab = "recording"
+                    }
+                    
                     TabButton(title: "Import & Export", icon: "square.and.arrow.down", isSelected: selectedTab == "import") {
                         selectedTab = "import"
                     }
@@ -178,7 +182,7 @@ Best regards
                 .padding(.bottom, 10)
                 
                 // Content based on selected tab
-                Group {
+                SwiftUI.Group {
                     switch selectedTab {
                     case "general":
                         generalSettingsView
@@ -190,6 +194,8 @@ Best regards
                         importExportView
                     case "calendar":
                         calendarSettingsView
+                    case "recording":
+                        recordingSettingsView
                     case "sync":
                         syncSettingsView
                     default:
@@ -729,6 +735,166 @@ Best regards
             selectedCalendarID = storedCalendarID
             if EKEventStore.authorizationStatus(for: .event) == .fullAccess {
                 loadAvailableCalendars()
+            }
+        }
+    }
+    
+    // MARK: - Recording Settings
+    @ObservedObject private var recordingConfig = MeetingRecordingConfiguration.shared
+    
+    private var recordingSettingsView: some View {
+        VStack(alignment: .leading, spacing: 20) {
+            
+            // Recording Triggers Section
+            VStack(alignment: .leading, spacing: 12) {
+                Text("Recording Triggers")
+                    .font(.headline)
+                Text("Configure what triggers automatic meeting recording")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                
+                VStack(alignment: .leading, spacing: 8) {
+                    Toggle("Two-Way Audio Detection", isOn: $recordingConfig.triggers.twoWayAudioEnabled)
+                        .help("Automatically detect conversations based on audio patterns")
+                    Toggle("Calendar Integration", isOn: $recordingConfig.triggers.calendarIntegrationEnabled)
+                        .help("Start recording for scheduled calendar events")
+                    Toggle("Meeting App Detection", isOn: $recordingConfig.triggers.meetingAppDetectionEnabled)
+                        .help("Detect when meeting apps like Zoom are active")
+                    Toggle("Keyword Detection", isOn: $recordingConfig.triggers.keywordDetectionEnabled)
+                        .help("Trigger recording when specific keywords are mentioned")
+                }
+                .padding(12)
+                .background(Color(NSColor.controlBackgroundColor))
+                .cornerRadius(8)
+            }
+            
+            // Auto-Recording Settings
+            VStack(alignment: .leading, spacing: 12) {
+                Text("Auto-Recording")
+                    .font(.headline)
+                Text("Control automatic recording behavior")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                
+                VStack(alignment: .leading, spacing: 12) {
+                    Toggle("Enable Auto-Recording", isOn: $recordingConfig.autoRecordingEnabled)
+                        .help("Automatically start recording when meetings are detected")
+                    
+                    VStack(alignment: .leading, spacing: 4) {
+                        HStack {
+                            Text("Confidence Threshold")
+                            Spacer()
+                            Text("\(Int(recordingConfig.confidenceThreshold * 100))%")
+                                .foregroundColor(.secondary)
+                        }
+                        Slider(value: $recordingConfig.confidenceThreshold, in: 0.3...1.0)
+                            .disabled(!recordingConfig.autoRecordingEnabled)
+                            .help("Higher values reduce false positives but may miss some meetings")
+                    }
+                }
+                .padding(12)
+                .background(Color(NSColor.controlBackgroundColor))
+                .cornerRadius(8)
+            }
+            
+            // Audio Quality Settings
+            VStack(alignment: .leading, spacing: 12) {
+                Text("Audio Quality")
+                    .font(.headline)
+                Text("Configure recording quality settings")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                
+                VStack(alignment: .leading, spacing: 12) {
+                    HStack {
+                        Text("Sample Rate")
+                        Spacer()
+                        Picker("", selection: $recordingConfig.audioQuality.sampleRate) {
+                            Text("16 kHz").tag(16000.0)
+                            Text("44.1 kHz").tag(44100.0)
+                            Text("48 kHz").tag(48000.0)
+                        }
+                        .pickerStyle(SegmentedPickerStyle())
+                        .frame(width: 200)
+                    }
+                    
+                    HStack {
+                        Text("Bit Rate")
+                        Spacer()
+                        Picker("", selection: $recordingConfig.audioQuality.bitRate) {
+                            Text("32 kbps").tag(32000)
+                            Text("64 kbps").tag(64000)
+                            Text("128 kbps").tag(128000)
+                        }
+                        .pickerStyle(SegmentedPickerStyle())
+                        .frame(width: 200)
+                    }
+                    
+                    Toggle("Enable Compression", isOn: $recordingConfig.audioQuality.compressionEnabled)
+                        .help("Reduces file size but may slightly affect quality")
+                }
+                .padding(12)
+                .background(Color(NSColor.controlBackgroundColor))
+                .cornerRadius(8)
+            }
+            
+            // Transcription Settings
+            VStack(alignment: .leading, spacing: 12) {
+                Text("Transcription")
+                    .font(.headline)
+                Text("Configure transcription preferences")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                
+                VStack(alignment: .leading, spacing: 8) {
+                    Toggle("Use Local Transcription (Parakeet)", isOn: $recordingConfig.transcriptionSettings.useLocalTranscription)
+                        .help("Process transcription locally for privacy")
+                    Toggle("Whisper API Refinement", isOn: $recordingConfig.transcriptionSettings.whisperRefinementEnabled)
+                        .help("Use OpenAI Whisper for higher accuracy")
+                    Toggle("Speaker Diarization", isOn: $recordingConfig.transcriptionSettings.speakerDiarizationEnabled)
+                        .help("Identify different speakers in the conversation")
+                    Toggle("Include Punctuation", isOn: $recordingConfig.transcriptionSettings.punctuationEnabled)
+                        .help("Add punctuation to transcripts")
+                }
+                .padding(12)
+                .background(Color(NSColor.controlBackgroundColor))
+                .cornerRadius(8)
+            }
+            
+            // Privacy Settings
+            VStack(alignment: .leading, spacing: 12) {
+                Text("Privacy & Storage")
+                    .font(.headline)
+                Text("Control privacy and data retention")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                
+                VStack(alignment: .leading, spacing: 12) {
+                    Toggle("Notify on Recording Start", isOn: $recordingConfig.privacySettings.notifyOnRecordingStart)
+                        .help("Show notification when recording begins")
+                    Toggle("Show Recording Indicator", isOn: $recordingConfig.privacySettings.showRecordingIndicator)
+                        .help("Display visual indicator during recording")
+                    Toggle("Pause in Private Browsing", isOn: $recordingConfig.privacySettings.pauseInPrivateBrowsing)
+                        .help("Disable recording when private browsing is detected")
+                    
+                    HStack {
+                        Text("Storage Retention")
+                        Spacer()
+                        Picker("", selection: $recordingConfig.storageRetentionDays) {
+                            Text("7 days").tag(7)
+                            Text("14 days").tag(14)
+                            Text("30 days").tag(30)
+                            Text("60 days").tag(60)
+                            Text("90 days").tag(90)
+                        }
+                        .pickerStyle(SegmentedPickerStyle())
+                        .frame(width: 300)
+                    }
+                    .help("Automatically delete recordings after this period")
+                }
+                .padding(12)
+                .background(Color(NSColor.controlBackgroundColor))
+                .cornerRadius(8)
             }
         }
     }

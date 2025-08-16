@@ -256,10 +256,10 @@ Pre-Meeting Brief:
                         let session = LanguageModelSession(instructions: """
                         You are a helpful assistant that follows instructions precisely and provides detailed, actionable responses based on the context provided.
                         """)
-                    
-                    // Use the custom prompt with the full context
-                    let enhancedContext = truncateContextForFoundationModels(context)
-                    let prompt = """
+                        
+                        // Use the custom prompt with the full context
+                        let enhancedContext = truncateContextForFoundationModels(context)
+                        let prompt = """
 \(customPrompt)
 
 CONTEXT TO ANALYZE:
@@ -275,35 +275,35 @@ ANALYSIS INSTRUCTIONS:
 
 Generate a comprehensive pre-meeting brief following the format above.
 """
-                    
-                    print("🤖 [AppleIntelligence] Sending enhanced prompt to Foundation Models...")
-                    print("🤖 [AppleIntelligence] Context length: \(enhancedContext.count) characters")
-                    
-                    // Send the prompt and get response using simpler API without options
-                    // Research shows the simpler API is more stable in beta
-                    do {
-                        print("🤖 [AppleIntelligence] Calling session.respond for pre-meeting brief...")
-                        let response = try await session.respond(to: prompt)
                         
-                        // The response.content is already a String
-                        let content = response.content
+                        print("🤖 [AppleIntelligence] Sending enhanced prompt to Foundation Models...")
+                        print("🤖 [AppleIntelligence] Context length: \(enhancedContext.count) characters")
                         
-                        guard !content.isEmpty else {
-                            print("⚠️ [AppleIntelligence] Response had empty content")
+                        // Send the prompt and get response using simpler API without options
+                        // Research shows the simpler API is more stable in beta
+                        do {
+                            print("🤖 [AppleIntelligence] Calling session.respond for pre-meeting brief...")
+                            let response = try await session.respond(to: prompt)
+                            
+                            // The response.content is already a String
+                            let content = response.content
+                            
+                            guard !content.isEmpty else {
+                                print("⚠️ [AppleIntelligence] Response had empty content")
+                                throw AppleIntelligenceError.processingFailed
+                            }
+                            
+                            print("✅ [AppleIntelligence] Pre-meeting brief generated successfully")
+                            return content
+                        } catch {
+                            print("❌ [AppleIntelligence] Failed to generate pre-meeting brief: \(error)")
+                            print("❌ Error type: \(type(of: error))")
+                            print("❌ Error description: \(error.localizedDescription)")
                             throw AppleIntelligenceError.processingFailed
                         }
-                        
-                        print("✅ [AppleIntelligence] Pre-meeting brief generated successfully")
-                        return content
-                    } catch {
-                        print("❌ [AppleIntelligence] Failed to generate pre-meeting brief: \(error)")
-                        print("❌ Error type: \(type(of: error))")
-                        print("❌ Error description: \(error.localizedDescription)")
-                        throw AppleIntelligenceError.processingFailed
+                    } else {
+                        throw AppleIntelligenceError.frameworkNotAvailable
                     }
-                } else {
-                    throw AppleIntelligenceError.frameworkNotAvailable
-                }
                 
             } catch {
                 print("❌ [AppleIntelligence] Pre-meeting brief generation failed: \(error)")
@@ -329,59 +329,55 @@ Generate a comprehensive pre-meeting brief following the format above.
                 print("🤖 [AppleIntelligence] Starting chat enhancement with Foundation Models")
                 
                 // Create a language model session with specialized instructions
-                if #available(macOS 26.0, *) {
-                    let session = LanguageModelSession(instructions: """
-                    You are a professional assistant for a team management app called WhoNext. 
-                    You help users understand their team members' backgrounds, work history, and professional relationships.
+                let session = LanguageModelSession(instructions: """
+                You are a professional assistant for a team management app called WhoNext. 
+                You help users understand their team members' backgrounds, work history, and professional relationships.
+                
+                Guidelines:
+                - Be concise and direct in your responses
+                - Focus on the specific information requested
+                - When discussing work history, organize information chronologically
+                - If asked about specific people, provide relevant details about their roles and experience
+                - If context is limited, acknowledge what information is available
+                """)
+                
+                // Prepare a more structured prompt
+                // Keep prompt professional to avoid triggering safety guardrails
+                let prompt = """
+                You are a professional assistant helping analyze business meeting information.
+                
+                User Question: \(message)
+                
+                Available Information:
+                \(truncateContextForFoundationModels(context))
+                
+                Please provide a helpful, professional response based on the available information.
+                If the information is limited, acknowledge this and provide what details are available.
+                """
+                
+                print("🤖 [AppleIntelligence] Sending prompt to Foundation Models...")
+                
+                // Send the prompt and get response using simpler API without options
+                // Research shows the simpler API is more stable in beta
+                do {
+                    print("🤖 [AppleIntelligence] Calling session.respond for chat enhancement...")
+                    let response = try await session.respond(to: prompt)
                     
-                    Guidelines:
-                    - Be concise and direct in your responses
-                    - Focus on the specific information requested
-                    - When discussing work history, organize information chronologically
-                    - If asked about specific people, provide relevant details about their roles and experience
-                    - If context is limited, acknowledge what information is available
-                    """)
+                    // The response.content is already a String
+                    let content = response.content
                     
-                    // Prepare a more structured prompt
-                    // Keep prompt professional to avoid triggering safety guardrails
-                    let prompt = """
-                    You are a professional assistant helping analyze business meeting information.
-                    
-                    User Question: \(message)
-                    
-                    Available Information:
-                    \(truncateContextForFoundationModels(context))
-                    
-                    Please provide a helpful, professional response based on the available information.
-                    If the information is limited, acknowledge this and provide what details are available.
-                    """
-                    
-                    print("🤖 [AppleIntelligence] Sending prompt to Foundation Models...")
-                    
-                    // Send the prompt and get response using simpler API without options
-                    // Research shows the simpler API is more stable in beta
-                    do {
-                        print("🤖 [AppleIntelligence] Calling session.respond for chat enhancement...")
-                        let response = try await session.respond(to: prompt)
-                        
-                        // The response.content is already a String
-                        let content = response.content
-                        
-                        guard !content.isEmpty else {
-                            print("⚠️ [AppleIntelligence] Response had empty content")
-                            throw AppleIntelligenceError.processingFailed
-                        }
-                        
-                        print("✅ [AppleIntelligence] Chat response generated successfully")
-                        return content
-                    } catch {
-                        print("❌ [AppleIntelligence] Failed to enhance chat: \(error)")
-                        print("❌ Error type: \(type(of: error))")
-                        print("❌ Error description: \(error.localizedDescription)")
+                    guard !content.isEmpty else {
+                        print("⚠️ [AppleIntelligence] Response had empty content")
                         throw AppleIntelligenceError.processingFailed
                     }
-                } else {
-                    throw AppleIntelligenceError.frameworkNotAvailable
+                    
+                    print("✅ [AppleIntelligence] Chat response generated successfully")
+                    return content
+                } catch {
+                    print("❌ [AppleIntelligence] Failed to enhance chat: \(error)")
+                    print("❌ Error type: \(type(of: error))")
+                    print("❌ Error description: \(error.localizedDescription)")
+                    throw AppleIntelligenceError.processingFailed
                 }
                 
             } catch {
@@ -416,78 +412,74 @@ Generate a comprehensive pre-meeting brief following the format above.
                 print("🤖 [AppleIntelligence] Extracting participants with Foundation Models")
                 
                 // Create a language model session with specialized instructions
-                if #available(macOS 26.0, *) {
-                    let session = LanguageModelSession(instructions: """
-                    You are a professional assistant for a team management app called WhoNext. 
-                    You help users understand their team members' backgrounds, work history, and professional relationships.
+                let session = LanguageModelSession(instructions: """
+                You are a professional assistant for a team management app called WhoNext. 
+                You help users understand their team members' backgrounds, work history, and professional relationships.
+                
+                Guidelines:
+                - Be concise and direct in your responses
+                - Focus on the specific information requested
+                - When discussing work history, organize information chronologically
+                - If asked about specific people, provide relevant details about their roles and experience
+                - If context is limited, acknowledge what information is available
+                """)
+                
+                // Prepare a more structured prompt
+                // Keep prompt professional to avoid triggering safety guardrails
+                let prompt = """
+                Please identify all participants who spoke in this business meeting transcript.
+                
+                List only the names of people who actively participated in the conversation.
+                Do not include people who were only mentioned but did not speak.
+                
+                Meeting Transcript:
+                \(truncateContextForFoundationModels(transcript))
+                
+                Please list each participant's name on a separate line.
+                """
+                
+                print("🤖 [AppleIntelligence] Extracting participants from transcript...")
+                
+                // Send the prompt and get response using simpler API without options
+                // Research shows the simpler API is more stable in beta
+                do {
+                    print("🤖 [AppleIntelligence] Calling session.respond for participant extraction...")
+                    let response = try await session.respond(to: prompt)
                     
-                    Guidelines:
-                    - Be concise and direct in your responses
-                    - Focus on the specific information requested
-                    - When discussing work history, organize information chronologically
-                    - If asked about specific people, provide relevant details about their roles and experience
-                    - If context is limited, acknowledge what information is available
-                    """)
+                    // The response.content is already a String
+                    let content = response.content
                     
-                    // Prepare a more structured prompt
-                    // Keep prompt professional to avoid triggering safety guardrails
-                    let prompt = """
-                    Please identify all participants who spoke in this business meeting transcript.
-                    
-                    List only the names of people who actively participated in the conversation.
-                    Do not include people who were only mentioned but did not speak.
-                    
-                    Meeting Transcript:
-                    \(truncateContextForFoundationModels(transcript))
-                    
-                    Please list each participant's name on a separate line.
-                    """
-                    
-                    print("🤖 [AppleIntelligence] Extracting participants from transcript...")
-                    
-                    // Send the prompt and get response using simpler API without options
-                    // Research shows the simpler API is more stable in beta
-                    do {
-                        print("🤖 [AppleIntelligence] Calling session.respond for participant extraction...")
-                        let response = try await session.respond(to: prompt)
-                        
-                        // The response.content is already a String
-                        let content = response.content
-                        
-                        guard !content.isEmpty else {
-                            print("⚠️ [AppleIntelligence] Response had empty content")
-                            throw AppleIntelligenceError.processingFailed
-                        }
-                        
-                        // Parse the response into an array of participant names
-                        // Clean up any bullet points or formatting Apple Intelligence might add
-                        let participants = content
-                            .components(separatedBy: CharacterSet.newlines)
-                            .map { line in
-                                var cleaned = line.trimmingCharacters(in: CharacterSet.whitespacesAndNewlines)
-                                // Remove common bullet point formats
-                                if cleaned.hasPrefix("* ") { cleaned = String(cleaned.dropFirst(2)) }
-                                if cleaned.hasPrefix("- ") { cleaned = String(cleaned.dropFirst(2)) }
-                                if cleaned.hasPrefix("• ") { cleaned = String(cleaned.dropFirst(2)) }
-                                if cleaned.hasPrefix("· ") { cleaned = String(cleaned.dropFirst(2)) }
-                                // Remove numbers like "1. ", "2. ", etc.
-                                if let range = cleaned.range(of: "^\\d+\\.\\s+", options: .regularExpression) {
-                                    cleaned.removeSubrange(range)
-                                }
-                                return cleaned.trimmingCharacters(in: CharacterSet.whitespacesAndNewlines)
-                            }
-                            .filter { !$0.isEmpty }
-                        
-                        print("✅ [AppleIntelligence] Found \(participants.count) participants: \(participants)")
-                        return participants
-                    } catch {
-                        print("❌ [AppleIntelligence] Failed to extract participants: \(error)")
-                        print("❌ Error type: \(type(of: error))")
-                        print("❌ Error description: \(error.localizedDescription)")
+                    guard !content.isEmpty else {
+                        print("⚠️ [AppleIntelligence] Response had empty content")
                         throw AppleIntelligenceError.processingFailed
                     }
-                } else {
-                    throw AppleIntelligenceError.frameworkNotAvailable
+                    
+                    // Parse the response into an array of participant names
+                    // Clean up any bullet points or formatting Apple Intelligence might add
+                    let participants = content
+                        .components(separatedBy: CharacterSet.newlines)
+                        .map { line in
+                            var cleaned = line.trimmingCharacters(in: CharacterSet.whitespacesAndNewlines)
+                            // Remove common bullet point formats
+                            if cleaned.hasPrefix("* ") { cleaned = String(cleaned.dropFirst(2)) }
+                            if cleaned.hasPrefix("- ") { cleaned = String(cleaned.dropFirst(2)) }
+                            if cleaned.hasPrefix("• ") { cleaned = String(cleaned.dropFirst(2)) }
+                            if cleaned.hasPrefix("· ") { cleaned = String(cleaned.dropFirst(2)) }
+                            // Remove numbers like "1. ", "2. ", etc.
+                            if let range = cleaned.range(of: "^\\d+\\.\\s+", options: .regularExpression) {
+                                cleaned.removeSubrange(range)
+                            }
+                            return cleaned.trimmingCharacters(in: CharacterSet.whitespacesAndNewlines)
+                        }
+                        .filter { !$0.isEmpty }
+                    
+                    print("✅ [AppleIntelligence] Found \(participants.count) participants: \(participants)")
+                    return participants
+                } catch {
+                    print("❌ [AppleIntelligence] Failed to extract participants: \(error)")
+                    print("❌ Error type: \(type(of: error))")
+                    print("❌ Error description: \(error.localizedDescription)")
+                    throw AppleIntelligenceError.processingFailed
                 }
                 
             } catch {

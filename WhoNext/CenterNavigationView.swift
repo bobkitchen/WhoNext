@@ -31,6 +31,15 @@ struct CenterNavigationView<T: StateManagement>: View {
                     appState.selectedTab = .analytics 
                 }
             )
+            
+            NavigationTabButton(
+                icon: "record.circle",
+                title: "Recording",
+                isSelected: appState.selectedTab == .recording,
+                action: { 
+                    appState.selectedTab = .recording 
+                }
+            )
         }
         .padding(2)
         .liquidGlassBackground(cornerRadius: 10, elevation: .medium)

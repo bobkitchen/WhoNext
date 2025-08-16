@@ -4,6 +4,7 @@ enum SidebarItem: String, CaseIterable, Identifiable {
     case people
     case insights
     case analytics
+    case recording
 
     var id: String { self.rawValue }
 
@@ -15,6 +16,8 @@ enum SidebarItem: String, CaseIterable, Identifiable {
             return "Insights"
         case .analytics:
             return "Analytics"
+        case .recording:
+            return "Recording"
         }
     }
 }

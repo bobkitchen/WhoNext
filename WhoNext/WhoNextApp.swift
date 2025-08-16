@@ -1,6 +1,10 @@
 import SwiftUI
 import CoreData
 
+extension Notification.Name {
+    static let showRecordingDashboard = Notification.Name("showRecordingDashboard")
+}
+
 @main
 struct WhoNextApp: App {
     let persistenceController = PersistenceController.shared
@@ -25,12 +29,48 @@ struct WhoNextApp: App {
         Window("Test Window", id: "testWindow") {
             TestWindow()
         }
+        
+        Window("Meeting Recording", id: "recording-dashboard") {
+            MeetingRecordingView()
+                .environment(\.managedObjectContext, persistenceController.container.viewContext)
+        }
+        .defaultSize(width: 800, height: 600)
         .commands {
             CommandMenu("File") {
                 Button("Import People from CSV…") {
                     NotificationCenter.default.post(name: .triggerCSVImport, object: nil)
                 }
                 .keyboardShortcut("i", modifiers: [.command])
+            }
+            
+            CommandMenu("Recording") {
+                Button("Start Monitoring") {
+                    MeetingRecordingEngine.shared.startMonitoring()
+                }
+                .keyboardShortcut("r", modifiers: [.command])
+                
+                Button("Stop Monitoring") {
+                    MeetingRecordingEngine.shared.stopMonitoring()
+                }
+                .keyboardShortcut("r", modifiers: [.command, .shift])
+                
+                Divider()
+                
+                Button("Manual Start Recording") {
+                    MeetingRecordingEngine.shared.manualStartRecording()
+                }
+                .disabled(!MeetingRecordingEngine.shared.isMonitoring)
+                
+                Button("Manual Stop Recording") {
+                    MeetingRecordingEngine.shared.manualStopRecording()
+                }
+                .disabled(!MeetingRecordingEngine.shared.isRecording)
+                
+                Divider()
+                
+                Button("Show Recording Dashboard...") {
+                    NotificationCenter.default.post(name: .showRecordingDashboard, object: nil)
+                }
             }
         }
         Settings {

@@ -78,6 +78,9 @@ struct ContentView: View {
                 } else if appStateManager.selectedTab == .analytics {
                     AnalyticsView()
                         .environmentObject(appStateManager)
+                } else if appStateManager.selectedTab == .recording {
+                    MeetingRecordingView()
+                        .environment(\.managedObjectContext, viewContext)
                 }
             }
             .navigationTitle("")
