@@ -197,10 +197,7 @@ struct PersonEditView: View {
                                     .foregroundStyle(.secondary)
                                 
                                 ScrollView {
-                                    Text(AttributedString(MarkdownHelper.attributedString(from: editingNotes)))
-                                        .font(.system(size: 14))
-                                        .textSelection(.enabled)
-                                        .frame(maxWidth: .infinity, alignment: .leading)
+                                    ProfileContentView(content: editingNotes)
                                         .padding(12)
                                 }
                                 .frame(minHeight: 200)

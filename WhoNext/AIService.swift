@@ -70,6 +70,7 @@ class AIService {
     
     @AppStorage("currentProvider") var currentProvider: AIProvider = .openai
     @AppStorage("openrouterModel") var openrouterModel: String = "meta-llama/llama-3.1-8b-instruct:free"
+    @AppStorage("openaiModel") var openaiModel: String = "gpt-5-nano"  // Configurable OpenAI model
     
     // Secure API key access
     var openaiApiKey: String {
@@ -142,36 +143,92 @@ class AIService {
         
         print("🔍 [OpenAI Chat] API key present: \(!openaiApiKey.isEmpty)")
         
-        var messages: [[String: String]] = [
-            ["role": "system", "content": """
-You are an AI assistant that helps with team management and document analysis.
-For questions about team members, use only the provided context information.
-For document analysis tasks (like transcript processing), analyze the content provided in the user's message.
-If you don't have the needed information, say "I don't have that information."
-"""]
-        ]
+        // GPT-5 models have different parameter requirements
+        let model = openaiModel  // Use configurable model
         
-        if let context = context {
-            messages.append(["role": "system", "content": context])
-            print("🔍 [OpenAI Chat] Context provided: \(String(context.prefix(100)))...")
+        // Formatting instructions to ensure good markdown output
+        let formattingInstructions = """
+IMPORTANT FORMATTING RULES:
+- Use ## for main section headers
+- Use ### for subsection headers
+- Use - for bullet points with proper indentation
+- Add blank lines between sections for readability
+- Use **bold** for emphasis within text
+- Use numbered lists (1. 2. 3.) where appropriate
+- Ensure clear hierarchy and structure in your response
+"""
+        
+        var messages: [[String: String]] = []
+        
+        // GPT-5 models don't support system messages - combine everything into user message
+        if model.starts(with: "gpt-5") {
+            // For GPT-5, combine formatting instructions with the user message
+            var combinedMessage = ""
+            
+            // Add context if provided
+            if let context = context {
+                combinedMessage += "Context:\n\(context)\n\n"
+                print("🔍 [OpenAI Chat] Context provided: \(String(context.prefix(100)))...")
+            }
+            
+            // Add the user's message/prompt
+            combinedMessage += "\(message)\n\n"
+            
+            // Append formatting instructions at the end
+            combinedMessage += formattingInstructions
+            
+            messages.append([
+                "role": "user",
+                "content": combinedMessage
+            ])
+            
+            print("🔍 [OpenAI Chat] Using GPT-5 format - combined message length: \(combinedMessage.count) chars")
+        } else {
+            // GPT-4 and older models support system messages
+            // System message with just formatting instructions
+            messages.append(["role": "system", "content": formattingInstructions])
+            
+            if let context = context {
+                messages.append(["role": "system", "content": context])
+                print("🔍 [OpenAI Chat] Context provided: \(String(context.prefix(100)))...")
+            }
+            
+            messages.append([
+                "role": "user",
+                "content": message
+            ])
         }
-        
-        messages.append([
-            "role": "user",
-            "content": message
-        ])
         
         var request = URLRequest(url: URL(string: "https://api.openai.com/v1/chat/completions")!)
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.setValue("Bearer \(openaiApiKey)", forHTTPHeaderField: "Authorization")
         
-        let requestBody: [String: Any] = [
-            "model": "gpt-4o",
-            "messages": messages,
-            "max_tokens": 1000,
-            "temperature": 0.7
-        ]
+        let requestBody: [String: Any]
+        if model.starts(with: "gpt-5") {
+            // GPT-5 configuration: uses max_completion_tokens and no temperature
+            requestBody = [
+                "model": model,
+                "messages": messages,
+                "max_completion_tokens": 8000
+            ]
+            print("🔍 [OpenAI Chat] Using GPT-5 configuration with max_completion_tokens")
+        } else {
+            // GPT-4 configuration: uses max_tokens and temperature
+            requestBody = [
+                "model": model,
+                "messages": messages,
+                "max_tokens": 8000,
+                "temperature": 0.7
+            ]
+            print("🔍 [OpenAI Chat] Using GPT-4 configuration with max_tokens and temperature")
+        }
+        
+        // Log the exact request being sent
+        if let jsonData = try? JSONSerialization.data(withJSONObject: requestBody),
+           let jsonString = String(data: jsonData, encoding: .utf8) {
+            print("🔍 [OpenAI Chat] Full request body: \(jsonString)")
+        }
         
         print("🔍 [OpenAI Chat] Request body created, sending to API...")
         
@@ -188,12 +245,39 @@ If you don't have the needed information, say "I don't have that information."
         
         if httpResponse.statusCode == 200 {
             let responseString = String(data: data, encoding: .utf8) ?? "No response data"
-            print("🔍 [OpenAI Chat] Raw response: \(String(responseString.prefix(300)))...")
+            print("🔍 [OpenAI Chat] Raw response: \(responseString)")  // Log FULL response for debugging
+            
+            // Try to parse as JSON first to see structure
+            if let jsonObject = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
+                print("🔍 [OpenAI Chat] JSON structure: \(jsonObject.keys)")
+                if let choices = jsonObject["choices"] as? [[String: Any]] {
+                    print("🔍 [OpenAI Chat] Choices count: \(choices.count)")
+                    if let firstChoice = choices.first {
+                        print("🔍 [OpenAI Chat] First choice keys: \(firstChoice.keys)")
+                        if let message = firstChoice["message"] as? [String: Any] {
+                            print("🔍 [OpenAI Chat] Message keys: \(message.keys)")
+                            print("🔍 [OpenAI Chat] Message content: \(message["content"] ?? "nil")")
+                        }
+                    }
+                }
+                if let usage = jsonObject["usage"] as? [String: Any] {
+                    print("🔍 [OpenAI Chat] Token usage: \(usage)")
+                }
+            }
             
             do {
                 let decodedResponse = try JSONDecoder().decode(OpenAIResponse.self, from: data)
                 let content = decodedResponse.choices.first?.message.content ?? "No response content."
                 print("🔍 [OpenAI Chat] Success! Response length: \(content.count) characters")
+                
+                // If content is empty, log more details
+                if content.isEmpty || content == "No response content." {
+                    print("⚠️ [OpenAI Chat] Empty or default content received")
+                    print("⚠️ [OpenAI Chat] Choices count: \(decodedResponse.choices.count)")
+                    print("⚠️ [OpenAI Chat] Usage: \(decodedResponse.usage)")
+                    print("⚠️ [OpenAI Chat] Model: \(decodedResponse.model)")
+                }
+                
                 return content
             } catch {
                 print("❌ [OpenAI Chat] JSON decoding error: \(error)")
@@ -215,6 +299,18 @@ If you don't have the needed information, say "I don't have that information."
         guard !claudeApiKey.isEmpty else {
             throw AIError.missingAPIKey
         }
+        
+        // Formatting instructions to ensure good markdown output
+        let formattingInstructions = """
+IMPORTANT FORMATTING RULES:
+- Use ## for main section headers
+- Use ### for subsection headers
+- Use - for bullet points with proper indentation
+- Add blank lines between sections for readability
+- Use **bold** for emphasis within text
+- Use numbered lists (1. 2. 3.) where appropriate
+- Ensure clear hierarchy and structure in your response
+"""
         
         var messages: [[String: Any]] = []
         
@@ -243,14 +339,8 @@ If you don't have the needed information, say "I don't have that information."
         
         let requestBody: [String: Any] = [
             "model": "claude-sonnet-4-20250514",
-            "max_tokens": 1000,
-            "system": """
-            You are a helpful assistant for relationship management and conversation tracking.
-            You should only provide information based on data that has been explicitly provided to you.
-            If you don't have specific information about people, dates, or conversations, clearly state that you don't have that information.
-            Never make up or invent specific names, dates, or details that weren't provided to you.
-            When you don't know something, say "I don't have that information" rather than guessing.
-            """,
+            "max_tokens": 8000,
+            "system": formattingInstructions,
             "messages": messages
         ]
         
@@ -275,13 +365,20 @@ If you don't have the needed information, say "I don't have that information."
     private func sendMessageOpenRouter(_ message: String, context: String? = nil) async throws -> String {
         print("🔍 [OpenRouter] Starting sendMessageOpenRouter")
         
+        // Formatting instructions to ensure good markdown output
+        let formattingInstructions = """
+IMPORTANT FORMATTING RULES:
+- Use ## for main section headers
+- Use ### for subsection headers
+- Use - for bullet points with proper indentation
+- Add blank lines between sections for readability
+- Use **bold** for emphasis within text
+- Use numbered lists (1. 2. 3.) where appropriate
+- Ensure clear hierarchy and structure in your response
+"""
+        
         var messages: [[String: String]] = [
-            ["role": "system", "content": """
-You are an AI assistant that helps with team management and document analysis.
-For questions about team members, use only the provided context information.
-For document analysis tasks (like transcript processing), analyze the content provided in the user's message.
-If you don't have the needed information, say "I don't have that information."
-"""]
+            ["role": "system", "content": formattingInstructions]
         ]
         
         if let context = context {
@@ -403,6 +500,7 @@ If you don't have the needed information, say "I don't have that information."
         
         let visionURL = "https://api.openai.com/v1/chat/completions"
         
+        // Use GPT-4o for vision tasks (GPT-5 doesn't support vision yet)
         let requestBody: [String: Any] = [
             "model": "gpt-4o",
             "messages": [
@@ -422,7 +520,8 @@ If you don't have the needed information, say "I don't have that information."
                     ]
                 ]
             ],
-            "max_tokens": 2000
+            "max_tokens": 8000,
+            "temperature": 0.7
         ]
         
         // Debug request body
@@ -505,7 +604,7 @@ If you don't have the needed information, say "I don't have that information."
         
         let requestBody: [String: Any] = [
             "model": "claude-sonnet-4-20250514",
-            "max_tokens": 2000,
+            "max_tokens": 8000,
             "system": """
             You are a helpful assistant for relationship management and conversation tracking.
             You should only provide information based on data that has been explicitly provided to you.
@@ -652,7 +751,7 @@ If you don't have the needed information, say "I don't have that information."
                     "content": contentArray
                 ]
             ],
-            "max_tokens": 3000 // Increased for multiple images
+            "max_tokens": 8000 // Increased for comprehensive analysis
         ]
         
         guard let url = URL(string: visionURL) else {

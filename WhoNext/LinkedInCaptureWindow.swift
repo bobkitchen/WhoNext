@@ -140,10 +140,7 @@ struct LinkedInCaptureWindow: View {
                 ScrollView {
                     VStack(alignment: .leading, spacing: 0) {
                         // Display rendered markdown
-                        Text(AttributedString(MarkdownHelper.attributedString(from: aiSummary)))
-                            .font(.system(size: 14, weight: .regular))
-                            .textSelection(.enabled)
-                            .frame(maxWidth: .infinity, alignment: .leading)
+                        ProfileContentView(content: aiSummary)
                             .padding(12)
                         
                         Divider()

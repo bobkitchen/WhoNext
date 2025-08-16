@@ -54,15 +54,10 @@ struct PreMeetingBriefWindow: View {
             
             Divider()
             
-            // Brief content with simplified markdown rendering
+            // Brief content with improved markdown rendering
             ScrollView {
-                VStack(alignment: .leading, spacing: 12) {
-                    ForEach(Array(processMarkdownContent(briefContent).enumerated()), id: \.offset) { index, line in
-                        renderLine(line, index: index)
-                    }
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal, 4)
+                ProfileContentView(content: briefContent)
+                    .padding(.horizontal, 4)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }

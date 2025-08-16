@@ -29,6 +29,7 @@ struct PersonDetailView: View {
     @State private var fallbackIsGenerating = false
     @StateObject private var hybridAI = HybridAIService()
     @State private var preMeetingBriefWindowController: PreMeetingBriefWindowController?
+    @State private var profileWindowController: ProfileWindowController?
 
     init(person: Person) {
         self.person = person
@@ -61,8 +62,9 @@ struct PersonDetailView: View {
             conversationManager.loadConversations(for: person)
         }
         .onDisappear {
-            // Clean up any open pre-meeting brief window when view disappears
+            // Clean up any open windows when view disappears
             closePreMeetingBriefWindow()
+            closeProfileWindow()
         }
     }
     
@@ -198,6 +200,14 @@ struct PersonDetailView: View {
                     .foregroundColor(.primary)
                 Spacer()
                 
+                // Pop-out button
+                Button(action: openProfileWindow) {
+                    Image(systemName: "arrow.up.forward.square")
+                        .foregroundColor(.accentColor)
+                        .help("Open profile in new window")
+                }
+                .buttonStyle(.plain)
+                
                 // Quick tip for LinkedIn info
                 Text("💡 Tip: Use 'Find on LinkedIn' button above, then copy/paste profile info here")
                     .font(.system(size: 11))
@@ -207,11 +217,7 @@ struct PersonDetailView: View {
             
             if let notes = person.notes, !notes.isEmpty {
                 ScrollView {
-                    Text(AttributedString(MarkdownHelper.attributedString(from: notes)))
-                        .font(.system(size: 14))
-                        .foregroundColor(.primary)
-                        .textSelection(.enabled)
-                        .frame(maxWidth: .infinity, alignment: .leading)
+                    ProfileContentView(content: notes)
                 }
                 .frame(maxHeight: 120)
             } else {
@@ -430,13 +436,27 @@ struct PersonDetailView: View {
                             .buttonStyle(PlainButtonStyle())
                         }
                     } else {
-                        LoadingButton(
-                            title: "Generate",
-                            loadingTitle: "Generating...",
-                            isLoading: isGenerating,
-                            style: .primary,
-                            action: generatePreMeetingBrief
-                        )
+                        Button(action: isGenerating ? {} : generatePreMeetingBrief) {
+                            HStack(spacing: 4) {
+                                if isGenerating {
+                                    ProgressView()
+                                        .scaleEffect(0.6)
+                                        .frame(width: 10, height: 10)
+                                } else {
+                                    Image(systemName: "sparkles")
+                                        .font(.system(size: 10))
+                                }
+                                Text(isGenerating ? "Generating..." : "Generate")
+                                    .font(.system(size: 10, weight: .medium))
+                            }
+                            .foregroundColor(.white)
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 6)
+                            .background(Color.accentColor)
+                            .clipShape(RoundedRectangle(cornerRadius: 6))
+                        }
+                        .buttonStyle(PlainButtonStyle())
+                        .disabled(isGenerating)
                     }
                 }
             }
@@ -582,6 +602,29 @@ struct PersonDetailView: View {
     private func closePreMeetingBriefWindow() {
         preMeetingBriefWindowController?.close()
         preMeetingBriefWindowController = nil
+    }
+    
+    private func openProfileWindow() {
+        // Close existing window if open
+        closeProfileWindow()
+        
+        let profileContent = person.notes ?? "No profile information available.\n\nClick 'Find on LinkedIn' to search for this person, then copy relevant details and paste them in the Edit view."
+        
+        let windowController = ProfileWindowController(
+            personName: person.name ?? "Unknown",
+            profileContent: profileContent
+        ) { [self] in
+            // This closure is called when the window is closed
+            profileWindowController = nil
+        }
+        
+        profileWindowController = windowController
+        windowController.showWindow(nil)
+    }
+    
+    private func closeProfileWindow() {
+        profileWindowController?.close()
+        profileWindowController = nil
     }
     
     private func generatePreMeetingBrief() {
@@ -910,5 +953,228 @@ class PreMeetingBriefWindowController: NSWindowController {
 extension PreMeetingBriefWindowController: NSWindowDelegate {
     func windowWillClose(_ notification: Notification) {
         onClose()
+    }
+}
+
+// MARK: - ProfileWindowController
+class ProfileWindowController: NSWindowController {
+    private let onClose: () -> Void
+    
+    init(personName: String, profileContent: String, onClose: @escaping () -> Void) {
+        self.onClose = onClose
+        
+        let window = NSWindow(
+            contentRect: NSRect(x: 0, y: 0, width: 800, height: 600),
+            styleMask: [.titled, .closable, .resizable],
+            backing: .buffered,
+            defer: false
+        )
+        
+        super.init(window: window)
+        
+        window.title = "Profile - \(personName)"
+        window.center()
+        window.isReleasedWhenClosed = false
+        window.delegate = self
+        
+        window.contentView = NSHostingView(
+            rootView: ProfileWindow(
+                personName: personName,
+                profileContent: profileContent,
+                onClose: { [weak self] in
+                    self?.close()
+                }
+            )
+        )
+    }
+    
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+    
+    override func close() {
+        super.close()
+        onClose()
+    }
+}
+
+// MARK: - NSWindowDelegate for ProfileWindowController
+extension ProfileWindowController: NSWindowDelegate {
+    func windowWillClose(_ notification: Notification) {
+        onClose()
+    }
+}
+
+// MARK: - ProfileContentView
+struct ProfileContentView: View {
+    let content: String
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            ForEach(processContent(), id: \.self) { section in
+                processSection(section)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+    
+    private func processContent() -> [String] {
+        // Split content into sections while preserving structure
+        content.components(separatedBy: "\n\n")
+    }
+    
+    @ViewBuilder
+    private func processSection(_ section: String) -> some View {
+        let lines = section.components(separatedBy: "\n")
+        
+        VStack(alignment: .leading, spacing: 6) {
+            ForEach(lines, id: \.self) { line in
+                if line.hasPrefix("###") {
+                    // Subheading
+                    Text(line.replacingOccurrences(of: "### ", with: ""))
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundColor(.primary)
+                        .padding(.top, 4)
+                } else if line.hasPrefix("##") {
+                    // Main heading
+                    Text(line.replacingOccurrences(of: "## ", with: ""))
+                        .font(.system(size: 16, weight: .bold))
+                        .foregroundColor(.primary)
+                        .padding(.top, 8)
+                } else if line.trimmingCharacters(in: .whitespaces).hasPrefix("•") || 
+                         line.trimmingCharacters(in: .whitespaces).hasPrefix("-") {
+                    // Bullet point
+                    HStack(alignment: .top, spacing: 8) {
+                        Text("•")
+                            .font(.system(size: 14))
+                            .foregroundColor(.secondary)
+                            .frame(width: 12)
+                        
+                        Text(line.replacingOccurrences(of: "•", with: "")
+                                .replacingOccurrences(of: "-", with: "")
+                                .trimmingCharacters(in: .whitespaces))
+                            .font(.system(size: 14))
+                            .foregroundColor(.primary)
+                            .fixedSize(horizontal: false, vertical: true)
+                            .textSelection(.enabled)
+                    }
+                    .padding(.leading, line.hasPrefix("    ") ? 20 : 0)
+                } else if !line.trimmingCharacters(in: .whitespaces).isEmpty {
+                    // Regular text
+                    Text(processInlineFormatting(line))
+                        .font(.system(size: 14))
+                        .foregroundColor(.primary)
+                        .textSelection(.enabled)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .padding(.leading, line.hasPrefix("    ") ? 32 : 0)
+                }
+            }
+        }
+    }
+    
+    private func processInlineFormatting(_ text: String) -> AttributedString {
+        var result = AttributedString(text)
+        
+        // Process bold text
+        if let regex = try? NSRegularExpression(pattern: "\\*\\*(.*?)\\*\\*", options: []) {
+            let nsString = text as NSString
+            let matches = regex.matches(in: text, options: [], range: NSRange(location: 0, length: nsString.length))
+            
+            for match in matches.reversed() {
+                if let range = Range(match.range(at: 1), in: text) {
+                    let boldText = String(text[range])
+                    if let attrRange = result.range(of: "**\(boldText)**") {
+                        result.replaceSubrange(attrRange, with: AttributedString(boldText))
+                        if let newRange = result.range(of: boldText) {
+                            result[newRange].font = .system(size: 14, weight: .semibold)
+                        }
+                    }
+                }
+            }
+        }
+        
+        return result
+    }
+}
+
+// MARK: - ProfileWindow View
+struct ProfileWindow: View {
+    let personName: String
+    let profileContent: String
+    let onClose: () -> Void
+    
+    var body: some View {
+        VStack(spacing: 0) {
+            // Header
+            HStack {
+                Image(systemName: "person.circle.fill")
+                    .font(.system(size: 24))
+                    .foregroundColor(.accentColor)
+                Text("\(personName) - Full Profile")
+                    .font(.system(size: 18, weight: .semibold))
+                Spacer()
+                Button(action: onClose) {
+                    Image(systemName: "xmark.circle.fill")
+                        .font(.system(size: 16))
+                        .foregroundColor(.secondary)
+                }
+                .buttonStyle(.plain)
+            }
+            .padding()
+            .background(Color(nsColor: .windowBackgroundColor))
+            
+            Divider()
+            
+            // Content
+            ScrollView {
+                if !profileContent.isEmpty && profileContent != "No profile information available.\n\nClick 'Find on LinkedIn' to search for this person, then copy relevant details and paste them in the Edit view." {
+                    ProfileContentView(content: profileContent)
+                        .padding(.horizontal, 24)
+                        .padding(.vertical, 20)
+                } else {
+                    VStack(spacing: 20) {
+                        Image(systemName: "doc.text")
+                            .font(.system(size: 48))
+                            .foregroundColor(.secondary)
+                        
+                        Text("No profile information available")
+                            .font(.system(size: 16, weight: .medium))
+                            .foregroundColor(.secondary)
+                        
+                        Text("To add profile information:")
+                            .font(.system(size: 14))
+                            .foregroundColor(.secondary)
+                        
+                        VStack(alignment: .leading, spacing: 8) {
+                            Label("1. Click 'Find on LinkedIn' to search for this person", systemImage: "1.circle")
+                            Label("2. Copy relevant profile details", systemImage: "2.circle")
+                            Label("3. Click 'Edit' and paste the information", systemImage: "3.circle")
+                        }
+                        .font(.system(size: 13))
+                        .foregroundColor(.secondary)
+                        .padding()
+                        .background(Color(nsColor: .controlBackgroundColor).opacity(0.5))
+                        .cornerRadius(8)
+                    }
+                    .padding(40)
+                }
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            
+            // Footer with copy button
+            HStack {
+                Spacer()
+                Button(action: {
+                    NSPasteboard.general.clearContents()
+                    NSPasteboard.general.setString(profileContent, forType: .string)
+                }) {
+                    Label("Copy to Clipboard", systemImage: "doc.on.doc")
+                }
+                .disabled(profileContent.isEmpty || profileContent.starts(with: "No profile"))
+            }
+            .padding()
+            .background(Color(nsColor: .windowBackgroundColor))
+        }
+        .frame(minWidth: 600, minHeight: 400)
     }
 }

@@ -223,7 +223,14 @@ class HybridAIService: ObservableObject {
                     return try await appleService.extractParticipants(from: transcript)
                 } catch {
                     print("Apple Intelligence failed, falling back to cloud: \(error)")
-                    return try await aiService.extractParticipants(from: transcript)
+                    // Ensure we have a valid fallback
+                    if !openrouterApiKey.isEmpty || !openaiApiKey.isEmpty {
+                        return try await aiService.extractParticipants(from: transcript)
+                    } else {
+                        // If no cloud API keys, try manual extraction as last resort
+                        print("No cloud API keys available, using manual extraction")
+                        throw error
+                    }
                 }
             }
             fallthrough
@@ -360,17 +367,187 @@ enum HybridAIError: Error {
 // MARK: - AIService Extension
 extension AIService {
     func generateMeetingSummary(transcript: String) async throws -> String {
-        // Use existing sendMessage method for transcript processing
-        let prompt = """
-        Generate a comprehensive meeting summary from this transcript. 
-        Include purpose and context, key themes, and primary objectives discussed.
-        Format as bullet points with clear sections.
+        // Check if we're using GPT-5 model
+        let isGPT5 = openaiModel.starts(with: "gpt-5")
         
-        Transcript:
-        \(transcript)
+        // Get the user's custom summarization prompt from settings
+        let customPrompt = UserDefaults.standard.string(forKey: "customSummarizationPrompt") ?? """
+        Create comprehensive meeting minutes from the transcript below.
+        
+        Format your response with these sections:
+
+        Meeting Overview:
+        - Meeting purpose and context
+        - Key themes and overall tone
+        - Primary objectives discussed
+
+        Discussion Details:
+        - Main points raised by each participant
+        - Key decisions made and rationale
+        - Areas of agreement and disagreement
+        - Important insights or revelations
+        - Questions raised and answers provided
+
+        Action Items & Follow-ups:
+        - Specific tasks assigned with owners
+        - Deadlines and timelines mentioned
+        - Next steps and follow-up meetings
+        - Dependencies and blockers identified
+
+        Outcomes & Conclusions:
+        - Final decisions reached
+        - Issues resolved or escalated
+        - Commitments made by participants
+        - Success metrics or goals established
+
+        Additional Notes:
+        - Context for future reference
+        - Relationship dynamics observed
+        - Support needs identified
+        - Risk factors or concerns noted
+        - Strengths and positive developments
         """
         
-        return try await sendMessage(prompt, context: "")
+        // Check if transcript is too large and needs chunking
+        // GPT-5-nano has 272k token input limit, but we'll chunk for better quality
+        // Estimate: 1 token ≈ 4 characters, so 200k chars ≈ 50k tokens (safe margin)
+        let maxCharsPerChunk = 150000
+        
+        if transcript.count > maxCharsPerChunk {
+            print("📊 [AIService] Large transcript detected (\(transcript.count) chars), using chunked processing")
+            
+            // Split transcript into overlapping chunks
+            var chunks: [String] = []
+            let overlapSize = 10000 // 10k char overlap to maintain context
+            var startIndex = transcript.startIndex
+            
+            while startIndex < transcript.endIndex {
+                let endIndex = transcript.index(startIndex, offsetBy: maxCharsPerChunk, limitedBy: transcript.endIndex) ?? transcript.endIndex
+                let chunk = String(transcript[startIndex..<endIndex])
+                chunks.append(chunk)
+                
+                // Move to next chunk with overlap
+                if endIndex < transcript.endIndex {
+                    startIndex = transcript.index(endIndex, offsetBy: -overlapSize, limitedBy: transcript.startIndex) ?? startIndex
+                } else {
+                    break
+                }
+            }
+            
+            print("📊 [AIService] Split into \(chunks.count) chunks for processing")
+            
+            // Process each chunk
+            var chunkSummaries: [String] = []
+            for (index, chunk) in chunks.enumerated() {
+                print("📊 [AIService] Processing chunk \(index + 1) of \(chunks.count)")
+                
+                // Use appropriate prompt based on model
+                let chunkPrompt: String
+                if isGPT5 {
+                    // Simplified prompt for GPT-5
+                    chunkPrompt = """
+                    Summarize part \(index + 1) of \(chunks.count) of this meeting transcript.
+                    
+                    Include key discussion points, decisions, and action items from this section.
+                    
+                    Transcript Section:
+                    \(chunk)
+                    """
+                } else {
+                    // Full custom prompt for GPT-4 and other models
+                    chunkPrompt = """
+                    \(customPrompt)
+                    
+                    Note: This is part \(index + 1) of \(chunks.count) of a longer transcript.
+                    Focus on summarizing this section while maintaining context.
+                    
+                    Transcript Section:
+                    \(chunk)
+                    """
+                }
+                
+                // Add a small delay between chunks to avoid rate limits
+                if index > 0 {
+                    try await Task.sleep(nanoseconds: 500_000_000) // 0.5 second delay
+                }
+                
+                let chunkSummary = try await sendMessage(chunkPrompt, context: "")
+                chunkSummaries.append(chunkSummary)
+            }
+            
+            // Combine chunk summaries into final summary
+            print("📊 [AIService] Combining \(chunkSummaries.count) chunk summaries")
+            
+            let combinedSummaries = chunkSummaries.enumerated().map { index, summary in
+                "=== Section \(index + 1) ===\n\(summary)"
+            }.joined(separator: "\n\n")
+            
+            // Use appropriate prompt for combining based on model
+            let finalPrompt: String
+            if isGPT5 {
+                // Simplified combining prompt for GPT-5
+                finalPrompt = """
+                Combine these section summaries into unified meeting minutes.
+                
+                Include all key points, decisions, and action items.
+                Use clear headers and bullet points.
+                
+                Section Summaries:
+                \(combinedSummaries)
+                """
+            } else {
+                // Full custom prompt for combining for GPT-4 and other models
+                finalPrompt = """
+                You have been provided with summaries from different sections of a meeting transcript.
+                Please combine these into a single, coherent set of meeting minutes following this format:
+                
+                \(customPrompt)
+                
+                Section Summaries:
+                \(combinedSummaries)
+                
+                Create unified meeting minutes that integrate all sections seamlessly.
+                """
+            }
+            
+            return try await sendMessage(finalPrompt, context: "")
+            
+        } else {
+            // Normal processing for smaller transcripts
+            let fullPrompt: String
+            
+            if isGPT5 {
+                // Simplified prompt for GPT-5 compatibility - be more direct while using custom prompt
+                // Extract just the essential instruction from the custom prompt
+                let simplifiedCustom = customPrompt
+                    .replacingOccurrences(of: "Format your response with these sections:", with: "Include:")
+                    .replacingOccurrences(of: "Additional Notes:", with: "")
+                    .components(separatedBy: "\n\n")
+                    .prefix(3)  // Take only the first few sections
+                    .joined(separator: "\n")
+                
+                fullPrompt = """
+                Please summarize this meeting transcript into comprehensive meeting minutes.
+                
+                \(simplifiedCustom)
+                
+                Be thorough but well-organized. Use clear headers and bullet points.
+                
+                Transcript:
+                \(transcript)
+                """
+            } else {
+                // For GPT-4 and other models, use the full custom prompt
+                fullPrompt = """
+                \(customPrompt)
+                
+                Transcript:
+                \(transcript)
+                """
+            }
+            
+            return try await sendMessage(fullPrompt, context: "")
+        }
     }
     
     func generatePreMeetingBrief(personData: [Person], context: String) async throws -> String {

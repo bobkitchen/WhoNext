@@ -48,10 +48,10 @@ class AppleIntelligenceService: ObservableObject {
         #endif
     }
     
-    /// Truncates context to fit Foundation Models' 32k token limit
-    /// Roughly estimates 1 token = 4 characters for safety
-    private func truncateContextForFoundationModels(_ context: String, maxTokens: Int = 30000) -> String {
-        let maxCharacters = maxTokens * 4 // Conservative estimate: 1 token ≈ 4 characters
+    /// Truncates context to fit Foundation Models' 4k token limit
+    /// Using more conservative estimate: 1 token ≈ 3 characters for safety
+    private func truncateContextForFoundationModels(_ context: String, maxTokens: Int = 2000) -> String {
+        let maxCharacters = maxTokens * 3 // More conservative: 1 token ≈ 3 characters
         
         if context.count <= maxCharacters {
             return context
@@ -117,8 +117,7 @@ class AppleIntelligenceService: ObservableObject {
                 print("🤖 [AppleIntelligence] Generating meeting summary with Foundation Models")
                 
                 // Create a language model session with specialized instructions
-                if #available(macOS 26.0, *) {
-                    let session = LanguageModelSession(instructions: """
+                let session = LanguageModelSession(instructions: """
                 You are a professional assistant for a team management app called WhoNext. 
                 You help users understand their team members' backgrounds, work history, and professional relationships.
                 
@@ -130,25 +129,93 @@ class AppleIntelligenceService: ObservableObject {
                 - If context is limited, acknowledge what information is available
                 """)
                 
-                // Prepare a more structured prompt
-                let prompt = """
-                User Question: What is the meeting summary?
-                
-                Available Context:
-                \(truncateContextForFoundationModels(transcript))
+                // Get the user's custom summarization prompt from settings
+                let customPrompt = UserDefaults.standard.string(forKey: "customSummarizationPrompt") ?? """
+                You are an executive assistant creating comprehensive meeting minutes. Generate detailed, actionable meeting minutes that include:
 
-                Please provide a focused, helpful response based on the available information. If the context doesn't contain enough information to fully answer the question, acknowledge this and provide what details are available.
+                **Meeting Overview:**
+                - Meeting purpose and context
+                - Key themes and overall tone
+                - Primary objectives discussed
+
+                **Discussion Details:**
+                - Main points raised by each participant
+                - Key decisions made and rationale
+                - Areas of agreement and disagreement
+                - Important insights or revelations
+                - Questions raised and answers provided
+
+                **Action Items & Follow-ups:**
+                - Specific tasks assigned with owners
+                - Deadlines and timelines mentioned
+                - Next steps and follow-up meetings
+                - Dependencies and blockers identified
+
+                **Outcomes & Conclusions:**
+                - Final decisions reached
+                - Issues resolved or escalated
+                - Commitments made by participants
+                - Success metrics or goals established
+
+                **Additional Notes:**
+                - Context for future reference
+                - Relationship dynamics observed
+                - Support needs identified
+                - Risk factors or concerns noted
+                - Strengths and positive developments
+
+                Format the output in clear, professional meeting minutes suitable for distribution and follow-up preparation.
                 """
+                
+                // Truncate the transcript first
+                let truncatedTranscript = truncateContextForFoundationModels(transcript)
+                
+                // If transcript is very short after truncation, use a simpler prompt
+                let finalPrompt: String
+                if truncatedTranscript.count < 1000 {
+                    finalPrompt = """
+                    Based on this partial meeting transcript, provide a brief summary of what was discussed:
+                    
+                    Transcript:
+                    \(truncatedTranscript)
+                    
+                    Note: This appears to be a partial or very short transcript. Please summarize what is available.
+                    """
+                } else {
+                    // Use the full custom prompt for longer transcripts
+                    finalPrompt = """
+                    \(customPrompt)
+                    
+                    Meeting Transcript:
+                    \(truncatedTranscript)
+                    """
+                }
+                
+                let prompt = finalPrompt
                 
                 print("🤖 [AppleIntelligence] Sending transcript to Foundation Models for summary...")
                 
-                    // Send the prompt and get response using correct method
-                    let response = try await session.respond(to: prompt, options: GenerationOptions())
+                // Send the prompt and get response using simpler API without options
+                // Research shows the simpler API is more stable in beta
+                do {
+                    print("🤖 [AppleIntelligence] Calling session.respond...")
+                    let response = try await session.respond(to: prompt)
+                    
+                    // The response.content is already a String
+                    let content = response.content
+                    
+                    guard !content.isEmpty else {
+                        print("⚠️ [AppleIntelligence] Response had empty content")
+                        throw AppleIntelligenceError.processingFailed
+                    }
                     
                     print("✅ [AppleIntelligence] Meeting summary generated successfully")
-                    return response.content
-                } else {
-                    throw AppleIntelligenceError.frameworkNotAvailable
+                    return content
+                } catch {
+                    print("❌ [AppleIntelligence] Failed to generate summary: \(error)")
+                    print("❌ Error type: \(type(of: error))")
+                    print("❌ Error description: \(error.localizedDescription)")
+                    throw AppleIntelligenceError.processingFailed
                 }
                 
             } catch {
@@ -212,11 +279,28 @@ Generate a comprehensive pre-meeting brief following the format above.
                     print("🤖 [AppleIntelligence] Sending enhanced prompt to Foundation Models...")
                     print("🤖 [AppleIntelligence] Context length: \(enhancedContext.count) characters")
                     
-                    // Send the prompt and get response using correct method
-                    let response = try await session.respond(to: prompt, options: GenerationOptions())
-                    
-                    print("✅ [AppleIntelligence] Foundation Models response received")
-                    return response.content
+                    // Send the prompt and get response using simpler API without options
+                    // Research shows the simpler API is more stable in beta
+                    do {
+                        print("🤖 [AppleIntelligence] Calling session.respond for pre-meeting brief...")
+                        let response = try await session.respond(to: prompt)
+                        
+                        // The response.content is already a String
+                        let content = response.content
+                        
+                        guard !content.isEmpty else {
+                            print("⚠️ [AppleIntelligence] Response had empty content")
+                            throw AppleIntelligenceError.processingFailed
+                        }
+                        
+                        print("✅ [AppleIntelligence] Pre-meeting brief generated successfully")
+                        return content
+                    } catch {
+                        print("❌ [AppleIntelligence] Failed to generate pre-meeting brief: \(error)")
+                        print("❌ Error type: \(type(of: error))")
+                        print("❌ Error description: \(error.localizedDescription)")
+                        throw AppleIntelligenceError.processingFailed
+                    }
                 } else {
                     throw AppleIntelligenceError.frameworkNotAvailable
                 }
@@ -259,22 +343,43 @@ Generate a comprehensive pre-meeting brief following the format above.
                     """)
                     
                     // Prepare a more structured prompt
+                    // Keep prompt professional to avoid triggering safety guardrails
                     let prompt = """
+                    You are a professional assistant helping analyze business meeting information.
+                    
                     User Question: \(message)
                     
-                    Available Context:
+                    Available Information:
                     \(truncateContextForFoundationModels(context))
-
-                    Please provide a focused, helpful response based on the available information. If the context doesn't contain enough information to fully answer the question, acknowledge this and provide what details are available.
+                    
+                    Please provide a helpful, professional response based on the available information.
+                    If the information is limited, acknowledge this and provide what details are available.
                     """
                     
                     print("🤖 [AppleIntelligence] Sending prompt to Foundation Models...")
                     
-                    // Send the prompt and get response using correct method
-                    let response = try await session.respond(to: prompt, options: GenerationOptions())
-                    
-                    print("✅ [AppleIntelligence] Foundation Models response received")
-                    return response.content
+                    // Send the prompt and get response using simpler API without options
+                    // Research shows the simpler API is more stable in beta
+                    do {
+                        print("🤖 [AppleIntelligence] Calling session.respond for chat enhancement...")
+                        let response = try await session.respond(to: prompt)
+                        
+                        // The response.content is already a String
+                        let content = response.content
+                        
+                        guard !content.isEmpty else {
+                            print("⚠️ [AppleIntelligence] Response had empty content")
+                            throw AppleIntelligenceError.processingFailed
+                        }
+                        
+                        print("✅ [AppleIntelligence] Chat response generated successfully")
+                        return content
+                    } catch {
+                        print("❌ [AppleIntelligence] Failed to enhance chat: \(error)")
+                        print("❌ Error type: \(type(of: error))")
+                        print("❌ Error description: \(error.localizedDescription)")
+                        throw AppleIntelligenceError.processingFailed
+                    }
                 } else {
                     throw AppleIntelligenceError.frameworkNotAvailable
                 }
@@ -295,8 +400,16 @@ Generate a comprehensive pre-meeting brief following the format above.
     func extractParticipants(from transcript: String) async throws -> [String] {
         // Check if we're on macOS 26.0+ where Foundation Models are actually available
         guard #available(macOS 26.0, *) else {
+            print("⚠️ [AppleIntelligence] macOS 26.0+ required, current version too old")
             throw AppleIntelligenceError.frameworkNotAvailable
         }
+        
+        // Additional runtime check for framework availability
+        if !isFoundationModelsAvailable {
+            print("⚠️ [AppleIntelligence] Foundation Models not available on this system")
+            throw AppleIntelligenceError.frameworkNotAvailable
+        }
+        
         #if canImport(FoundationModels)
         if isFrameworkAvailable {
             do {
@@ -317,28 +430,62 @@ Generate a comprehensive pre-meeting brief following the format above.
                     """)
                     
                     // Prepare a more structured prompt
+                    // Keep prompt professional to avoid triggering safety guardrails
                     let prompt = """
-                    User Question: Who are the participants in this meeting?
+                    Please identify all participants who spoke in this business meeting transcript.
                     
-                    Available Context:
+                    List only the names of people who actively participated in the conversation.
+                    Do not include people who were only mentioned but did not speak.
+                    
+                    Meeting Transcript:
                     \(truncateContextForFoundationModels(transcript))
-
-                    Please provide a focused, helpful response based on the available information. If the context doesn't contain enough information to fully answer the question, acknowledge this and provide what details are available.
+                    
+                    Please list each participant's name on a separate line.
                     """
                     
                     print("🤖 [AppleIntelligence] Extracting participants from transcript...")
                     
-                    // Send the prompt and get response using correct method
-                    let response = try await session.respond(to: prompt, options: GenerationOptions())
-                    
-                    // Parse the response into an array of participant names
-                    let participants = response.content
-                        .components(separatedBy: CharacterSet.newlines)
-                        .map { $0.trimmingCharacters(in: CharacterSet.whitespacesAndNewlines) }
-                        .filter { !$0.isEmpty }
-                    
-                    print("✅ [AppleIntelligence] Found \(participants.count) participants: \(participants)")
-                    return participants
+                    // Send the prompt and get response using simpler API without options
+                    // Research shows the simpler API is more stable in beta
+                    do {
+                        print("🤖 [AppleIntelligence] Calling session.respond for participant extraction...")
+                        let response = try await session.respond(to: prompt)
+                        
+                        // The response.content is already a String
+                        let content = response.content
+                        
+                        guard !content.isEmpty else {
+                            print("⚠️ [AppleIntelligence] Response had empty content")
+                            throw AppleIntelligenceError.processingFailed
+                        }
+                        
+                        // Parse the response into an array of participant names
+                        // Clean up any bullet points or formatting Apple Intelligence might add
+                        let participants = content
+                            .components(separatedBy: CharacterSet.newlines)
+                            .map { line in
+                                var cleaned = line.trimmingCharacters(in: CharacterSet.whitespacesAndNewlines)
+                                // Remove common bullet point formats
+                                if cleaned.hasPrefix("* ") { cleaned = String(cleaned.dropFirst(2)) }
+                                if cleaned.hasPrefix("- ") { cleaned = String(cleaned.dropFirst(2)) }
+                                if cleaned.hasPrefix("• ") { cleaned = String(cleaned.dropFirst(2)) }
+                                if cleaned.hasPrefix("· ") { cleaned = String(cleaned.dropFirst(2)) }
+                                // Remove numbers like "1. ", "2. ", etc.
+                                if let range = cleaned.range(of: "^\\d+\\.\\s+", options: .regularExpression) {
+                                    cleaned.removeSubrange(range)
+                                }
+                                return cleaned.trimmingCharacters(in: CharacterSet.whitespacesAndNewlines)
+                            }
+                            .filter { !$0.isEmpty }
+                        
+                        print("✅ [AppleIntelligence] Found \(participants.count) participants: \(participants)")
+                        return participants
+                    } catch {
+                        print("❌ [AppleIntelligence] Failed to extract participants: \(error)")
+                        print("❌ Error type: \(type(of: error))")
+                        print("❌ Error description: \(error.localizedDescription)")
+                        throw AppleIntelligenceError.processingFailed
+                    }
                 } else {
                     throw AppleIntelligenceError.frameworkNotAvailable
                 }

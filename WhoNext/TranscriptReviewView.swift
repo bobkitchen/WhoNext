@@ -135,10 +135,7 @@ struct TranscriptReviewView: View {
                         
                         ScrollView {
                             VStack(alignment: .leading, spacing: 8) {
-                                Text(AttributedString(MarkdownHelper.attributedString(from: editedSummary)))
-                                    .font(.body)
-                                    .textSelection(.enabled)
-                                    .frame(maxWidth: .infinity, alignment: .leading)
+                                ProfileContentView(content: editedSummary)
                                 
                                 Divider()
                                     .padding(.vertical, 8)

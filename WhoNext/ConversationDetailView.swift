@@ -234,7 +234,7 @@ struct ConversationDetailView: View {
                                 .foregroundColor(.secondary)
                                 .italic()
                         } else {
-                            MarkdownView(markdown: editedSummary)
+                            ProfileContentView(content: editedSummary)
                         }
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
