@@ -7,7 +7,7 @@ import Combine
 @MainActor
 class AppStateManager: ObservableObject {
     // MARK: - Navigation State
-    @Published var selectedTab: SidebarItem = .insights
+    @Published var selectedTab: SidebarItem = .meetings
     @Published var selectedPersonID: UUID?
     @Published var selectedPerson: Person? {
         didSet {

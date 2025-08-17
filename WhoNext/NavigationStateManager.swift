@@ -5,7 +5,7 @@ import Combine
 @MainActor
 class NavigationStateManager: ObservableObject {
     // MARK: - Published Properties
-    @Published var selectedTab: SidebarItem = .insights
+    @Published var selectedTab: SidebarItem = .meetings
     @Published var selectedPerson: Person? {
         didSet {
             // Keep selectedPersonID in sync automatically
@@ -159,7 +159,7 @@ extension NavigationStateManager {
     
     /// Reset navigation state (useful for testing or logout)
     func reset() {
-        selectedTab = .insights
+        selectedTab = .meetings
         selectedPerson = nil
         selectedPersonID = nil
         navigationHistory = []

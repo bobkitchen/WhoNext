@@ -27,7 +27,7 @@ struct InsightsView: View {
                     StatisticsCardsView()
                 }
                 
-                // Upcoming 1:1s Section
+                // Upcoming Meetings Section
                 UpcomingMeetingsView(
                     selectedPersonID: $selectedPersonID,
                     selectedPerson: $selectedPerson,

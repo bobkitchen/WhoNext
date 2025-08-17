@@ -19,7 +19,7 @@ struct UpcomingMeetingsView: View {
         VStack(alignment: .leading, spacing: 16) {
             SectionHeaderView(
                 icon: "calendar.badge.clock",
-                title: "Upcoming 1:1s",
+                title: "Upcoming Meetings",
                 count: upcomingMeetingsThisWeek.count
             )
             
@@ -89,7 +89,7 @@ extension UpcomingMeetingsView {
     UpcomingMeetingsView(
         selectedPersonID: .constant(nil),
         selectedPerson: .constant(nil),
-        selectedTab: .constant(.insights)
+        selectedTab: .constant(.meetings)
     )
     .environment(\.managedObjectContext, PersistenceController.preview.container.viewContext)
 }

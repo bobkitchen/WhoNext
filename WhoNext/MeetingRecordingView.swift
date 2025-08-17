@@ -286,34 +286,33 @@ struct MeetingRecordingView: View {
                 
                 Divider()
                 
-                HStack {
-                    VStack(alignment: .leading, spacing: 8) {
-                        HStack {
-                            Text("Auto-Recording:")
-                            Text(config.autoRecordingEnabled ? "Enabled" : "Disabled")
-                                .foregroundColor(config.autoRecordingEnabled ? .green : .gray)
-                                .fontWeight(.medium)
-                        }
-                        
-                        HStack {
-                            Text("Confidence:")
-                            Text("\(Int(config.confidenceThreshold * 100))%")
-                                .foregroundColor(.secondary)
-                        }
-                        
-                        HStack {
-                            Text("Storage:")
-                            Text("\(config.storageRetentionDays) days retention")
-                                .foregroundColor(.secondary)
-                        }
+                VStack(alignment: .leading, spacing: 8) {
+                    HStack {
+                        Text("Auto-Recording:")
+                        Text(config.autoRecordingEnabled ? "Enabled" : "Disabled")
+                            .foregroundColor(config.autoRecordingEnabled ? .green : .gray)
+                            .fontWeight(.medium)
+                        Spacer()
                     }
                     
-                    Spacer()
-                    
-                    Button(action: openSettings) {
-                        Label("Open Settings", systemImage: "gearshape")
+                    HStack {
+                        Text("Confidence:")
+                        Text("\(Int(config.confidenceThreshold * 100))%")
+                            .foregroundColor(.secondary)
+                        Spacer()
                     }
-                    .buttonStyle(.borderedProminent)
+                    
+                    HStack {
+                        Text("Storage:")
+                        Text("\(config.storageRetentionDays) days retention")
+                            .foregroundColor(.secondary)
+                        Spacer()
+                    }
+                    
+                    Text("Adjust settings in Settings → Recording")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                        .padding(.top, 4)
                 }
             }
             .padding()
@@ -358,10 +357,6 @@ struct MeetingRecordingView: View {
         if let meeting = recordingEngine.currentMeeting {
             LiveMeetingWindowManager.shared.showWindow(for: meeting)
         }
-    }
-    
-    private func openSettings() {
-        NSApp.sendAction(Selector(("showSettingsWindow:")), to: nil, from: nil)
     }
 }
 

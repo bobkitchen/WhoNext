@@ -34,9 +34,24 @@ struct ContentView: View {
     var body: some View {
         NavigationStack {
             VStack {
-                if appStateManager.selectedTab == .people {
+                if appStateManager.selectedTab == .meetings {
+                    MeetingsView(
+                        selectedPersonID: Binding(
+                            get: { appStateManager.selectedPersonID },
+                            set: { appStateManager.selectedPersonID = $0 }
+                        ),
+                        selectedPerson: Binding(
+                            get: { appStateManager.selectedPerson },
+                            set: { appStateManager.selectedPerson = $0 }
+                        ),
+                        selectedTab: Binding(
+                            get: { appStateManager.selectedTab },
+                            set: { appStateManager.selectedTab = $0 }
+                        )
+                    )
+                } else if appStateManager.selectedTab == .people {
                     HStack(spacing: 0) {
-                        PeopleListView(
+                        PeopleAndGroupsView(
                             selectedPerson: Binding(
                                 get: { appStateManager.selectedPerson },
                                 set: { appStateManager.selectedPerson = $0 }
@@ -55,32 +70,14 @@ struct ContentView: View {
                                 .frame(maxWidth: .infinity)
                                 .environmentObject(appStateManager)
                         } else {
-                            Text("Select a person")
+                            Text("Select a person or group")
                                 .foregroundStyle(.secondary)
                                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                         }
                     }
-                } else if appStateManager.selectedTab == .insights {
-                    InsightsView(
-                        selectedPersonID: Binding(
-                            get: { appStateManager.selectedPersonID },
-                            set: { appStateManager.selectedPersonID = $0 }
-                        ),
-                        selectedPerson: Binding(
-                            get: { appStateManager.selectedPerson },
-                            set: { appStateManager.selectedPerson = $0 }
-                        ),
-                        selectedTab: Binding(
-                            get: { appStateManager.selectedTab },
-                            set: { appStateManager.selectedTab = $0 }
-                        )
-                    )
                 } else if appStateManager.selectedTab == .analytics {
                     AnalyticsView()
                         .environmentObject(appStateManager)
-                } else if appStateManager.selectedTab == .recording {
-                    MeetingRecordingView()
-                        .environment(\.managedObjectContext, viewContext)
                 }
             }
             .navigationTitle("")

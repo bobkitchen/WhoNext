@@ -24,5 +24,9 @@
 	<string>WhoNext needs read-only access to your calendar to surface upcoming 1:1 meetings.</string>
 	<key>NSAppleEventsUsageDescription</key>
 	<string>WhoNext needs access to send emails via Microsoft Outlook.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>WhoNext needs access to your microphone to automatically detect and record meetings with transcription.</string>
+	<key>NSScreenCaptureUsageDescription</key>
+	<string>WhoNext needs screen recording permission to capture system audio from meeting applications like Zoom and Teams.</string>
 </dict>
 </plist>

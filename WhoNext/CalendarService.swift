@@ -90,7 +90,6 @@ class CalendarService: ObservableObject {
         let end = Calendar.current.date(byAdding: .day, value: daysAhead, to: start)!
         let predicate = eventStore.predicateForEvents(withStart: start, end: end, calendars: [calendar])
         let events = eventStore.events(matching: predicate)
-            .filter { $0.title.localizedCaseInsensitiveContains("1:1") }
             .sorted { $0.startDate < $1.startDate }
         let meetings = events.map { event in
             UpcomingMeeting(

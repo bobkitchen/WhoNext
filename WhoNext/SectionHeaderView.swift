@@ -61,7 +61,7 @@ struct SectionHeaderView: View {
     VStack(spacing: 20) {
         SectionHeaderView(
             icon: "calendar.badge.clock",
-            title: "Upcoming 1:1s",
+            title: "Upcoming Meetings",
             count: 3
         )
         

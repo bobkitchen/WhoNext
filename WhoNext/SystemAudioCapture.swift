@@ -3,6 +3,7 @@ import AVFoundation
 import ScreenCaptureKit
 import SwiftUI
 import Combine
+import AppKit
 
 /// Captures both microphone and system audio for two-way conversation detection
 /// Uses AVAudioEngine for microphone and ScreenCaptureKit for system audio on macOS 13+
@@ -20,7 +21,7 @@ class SystemAudioCapture: NSObject, ObservableObject {
     private var mixerNode: AVAudioMixerNode?
     
     // MARK: - Screen Capture for System Audio
-    private var streamOutput: SCStreamOutput?
+    private var streamOutput: SystemAudioOutputHandler?
     private var stream: SCStream?
     
     // MARK: - Audio Buffers
@@ -64,7 +65,19 @@ class SystemAudioCapture: NSObject, ObservableObject {
         
         // Set up system audio capture (macOS 13+)
         if #available(macOS 13.0, *) {
-            try await setupSystemAudioCapture()
+            // Check for screen recording permission
+            let hasPermission = await checkScreenRecordingPermission()
+            if hasPermission {
+                do {
+                    try await setupSystemAudioCapture()
+                } catch {
+                    print("⚠️ System audio setup failed: \(error.localizedDescription)")
+                    print("🎙️ Falling back to microphone-only mode")
+                }
+            } else {
+                print("⚠️ Screen recording permission not granted")
+                print("🎙️ Using microphone-only recording mode")
+            }
         } else {
             print("⚠️ System audio capture requires macOS 13 or later")
         }
@@ -94,6 +107,8 @@ class SystemAudioCapture: NSObject, ObservableObject {
                     print("❌ Error stopping stream: \(error)")
                 }
             }
+            stream = nil
+            streamOutput = nil
         }
         
         DispatchQueue.main.async {
@@ -189,9 +204,8 @@ class SystemAudioCapture: NSObject, ObservableObject {
         // Create content filter (capture all audio)
         // We need at least one window or display to create a filter
         let filter: SCContentFilter
-        if let firstWindow = availableContent.windows.first {
-            filter = SCContentFilter(desktopIndependentWindow: firstWindow)
-        } else if let firstDisplay = availableContent.displays.first {
+        if let firstDisplay = availableContent.displays.first {
+            // Use display capture for system-wide audio
             filter = SCContentFilter(display: firstDisplay, excludingWindows: [])
         } else {
             throw AudioCaptureError.noAvailableContent
@@ -200,17 +214,54 @@ class SystemAudioCapture: NSObject, ObservableObject {
         // Create stream
         stream = SCStream(filter: filter, configuration: streamConfig, delegate: self)
         
-        // Set up output handler
-        let audioOutputHandler = SystemAudioOutputHandler { [weak self] buffer in
+        // Set up and retain output handler
+        streamOutput = SystemAudioOutputHandler { [weak self] buffer in
             self?.processSystemAudioBuffer(buffer)
         }
         
-        try stream?.addStreamOutput(audioOutputHandler, type: .audio, sampleHandlerQueue: .global())
+        if let streamOutput = streamOutput {
+            try stream?.addStreamOutput(streamOutput, type: .audio, sampleHandlerQueue: .global())
+        }
         
         // Start capture
         try await stream?.startCapture()
         
         print("✅ System audio capture configured")
+    }
+    
+    @available(macOS 13.0, *)
+    private func checkScreenRecordingPermission() async -> Bool {
+        // Try to create a test stream to check permission
+        do {
+            let content = try await SCShareableContent.current
+            // If we can get content, we have permission
+            return !content.displays.isEmpty
+        } catch {
+            // Permission not granted or other error
+            print("🔒 Screen recording permission check failed: \(error)")
+            
+            // Show alert to guide user
+            await MainActor.run {
+                showScreenRecordingPermissionAlert()
+            }
+            
+            return false
+        }
+    }
+    
+    private func showScreenRecordingPermissionAlert() {
+        let alert = NSAlert()
+        alert.messageText = "Screen Recording Permission Required"
+        alert.informativeText = "To capture system audio from meeting apps, WhoNext needs screen recording permission. Please grant permission in System Settings > Privacy & Security > Screen Recording."
+        alert.alertStyle = .warning
+        alert.addButton(withTitle: "Open System Settings")
+        alert.addButton(withTitle: "Cancel")
+        
+        if alert.runModal() == .alertFirstButtonReturn {
+            if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture") {
+                NSWorkspace.shared.open(url)
+            }
+        }
     }
     
     private func processSystemAudioBuffer(_ sampleBuffer: CMSampleBuffer) {

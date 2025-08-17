@@ -6,11 +6,11 @@ struct CenterNavigationView<T: StateManagement>: View {
     var body: some View {
         HStack(spacing: 0) {
             NavigationTabButton(
-                icon: "chart.line.uptrend.xyaxis",
-                title: "Insights",
-                isSelected: appState.selectedTab == .insights,
+                icon: "calendar.badge.clock",
+                title: "Meetings",
+                isSelected: appState.selectedTab == .meetings,
                 action: { 
-                    appState.selectedTab = .insights 
+                    appState.selectedTab = .meetings 
                 }
             )
             
@@ -29,15 +29,6 @@ struct CenterNavigationView<T: StateManagement>: View {
                 isSelected: appState.selectedTab == .analytics,
                 action: { 
                     appState.selectedTab = .analytics 
-                }
-            )
-            
-            NavigationTabButton(
-                icon: "record.circle",
-                title: "Recording",
-                isSelected: appState.selectedTab == .recording,
-                action: { 
-                    appState.selectedTab = .recording 
                 }
             )
         }
