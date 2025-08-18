@@ -1,5 +1,6 @@
 import Foundation
 import EventKit
+import Combine
 
 struct UpcomingMeeting: Identifiable {
     let id: String
@@ -13,12 +14,40 @@ struct UpcomingMeeting: Identifiable {
 
 class CalendarService: ObservableObject {
     static let shared = CalendarService()
-    private let eventStore = EKEventStore()
-    private var targetCalendar: EKCalendar?
-
+    
+    // MARK: - Published Properties
     @Published var upcomingMeetings: [UpcomingMeeting] = []
-
+    @Published var currentProvider: CalendarProviderType = .apple
+    @Published var isAuthorized: Bool = false
+    @Published var availableCalendars: [CalendarInfo] = []
+    @Published var selectedCalendarID: String?
+    
+    // MARK: - Provider Management
+    private var activeProvider: CalendarProvider
+    private let appleProvider = AppleCalendarProvider()
+    private let googleProvider = GoogleCalendarProvider()
+    
+    // MARK: - User Defaults Keys
+    private let providerTypeKey = "selectedCalendarProvider"
+    private let appleCalendarIDKey = "selectedCalendarID"
+    private let googleCalendarIDKey = "googleCalendarID"
+    
     private init() {
+        // Initialize with default provider first
+        self.activeProvider = appleProvider
+        
+        // Load saved provider preference
+        if let savedProvider = UserDefaults.standard.string(forKey: providerTypeKey),
+           let provider = CalendarProviderType(rawValue: savedProvider) {
+            currentProvider = provider
+        }
+        
+        // Set the correct provider based on preference
+        activeProvider = currentProvider == .apple ? appleProvider : googleProvider
+        
+        // Load saved calendar selection
+        loadSavedCalendarSelection()
+        
         // Listen for calendar selection changes
         NotificationCenter.default.addObserver(
             self,
@@ -26,84 +55,166 @@ class CalendarService: ObservableObject {
             name: Notification.Name("CalendarSelectionChanged"),
             object: nil
         )
+        
+        // Check authorization status
+        Task {
+            await checkAuthorizationStatus()
+        }
+    }
+    
+    // MARK: - Public Methods
+    
+    /// Switch to a different calendar provider
+    func switchProvider(to provider: CalendarProviderType) async throws {
+        currentProvider = provider
+        activeProvider = provider == .apple ? appleProvider : googleProvider
+        
+        // Save preference
+        UserDefaults.standard.set(provider.rawValue, forKey: providerTypeKey)
+        
+        // Clear current meetings
+        await MainActor.run {
+            self.upcomingMeetings = []
+            self.availableCalendars = []
+        }
+        
+        // Load saved calendar for new provider
+        loadSavedCalendarSelection()
+        
+        // Check authorization for new provider
+        await checkAuthorizationStatus()
+        
+        // If authorized, fetch calendars and meetings
+        if isAuthorized {
+            try await fetchAvailableCalendars()
+            await fetchUpcomingMeetings()
+        }
+    }
+    
+    /// Request access to the current calendar provider
+    func requestAccess(completion: @escaping (Bool, Error?) -> Void) {
+        Task {
+            do {
+                let granted = try await activeProvider.requestAccess()
+                await MainActor.run {
+                    self.isAuthorized = granted
+                }
+                
+                if granted {
+                    // Fetch available calendars after authorization
+                    try await fetchAvailableCalendars()
+                    
+                    // Load saved calendar selection
+                    if let savedID = selectedCalendarID {
+                        try await activeProvider.setActiveCalendar(calendarID: savedID)
+                    }
+                }
+                
+                await MainActor.run {
+                    completion(granted, nil)
+                }
+            } catch {
+                await MainActor.run {
+                    completion(false, error)
+                }
+            }
+        }
+    }
+    
+    /// Fetch upcoming meetings from the current provider
+    func fetchUpcomingMeetings(daysAhead: Int = 7) {
+        Task {
+            await fetchUpcomingMeetings(daysAhead: daysAhead)
+        }
+    }
+    
+    /// Async version of fetchUpcomingMeetings
+    private func fetchUpcomingMeetings(daysAhead: Int = 7) async {
+        do {
+            let meetings = try await activeProvider.fetchUpcomingMeetings(daysAhead: daysAhead)
+            await MainActor.run {
+                self.upcomingMeetings = meetings
+            }
+        } catch {
+            print("Error fetching meetings: \(error)")
+            await MainActor.run {
+                self.upcomingMeetings = []
+            }
+        }
+    }
+    
+    /// Fetch available calendars from the current provider
+    func fetchAvailableCalendars() async throws {
+        let calendars = try await activeProvider.getAvailableCalendars()
+        await MainActor.run {
+            self.availableCalendars = calendars
+        }
+    }
+    
+    /// Set the active calendar for the current provider
+    func setActiveCalendar(_ calendarID: String) async throws {
+        try await activeProvider.setActiveCalendar(calendarID: calendarID)
+        selectedCalendarID = calendarID
+        
+        // Save selection based on provider
+        let key = currentProvider == .apple ? appleCalendarIDKey : googleCalendarIDKey
+        UserDefaults.standard.set(calendarID, forKey: key)
+        
+        // Fetch meetings for the newly selected calendar
+        await fetchUpcomingMeetings()
+    }
+    
+    /// Sign out from Google Calendar (no-op for Apple Calendar)
+    func signOutGoogle() async throws {
+        if currentProvider == .google {
+            try await googleProvider.signOut()
+            await MainActor.run {
+                self.isAuthorized = false
+                self.upcomingMeetings = []
+                self.availableCalendars = []
+                self.selectedCalendarID = nil
+            }
+        }
+    }
+    
+    // MARK: - Private Methods
+    
+    private func checkAuthorizationStatus() async {
+        let authorized = await activeProvider.isAuthorized
+        await MainActor.run {
+            self.isAuthorized = authorized
+        }
+    }
+    
+    private func loadSavedCalendarSelection() {
+        let key = currentProvider == .apple ? appleCalendarIDKey : googleCalendarIDKey
+        selectedCalendarID = UserDefaults.standard.string(forKey: key)
+        
+        // For Apple Calendar, also handle legacy migration
+        if currentProvider == .apple, let appleProvider = activeProvider as? AppleCalendarProvider {
+            appleProvider.loadTargetCalendar(withID: selectedCalendarID)
+        }
     }
     
     @objc private func calendarSelectionChanged(_ notification: Notification) {
         if let calendarID = notification.object as? String, !calendarID.isEmpty {
-            loadTargetCalendar(withID: calendarID)
-        } else {
-            let storedID = UserDefaults.standard.string(forKey: "selectedCalendarID")
-            loadTargetCalendar(withID: storedID)
-        }
-    }
-
-    func requestAccess(completion: @escaping (Bool, Error?) -> Void) {
-        if #available(macOS 14.0, *) {
-            eventStore.requestFullAccessToEvents { granted, error in
-                if granted {
-                    self.logAvailableCalendars()
-                    let storedID = UserDefaults.standard.string(forKey: "selectedCalendarID")
-                    self.loadTargetCalendar(withID: storedID)
-                }
-                DispatchQueue.main.async {
-                    completion(granted, error)
-                }
-            }
-        } else {
-            eventStore.requestAccess(to: .event) { granted, error in
-                if granted {
-                    self.logAvailableCalendars()
-                    let storedID = UserDefaults.standard.string(forKey: "selectedCalendarID")
-                    self.loadTargetCalendar(withID: storedID)
-                }
-                DispatchQueue.main.async {
-                    completion(granted, error)
-                }
+            Task {
+                try? await setActiveCalendar(calendarID)
             }
         }
     }
-
-    private func logAvailableCalendars() {
-        let calendars = eventStore.calendars(for: .event)
-        for _ in calendars {
-        }
-    }
-
-    private func loadTargetCalendar(withID id: String? = nil) {
-        if let id = id, let exchangeCal = eventStore.calendars(for: .event).first(where: { $0.calendarIdentifier == id }) {
-            targetCalendar = exchangeCal
-        } else if let exchangeCal = eventStore.calendars(for: .event).first(where: { $0.source.title.lowercased().contains("exchange") }) {
-            targetCalendar = exchangeCal
-        } else if let first = eventStore.calendars(for: .event).first {
-            targetCalendar = first
-        } else {
-        }
-    }
-
-    func fetchUpcomingMeetings(daysAhead: Int = 7) {
-        guard let calendar = targetCalendar else {
-            let storedID = UserDefaults.standard.string(forKey: "selectedCalendarID")
-            loadTargetCalendar(withID: storedID)
-            return
-        }
-        let start = Date()
-        let end = Calendar.current.date(byAdding: .day, value: daysAhead, to: start)!
-        let predicate = eventStore.predicateForEvents(withStart: start, end: end, calendars: [calendar])
-        let events = eventStore.events(matching: predicate)
-            .sorted { $0.startDate < $1.startDate }
-        let meetings = events.map { event in
-            UpcomingMeeting(
-                id: event.eventIdentifier,
-                title: event.title,
-                startDate: event.startDate,
-                calendarID: event.calendar.calendarIdentifier,
-                notes: event.notes,
-                location: event.location,
-                attendees: event.attendees?.compactMap { $0.name }
-            )
-        }
-        DispatchQueue.main.async {
-            self.upcomingMeetings = meetings
+    
+    // MARK: - Legacy Support
+    // These methods maintain compatibility with existing code
+    
+    /// Legacy method for backwards compatibility
+    func logAvailableCalendars() {
+        Task {
+            if let calendars = try? await activeProvider.getAvailableCalendars() {
+                for calendar in calendars {
+                    print("Calendar: \(calendar.title) (\(calendar.id))")
+                }
+            }
         }
     }
 }

@@ -661,6 +661,8 @@ Best regards
     
     // MARK: - Calendar Settings
     private var calendarSettingsView: some View {
+        CalendarProviderSettings()
+        /*
         VStack(alignment: .leading, spacing: 20) {
             // Calendar Integration Section
             VStack(alignment: .leading, spacing: 8) {
@@ -737,6 +739,7 @@ Best regards
                 loadAvailableCalendars()
             }
         }
+        */
     }
     
     // MARK: - Recording Settings
