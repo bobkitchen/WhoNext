@@ -9,17 +9,17 @@ struct CalendarProviderSettings: View {
     @State private var showingError = false
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 20) {
-            // Provider Selection
-            providerSelector
+        VStack(alignment: .leading, spacing: 24) {
+            Text("Calendar Provider")
+                .font(.headline)
             
-            Divider()
-            
-            // Provider-specific content
-            if calendarService.currentProvider == .apple {
-                appleCalendarSettings
-            } else {
-                googleCalendarSettings
+            // Two separate sections for each provider
+            VStack(spacing: 16) {
+                // Apple Calendar Section
+                appleCalendarSection
+                
+                // Google Calendar Section
+                googleCalendarSection
             }
             
             // Calendar Selection (if authorized)
@@ -38,124 +38,158 @@ struct CalendarProviderSettings: View {
         }
     }
     
-    // MARK: - Provider Selector
+    // MARK: - Apple Calendar Section
     
-    private var providerSelector: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("Calendar Provider")
-                .font(.headline)
-            
-            Picker("", selection: Binding(
-                get: { calendarService.currentProvider },
-                set: { newProvider in
+    private var appleCalendarSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Button(action: {
+                if calendarService.currentProvider != .apple {
                     Task {
                         do {
-                            try await calendarService.switchProvider(to: newProvider)
+                            try await calendarService.switchProvider(to: .apple)
                             loadCalendarsIfNeeded()
                         } catch {
                             errorMessage = error.localizedDescription
                             showingError = true
                         }
                     }
-                }
-            )) {
-                ForEach(CalendarProviderType.allCases, id: \.self) { provider in
-                    HStack {
-                        Image(systemName: provider.icon)
-                        Text(provider.rawValue)
-                    }
-                    .tag(provider)
-                }
-            }
-            .pickerStyle(.segmented)
-            
-            Text(calendarService.currentProvider.description)
-                .font(.caption)
-                .foregroundColor(.secondary)
-        }
-    }
-    
-    // MARK: - Apple Calendar Settings
-    
-    private var appleCalendarSettings: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack {
-                Image(systemName: "checkmark.circle.fill")
-                    .foregroundColor(calendarService.isAuthorized ? .green : .orange)
-                
-                Text(calendarService.isAuthorized ? 
-                     "Calendar access granted" : 
-                     "Calendar access required")
-                    .font(.subheadline)
-            }
-            
-            if !calendarService.isAuthorized {
-                Button("Grant Calendar Access") {
+                } else if !calendarService.isAuthorized {
                     requestCalendarAccess()
                 }
-                .buttonStyle(.bordered)
-                
-                Text("WhoNext needs access to your calendar to display upcoming meetings.")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-            }
-        }
-    }
-    
-    // MARK: - Google Calendar Settings
-    
-    private var googleCalendarSettings: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            if calendarService.isAuthorized {
-                // Signed in state
+            }) {
                 HStack {
-                    Image(systemName: "checkmark.circle.fill")
-                        .foregroundColor(.green)
+                    Image(systemName: "applelogo")
+                        .font(.title2)
                     
-                    VStack(alignment: .leading) {
-                        Text("Connected to Google Calendar")
-                            .font(.subheadline)
-                        // TODO: Show connected account email
-                        Text("your.email@gmail.com")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Apple Calendar")
+                            .font(.body)
+                            .fontWeight(.medium)
+                        
+                        if calendarService.currentProvider == .apple {
+                            Text(calendarService.isAuthorized ? "Connected" : "Tap to connect")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        } else {
+                            Text("Use system calendar")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        }
                     }
                     
                     Spacer()
                     
-                    Button("Sign Out") {
-                        Task {
-                            do {
-                                try await calendarService.signOutGoogle()
-                            } catch {
-                                errorMessage = error.localizedDescription
-                                showingError = true
+                    if calendarService.currentProvider == .apple {
+                        Image(systemName: calendarService.isAuthorized ? "checkmark.circle.fill" : "exclamationmark.circle")
+                            .foregroundColor(calendarService.isAuthorized ? .green : .orange)
+                    }
+                }
+                .padding()
+                .background(
+                    RoundedRectangle(cornerRadius: 8)
+                        .fill(calendarService.currentProvider == .apple ? Color.accentColor.opacity(0.1) : Color.gray.opacity(0.1))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 8)
+                                .stroke(calendarService.currentProvider == .apple ? Color.accentColor : Color.clear, lineWidth: 2)
+                        )
+                )
+            }
+            .buttonStyle(.plain)
+            
+            if calendarService.currentProvider == .apple && !calendarService.isAuthorized {
+                Text("WhoNext needs access to your calendar to display upcoming meetings.")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                    .padding(.leading, 4)
+            }
+        }
+    }
+    
+    // MARK: - Google Calendar Section
+    
+    private var googleCalendarSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Button(action: {
+                if calendarService.currentProvider != .google {
+                    Task {
+                        do {
+                            try await calendarService.switchProvider(to: .google)
+                            loadCalendarsIfNeeded()
+                        } catch {
+                            errorMessage = error.localizedDescription
+                            showingError = true
+                        }
+                    }
+                } else if !calendarService.isAuthorized {
+                    showingGoogleSignIn = true
+                    requestGoogleCalendarAccess()
+                }
+            }) {
+                HStack {
+                    Image(systemName: "globe")
+                        .font(.title2)
+                    
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Google Calendar")
+                            .font(.body)
+                            .fontWeight(.medium)
+                        
+                        if calendarService.currentProvider == .google {
+                            if calendarService.isAuthorized {
+                                // TODO: Show actual email when OAuth is implemented
+                                Text("Connected")
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                            } else {
+                                Text("Tap to sign in")
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
                             }
+                        } else {
+                            Text("Connect to your Google account")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
                         }
                     }
-                    .buttonStyle(.bordered)
-                }
-            } else {
-                // Not signed in state
-                VStack(alignment: .leading, spacing: 12) {
-                    Text("Connect your Google Calendar to see your meetings")
-                        .font(.subheadline)
                     
-                    Button(action: {
-                        showingGoogleSignIn = true
-                        requestGoogleCalendarAccess()
-                    }) {
-                        HStack {
-                            Image(systemName: "globe")
-                            Text("Sign in with Google")
+                    Spacer()
+                    
+                    if calendarService.currentProvider == .google {
+                        if calendarService.isAuthorized {
+                            Button("Sign Out") {
+                                Task {
+                                    do {
+                                        try await calendarService.signOutGoogle()
+                                    } catch {
+                                        errorMessage = error.localizedDescription
+                                        showingError = true
+                                    }
+                                }
+                            }
+                            .buttonStyle(.bordered)
+                        } else {
+                            Image(systemName: "arrow.right.circle")
+                                .foregroundColor(.secondary)
                         }
                     }
-                    .buttonStyle(.borderedProminent)
-                    
-                    Text("You'll be redirected to Google to authorize access to your calendar.")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
                 }
+                .padding()
+                .background(
+                    RoundedRectangle(cornerRadius: 8)
+                        .fill(calendarService.currentProvider == .google ? Color.accentColor.opacity(0.1) : Color.gray.opacity(0.1))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 8)
+                                .stroke(calendarService.currentProvider == .google ? Color.accentColor : Color.clear, lineWidth: 2)
+                        )
+                )
+            }
+            .buttonStyle(.plain)
+            
+            if calendarService.currentProvider == .google && !calendarService.isAuthorized {
+                Text("You'll be redirected to Google to authorize access to your calendar.")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                    .padding(.leading, 4)
             }
         }
     }
