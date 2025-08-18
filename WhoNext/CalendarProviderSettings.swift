@@ -146,7 +146,7 @@ struct CalendarProviderSettings: View {
                                     .foregroundColor(.secondary)
                             }
                         } else {
-                            Text("Connect to your Google account")
+                            Text("Coming soon")
                                 .font(.caption)
                                 .foregroundColor(.secondary)
                         }
@@ -277,7 +277,11 @@ struct CalendarProviderSettings: View {
         calendarService.requestAccess { granted, error in
             showingGoogleSignIn = false
             if !granted {
-                errorMessage = error?.localizedDescription ?? "Google Calendar authorization failed"
+                if let error = error {
+                    errorMessage = error.localizedDescription
+                } else {
+                    errorMessage = "Google Calendar integration is coming soon. This feature requires additional configuration."
+                }
                 showingError = true
             } else {
                 loadCalendarsIfNeeded()

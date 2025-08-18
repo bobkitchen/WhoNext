@@ -38,6 +38,12 @@ class GoogleCalendarProvider: CalendarProvider {
         // 5. Store token securely in Keychain
         
         print("Google Calendar OAuth flow not yet implemented")
+        print("To enable Google Calendar:")
+        print("1. Add Google API dependencies via Xcode Package Manager")
+        print("2. Configure OAuth credentials in Google Cloud Console")
+        print("3. Update GoogleOAuthConfig with your client ID")
+        
+        // For now, provide a clear user-facing error
         throw CalendarProviderError.providerNotAvailable
     }
     

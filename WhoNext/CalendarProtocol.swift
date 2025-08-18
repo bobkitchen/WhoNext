@@ -82,7 +82,7 @@ enum CalendarProviderError: LocalizedError {
         case .invalidCalendarID:
             return "The selected calendar is no longer available."
         case .providerNotAvailable:
-            return "Calendar provider is not available."
+            return "Google Calendar integration is coming soon. This feature requires additional configuration including Google API setup and OAuth credentials."
         case .tokenExpired:
             return "Authentication expired. Please sign in again."
         }
