@@ -1,0 +1,166 @@
+{
+  "object" : {
+    "artifacts" : [
+
+    ],
+    "dependencies" : [
+      {
+        "basedOn" : null,
+        "packageRef" : {
+          "identity" : "down",
+          "kind" : "remoteSourceControl",
+          "location" : "https://github.com/iwasrobbed/Down",
+          "name" : "Down"
+        },
+        "state" : {
+          "checkoutState" : {
+            "branch" : "master",
+            "revision" : "e754ab1c80920dd51a8e08290c912ac1c2ac8b58"
+          },
+          "name" : "sourceControlCheckout"
+        },
+        "subpath" : "Down"
+      },
+      {
+        "basedOn" : null,
+        "packageRef" : {
+          "identity" : "supabase-swift",
+          "kind" : "remoteSourceControl",
+          "location" : "https://github.com/supabase/supabase-swift",
+          "name" : "supabase-swift"
+        },
+        "state" : {
+          "checkoutState" : {
+            "revision" : "09f047baa21750a8e59eba46439814c83ae25bcf",
+            "version" : "2.29.3"
+          },
+          "name" : "sourceControlCheckout"
+        },
+        "subpath" : "supabase-swift"
+      },
+      {
+        "basedOn" : null,
+        "packageRef" : {
+          "identity" : "swift-asn1",
+          "kind" : "remoteSourceControl",
+          "location" : "https://github.com/apple/swift-asn1.git",
+          "name" : "swift-asn1"
+        },
+        "state" : {
+          "checkoutState" : {
+            "revision" : "a54383ada6cecde007d374f58f864e29370ba5c3",
+            "version" : "1.3.2"
+          },
+          "name" : "sourceControlCheckout"
+        },
+        "subpath" : "swift-asn1"
+      },
+      {
+        "basedOn" : null,
+        "packageRef" : {
+          "identity" : "swift-clocks",
+          "kind" : "remoteSourceControl",
+          "location" : "https://github.com/pointfreeco/swift-clocks",
+          "name" : "swift-clocks"
+        },
+        "state" : {
+          "checkoutState" : {
+            "revision" : "cc46202b53476d64e824e0b6612da09d84ffde8e",
+            "version" : "1.0.6"
+          },
+          "name" : "sourceControlCheckout"
+        },
+        "subpath" : "swift-clocks"
+      },
+      {
+        "basedOn" : null,
+        "packageRef" : {
+          "identity" : "swift-concurrency-extras",
+          "kind" : "remoteSourceControl",
+          "location" : "https://github.com/pointfreeco/swift-concurrency-extras",
+          "name" : "swift-concurrency-extras"
+        },
+        "state" : {
+          "checkoutState" : {
+            "revision" : "82a4ae7170d98d8538ec77238b7eb8e7199ef2e8",
+            "version" : "1.3.1"
+          },
+          "name" : "sourceControlCheckout"
+        },
+        "subpath" : "swift-concurrency-extras"
+      },
+      {
+        "basedOn" : null,
+        "packageRef" : {
+          "identity" : "swift-crypto",
+          "kind" : "remoteSourceControl",
+          "location" : "https://github.com/apple/swift-crypto.git",
+          "name" : "swift-crypto"
+        },
+        "state" : {
+          "checkoutState" : {
+            "revision" : "e8d6eba1fef23ae5b359c46b03f7d94be2f41fed",
+            "version" : "3.12.3"
+          },
+          "name" : "sourceControlCheckout"
+        },
+        "subpath" : "swift-crypto"
+      },
+      {
+        "basedOn" : null,
+        "packageRef" : {
+          "identity" : "swift-http-types",
+          "kind" : "remoteSourceControl",
+          "location" : "https://github.com/apple/swift-http-types.git",
+          "name" : "swift-http-types"
+        },
+        "state" : {
+          "checkoutState" : {
+            "revision" : "a0a57e949a8903563aba4615869310c0ebf14c03",
+            "version" : "1.4.0"
+          },
+          "name" : "sourceControlCheckout"
+        },
+        "subpath" : "swift-http-types"
+      },
+      {
+        "basedOn" : null,
+        "packageRef" : {
+          "identity" : "swiftcsv",
+          "kind" : "remoteSourceControl",
+          "location" : "https://github.com/swiftcsv/SwiftCSV",
+          "name" : "SwiftCSV"
+        },
+        "state" : {
+          "checkoutState" : {
+            "revision" : "6ab5d0fe9b6ef3c79d717eefa70862df389e74d9",
+            "version" : "0.10.0"
+          },
+          "name" : "sourceControlCheckout"
+        },
+        "subpath" : "SwiftCSV"
+      },
+      {
+        "basedOn" : null,
+        "packageRef" : {
+          "identity" : "xctest-dynamic-overlay",
+          "kind" : "remoteSourceControl",
+          "location" : "https://github.com/pointfreeco/xctest-dynamic-overlay",
+          "name" : "xctest-dynamic-overlay"
+        },
+        "state" : {
+          "checkoutState" : {
+            "revision" : "39de59b2d47f7ef3ca88a039dff3084688fe27f4",
+            "version" : "1.5.2"
+          },
+          "name" : "sourceControlCheckout"
+        },
+        "subpath" : "xctest-dynamic-overlay"
+      }
+    ],
+    "prebuilts" : [
+
+    ]
+  },
+  "version" : 7
+}

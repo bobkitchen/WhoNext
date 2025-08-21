@@ -146,7 +146,7 @@ struct CalendarProviderSettings: View {
                                     .foregroundColor(.secondary)
                             }
                         } else {
-                            Text("Coming soon")
+                            Text("Connect with Google")
                                 .font(.caption)
                                 .foregroundColor(.secondary)
                         }
@@ -278,9 +278,11 @@ struct CalendarProviderSettings: View {
             showingGoogleSignIn = false
             if !granted {
                 if let error = error {
-                    errorMessage = error.localizedDescription
+                    errorMessage = """
+                    Google Calendar integration is coming soon. This feature requires additional configuration including Google API setup and OAuth credentials.
+                    """
                 } else {
-                    errorMessage = "Google Calendar integration is coming soon. This feature requires additional configuration."
+                    errorMessage = "Unable to connect to Google Calendar. Please try again."
                 }
                 showingError = true
             } else {

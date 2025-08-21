@@ -2,30 +2,8 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-	<key>CFBundleDevelopmentRegion</key>
-	<string>en</string>
-	<key>CFBundleExecutable</key>
-	<string>$(EXECUTABLE_NAME)</string>
-	<key>CFBundleIdentifier</key>
-	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
-	<key>CFBundleInfoDictionaryVersion</key>
-	<string>6.0</string>
-	<key>CFBundleName</key>
-	<string>WhoNext</string>
-	<key>CFBundlePackageType</key>
-	<string>APPL</string>
-	<key>CFBundleShortVersionString</key>
-	<string>1.1.0</string>
-	<key>CFBundleVersion</key>
-	<string>2</string>
 	<key>LSMinimumSystemVersion</key>
-	<string>15.5</string>
-	<key>NSCalendarsUsageDescription</key>
-	<string>WhoNext needs read-only access to your calendar to surface upcoming 1:1 meetings.</string>
-	<key>NSAppleEventsUsageDescription</key>
-	<string>WhoNext needs access to send emails via Microsoft Outlook.</string>
-	<key>NSMicrophoneUsageDescription</key>
-	<string>WhoNext needs access to your microphone to automatically detect and record meetings with transcription.</string>
+	<string>26</string>
 	<key>NSScreenCaptureUsageDescription</key>
 	<string>WhoNext needs screen recording permission to capture system audio from meeting applications like Zoom and Teams.</string>
 </dict>

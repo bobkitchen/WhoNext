@@ -89,6 +89,34 @@ struct MeetingsView: View {
             
             // Quick Controls
             HStack(spacing: 8) {
+                // Manual Record/Stop Button
+                if recordingEngine.isRecording {
+                    Button(action: { 
+                        recordingEngine.stopRecording()
+                    }) {
+                        Label("Stop Recording", systemImage: "stop.fill")
+                            .font(.system(size: 12))
+                            .foregroundColor(.white)
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .controlSize(.small)
+                    .tint(.red)
+                } else {
+                    Button(action: { 
+                        // Start manual recording
+                        recordingEngine.startManualRecording()
+                    }) {
+                        Label("Record", systemImage: "record.circle.fill")
+                            .font(.system(size: 12))
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .controlSize(.small)
+                    .tint(.red)
+                }
+                
+                Divider()
+                    .frame(height: 20)
+                
                 // Auto-Record Toggle
                 Toggle(isOn: $config.autoRecordingEnabled) {
                     Label("Auto-Record", systemImage: "record.circle")

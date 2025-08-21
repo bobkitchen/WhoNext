@@ -6,6 +6,10 @@ struct TranscriptImportWindowView: View {
     @State private var transcriptText = ""
     @State private var processedTranscript: ProcessedTranscript?
     @State private var showingReviewScreen = false
+    @State private var isFromRecording = false
+    @State private var recordingTitle = ""
+    @State private var recordingDate = Date()
+    @State private var recordingDuration: TimeInterval = 0
     @Environment(\.managedObjectContext) private var viewContext
 
     var body: some View {
@@ -27,15 +31,34 @@ struct TranscriptImportWindowView: View {
                 VStack(spacing: 20) {
                     // Header
                     VStack(spacing: 8) {
-                        Image(systemName: "doc.text")
+                        Image(systemName: isFromRecording ? "mic.circle.fill" : "doc.text")
                             .font(.system(size: 48))
-                            .foregroundColor(.blue)
+                            .foregroundColor(isFromRecording ? .red : .blue)
                         
-                        Text("Import Meeting Transcript")
+                        Text(isFromRecording ? "Review Recorded Meeting" : "Import Meeting Transcript")
                             .font(.title2)
                             .fontWeight(.semibold)
                         
-                        Text("Paste your meeting transcript below and let AI extract participants, generate summaries, and analyze sentiment.")
+                        if isFromRecording {
+                            VStack(spacing: 4) {
+                                if !recordingTitle.isEmpty {
+                                    Text(recordingTitle)
+                                        .font(.headline)
+                                        .foregroundColor(.primary)
+                                }
+                                HStack(spacing: 16) {
+                                    Label(formatDate(recordingDate), systemImage: "calendar")
+                                    Label(formatDuration(recordingDuration), systemImage: "clock")
+                                }
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                            }
+                            .padding(.top, 4)
+                        }
+                        
+                        Text(isFromRecording ? 
+                             "Review the transcription below, then process it to extract participants and generate summaries." :
+                             "Paste your meeting transcript below and let AI extract participants, generate summaries, and analyze sentiment.")
                             .font(.body)
                             .foregroundColor(.secondary)
                             .multilineTextAlignment(.center)
@@ -48,6 +71,16 @@ struct TranscriptImportWindowView: View {
                         HStack {
                             Text("Meeting Transcript")
                                 .font(.headline)
+                            
+                            if isFromRecording {
+                                Label("Live Recording", systemImage: "mic.fill")
+                                    .font(.caption)
+                                    .foregroundColor(.red)
+                                    .padding(.horizontal, 8)
+                                    .padding(.vertical, 2)
+                                    .background(Color.red.opacity(0.1))
+                                    .cornerRadius(10)
+                            }
                             
                             Spacer()
                             
@@ -147,8 +180,56 @@ struct TranscriptImportWindowView: View {
             }
         }
         .onAppear {
-            transcriptText = ""
-            processedTranscript = nil
+            // Check if we have a pending recorded transcript
+            if let pendingTranscript = UserDefaults.standard.string(forKey: "PendingRecordedTranscript"),
+               !pendingTranscript.isEmpty {
+                // Load the recorded transcript
+                transcriptText = pendingTranscript
+                isFromRecording = true
+                
+                // Load additional metadata
+                if let title = UserDefaults.standard.string(forKey: "PendingRecordedTitle") {
+                    recordingTitle = title
+                }
+                if let date = UserDefaults.standard.object(forKey: "PendingRecordedDate") as? Date {
+                    recordingDate = date
+                }
+                recordingDuration = UserDefaults.standard.double(forKey: "PendingRecordedDuration")
+                
+                // Clear the pending data
+                UserDefaults.standard.removeObject(forKey: "PendingRecordedTranscript")
+                UserDefaults.standard.removeObject(forKey: "PendingRecordedTitle")
+                UserDefaults.standard.removeObject(forKey: "PendingRecordedDate")
+                UserDefaults.standard.removeObject(forKey: "PendingRecordedDuration")
+                
+                print("📝 Loaded recorded transcript: \(transcriptText.prefix(100))...")
+            } else {
+                // Normal import flow
+                transcriptText = ""
+                processedTranscript = nil
+                isFromRecording = false
+            }
+        }
+    }
+    
+    // MARK: - Helper Functions
+    
+    private func formatDate(_ date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.dateStyle = .medium
+        formatter.timeStyle = .short
+        return formatter.string(from: date)
+    }
+    
+    private func formatDuration(_ duration: TimeInterval) -> String {
+        let hours = Int(duration) / 3600
+        let minutes = (Int(duration) % 3600) / 60
+        let seconds = Int(duration) % 60
+        
+        if hours > 0 {
+            return String(format: "%02d:%02d:%02d", hours, minutes, seconds)
+        } else {
+            return String(format: "%02d:%02d", minutes, seconds)
         }
     }
 }

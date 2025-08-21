@@ -1,0 +1,668 @@
+{
+  "" : {
+    "diagnostics" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/Down-master.dia",
+    "emit-module-dependencies" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/Down-master-emit-module.d",
+    "emit-module-diagnostics" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/Down-master-emit-module.dia",
+    "swift-dependencies" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/Down-master.swiftdeps"
+  },
+  "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/Sources/Down/AST/Nodes/BaseNode.swift" : {
+    "const-values" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/BaseNode.swiftconstvalues",
+    "dependencies" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/BaseNode.d",
+    "diagnostics" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/BaseNode.dia",
+    "index-unit-output-path" : "/Down.build/Debug/Down.build/Objects-normal/arm64/BaseNode.o",
+    "llvm-bc" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/BaseNode.bc",
+    "object" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/BaseNode.o",
+    "swift-dependencies" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/BaseNode.swiftdeps",
+    "swiftmodule" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/BaseNode~partial.swiftmodule"
+  },
+  "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/Sources/Down/AST/Nodes/BlockQuote.swift" : {
+    "const-values" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/BlockQuote.swiftconstvalues",
+    "dependencies" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/BlockQuote.d",
+    "diagnostics" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/BlockQuote.dia",
+    "index-unit-output-path" : "/Down.build/Debug/Down.build/Objects-normal/arm64/BlockQuote.o",
+    "llvm-bc" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/BlockQuote.bc",
+    "object" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/BlockQuote.o",
+    "swift-dependencies" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/BlockQuote.swiftdeps",
+    "swiftmodule" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/BlockQuote~partial.swiftmodule"
+  },
+  "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/Sources/Down/AST/Nodes/ChildSequence.swift" : {
+    "const-values" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/ChildSequence.swiftconstvalues",
+    "dependencies" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/ChildSequence.d",
+    "diagnostics" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/ChildSequence.dia",
+    "index-unit-output-path" : "/Down.build/Debug/Down.build/Objects-normal/arm64/ChildSequence.o",
+    "llvm-bc" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/ChildSequence.bc",
+    "object" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/ChildSequence.o",
+    "swift-dependencies" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/ChildSequence.swiftdeps",
+    "swiftmodule" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/ChildSequence~partial.swiftmodule"
+  },
+  "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/Sources/Down/AST/Nodes/Code.swift" : {
+    "const-values" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/Code.swiftconstvalues",
+    "dependencies" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/Code.d",
+    "diagnostics" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/Code.dia",
+    "index-unit-output-path" : "/Down.build/Debug/Down.build/Objects-normal/arm64/Code.o",
+    "llvm-bc" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/Code.bc",
+    "object" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/Code.o",
+    "swift-dependencies" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/Code.swiftdeps",
+    "swiftmodule" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/Code~partial.swiftmodule"
+  },
+  "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/Sources/Down/AST/Nodes/CodeBlock.swift" : {
+    "const-values" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/CodeBlock.swiftconstvalues",
+    "dependencies" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/CodeBlock.d",
+    "diagnostics" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/CodeBlock.dia",
+    "index-unit-output-path" : "/Down.build/Debug/Down.build/Objects-normal/arm64/CodeBlock.o",
+    "llvm-bc" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/CodeBlock.bc",
+    "object" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/CodeBlock.o",
+    "swift-dependencies" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/CodeBlock.swiftdeps",
+    "swiftmodule" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/CodeBlock~partial.swiftmodule"
+  },
+  "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/Sources/Down/AST/Nodes/CustomBlock.swift" : {
+    "const-values" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/CustomBlock.swiftconstvalues",
+    "dependencies" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/CustomBlock.d",
+    "diagnostics" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/CustomBlock.dia",
+    "index-unit-output-path" : "/Down.build/Debug/Down.build/Objects-normal/arm64/CustomBlock.o",
+    "llvm-bc" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/CustomBlock.bc",
+    "object" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/CustomBlock.o",
+    "swift-dependencies" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/CustomBlock.swiftdeps",
+    "swiftmodule" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/CustomBlock~partial.swiftmodule"
+  },
+  "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/Sources/Down/AST/Nodes/CustomInline.swift" : {
+    "const-values" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/CustomInline.swiftconstvalues",
+    "dependencies" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/CustomInline.d",
+    "diagnostics" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/CustomInline.dia",
+    "index-unit-output-path" : "/Down.build/Debug/Down.build/Objects-normal/arm64/CustomInline.o",
+    "llvm-bc" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/CustomInline.bc",
+    "object" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/CustomInline.o",
+    "swift-dependencies" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/CustomInline.swiftdeps",
+    "swiftmodule" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/CustomInline~partial.swiftmodule"
+  },
+  "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/Sources/Down/AST/Nodes/Document.swift" : {
+    "const-values" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/Document.swiftconstvalues",
+    "dependencies" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/Document.d",
+    "diagnostics" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/Document.dia",
+    "index-unit-output-path" : "/Down.build/Debug/Down.build/Objects-normal/arm64/Document.o",
+    "llvm-bc" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/Document.bc",
+    "object" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/Document.o",
+    "swift-dependencies" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/Document.swiftdeps",
+    "swiftmodule" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/Document~partial.swiftmodule"
+  },
+  "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/Sources/Down/AST/Nodes/Emphasis.swift" : {
+    "const-values" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/Emphasis.swiftconstvalues",
+    "dependencies" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/Emphasis.d",
+    "diagnostics" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/Emphasis.dia",
+    "index-unit-output-path" : "/Down.build/Debug/Down.build/Objects-normal/arm64/Emphasis.o",
+    "llvm-bc" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/Emphasis.bc",
+    "object" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/Emphasis.o",
+    "swift-dependencies" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/Emphasis.swiftdeps",
+    "swiftmodule" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/Emphasis~partial.swiftmodule"
+  },
+  "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/Sources/Down/AST/Nodes/Heading.swift" : {
+    "const-values" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/Heading.swiftconstvalues",
+    "dependencies" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/Heading.d",
+    "diagnostics" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/Heading.dia",
+    "index-unit-output-path" : "/Down.build/Debug/Down.build/Objects-normal/arm64/Heading.o",
+    "llvm-bc" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/Heading.bc",
+    "object" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/Heading.o",
+    "swift-dependencies" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/Heading.swiftdeps",
+    "swiftmodule" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/Heading~partial.swiftmodule"
+  },
+  "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/Sources/Down/AST/Nodes/HtmlBlock.swift" : {
+    "const-values" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/HtmlBlock.swiftconstvalues",
+    "dependencies" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/HtmlBlock.d",
+    "diagnostics" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/HtmlBlock.dia",
+    "index-unit-output-path" : "/Down.build/Debug/Down.build/Objects-normal/arm64/HtmlBlock.o",
+    "llvm-bc" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/HtmlBlock.bc",
+    "object" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/HtmlBlock.o",
+    "swift-dependencies" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/HtmlBlock.swiftdeps",
+    "swiftmodule" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/HtmlBlock~partial.swiftmodule"
+  },
+  "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/Sources/Down/AST/Nodes/HtmlInline.swift" : {
+    "const-values" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/HtmlInline.swiftconstvalues",
+    "dependencies" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/HtmlInline.d",
+    "diagnostics" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/HtmlInline.dia",
+    "index-unit-output-path" : "/Down.build/Debug/Down.build/Objects-normal/arm64/HtmlInline.o",
+    "llvm-bc" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/HtmlInline.bc",
+    "object" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/HtmlInline.o",
+    "swift-dependencies" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/HtmlInline.swiftdeps",
+    "swiftmodule" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/HtmlInline~partial.swiftmodule"
+  },
+  "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/Sources/Down/AST/Nodes/Image.swift" : {
+    "const-values" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/Image.swiftconstvalues",
+    "dependencies" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/Image.d",
+    "diagnostics" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/Image.dia",
+    "index-unit-output-path" : "/Down.build/Debug/Down.build/Objects-normal/arm64/Image.o",
+    "llvm-bc" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/Image.bc",
+    "object" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/Image.o",
+    "swift-dependencies" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/Image.swiftdeps",
+    "swiftmodule" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/Image~partial.swiftmodule"
+  },
+  "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/Sources/Down/AST/Nodes/Item.swift" : {
+    "const-values" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/Item.swiftconstvalues",
+    "dependencies" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/Item.d",
+    "diagnostics" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/Item.dia",
+    "index-unit-output-path" : "/Down.build/Debug/Down.build/Objects-normal/arm64/Item.o",
+    "llvm-bc" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/Item.bc",
+    "object" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/Item.o",
+    "swift-dependencies" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/Item.swiftdeps",
+    "swiftmodule" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/Item~partial.swiftmodule"
+  },
+  "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/Sources/Down/AST/Nodes/LineBreak.swift" : {
+    "const-values" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/LineBreak.swiftconstvalues",
+    "dependencies" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/LineBreak.d",
+    "diagnostics" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/LineBreak.dia",
+    "index-unit-output-path" : "/Down.build/Debug/Down.build/Objects-normal/arm64/LineBreak.o",
+    "llvm-bc" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/LineBreak.bc",
+    "object" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/LineBreak.o",
+    "swift-dependencies" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/LineBreak.swiftdeps",
+    "swiftmodule" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/LineBreak~partial.swiftmodule"
+  },
+  "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/Sources/Down/AST/Nodes/Link.swift" : {
+    "const-values" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/Link.swiftconstvalues",
+    "dependencies" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/Link.d",
+    "diagnostics" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/Link.dia",
+    "index-unit-output-path" : "/Down.build/Debug/Down.build/Objects-normal/arm64/Link.o",
+    "llvm-bc" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/Link.bc",
+    "object" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/Link.o",
+    "swift-dependencies" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/Link.swiftdeps",
+    "swiftmodule" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/Link~partial.swiftmodule"
+  },
+  "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/Sources/Down/AST/Nodes/List.swift" : {
+    "const-values" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/List.swiftconstvalues",
+    "dependencies" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/List.d",
+    "diagnostics" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/List.dia",
+    "index-unit-output-path" : "/Down.build/Debug/Down.build/Objects-normal/arm64/List.o",
+    "llvm-bc" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/List.bc",
+    "object" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/List.o",
+    "swift-dependencies" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/List.swiftdeps",
+    "swiftmodule" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/List~partial.swiftmodule"
+  },
+  "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/Sources/Down/AST/Nodes/Node.swift" : {
+    "const-values" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/Node.swiftconstvalues",
+    "dependencies" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/Node.d",
+    "diagnostics" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/Node.dia",
+    "index-unit-output-path" : "/Down.build/Debug/Down.build/Objects-normal/arm64/Node.o",
+    "llvm-bc" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/Node.bc",
+    "object" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/Node.o",
+    "swift-dependencies" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/Node.swiftdeps",
+    "swiftmodule" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/Node~partial.swiftmodule"
+  },
+  "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/Sources/Down/AST/Nodes/Paragraph.swift" : {
+    "const-values" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/Paragraph.swiftconstvalues",
+    "dependencies" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/Paragraph.d",
+    "diagnostics" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/Paragraph.dia",
+    "index-unit-output-path" : "/Down.build/Debug/Down.build/Objects-normal/arm64/Paragraph.o",
+    "llvm-bc" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/Paragraph.bc",
+    "object" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/Paragraph.o",
+    "swift-dependencies" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/Paragraph.swiftdeps",
+    "swiftmodule" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/Paragraph~partial.swiftmodule"
+  },
+  "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/Sources/Down/AST/Nodes/SoftBreak.swift" : {
+    "const-values" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/SoftBreak.swiftconstvalues",
+    "dependencies" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/SoftBreak.d",
+    "diagnostics" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/SoftBreak.dia",
+    "index-unit-output-path" : "/Down.build/Debug/Down.build/Objects-normal/arm64/SoftBreak.o",
+    "llvm-bc" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/SoftBreak.bc",
+    "object" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/SoftBreak.o",
+    "swift-dependencies" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/SoftBreak.swiftdeps",
+    "swiftmodule" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/SoftBreak~partial.swiftmodule"
+  },
+  "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/Sources/Down/AST/Nodes/Strong.swift" : {
+    "const-values" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/Strong.swiftconstvalues",
+    "dependencies" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/Strong.d",
+    "diagnostics" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/Strong.dia",
+    "index-unit-output-path" : "/Down.build/Debug/Down.build/Objects-normal/arm64/Strong.o",
+    "llvm-bc" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/Strong.bc",
+    "object" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/Strong.o",
+    "swift-dependencies" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/Strong.swiftdeps",
+    "swiftmodule" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/Strong~partial.swiftmodule"
+  },
+  "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/Sources/Down/AST/Nodes/Text.swift" : {
+    "const-values" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/Text.swiftconstvalues",
+    "dependencies" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/Text.d",
+    "diagnostics" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/Text.dia",
+    "index-unit-output-path" : "/Down.build/Debug/Down.build/Objects-normal/arm64/Text.o",
+    "llvm-bc" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/Text.bc",
+    "object" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/Text.o",
+    "swift-dependencies" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/Text.swiftdeps",
+    "swiftmodule" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/Text~partial.swiftmodule"
+  },
+  "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/Sources/Down/AST/Nodes/ThematicBreak.swift" : {
+    "const-values" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/ThematicBreak.swiftconstvalues",
+    "dependencies" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/ThematicBreak.d",
+    "diagnostics" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/ThematicBreak.dia",
+    "index-unit-output-path" : "/Down.build/Debug/Down.build/Objects-normal/arm64/ThematicBreak.o",
+    "llvm-bc" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/ThematicBreak.bc",
+    "object" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/ThematicBreak.o",
+    "swift-dependencies" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/ThematicBreak.swiftdeps",
+    "swiftmodule" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/ThematicBreak~partial.swiftmodule"
+  },
+  "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/Sources/Down/AST/Styling/Attribute Collections/ColorCollection.swift" : {
+    "const-values" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/ColorCollection.swiftconstvalues",
+    "dependencies" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/ColorCollection.d",
+    "diagnostics" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/ColorCollection.dia",
+    "index-unit-output-path" : "/Down.build/Debug/Down.build/Objects-normal/arm64/ColorCollection.o",
+    "llvm-bc" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/ColorCollection.bc",
+    "object" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/ColorCollection.o",
+    "swift-dependencies" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/ColorCollection.swiftdeps",
+    "swiftmodule" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/ColorCollection~partial.swiftmodule"
+  },
+  "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/Sources/Down/AST/Styling/Attribute Collections/FontCollection.swift" : {
+    "const-values" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/FontCollection.swiftconstvalues",
+    "dependencies" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/FontCollection.d",
+    "diagnostics" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/FontCollection.dia",
+    "index-unit-output-path" : "/Down.build/Debug/Down.build/Objects-normal/arm64/FontCollection.o",
+    "llvm-bc" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/FontCollection.bc",
+    "object" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/FontCollection.o",
+    "swift-dependencies" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/FontCollection.swiftdeps",
+    "swiftmodule" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/FontCollection~partial.swiftmodule"
+  },
+  "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/Sources/Down/AST/Styling/Attribute Collections/ParagraphStyleCollection.swift" : {
+    "const-values" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/ParagraphStyleCollection.swiftconstvalues",
+    "dependencies" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/ParagraphStyleCollection.d",
+    "diagnostics" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/ParagraphStyleCollection.dia",
+    "index-unit-output-path" : "/Down.build/Debug/Down.build/Objects-normal/arm64/ParagraphStyleCollection.o",
+    "llvm-bc" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/ParagraphStyleCollection.bc",
+    "object" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/ParagraphStyleCollection.o",
+    "swift-dependencies" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/ParagraphStyleCollection.swiftdeps",
+    "swiftmodule" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/ParagraphStyleCollection~partial.swiftmodule"
+  },
+  "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/Sources/Down/AST/Styling/Custom Attributes/BlockBackgroundColorAttribute.swift" : {
+    "const-values" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/BlockBackgroundColorAttribute.swiftconstvalues",
+    "dependencies" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/BlockBackgroundColorAttribute.d",
+    "diagnostics" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/BlockBackgroundColorAttribute.dia",
+    "index-unit-output-path" : "/Down.build/Debug/Down.build/Objects-normal/arm64/BlockBackgroundColorAttribute.o",
+    "llvm-bc" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/BlockBackgroundColorAttribute.bc",
+    "object" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/BlockBackgroundColorAttribute.o",
+    "swift-dependencies" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/BlockBackgroundColorAttribute.swiftdeps",
+    "swiftmodule" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/BlockBackgroundColorAttribute~partial.swiftmodule"
+  },
+  "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/Sources/Down/AST/Styling/Custom Attributes/QuoteStripeAttribute.swift" : {
+    "const-values" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/QuoteStripeAttribute.swiftconstvalues",
+    "dependencies" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/QuoteStripeAttribute.d",
+    "diagnostics" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/QuoteStripeAttribute.dia",
+    "index-unit-output-path" : "/Down.build/Debug/Down.build/Objects-normal/arm64/QuoteStripeAttribute.o",
+    "llvm-bc" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/QuoteStripeAttribute.bc",
+    "object" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/QuoteStripeAttribute.o",
+    "swift-dependencies" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/QuoteStripeAttribute.swiftdeps",
+    "swiftmodule" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/QuoteStripeAttribute~partial.swiftmodule"
+  },
+  "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/Sources/Down/AST/Styling/Custom Attributes/ThematicBreakAttribute.swift" : {
+    "const-values" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/ThematicBreakAttribute.swiftconstvalues",
+    "dependencies" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/ThematicBreakAttribute.d",
+    "diagnostics" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/ThematicBreakAttribute.dia",
+    "index-unit-output-path" : "/Down.build/Debug/Down.build/Objects-normal/arm64/ThematicBreakAttribute.o",
+    "llvm-bc" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/ThematicBreakAttribute.bc",
+    "object" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/ThematicBreakAttribute.o",
+    "swift-dependencies" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/ThematicBreakAttribute.swiftdeps",
+    "swiftmodule" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/ThematicBreakAttribute~partial.swiftmodule"
+  },
+  "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/Sources/Down/AST/Styling/Helpers/Extensions/CGPoint+Translate.swift" : {
+    "const-values" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/CGPoint+Translate.swiftconstvalues",
+    "dependencies" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/CGPoint+Translate.d",
+    "diagnostics" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/CGPoint+Translate.dia",
+    "index-unit-output-path" : "/Down.build/Debug/Down.build/Objects-normal/arm64/CGPoint+Translate.o",
+    "llvm-bc" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/CGPoint+Translate.bc",
+    "object" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/CGPoint+Translate.o",
+    "swift-dependencies" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/CGPoint+Translate.swiftdeps",
+    "swiftmodule" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/CGPoint+Translate~partial.swiftmodule"
+  },
+  "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/Sources/Down/AST/Styling/Helpers/Extensions/CGRect+Helpers.swift" : {
+    "const-values" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/CGRect+Helpers.swiftconstvalues",
+    "dependencies" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/CGRect+Helpers.d",
+    "diagnostics" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/CGRect+Helpers.dia",
+    "index-unit-output-path" : "/Down.build/Debug/Down.build/Objects-normal/arm64/CGRect+Helpers.o",
+    "llvm-bc" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/CGRect+Helpers.bc",
+    "object" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/CGRect+Helpers.o",
+    "swift-dependencies" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/CGRect+Helpers.swiftdeps",
+    "swiftmodule" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/CGRect+Helpers~partial.swiftmodule"
+  },
+  "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/Sources/Down/AST/Styling/Helpers/Extensions/NSAttributedString+Helpers.swift" : {
+    "const-values" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/NSAttributedString+Helpers.swiftconstvalues",
+    "dependencies" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/NSAttributedString+Helpers.d",
+    "diagnostics" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/NSAttributedString+Helpers.dia",
+    "index-unit-output-path" : "/Down.build/Debug/Down.build/Objects-normal/arm64/NSAttributedString+Helpers.o",
+    "llvm-bc" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/NSAttributedString+Helpers.bc",
+    "object" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/NSAttributedString+Helpers.o",
+    "swift-dependencies" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/NSAttributedString+Helpers.swiftdeps",
+    "swiftmodule" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/NSAttributedString+Helpers~partial.swiftmodule"
+  },
+  "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/Sources/Down/AST/Styling/Helpers/Extensions/NSMutableAttributedString+Attributes.swift" : {
+    "const-values" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/NSMutableAttributedString+Attributes.swiftconstvalues",
+    "dependencies" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/NSMutableAttributedString+Attributes.d",
+    "diagnostics" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/NSMutableAttributedString+Attributes.dia",
+    "index-unit-output-path" : "/Down.build/Debug/Down.build/Objects-normal/arm64/NSMutableAttributedString+Attributes.o",
+    "llvm-bc" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/NSMutableAttributedString+Attributes.bc",
+    "object" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/NSMutableAttributedString+Attributes.o",
+    "swift-dependencies" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/NSMutableAttributedString+Attributes.swiftdeps",
+    "swiftmodule" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/NSMutableAttributedString+Attributes~partial.swiftmodule"
+  },
+  "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/Sources/Down/AST/Styling/Helpers/Extensions/UIFont+Traits.swift" : {
+    "const-values" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/UIFont+Traits.swiftconstvalues",
+    "dependencies" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/UIFont+Traits.d",
+    "diagnostics" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/UIFont+Traits.dia",
+    "index-unit-output-path" : "/Down.build/Debug/Down.build/Objects-normal/arm64/UIFont+Traits.o",
+    "llvm-bc" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/UIFont+Traits.bc",
+    "object" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/UIFont+Traits.o",
+    "swift-dependencies" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/UIFont+Traits.swiftdeps",
+    "swiftmodule" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/UIFont+Traits~partial.swiftmodule"
+  },
+  "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/Sources/Down/AST/Styling/Helpers/ListItemParagraphStyler.swift" : {
+    "const-values" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/ListItemParagraphStyler.swiftconstvalues",
+    "dependencies" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/ListItemParagraphStyler.d",
+    "diagnostics" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/ListItemParagraphStyler.dia",
+    "index-unit-output-path" : "/Down.build/Debug/Down.build/Objects-normal/arm64/ListItemParagraphStyler.o",
+    "llvm-bc" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/ListItemParagraphStyler.bc",
+    "object" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/ListItemParagraphStyler.o",
+    "swift-dependencies" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/ListItemParagraphStyler.swiftdeps",
+    "swiftmodule" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/ListItemParagraphStyler~partial.swiftmodule"
+  },
+  "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/Sources/Down/AST/Styling/Layout Managers/DownDebugLayoutManager.swift" : {
+    "const-values" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/DownDebugLayoutManager.swiftconstvalues",
+    "dependencies" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/DownDebugLayoutManager.d",
+    "diagnostics" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/DownDebugLayoutManager.dia",
+    "index-unit-output-path" : "/Down.build/Debug/Down.build/Objects-normal/arm64/DownDebugLayoutManager.o",
+    "llvm-bc" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/DownDebugLayoutManager.bc",
+    "object" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/DownDebugLayoutManager.o",
+    "swift-dependencies" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/DownDebugLayoutManager.swiftdeps",
+    "swiftmodule" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/DownDebugLayoutManager~partial.swiftmodule"
+  },
+  "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/Sources/Down/AST/Styling/Layout Managers/DownLayoutManager.swift" : {
+    "const-values" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/DownLayoutManager.swiftconstvalues",
+    "dependencies" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/DownLayoutManager.d",
+    "diagnostics" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/DownLayoutManager.dia",
+    "index-unit-output-path" : "/Down.build/Debug/Down.build/Objects-normal/arm64/DownLayoutManager.o",
+    "llvm-bc" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/DownLayoutManager.bc",
+    "object" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/DownLayoutManager.o",
+    "swift-dependencies" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/DownLayoutManager.swiftdeps",
+    "swiftmodule" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/DownLayoutManager~partial.swiftmodule"
+  },
+  "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/Sources/Down/AST/Styling/Options/CodeBlockOptions.swift" : {
+    "const-values" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/CodeBlockOptions.swiftconstvalues",
+    "dependencies" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/CodeBlockOptions.d",
+    "diagnostics" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/CodeBlockOptions.dia",
+    "index-unit-output-path" : "/Down.build/Debug/Down.build/Objects-normal/arm64/CodeBlockOptions.o",
+    "llvm-bc" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/CodeBlockOptions.bc",
+    "object" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/CodeBlockOptions.o",
+    "swift-dependencies" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/CodeBlockOptions.swiftdeps",
+    "swiftmodule" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/CodeBlockOptions~partial.swiftmodule"
+  },
+  "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/Sources/Down/AST/Styling/Options/ListItemOptions.swift" : {
+    "const-values" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/ListItemOptions.swiftconstvalues",
+    "dependencies" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/ListItemOptions.d",
+    "diagnostics" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/ListItemOptions.dia",
+    "index-unit-output-path" : "/Down.build/Debug/Down.build/Objects-normal/arm64/ListItemOptions.o",
+    "llvm-bc" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/ListItemOptions.bc",
+    "object" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/ListItemOptions.o",
+    "swift-dependencies" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/ListItemOptions.swiftdeps",
+    "swiftmodule" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/ListItemOptions~partial.swiftmodule"
+  },
+  "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/Sources/Down/AST/Styling/Options/QuoteStripeOptions.swift" : {
+    "const-values" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/QuoteStripeOptions.swiftconstvalues",
+    "dependencies" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/QuoteStripeOptions.d",
+    "diagnostics" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/QuoteStripeOptions.dia",
+    "index-unit-output-path" : "/Down.build/Debug/Down.build/Objects-normal/arm64/QuoteStripeOptions.o",
+    "llvm-bc" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/QuoteStripeOptions.bc",
+    "object" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/QuoteStripeOptions.o",
+    "swift-dependencies" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/QuoteStripeOptions.swiftdeps",
+    "swiftmodule" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/QuoteStripeOptions~partial.swiftmodule"
+  },
+  "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/Sources/Down/AST/Styling/Options/ThematicBreakOptions.swift" : {
+    "const-values" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/ThematicBreakOptions.swiftconstvalues",
+    "dependencies" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/ThematicBreakOptions.d",
+    "diagnostics" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/ThematicBreakOptions.dia",
+    "index-unit-output-path" : "/Down.build/Debug/Down.build/Objects-normal/arm64/ThematicBreakOptions.o",
+    "llvm-bc" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/ThematicBreakOptions.bc",
+    "object" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/ThematicBreakOptions.o",
+    "swift-dependencies" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/ThematicBreakOptions.swiftdeps",
+    "swiftmodule" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/ThematicBreakOptions~partial.swiftmodule"
+  },
+  "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/Sources/Down/AST/Styling/Stylers/DownStyler.swift" : {
+    "const-values" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/DownStyler.swiftconstvalues",
+    "dependencies" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/DownStyler.d",
+    "diagnostics" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/DownStyler.dia",
+    "index-unit-output-path" : "/Down.build/Debug/Down.build/Objects-normal/arm64/DownStyler.o",
+    "llvm-bc" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/DownStyler.bc",
+    "object" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/DownStyler.o",
+    "swift-dependencies" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/DownStyler.swiftdeps",
+    "swiftmodule" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/DownStyler~partial.swiftmodule"
+  },
+  "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/Sources/Down/AST/Styling/Stylers/DownStylerConfiguration.swift" : {
+    "const-values" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/DownStylerConfiguration.swiftconstvalues",
+    "dependencies" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/DownStylerConfiguration.d",
+    "diagnostics" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/DownStylerConfiguration.dia",
+    "index-unit-output-path" : "/Down.build/Debug/Down.build/Objects-normal/arm64/DownStylerConfiguration.o",
+    "llvm-bc" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/DownStylerConfiguration.bc",
+    "object" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/DownStylerConfiguration.o",
+    "swift-dependencies" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/DownStylerConfiguration.swiftdeps",
+    "swiftmodule" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/DownStylerConfiguration~partial.swiftmodule"
+  },
+  "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/Sources/Down/AST/Styling/Stylers/Styler.swift" : {
+    "const-values" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/Styler.swiftconstvalues",
+    "dependencies" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/Styler.d",
+    "diagnostics" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/Styler.dia",
+    "index-unit-output-path" : "/Down.build/Debug/Down.build/Objects-normal/arm64/Styler.o",
+    "llvm-bc" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/Styler.bc",
+    "object" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/Styler.o",
+    "swift-dependencies" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/Styler.swiftdeps",
+    "swiftmodule" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/Styler~partial.swiftmodule"
+  },
+  "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/Sources/Down/AST/Styling/Text Views/DownDebugTextView.swift" : {
+    "const-values" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/DownDebugTextView.swiftconstvalues",
+    "dependencies" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/DownDebugTextView.d",
+    "diagnostics" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/DownDebugTextView.dia",
+    "index-unit-output-path" : "/Down.build/Debug/Down.build/Objects-normal/arm64/DownDebugTextView.o",
+    "llvm-bc" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/DownDebugTextView.bc",
+    "object" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/DownDebugTextView.o",
+    "swift-dependencies" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/DownDebugTextView.swiftdeps",
+    "swiftmodule" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/DownDebugTextView~partial.swiftmodule"
+  },
+  "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/Sources/Down/AST/Styling/Text Views/DownTextView.swift" : {
+    "const-values" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/DownTextView.swiftconstvalues",
+    "dependencies" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/DownTextView.d",
+    "diagnostics" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/DownTextView.dia",
+    "index-unit-output-path" : "/Down.build/Debug/Down.build/Objects-normal/arm64/DownTextView.o",
+    "llvm-bc" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/DownTextView.bc",
+    "object" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/DownTextView.o",
+    "swift-dependencies" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/DownTextView.swiftdeps",
+    "swiftmodule" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/DownTextView~partial.swiftmodule"
+  },
+  "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/Sources/Down/AST/Visitors/AttributedStringVisitor.swift" : {
+    "const-values" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/AttributedStringVisitor.swiftconstvalues",
+    "dependencies" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/AttributedStringVisitor.d",
+    "diagnostics" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/AttributedStringVisitor.dia",
+    "index-unit-output-path" : "/Down.build/Debug/Down.build/Objects-normal/arm64/AttributedStringVisitor.o",
+    "llvm-bc" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/AttributedStringVisitor.bc",
+    "object" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/AttributedStringVisitor.o",
+    "swift-dependencies" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/AttributedStringVisitor.swiftdeps",
+    "swiftmodule" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/AttributedStringVisitor~partial.swiftmodule"
+  },
+  "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/Sources/Down/AST/Visitors/DebugVisitor.swift" : {
+    "const-values" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/DebugVisitor.swiftconstvalues",
+    "dependencies" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/DebugVisitor.d",
+    "diagnostics" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/DebugVisitor.dia",
+    "index-unit-output-path" : "/Down.build/Debug/Down.build/Objects-normal/arm64/DebugVisitor.o",
+    "llvm-bc" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/DebugVisitor.bc",
+    "object" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/DebugVisitor.o",
+    "swift-dependencies" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/DebugVisitor.swiftdeps",
+    "swiftmodule" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/DebugVisitor~partial.swiftmodule"
+  },
+  "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/Sources/Down/AST/Visitors/ListItemPrefixGenerator.swift" : {
+    "const-values" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/ListItemPrefixGenerator.swiftconstvalues",
+    "dependencies" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/ListItemPrefixGenerator.d",
+    "diagnostics" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/ListItemPrefixGenerator.dia",
+    "index-unit-output-path" : "/Down.build/Debug/Down.build/Objects-normal/arm64/ListItemPrefixGenerator.o",
+    "llvm-bc" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/ListItemPrefixGenerator.bc",
+    "object" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/ListItemPrefixGenerator.o",
+    "swift-dependencies" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/ListItemPrefixGenerator.swiftdeps",
+    "swiftmodule" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/ListItemPrefixGenerator~partial.swiftmodule"
+  },
+  "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/Sources/Down/AST/Visitors/Visitor.swift" : {
+    "const-values" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/Visitor.swiftconstvalues",
+    "dependencies" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/Visitor.d",
+    "diagnostics" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/Visitor.dia",
+    "index-unit-output-path" : "/Down.build/Debug/Down.build/Objects-normal/arm64/Visitor.o",
+    "llvm-bc" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/Visitor.bc",
+    "object" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/Visitor.o",
+    "swift-dependencies" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/Visitor.swiftdeps",
+    "swiftmodule" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/Visitor~partial.swiftmodule"
+  },
+  "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/Sources/Down/Down.swift" : {
+    "const-values" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/Down.swiftconstvalues",
+    "dependencies" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/Down.d",
+    "diagnostics" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/Down.dia",
+    "index-unit-output-path" : "/Down.build/Debug/Down.build/Objects-normal/arm64/Down.o",
+    "llvm-bc" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/Down.bc",
+    "object" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/Down.o",
+    "swift-dependencies" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/Down.swiftdeps",
+    "swiftmodule" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/Down~partial.swiftmodule"
+  },
+  "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/Sources/Down/Enums & Options/DownErrors.swift" : {
+    "const-values" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/DownErrors.swiftconstvalues",
+    "dependencies" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/DownErrors.d",
+    "diagnostics" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/DownErrors.dia",
+    "index-unit-output-path" : "/Down.build/Debug/Down.build/Objects-normal/arm64/DownErrors.o",
+    "llvm-bc" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/DownErrors.bc",
+    "object" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/DownErrors.o",
+    "swift-dependencies" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/DownErrors.swiftdeps",
+    "swiftmodule" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/DownErrors~partial.swiftmodule"
+  },
+  "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/Sources/Down/Enums & Options/DownOptions.swift" : {
+    "const-values" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/DownOptions.swiftconstvalues",
+    "dependencies" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/DownOptions.d",
+    "diagnostics" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/DownOptions.dia",
+    "index-unit-output-path" : "/Down.build/Debug/Down.build/Objects-normal/arm64/DownOptions.o",
+    "llvm-bc" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/DownOptions.bc",
+    "object" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/DownOptions.o",
+    "swift-dependencies" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/DownOptions.swiftdeps",
+    "swiftmodule" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/DownOptions~partial.swiftmodule"
+  },
+  "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/Sources/Down/Extensions/NSAttributedString+HTML.swift" : {
+    "const-values" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/NSAttributedString+HTML.swiftconstvalues",
+    "dependencies" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/NSAttributedString+HTML.d",
+    "diagnostics" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/NSAttributedString+HTML.dia",
+    "index-unit-output-path" : "/Down.build/Debug/Down.build/Objects-normal/arm64/NSAttributedString+HTML.o",
+    "llvm-bc" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/NSAttributedString+HTML.bc",
+    "object" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/NSAttributedString+HTML.o",
+    "swift-dependencies" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/NSAttributedString+HTML.swiftdeps",
+    "swiftmodule" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/NSAttributedString+HTML~partial.swiftmodule"
+  },
+  "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/Sources/Down/Extensions/String+ToHTML.swift" : {
+    "const-values" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/String+ToHTML.swiftconstvalues",
+    "dependencies" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/String+ToHTML.d",
+    "diagnostics" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/String+ToHTML.dia",
+    "index-unit-output-path" : "/Down.build/Debug/Down.build/Objects-normal/arm64/String+ToHTML.o",
+    "llvm-bc" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/String+ToHTML.bc",
+    "object" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/String+ToHTML.o",
+    "swift-dependencies" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/String+ToHTML.swiftdeps",
+    "swiftmodule" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/String+ToHTML~partial.swiftmodule"
+  },
+  "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/Sources/Down/Renderers/DownASTRenderable.swift" : {
+    "const-values" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/DownASTRenderable.swiftconstvalues",
+    "dependencies" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/DownASTRenderable.d",
+    "diagnostics" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/DownASTRenderable.dia",
+    "index-unit-output-path" : "/Down.build/Debug/Down.build/Objects-normal/arm64/DownASTRenderable.o",
+    "llvm-bc" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/DownASTRenderable.bc",
+    "object" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/DownASTRenderable.o",
+    "swift-dependencies" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/DownASTRenderable.swiftdeps",
+    "swiftmodule" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/DownASTRenderable~partial.swiftmodule"
+  },
+  "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/Sources/Down/Renderers/DownAttributedStringRenderable.swift" : {
+    "const-values" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/DownAttributedStringRenderable.swiftconstvalues",
+    "dependencies" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/DownAttributedStringRenderable.d",
+    "diagnostics" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/DownAttributedStringRenderable.dia",
+    "index-unit-output-path" : "/Down.build/Debug/Down.build/Objects-normal/arm64/DownAttributedStringRenderable.o",
+    "llvm-bc" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/DownAttributedStringRenderable.bc",
+    "object" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/DownAttributedStringRenderable.o",
+    "swift-dependencies" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/DownAttributedStringRenderable.swiftdeps",
+    "swiftmodule" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/DownAttributedStringRenderable~partial.swiftmodule"
+  },
+  "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/Sources/Down/Renderers/DownCommonMarkRenderable.swift" : {
+    "const-values" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/DownCommonMarkRenderable.swiftconstvalues",
+    "dependencies" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/DownCommonMarkRenderable.d",
+    "diagnostics" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/DownCommonMarkRenderable.dia",
+    "index-unit-output-path" : "/Down.build/Debug/Down.build/Objects-normal/arm64/DownCommonMarkRenderable.o",
+    "llvm-bc" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/DownCommonMarkRenderable.bc",
+    "object" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/DownCommonMarkRenderable.o",
+    "swift-dependencies" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/DownCommonMarkRenderable.swiftdeps",
+    "swiftmodule" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/DownCommonMarkRenderable~partial.swiftmodule"
+  },
+  "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/Sources/Down/Renderers/DownGroffRenderable.swift" : {
+    "const-values" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/DownGroffRenderable.swiftconstvalues",
+    "dependencies" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/DownGroffRenderable.d",
+    "diagnostics" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/DownGroffRenderable.dia",
+    "index-unit-output-path" : "/Down.build/Debug/Down.build/Objects-normal/arm64/DownGroffRenderable.o",
+    "llvm-bc" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/DownGroffRenderable.bc",
+    "object" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/DownGroffRenderable.o",
+    "swift-dependencies" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/DownGroffRenderable.swiftdeps",
+    "swiftmodule" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/DownGroffRenderable~partial.swiftmodule"
+  },
+  "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/Sources/Down/Renderers/DownHTMLRenderable.swift" : {
+    "const-values" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/DownHTMLRenderable.swiftconstvalues",
+    "dependencies" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/DownHTMLRenderable.d",
+    "diagnostics" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/DownHTMLRenderable.dia",
+    "index-unit-output-path" : "/Down.build/Debug/Down.build/Objects-normal/arm64/DownHTMLRenderable.o",
+    "llvm-bc" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/DownHTMLRenderable.bc",
+    "object" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/DownHTMLRenderable.o",
+    "swift-dependencies" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/DownHTMLRenderable.swiftdeps",
+    "swiftmodule" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/DownHTMLRenderable~partial.swiftmodule"
+  },
+  "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/Sources/Down/Renderers/DownLaTeXRenderable.swift" : {
+    "const-values" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/DownLaTeXRenderable.swiftconstvalues",
+    "dependencies" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/DownLaTeXRenderable.d",
+    "diagnostics" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/DownLaTeXRenderable.dia",
+    "index-unit-output-path" : "/Down.build/Debug/Down.build/Objects-normal/arm64/DownLaTeXRenderable.o",
+    "llvm-bc" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/DownLaTeXRenderable.bc",
+    "object" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/DownLaTeXRenderable.o",
+    "swift-dependencies" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/DownLaTeXRenderable.swiftdeps",
+    "swiftmodule" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/DownLaTeXRenderable~partial.swiftmodule"
+  },
+  "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/Sources/Down/Renderers/DownRenderable.swift" : {
+    "const-values" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/DownRenderable.swiftconstvalues",
+    "dependencies" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/DownRenderable.d",
+    "diagnostics" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/DownRenderable.dia",
+    "index-unit-output-path" : "/Down.build/Debug/Down.build/Objects-normal/arm64/DownRenderable.o",
+    "llvm-bc" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/DownRenderable.bc",
+    "object" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/DownRenderable.o",
+    "swift-dependencies" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/DownRenderable.swiftdeps",
+    "swiftmodule" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/DownRenderable~partial.swiftmodule"
+  },
+  "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/Sources/Down/Renderers/DownXMLRenderable.swift" : {
+    "const-values" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/DownXMLRenderable.swiftconstvalues",
+    "dependencies" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/DownXMLRenderable.d",
+    "diagnostics" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/DownXMLRenderable.dia",
+    "index-unit-output-path" : "/Down.build/Debug/Down.build/Objects-normal/arm64/DownXMLRenderable.o",
+    "llvm-bc" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/DownXMLRenderable.bc",
+    "object" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/DownXMLRenderable.o",
+    "swift-dependencies" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/DownXMLRenderable.swiftdeps",
+    "swiftmodule" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/DownXMLRenderable~partial.swiftmodule"
+  },
+  "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/Sources/Down/Views/BundleHelper.swift" : {
+    "const-values" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/BundleHelper.swiftconstvalues",
+    "dependencies" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/BundleHelper.d",
+    "diagnostics" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/BundleHelper.dia",
+    "index-unit-output-path" : "/Down.build/Debug/Down.build/Objects-normal/arm64/BundleHelper.o",
+    "llvm-bc" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/BundleHelper.bc",
+    "object" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/BundleHelper.o",
+    "swift-dependencies" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/BundleHelper.swiftdeps",
+    "swiftmodule" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/BundleHelper~partial.swiftmodule"
+  },
+  "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/Sources/Down/Views/DownView.swift" : {
+    "const-values" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/DownView.swiftconstvalues",
+    "dependencies" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/DownView.d",
+    "diagnostics" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/DownView.dia",
+    "index-unit-output-path" : "/Down.build/Debug/Down.build/Objects-normal/arm64/DownView.o",
+    "llvm-bc" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/DownView.bc",
+    "object" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/DownView.o",
+    "swift-dependencies" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/DownView.swiftdeps",
+    "swiftmodule" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/DownView~partial.swiftmodule"
+  },
+  "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/DerivedSources/resource_bundle_accessor.swift" : {
+    "const-values" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/resource_bundle_accessor.swiftconstvalues",
+    "dependencies" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/resource_bundle_accessor.d",
+    "diagnostics" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/resource_bundle_accessor.dia",
+    "index-unit-output-path" : "/Down.build/Debug/Down.build/Objects-normal/arm64/resource_bundle_accessor.o",
+    "llvm-bc" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/resource_bundle_accessor.bc",
+    "object" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/resource_bundle_accessor.o",
+    "swift-dependencies" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/resource_bundle_accessor.swiftdeps",
+    "swiftmodule" : "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/build/Down.build/Debug/Down.build/Objects-normal/arm64/resource_bundle_accessor~partial.swiftmodule"
+  }
+}

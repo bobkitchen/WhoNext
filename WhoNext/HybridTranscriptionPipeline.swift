@@ -23,7 +23,7 @@ class HybridTranscriptionPipeline: ObservableObject {
     weak var delegate: TranscriptionPipelineDelegate?
     
     // MARK: - Parakeet Components
-    private var parakeetModel: ParakeetMLXModel?
+    private var parakeetTranscriber: ParakeetMLXTranscriber?
     private let parakeetQueue = DispatchQueue(label: "com.whonext.parakeet", qos: .userInitiated)
     
     // MARK: - Whisper Components
@@ -56,13 +56,18 @@ class HybridTranscriptionPipeline: ObservableObject {
     // MARK: - Setup
     
     private func setupParakeet() {
-        // Initialize Parakeet-MLX model (placeholder for now)
-        // TODO: Integrate actual Parakeet-MLX when available
-        parakeetModel = ParakeetMLXModel()
-        print("✅ Parakeet-MLX model placeholder loaded")
+        // Initialize Parakeet transcriber
+        parakeetTranscriber = ParakeetMLXTranscriber()
         
-        // Note: Local transcription disabled until Parakeet is integrated
-        // User can control via Settings
+        Task {
+            do {
+                try await parakeetTranscriber?.loadModel()
+                print("✅ Parakeet transcriber initialized and ready")
+            } catch {
+                print("⚠️ Failed to load Parakeet model: \(error.localizedDescription)")
+                print("⚠️ Will use fallback transcription methods")
+            }
+        }
     }
     
     // MARK: - Public Methods
@@ -114,7 +119,7 @@ class HybridTranscriptionPipeline: ObservableObject {
         }
         
         // Step 1: Local transcription with Parakeet
-        if useLocalTranscription, let parakeetModel = parakeetModel {
+        if useLocalTranscription, let transcriber = parakeetTranscriber {
             await processWithParakeet(combinedBuffer, timestamp: currentSegmentStartTime)
         } else {
             // Fall back to direct Whisper processing
@@ -130,69 +135,62 @@ class HybridTranscriptionPipeline: ObservableObject {
     }
     
     private func processWithParakeet(_ buffer: AVAudioPCMBuffer, timestamp: TimeInterval) async {
-        await withCheckedContinuation { continuation in
-            parakeetQueue.async { [weak self] in
-                guard let self = self, let model = self.parakeetModel else {
-                    continuation.resume()
-                    return
-                }
-                
-                let startTime = Date()
-                
-                do {
-                    // Convert audio buffer to format required by Parakeet
-                    let audioData = self.convertBufferToData(buffer)
-                    
-                    // Run Parakeet inference
-                    let transcription = try model.transcribe(audioData)
-                    
-                    // Calculate processing speed
-                    let processingTime = Date().timeIntervalSince(startTime)
-                    let audioLength = Double(buffer.frameLength) / buffer.format.sampleRate
-                    let speed = audioLength / processingTime
-                    
-                    Task { @MainActor in
-                        self.processingSpeed = speed
-                        self.currentTranscript = transcription.text
-                    }
-                    
-                    // Create transcript segment
-                    let segment = TranscriptSegment(
-                        text: transcription.text,
-                        timestamp: timestamp,
-                        speakerID: nil,
-                        speakerName: nil,
-                        confidence: transcription.confidence,
-                        isFinalized: false
-                    )
-                    
-                    // Notify delegate
-                    Task { @MainActor in
-                        self.delegate?.transcriptionPipeline(self, didTranscribe: segment)
-                    }
-                    
-                    // Queue for Whisper refinement if enabled
-                    if self.whisperRefinementEnabled {
-                        self.queueForWhisperRefinement(buffer, segment: segment)
-                    }
-                    
-                    // Perform speaker diarization if enabled
-                    if self.speakerDiarizationEnabled {
-                        self.performSpeakerDiarization(buffer, segment: segment)
-                    }
-                    
-                    print("🦜 Parakeet transcription: \"\(transcription.text)\" (confidence: \(transcription.confidence), speed: \(String(format: "%.1fx", speed)))")
-                    
-                } catch {
-                    print("❌ Parakeet transcription failed: \(error)")
-                    // Fall back to Whisper
-                    Task {
-                        await self.processWithWhisper(buffer, timestamp: timestamp)
-                    }
-                }
-                
-                continuation.resume()
+        guard let transcriber = parakeetTranscriber else {
+            // Fallback to Whisper if Parakeet not available
+            await processWithWhisper(buffer, timestamp: timestamp)
+            return
+        }
+        
+        let startTime = Date()
+        
+        do {
+            // Convert audio buffer to format required by Parakeet
+            let audioData = self.convertBufferToData(buffer)
+            
+            // Run Parakeet inference (async)
+            let transcriptionResult = try await transcriber.transcribe(audioData)
+            
+            // Calculate processing speed
+            let processingTime = Date().timeIntervalSince(startTime)
+            let audioLength = Double(buffer.frameLength) / buffer.format.sampleRate
+            let speed = audioLength / processingTime
+            
+            await MainActor.run {
+                self.processingSpeed = speed
+                self.currentTranscript = transcriptionResult.text
             }
+            
+            // Create transcript segment
+            let segment = TranscriptSegment(
+                text: transcriptionResult.text,
+                timestamp: timestamp,
+                speakerID: nil,
+                speakerName: nil,
+                confidence: transcriptionResult.confidence,
+                isFinalized: false
+            )
+            
+            // Notify delegate
+            await MainActor.run {
+                self.delegate?.transcriptionPipeline(self, didTranscribe: segment)
+            }
+            
+            // Queue for Whisper refinement if enabled
+            if self.whisperRefinementEnabled {
+                self.queueForWhisperRefinement(buffer, segment: segment)
+            }
+            
+            // Perform speaker diarization if enabled
+            if self.speakerDiarizationEnabled {
+                self.performSpeakerDiarization(buffer, segment: segment)
+            }
+            
+            print("🦜 Parakeet transcription: \"\(transcriptionResult.text)\" (confidence: \(transcriptionResult.confidence), speed: \(String(format: "%.1fx", speed)))")
+            
+        } catch {
+            print("❌ Parakeet transcription failed: \(error)")
+            // Fall back to Whisper
+            await self.processWithWhisper(buffer, timestamp: timestamp)
         }
     }
     
@@ -285,29 +283,29 @@ class HybridTranscriptionPipeline: ObservableObject {
         speakerIdentifier.identifySpeaker(from: buffer) { [weak self] speakerID, confidence in
             guard let self = self else { return }
             
-            // Get or create participant
-            let participant: IdentifiedParticipant
-            if let existing = self.identifiedSpeakers[speakerID] {
-                participant = existing
-                participant.confidence = confidence
-            } else {
-                participant = IdentifiedParticipant()
-                participant.confidence = confidence
-                self.identifiedSpeakers[speakerID] = participant
-            }
-            
-            // Update segment with speaker info
-            var updatedSegment = segment
-            updatedSegment = TranscriptSegment(
-                text: segment.text,
-                timestamp: segment.timestamp,
-                speakerID: speakerID.uuidString,
-                speakerName: participant.displayName,
-                confidence: segment.confidence,
-                isFinalized: segment.isFinalized
-            )
-            
             Task { @MainActor in
+                // Get or create participant
+                let participant: IdentifiedParticipant
+                if let existing = self.identifiedSpeakers[speakerID] {
+                    participant = existing
+                    participant.confidence = confidence
+                } else {
+                    participant = IdentifiedParticipant()
+                    participant.confidence = confidence
+                    self.identifiedSpeakers[speakerID] = participant
+                }
+                
+                // Update segment with speaker info
+                var updatedSegment = segment
+                updatedSegment = TranscriptSegment(
+                    text: segment.text,
+                    timestamp: segment.timestamp,
+                    speakerID: speakerID.uuidString,
+                    speakerName: participant.displayName,
+                    confidence: segment.confidence,
+                    isFinalized: segment.isFinalized
+                )
+                
                 self.delegate?.transcriptionPipeline(self, didIdentifySpeaker: participant)
                 self.delegate?.transcriptionPipeline(self, didTranscribe: updatedSegment)
             }
@@ -392,18 +390,44 @@ struct PendingRefinement {
 // MARK: - Parakeet MLX Model Wrapper
 
 class ParakeetMLXModel {
-    private var model: Any? // Will be the actual MLX model
+    private let transcriber = ParakeetMLXTranscriber()
+    private var isLoaded = false
     
     init() {
-        // Placeholder initialization
+        // Initialize transcriber
+        Task {
+            do {
+                try await transcriber.loadModel()
+                isLoaded = true
+            } catch {
+                print("⚠️ ParakeetMLXModel: Failed to load model: \(error)")
+            }
+        }
     }
     
     func transcribe(_ audioData: Data) throws -> (text: String, confidence: Float) {
-        // TODO: Actual inference with MLX
-        // This is a placeholder for the actual Parakeet inference
+        // Use async transcriber in sync context
+        let semaphore = DispatchSemaphore(value: 0)
+        var result: (text: String, confidence: Float)?
+        var transcriptionError: Error?
         
-        // For now, return placeholder
-        return (text: "[Parakeet transcription placeholder]", confidence: 0.85)
+        Task {
+            do {
+                let transcriptionResult = try await transcriber.transcribe(audioData)
+                result = (text: transcriptionResult.text, confidence: transcriptionResult.confidence)
+            } catch {
+                transcriptionError = error
+            }
+            semaphore.signal()
+        }
+        
+        semaphore.wait()
+        
+        if let error = transcriptionError {
+            throw error
+        }
+        
+        return result ?? (text: "", confidence: 0.0)
     }
 }
 

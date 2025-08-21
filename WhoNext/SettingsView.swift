@@ -58,33 +58,35 @@ You are an executive assistant preparing a comprehensive pre-meeting intelligenc
 Generate a comprehensive brief that enables confident, relationship-building engagement:
 """
     @AppStorage("customSummarizationPrompt") private var customSummarizationPrompt: String = """
-You are an executive assistant creating comprehensive meeting minutes. Generate detailed, actionable meeting minutes that include:
+You are an executive assistant creating comprehensive meeting minutes. Generate detailed, actionable meeting minutes.
 
-**Meeting Overview:**
+Format your response using markdown with ## for main sections and - for bullet points:
+
+## Meeting Overview
 - Meeting purpose and context
 - Key themes and overall tone
 - Primary objectives discussed
 
-**Discussion Details:**
+## Discussion Details
 - Main points raised by each participant
 - Key decisions made and rationale
 - Areas of agreement and disagreement
 - Important insights or revelations
 - Questions raised and answers provided
 
-**Action Items & Follow-ups:**
+## Action Items & Follow-ups
 - Specific tasks assigned with owners
 - Deadlines and timelines mentioned
 - Next steps and follow-up meetings
 - Dependencies and blockers identified
 
-**Outcomes & Conclusions:**
+## Outcomes & Conclusions
 - Final decisions reached
 - Issues resolved or escalated
 - Commitments made by participants
 - Success metrics or goals established
 
-**Additional Notes:**
+## Additional Notes
 - Context for future reference
 - Relationship dynamics observed
 - Support needs identified
@@ -489,33 +491,35 @@ Pre-Meeting Brief:
                 HStack {
                     Button("Reset to Default") {
                         customSummarizationPrompt = """
-You are an executive assistant creating comprehensive meeting minutes. Generate detailed, actionable meeting minutes that include:
+You are an executive assistant creating comprehensive meeting minutes. Generate detailed, actionable meeting minutes.
 
-**Meeting Overview:**
+Format your response using markdown with ## for main sections and - for bullet points:
+
+## Meeting Overview
 - Meeting purpose and context
 - Key themes and overall tone
 - Primary objectives discussed
 
-**Discussion Details:**
+## Discussion Details
 - Main points raised by each participant
 - Key decisions made and rationale
 - Areas of agreement and disagreement
 - Important insights or revelations
 - Questions raised and answers provided
 
-**Action Items & Follow-ups:**
+## Action Items & Follow-ups
 - Specific tasks assigned with owners
 - Deadlines and timelines mentioned
 - Next steps and follow-up meetings
 - Dependencies and blockers identified
 
-**Outcomes & Conclusions:**
+## Outcomes & Conclusions
 - Final decisions reached
 - Issues resolved or escalated
 - Commitments made by participants
 - Success metrics or goals established
 
-**Additional Notes:**
+## Additional Notes
 - Context for future reference
 - Relationship dynamics observed
 - Support needs identified

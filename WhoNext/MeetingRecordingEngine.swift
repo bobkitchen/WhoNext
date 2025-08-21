@@ -4,6 +4,7 @@ import SwiftUI
 import AppKit
 import CoreData
 import EventKit
+import ScreenCaptureKit
 
 /// Main orchestrator for automatic meeting recording based on two-way audio detection
 /// Coordinates audio capture, conversation detection, recording, and transcription
@@ -34,7 +35,7 @@ class MeetingRecordingEngine: ObservableObject {
     private let audioCapture = SystemAudioCapture()
     private let twoWayDetector = TwoWayAudioDetector()
     private let storageManager = AudioStorageManager()
-    private var transcriptionPipeline: HybridTranscriptionPipeline?
+    private var modernSpeechFramework: Any? // Will hold ModernSpeechFramework if available
     private var transcriptProcessor: TranscriptProcessor?
     private let calendarService = CalendarService.shared
     
@@ -46,17 +47,48 @@ class MeetingRecordingEngine: ObservableObject {
     private let maxBufferCount = 100 // Keep last 100 buffers (~10 seconds at 100ms intervals)
     private var calendarMonitorTimer: Timer?
     private var currentCalendarEvent: UpcomingMeeting?
+    private var lastTranscriptionText: String = "" // Track the last full transcript to detect new content
     
     // MARK: - User Preferences
     @AppStorage("autoRecordEnabled") private var autoRecordPref: Bool = true
     @AppStorage("recordingConfidenceThreshold") private var confidenceThreshold: Double = 0.7
     @AppStorage("minimumMeetingDuration") private var minimumDuration: TimeInterval = 30.0
+    @AppStorage("screenRecordingPromptDismissed") private var screenRecordingPromptDismissed: Bool = false
+    @AppStorage("lastScreenRecordingPromptDate") private var lastScreenRecordingPromptDate: Double = 0
     
     // MARK: - Initialization
     private init() {
         setupDetection()
         setupNotifications()
         loadPreferences()
+        setupTranscription()
+    }
+    
+    private func setupTranscription() {
+        // Initialize modern speech framework if available
+        if #available(macOS 26.0, *) {
+            // Only create a new framework if one doesn't exist
+            if modernSpeechFramework == nil {
+                // Enable speaker diarization based on user preference
+                let enableDiarization = UserDefaults.standard.bool(forKey: "speakerDiarizationEnabled")
+                Task { @MainActor in
+                    modernSpeechFramework = ModernSpeechFramework(enableDiarization: enableDiarization)
+                    do {
+                        if let framework = modernSpeechFramework as? ModernSpeechFramework {
+                            try await framework.initialize()
+                            print("✅ Modern Speech Framework ready (SpeechAnalyzer + SpeechTranscriber)")
+                            if enableDiarization {
+                                print("👥 Speaker diarization enabled")
+                            }
+                        }
+                    } catch {
+                        print("⚠️ Failed to initialize Modern Speech Framework: \(error)")
+                    }
+                }
+            } else {
+                print("ℹ️ Modern Speech Framework already initialized")
+            }
+        }
     }
     
     // MARK: - Permission Handling
@@ -100,7 +132,156 @@ class MeetingRecordingEngine: ObservableObject {
         }
     }
     
+    /// Request screen recording permission
+    @MainActor
+    private func requestScreenRecordingPermission() async -> Bool {
+        if #available(macOS 13.0, *) {
+            // Check if we have screen recording permission by attempting to get content
+            do {
+                let _ = try await SCShareableContent.current
+                return true // Permission granted
+            } catch {
+                // Permission denied or not determined
+                // Check if we should show the alert
+                let shouldShowAlert = shouldPromptForScreenRecording()
+                
+                if shouldShowAlert {
+                    showScreenRecordingPermissionAlert()
+                }
+                return false
+            }
+        }
+        return true // Not needed for older macOS versions
+    }
+    
+    /// Determine if we should show the screen recording prompt
+    private func shouldPromptForScreenRecording() -> Bool {
+        // Don't show if user previously dismissed
+        if screenRecordingPromptDismissed {
+            // Check if it's been more than 7 days since last prompt
+            let daysSinceLastPrompt = (Date().timeIntervalSince1970 - lastScreenRecordingPromptDate) / 86400
+            if daysSinceLastPrompt < 7 {
+                return false
+            }
+        }
+        return true
+    }
+    
+    /// Show alert for screen recording permission
+    private func showScreenRecordingPermissionAlert() {
+        DispatchQueue.main.async { [weak self] in
+            let alert = NSAlert()
+            alert.messageText = "Screen Recording Permission Recommended"
+            alert.informativeText = "To capture system audio from meeting apps (Zoom, Teams, etc.), WhoNext needs screen recording permission. Without it, only microphone audio will be recorded.\n\nYou can grant permission in System Settings > Privacy & Security > Screen Recording."
+            alert.alertStyle = .informational
+            alert.addButton(withTitle: "Open System Settings")
+            alert.addButton(withTitle: "Continue with Microphone Only")
+            alert.addButton(withTitle: "Ask Me Later")
+            
+            let response = alert.runModal()
+            
+            // Track the user's choice
+            self?.lastScreenRecordingPromptDate = Date().timeIntervalSince1970
+            
+            switch response {
+            case .alertFirstButtonReturn:
+                // Open System Settings
+                if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture") {
+                    NSWorkspace.shared.open(url)
+                }
+                self?.screenRecordingPromptDismissed = false
+                
+            case .alertSecondButtonReturn:
+                // Continue with microphone only
+                self?.screenRecordingPromptDismissed = true
+                print("ℹ️ User chose to continue with microphone only")
+                
+            case .alertThirdButtonReturn:
+                // Ask me later
+                self?.screenRecordingPromptDismissed = true
+                print("ℹ️ User chose to be asked later about screen recording")
+                
+            default:
+                break
+            }
+        }
+    }
+    
     // MARK: - Public Methods
+    
+    /// Reset permission prompts
+    func resetPermissionPrompts() {
+        screenRecordingPromptDismissed = false
+        lastScreenRecordingPromptDate = 0
+        print("♻️ Permission prompts have been reset")
+    }
+    
+    /// Check current permission status
+    func checkPermissionStatus() async -> (microphone: Bool, screenRecording: Bool) {
+        let micStatus = AVCaptureDevice.authorizationStatus(for: .audio) == .authorized
+        
+        var screenStatus = false
+        if #available(macOS 13.0, *) {
+            do {
+                let _ = try await SCShareableContent.current
+                screenStatus = true
+            } catch {
+                screenStatus = false
+            }
+        }
+        
+        return (microphone: micStatus, screenRecording: screenStatus)
+    }
+    
+    /// Start manual recording
+    func startManualRecording() {
+        print("👤 Starting manual recording")
+        
+        // Request permissions
+        Task {
+            // First check microphone permission (required)
+            let micAuthorized = await requestMicrophonePermission()
+            guard micAuthorized else {
+                await MainActor.run {
+                    self.recordingState = .error("Microphone permission denied. Please grant access in System Settings.")
+                }
+                return
+            }
+            
+            // Then check screen recording permission (optional but recommended)
+            let screenRecordingAuthorized = await requestScreenRecordingPermission()
+            if !screenRecordingAuthorized {
+                print("⚠️ Screen recording permission not granted - recording with microphone only")
+            }
+            
+            // Reset the transcription framework BEFORE starting
+            if #available(macOS 26.0, *) {
+                await MainActor.run {
+                    if let framework = self.modernSpeechFramework as? ModernSpeechFramework {
+                        let currentTranscript = framework.getCurrentTranscript()
+                        if !currentTranscript.isEmpty {
+                            print("⚠️ Found existing transcript (\(currentTranscript.count) chars), resetting...")
+                        }
+                        framework.reset()
+                        print("✅ Reset transcription framework before recording")
+                        
+                        // Verify reset worked
+                        let afterReset = framework.getCurrentTranscript()
+                        if !afterReset.isEmpty {
+                            print("❌ WARNING: Transcript not cleared after reset!")
+                        }
+                    }
+                }
+            }
+            
+            await MainActor.run {
+                self.lastTranscriptionText = "" // Reset transcript tracking
+                
+                // Start manual recording
+                self.startRecording(isManual: true)
+            }
+        }
+    }
     
     /// Start monitoring for conversations and auto-recording
     func startMonitoring() {
@@ -108,14 +289,21 @@ class MeetingRecordingEngine: ObservableObject {
         
         print("🎙️ Starting meeting recording engine monitoring")
         
-        // Request microphone permission first
+        // Request permissions
         Task {
-            let authorized = await requestMicrophonePermission()
-            guard authorized else {
+            // First check microphone permission (required)
+            let micAuthorized = await requestMicrophonePermission()
+            guard micAuthorized else {
                 await MainActor.run {
                     self.recordingState = .error("Microphone permission denied. Please grant access in System Settings.")
                 }
                 return
+            }
+            
+            // Then check screen recording permission (optional but recommended)
+            let screenRecordingAuthorized = await requestScreenRecordingPermission()
+            if !screenRecordingAuthorized {
+                print("⚠️ Screen recording permission not granted - using microphone-only mode")
             }
             
             do {
@@ -231,17 +419,71 @@ class MeetingRecordingEngine: ObservableObject {
         // Pass to two-way detector for conversation analysis
         twoWayDetector.analyzeAudioStreams(micBuffer: mic, systemBuffer: system)
         
-        // If recording, save buffers
+        // If recording, save the mixed audio
         if isRecording {
-            if let micBuffer = mic {
-                saveAudioBuffer(micBuffer)
-            }
-            
-            // Also process for real-time transcription
-            if let pipeline = transcriptionPipeline {
-                Task {
-                    if let micBuffer = mic {
-                        await pipeline.processAudioChunk(micBuffer)
+            // Mix the audio buffers for complete conversation
+            if let mixedBuffer = audioCapture.mixAudioBuffers(mic: mic, system: system) {
+                saveAudioBuffer(mixedBuffer)
+                
+                // Process for real-time transcription using modern Speech framework
+                if #available(macOS 26.0, *) {
+                    if let framework = modernSpeechFramework as? ModernSpeechFramework {
+                        Task { @MainActor in
+                            do {
+                                let fullTranscript = try await framework.processAudioStream(mixedBuffer)
+                                
+                                // Check if we have new content (the transcript grows incrementally)
+                                if fullTranscript.count > self.lastTranscriptionText.count {
+                                    // Extract only the new portion
+                                    let newContent = String(fullTranscript.dropFirst(self.lastTranscriptionText.count))
+                                        .trimmingCharacters(in: .whitespacesAndNewlines)
+                                    
+                                    if !newContent.isEmpty {
+                                        // Add only the new content as a segment
+                                        let segment = TranscriptSegment(
+                                            text: newContent,
+                                            timestamp: Date().timeIntervalSince(self.recordingStartTime ?? Date()),
+                                            speakerID: nil,
+                                            speakerName: nil,
+                                            confidence: 0.95,
+                                            isFinalized: true
+                                        )
+                                        self.currentMeeting?.addTranscriptSegment(segment)
+                                        
+                                        print("📝 New segment #\(self.currentMeeting?.transcript.count ?? 0): \(newContent.split(separator: " ").count) words")
+                                        print("📊 Total transcript: \(fullTranscript.split(separator: " ").count) words")
+                                        
+                                        // Update our tracking
+                                        self.lastTranscriptionText = fullTranscript
+                                    }
+                                } else if !fullTranscript.isEmpty && self.lastTranscriptionText.isEmpty {
+                                    // First transcription
+                                    let segment = TranscriptSegment(
+                                        text: fullTranscript,
+                                        timestamp: Date().timeIntervalSince(self.recordingStartTime ?? Date()),
+                                        speakerID: nil,
+                                        speakerName: nil,
+                                        confidence: 0.95,
+                                        isFinalized: true
+                                    )
+                                    self.currentMeeting?.addTranscriptSegment(segment)
+                                    self.lastTranscriptionText = fullTranscript
+                                    
+                                    print("📝 First segment: \(fullTranscript.split(separator: " ").count) words")
+                                } else {
+                                    // Still accumulating audio
+                                    let elapsed = Date().timeIntervalSince(self.recordingStartTime ?? Date())
+                                    if Int(elapsed) % 5 == 0 { // Log every 5 seconds
+                                        print("🎤 Accumulating audio... (\(Int(elapsed))s recorded, waiting for transcription)")
+                                    }
+                                }
+                            } catch {
+                                print("❌ Transcription error: \(error.localizedDescription)")
+                                print("❌ Full error: \(error)")
+                                // Continue recording even if transcription fails
+                                print("⚠️ Transcription failed but recording continues")
+                            }
+                        }
                     }
                 }
             }
@@ -297,6 +539,20 @@ class MeetingRecordingEngine: ObservableObject {
         
         recordingStartTime = Date()
         
+        // For auto-recording, reset the transcription framework
+        // (Manual recording already resets before calling this)
+        if !isManual {
+            if #available(macOS 26.0, *) {
+                Task { @MainActor in
+                    if let framework = modernSpeechFramework as? ModernSpeechFramework {
+                        framework.reset()
+                        print("✅ Reset transcription framework for auto-recording")
+                    }
+                }
+            }
+            lastTranscriptionText = "" // Reset transcript tracking
+        }
+        
         // Create live meeting object
         let meeting = LiveMeeting()
         meeting.isManual = isManual
@@ -307,6 +563,29 @@ class MeetingRecordingEngine: ObservableObject {
             meeting.calendarTitle = calendarEvent.title
             meeting.scheduledDuration = calendarEvent.duration
             meeting.expectedParticipants = calendarEvent.attendees ?? []
+        }
+        
+        // For manual recording, ensure audio capture is running
+        if isManual && !audioCapture.isCapturing {
+            // Set up audio buffer callbacks
+            audioCapture.onAudioBuffersAvailable = { [weak self] micBuffer, systemBuffer in
+                self?.processAudioBuffers(mic: micBuffer, system: systemBuffer)
+            }
+            
+            // Also set up mixed audio callback for better transcription
+            audioCapture.onMixedAudioAvailable = { [weak self] mixedBuffer in
+                // Mixed audio is already handled in processAudioBuffers
+                // This is here for future use if needed
+            }
+            
+            Task {
+                do {
+                    try await audioCapture.startCapture()
+                    print("🎤 Started audio capture for manual recording")
+                } catch {
+                    print("❌ Failed to start audio capture: \(error)")
+                }
+            }
         }
         
         // Set up audio file for recording
@@ -331,9 +610,7 @@ class MeetingRecordingEngine: ObservableObject {
             return
         }
         
-        // Initialize transcription pipeline
-        transcriptionPipeline = HybridTranscriptionPipeline()
-        transcriptionPipeline?.delegate = self
+        // Transcription is now handled directly via NativeSpeechFramework in processAudioBuffers
         
         // Start recording timer
         startRecordingTimer()
@@ -351,7 +628,7 @@ class MeetingRecordingEngine: ObservableObject {
         showLiveMeetingWindow()
     }
     
-    private func stopRecording() {
+    func stopRecording() {
         guard isRecording else { return }
         
         let duration = recordingStartTime.map { Date().timeIntervalSince($0) } ?? 0
@@ -365,12 +642,78 @@ class MeetingRecordingEngine: ObservableObject {
         
         // Process the recorded meeting
         if let meeting = currentMeeting {
-            meeting.duration = duration
-            meeting.endTime = Date()
+            DispatchQueue.main.async {
+                meeting.duration = duration
+                meeting.endTime = Date()
+            }
             
             Task {
+                // Force transcription of any remaining audio before processing meeting
+                if #available(macOS 26.0, *) {
+                    if let framework = modernSpeechFramework as? ModernSpeechFramework {
+                        print("🔄 Flushing remaining audio for transcription...")
+                        let finalTranscription = await framework.flushAndTranscribe()
+                        
+                        // Get speaker segments if diarization is enabled
+                        let speakerSegments = await framework.getSpeakerSegments()
+                        
+                        if !speakerSegments.isEmpty {
+                            // Add speaker-attributed segments
+                            await MainActor.run {
+                                for (index, segment) in speakerSegments.enumerated() {
+                                    let transcriptSegment = TranscriptSegment(
+                                        text: segment.text,
+                                        timestamp: segment.startTime,
+                                        speakerID: segment.speaker,
+                                        speakerName: segment.speaker,
+                                        confidence: 0.95,
+                                        isFinalized: true
+                                    )
+                                    self.currentMeeting?.addTranscriptSegment(transcriptSegment)
+                                }
+                                print("👥 Added \(speakerSegments.count) speaker-attributed segments")
+                            }
+                        } else if !finalTranscription.isEmpty {
+                            // Fallback to non-attributed transcript
+                            await MainActor.run {
+                                let segment = TranscriptSegment(
+                                    text: finalTranscription,
+                                    timestamp: Date().timeIntervalSince(self.recordingStartTime ?? Date()),
+                                    speakerID: nil,
+                                    speakerName: nil,
+                                    confidence: 0.95,
+                                    isFinalized: true
+                                )
+                                self.currentMeeting?.addTranscriptSegment(segment)
+                                print("📝 Final transcription added: \(finalTranscription.prefix(100))...")
+                            }
+                        } else {
+                            print("⚠️ No transcription available from flush")
+                        }
+                    }
+                }
+                
+                // Now process the meeting with all transcriptions
                 await processMeeting(meeting)
+                
+                // CRITICAL: Reset the transcription framework after processing
+                // This prevents transcript from persisting to next recording
+                if #available(macOS 26.0, *) {
+                    await MainActor.run {
+                        if let framework = self.modernSpeechFramework as? ModernSpeechFramework {
+                            framework.reset()
+                            print("✅ Reset transcription framework after recording")
+                        }
+                    }
+                }
             }
+        }
+        
+        // For manual recording, stop audio capture if not monitoring
+        let wasManual = currentMeeting?.isManual ?? false
+        if wasManual && !isMonitoring {
+            audioCapture.stopCapture()
+            print("🎤 Stopped audio capture after manual recording")
         }
         
         // Reset state
@@ -394,12 +737,7 @@ class MeetingRecordingEngine: ObservableObject {
         }
         
         print("🔄 Processing meeting: \(meeting.id)")
-        
-        // Get final transcription
-        if let pipeline = transcriptionPipeline {
-            let finalTranscript = await pipeline.finalizeTranscript()
-            meeting.transcript = finalTranscript
-        }
+        print("📊 Meeting has \(meeting.transcript.count) transcript segments")
         
         // Convert transcript to text for processing
         let transcriptText = meeting.transcript.map { segment in
@@ -410,41 +748,43 @@ class MeetingRecordingEngine: ObservableObject {
             }
         }.joined(separator: "\n")
         
-        // Process through existing TranscriptProcessor for AI analysis
+        print("📝 Combined transcript length: \(transcriptText.count) characters, \(transcriptText.split(separator: " ").count) words")
+        
+        // Check if we should open the transcript import UI for review
         if !transcriptText.isEmpty {
-            // Create processor on main thread if needed
-            if transcriptProcessor == nil {
-                await MainActor.run {
-                    self.transcriptProcessor = TranscriptProcessor()
-                }
+            // Open the transcript import window with the recorded content
+            await MainActor.run {
+                // Store the transcript temporarily for the import window
+                UserDefaults.standard.set(transcriptText, forKey: "PendingRecordedTranscript")
+                UserDefaults.standard.set(meeting.displayTitle, forKey: "PendingRecordedTitle")
+                UserDefaults.standard.set(meeting.startTime, forKey: "PendingRecordedDate")
+                UserDefaults.standard.set(meeting.duration, forKey: "PendingRecordedDuration")
+                
+                // Open the transcript import window
+                TranscriptImportWindowManager.shared.presentWindow()
+                
+                // Reset recording state
+                self.currentMeeting = nil
+                self.recordingState = self.isMonitoring ? .monitoring : .idle
+                self.lastTranscriptionText = "" // Reset transcript tracking
+                
+                print("📝 Opening transcript import window for review")
             }
-            if let processedTranscript = await transcriptProcessor?.processTranscript(transcriptText) {
-                // Save with AI-generated summary and analysis
-                await saveProcessedMeeting(meeting, processed: processedTranscript)
-                return
+            
+            // Store audio file path for potential future use
+            if let audioPath = meeting.audioFilePath {
+                storageManager.scheduleAutoDelete(for: meeting.id, afterDays: 30)
             }
-        }
-        
-        // Fallback to original logic if processing fails
-        let participantCount = meeting.identifiedParticipants.count
-        
-        if participantCount <= 3 {
-            // Save as individual conversations
-            await saveAsIndividualConversations(meeting)
         } else {
-            // Save as group meeting
-            await saveAsGroupMeeting(meeting)
+            // No transcript available, just reset
+            await MainActor.run {
+                self.currentMeeting = nil
+                self.recordingState = self.isMonitoring ? .monitoring : .idle
+            }
+            print("⚠️ No transcript available to process")
         }
         
-        // Schedule auto-deletion
-        storageManager.scheduleAutoDelete(for: meeting.id, afterDays: 30)
-        
-        await MainActor.run {
-            self.currentMeeting = nil
-            self.recordingState = self.isMonitoring ? .monitoring : .idle
-        }
-        
-        print("✅ Meeting processing complete")
+        print("✅ Meeting redirected to transcript import for review")
     }
     
     private func saveAsIndividualConversations(_ meeting: LiveMeeting) async {
@@ -675,10 +1015,10 @@ class MeetingRecordingEngine: ObservableObject {
     }
     
     private func startRecordingTimer() {
-        recordingTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in
-            guard let self = self, let startTime = self.recordingStartTime else { return }
-            
-            DispatchQueue.main.async {
+        DispatchQueue.main.async {
+            self.recordingTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in
+                guard let self = self, let startTime = self.recordingStartTime else { return }
+                
                 self.recordingDuration = Date().timeIntervalSince(startTime)
                 self.currentMeeting?.duration = self.recordingDuration
             }
@@ -693,29 +1033,7 @@ class MeetingRecordingEngine: ObservableObject {
     }
 }
 
-// MARK: - TranscriptionPipelineDelegate
-
-extension MeetingRecordingEngine: TranscriptionPipelineDelegate {
-    func transcriptionPipeline(_ pipeline: HybridTranscriptionPipeline, didTranscribe segment: TranscriptSegment) {
-        // Add segment to current meeting
-        DispatchQueue.main.async {
-            self.currentMeeting?.transcript.append(segment)
-        }
-    }
-    
-    func transcriptionPipeline(_ pipeline: HybridTranscriptionPipeline, didIdentifySpeaker speaker: IdentifiedParticipant) {
-        // Add or update speaker in current meeting
-        DispatchQueue.main.async {
-            if let existing = self.currentMeeting?.identifiedParticipants.first(where: { $0.id == speaker.id }) {
-                // Update existing speaker
-                existing.confidence = speaker.confidence
-            } else {
-                // Add new speaker
-                self.currentMeeting?.identifiedParticipants.append(speaker)
-            }
-        }
-    }
-}
+// TranscriptionPipelineDelegate removed - transcription now handled directly in processAudioBuffers
 
 // MARK: - Calendar Monitoring
 

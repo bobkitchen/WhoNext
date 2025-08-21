@@ -371,36 +371,45 @@ extension AIService {
         let isGPT5 = openaiModel.starts(with: "gpt-5")
         
         // Get the user's custom summarization prompt from settings
-        let customPrompt = UserDefaults.standard.string(forKey: "customSummarizationPrompt") ?? """
+        let userCustomPrompt = UserDefaults.standard.string(forKey: "customSummarizationPrompt")
+        
+        // Log which prompt is being used
+        if let customPrompt = userCustomPrompt, !customPrompt.isEmpty {
+            print("📝 [AIService] Using custom summarization prompt from user settings")
+        } else {
+            print("📝 [AIService] Using default summarization prompt")
+        }
+        
+        let customPrompt = userCustomPrompt ?? """
         Create comprehensive meeting minutes from the transcript below.
         
-        Format your response with these sections:
+        Format your response using markdown with ## for main sections and - for bullet points:
 
-        Meeting Overview:
+        ## Meeting Overview
         - Meeting purpose and context
         - Key themes and overall tone
         - Primary objectives discussed
 
-        Discussion Details:
+        ## Discussion Details
         - Main points raised by each participant
         - Key decisions made and rationale
         - Areas of agreement and disagreement
         - Important insights or revelations
         - Questions raised and answers provided
 
-        Action Items & Follow-ups:
+        ## Action Items & Follow-ups
         - Specific tasks assigned with owners
         - Deadlines and timelines mentioned
         - Next steps and follow-up meetings
         - Dependencies and blockers identified
 
-        Outcomes & Conclusions:
+        ## Outcomes & Conclusions
         - Final decisions reached
         - Issues resolved or escalated
         - Commitments made by participants
         - Success metrics or goals established
 
-        Additional Notes:
+        ## Additional Notes
         - Context for future reference
         - Relationship dynamics observed
         - Support needs identified

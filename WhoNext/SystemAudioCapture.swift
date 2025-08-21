@@ -21,7 +21,6 @@ class SystemAudioCapture: NSObject, ObservableObject {
     private var mixerNode: AVAudioMixerNode?
     
     // MARK: - Screen Capture for System Audio
-    private var streamOutput: SystemAudioOutputHandler?
     private var stream: SCStream?
     
     // MARK: - Audio Buffers
@@ -35,6 +34,7 @@ class SystemAudioCapture: NSObject, ObservableObject {
     
     // MARK: - Callbacks
     var onAudioBuffersAvailable: ((AVAudioPCMBuffer?, AVAudioPCMBuffer?) -> Void)?
+    var onMixedAudioAvailable: ((AVAudioPCMBuffer) -> Void)?
     
     // MARK: - Initialization
     override init() {
@@ -108,7 +108,6 @@ class SystemAudioCapture: NSObject, ObservableObject {
                 }
             }
             stream = nil
-            streamOutput = nil
         }
         
         DispatchQueue.main.async {
@@ -183,50 +182,83 @@ class SystemAudioCapture: NSObject, ObservableObject {
             self.microphoneLevel = level
         }
         
-        // Notify delegate
+        // Notify delegate with separate buffers
         onAudioBuffersAvailable?(microphoneBuffer, systemAudioBuffer)
+        
+        // Also provide mixed audio for transcription
+        if let mixedBuffer = mixAudioBuffers(mic: microphoneBuffer, system: systemAudioBuffer) {
+            onMixedAudioAvailable?(mixedBuffer)
+        }
     }
     
     // MARK: - Private Methods - System Audio Capture
     
     @available(macOS 13.0, *)
     private func setupSystemAudioCapture() async throws {
-        // Get available content (we just need audio, not specific windows)
+        // Get available content
         let availableContent = try await SCShareableContent.current
         
-        // Create stream configuration for audio only
+        // Create audio-only stream configuration
         let streamConfig = SCStreamConfiguration()
+        
+        // Audio configuration
         streamConfig.capturesAudio = true
-        streamConfig.excludesCurrentProcessAudio = false // We want all audio
+        streamConfig.excludesCurrentProcessAudio = true
         streamConfig.sampleRate = Int(sampleRate)
         streamConfig.channelCount = 1
         
-        // Create content filter (capture all audio)
-        // We need at least one window or display to create a filter
+        // Disable video capture entirely by setting width/height to 1
+        // This is the minimum allowed and signals we don't want video
+        streamConfig.width = 1
+        streamConfig.height = 1
+        streamConfig.minimumFrameInterval = CMTime(value: 600, timescale: 1) // 10 minutes between frames
+        streamConfig.queueDepth = 1
+        streamConfig.showsCursor = false
+        
+        // Create filter for audio capture
+        // For audio-only capture, we need to provide a filter but we're not actually capturing video
         let filter: SCContentFilter
-        if let firstDisplay = availableContent.displays.first {
-            // Use display capture for system-wide audio
-            filter = SCContentFilter(display: firstDisplay, excludingWindows: [])
-        } else {
+        
+        // Use the primary display for the filter (required even for audio-only)
+        guard let display = availableContent.displays.first else {
             throw AudioCaptureError.noAvailableContent
         }
         
-        // Create stream
-        stream = SCStream(filter: filter, configuration: streamConfig, delegate: self)
+        // Create filter with empty exclusions since we're only capturing audio
+        filter = SCContentFilter(display: display, excludingApplications: [], exceptingWindows: [])
         
-        // Set up and retain output handler
-        streamOutput = SystemAudioOutputHandler { [weak self] buffer in
-            self?.processSystemAudioBuffer(buffer)
+        // Create stream without delegate
+        stream = SCStream(filter: filter, configuration: streamConfig, delegate: nil)
+        
+        // Ensure stream was created successfully
+        guard stream != nil else {
+            throw AudioCaptureError.streamCreationFailed
         }
         
-        if let streamOutput = streamOutput {
-            try stream?.addStreamOutput(streamOutput, type: .audio, sampleHandlerQueue: .global())
+        // Create dedicated queue for audio processing
+        let audioQueue = DispatchQueue(label: "com.whonext.audio.system", qos: .userInitiated, attributes: .concurrent)
+        
+        // Add ourselves as the stream output for audio only
+        try stream?.addStreamOutput(self, type: .audio, sampleHandlerQueue: audioQueue)
+        
+        // Start the capture with completion handler
+        let captureStarted = await withCheckedContinuation { continuation in
+            stream?.startCapture { error in
+                if let error = error {
+                    print("❌ SCStream start failed: \(error.localizedDescription)")
+                    continuation.resume(returning: false)
+                } else {
+                    continuation.resume(returning: true)
+                }
+            }
         }
         
-        // Start capture
-        try await stream?.startCapture()
+        guard captureStarted else {
+            stream = nil
+            throw AudioCaptureError.streamCreationFailed
+        }
         
-        print("✅ System audio capture configured")
+        print("✅ System audio capture started (audio-only mode)")
     }
     
     @available(macOS 13.0, *)
@@ -238,29 +270,9 @@ class SystemAudioCapture: NSObject, ObservableObject {
             return !content.displays.isEmpty
         } catch {
             // Permission not granted or other error
-            print("🔒 Screen recording permission check failed: \(error)")
-            
-            // Show alert to guide user
-            await MainActor.run {
-                showScreenRecordingPermissionAlert()
-            }
-            
+            print("🔒 Screen recording permission not granted: \(error.localizedDescription)")
+            // Don't show alert here - it's handled by MeetingRecordingEngine
             return false
-        }
-    }
-    
-    private func showScreenRecordingPermissionAlert() {
-        let alert = NSAlert()
-        alert.messageText = "Screen Recording Permission Required"
-        alert.informativeText = "To capture system audio from meeting apps, WhoNext needs screen recording permission. Please grant permission in System Settings > Privacy & Security > Screen Recording."
-        alert.alertStyle = .warning
-        alert.addButton(withTitle: "Open System Settings")
-        alert.addButton(withTitle: "Cancel")
-        
-        if alert.runModal() == .alertFirstButtonReturn {
-            if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture") {
-                NSWorkspace.shared.open(url)
-            }
         }
     }
     
@@ -278,11 +290,107 @@ class SystemAudioCapture: NSObject, ObservableObject {
             self.systemAudioLevel = level
         }
         
-        // Notify delegate
+        // Notify delegate with separate buffers
         onAudioBuffersAvailable?(microphoneBuffer, systemAudioBuffer)
+        
+        // Also provide mixed audio for transcription
+        if let mixedBuffer = mixAudioBuffers(mic: microphoneBuffer, system: systemAudioBuffer) {
+            onMixedAudioAvailable?(mixedBuffer)
+        }
     }
     
     // MARK: - Helper Methods
+    
+    /// Mix microphone and system audio buffers into a single buffer
+    func mixAudioBuffers(mic: AVAudioPCMBuffer?, system: AVAudioPCMBuffer?) -> AVAudioPCMBuffer? {
+        // If we only have one buffer, return it
+        if mic == nil && system == nil {
+            return nil
+        } else if mic == nil {
+            return system
+        } else if system == nil {
+            return mic
+        }
+        
+        guard let micBuffer = mic, let systemBuffer = system else { return mic ?? system }
+        
+        // Ensure both buffers have the same format
+        guard micBuffer.format.sampleRate == systemBuffer.format.sampleRate,
+              micBuffer.format.channelCount == systemBuffer.format.channelCount else {
+            // Convert to common format if needed
+            return convertAndMixBuffers(micBuffer, systemBuffer)
+        }
+        
+        // Create output buffer with the longer frame length
+        let frameLength = max(micBuffer.frameLength, systemBuffer.frameLength)
+        guard let mixedBuffer = AVAudioPCMBuffer(
+            pcmFormat: micBuffer.format,
+            frameCapacity: frameLength
+        ) else { return nil }
+        
+        mixedBuffer.frameLength = frameLength
+        
+        // Mix the audio data
+        if let micData = micBuffer.floatChannelData,
+           let systemData = systemBuffer.floatChannelData,
+           let mixedData = mixedBuffer.floatChannelData {
+            
+            let channelCount = Int(micBuffer.format.channelCount)
+            
+            for channel in 0..<channelCount {
+                for frame in 0..<Int(frameLength) {
+                    var mixedSample: Float = 0.0
+                    
+                    // Add microphone sample if available
+                    if frame < Int(micBuffer.frameLength) {
+                        mixedSample += micData[channel][frame] * 0.5 // Scale to prevent clipping
+                    }
+                    
+                    // Add system audio sample if available
+                    if frame < Int(systemBuffer.frameLength) {
+                        mixedSample += systemData[channel][frame] * 0.5 // Scale to prevent clipping
+                    }
+                    
+                    // Clip to valid range
+                    mixedSample = max(-1.0, min(1.0, mixedSample))
+                    mixedData[channel][frame] = mixedSample
+                }
+            }
+        }
+        
+        return mixedBuffer
+    }
+    
+    private func convertAndMixBuffers(_ mic: AVAudioPCMBuffer, _ system: AVAudioPCMBuffer) -> AVAudioPCMBuffer? {
+        // Convert both to common format (16kHz mono)
+        guard let convertedMic = convertToFormat(mic, targetFormat: audioFormat),
+              let convertedSystem = convertToFormat(system, targetFormat: audioFormat) else {
+            return nil
+        }
+        
+        return mixAudioBuffers(mic: convertedMic, system: convertedSystem)
+    }
+    
+    private func convertToFormat(_ buffer: AVAudioPCMBuffer, targetFormat: AVAudioFormat) -> AVAudioPCMBuffer? {
+        guard let converter = AVAudioConverter(from: buffer.format, to: targetFormat) else {
+            return nil
+        }
+        
+        let outputFrameCapacity = UInt32(Double(buffer.frameLength) * targetFormat.sampleRate / buffer.format.sampleRate)
+        guard let outputBuffer = AVAudioPCMBuffer(pcmFormat: targetFormat, frameCapacity: outputFrameCapacity) else {
+            return nil
+        }
+        
+        var error: NSError?
+        let inputBlock: AVAudioConverterInputBlock = { _, outStatus in
+            outStatus.pointee = .haveData
+            return buffer
+        }
+        
+        converter.convert(to: outputBuffer, error: &error, withInputFrom: inputBlock)
+        
+        return error == nil ? outputBuffer : nil
+    }
     
     private func calculateAudioLevel(_ buffer: AVAudioPCMBuffer) -> Float {
         guard let channelData = buffer.floatChannelData else { return 0.0 }
@@ -340,41 +448,18 @@ class SystemAudioCapture: NSObject, ObservableObject {
     }
 }
 
-// MARK: - SCStreamDelegate
+// MARK: - SCStreamOutput
 
 @available(macOS 13.0, *)
-extension SystemAudioCapture: SCStreamDelegate {
+extension SystemAudioCapture: SCStreamOutput {
     func stream(_ stream: SCStream, didOutputSampleBuffer sampleBuffer: CMSampleBuffer, of type: SCStreamOutputType) {
-        if type == .audio {
-            processSystemAudioBuffer(sampleBuffer)
-        }
-    }
-    
-    func stream(_ stream: SCStream, didStopWithError error: Error) {
-        print("❌ Stream stopped with error: \(error)")
-        DispatchQueue.main.async {
-            self.captureError = error
-            self.isCapturing = false
-        }
+        // Only process audio samples, completely ignore any video samples
+        guard type == .audio else { return }
+        processSystemAudioBuffer(sampleBuffer)
     }
 }
 
-// MARK: - System Audio Output Handler
-
-@available(macOS 13.0, *)
-class SystemAudioOutputHandler: NSObject, SCStreamOutput {
-    private let audioHandler: (CMSampleBuffer) -> Void
-    
-    init(audioHandler: @escaping (CMSampleBuffer) -> Void) {
-        self.audioHandler = audioHandler
-    }
-    
-    func stream(_ stream: SCStream, didOutputSampleBuffer sampleBuffer: CMSampleBuffer, of type: SCStreamOutputType) {
-        if type == .audio {
-            audioHandler(sampleBuffer)
-        }
-    }
-}
+// SystemAudioOutputHandler removed - using SystemAudioCapture directly as SCStreamOutput
 
 // MARK: - Error Types
 

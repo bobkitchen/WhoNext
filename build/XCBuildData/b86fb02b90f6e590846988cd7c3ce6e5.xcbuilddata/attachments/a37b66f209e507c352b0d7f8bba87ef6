@@ -1,0 +1,4 @@
+module libcmark {
+umbrella "/Users/bobkitchen/Library/Developer/Xcode/DerivedData/WhoNext-bcqdpcrgceedsxgxhmbktbrsaayp/SourcePackages/checkouts/Down/Sources/cmark"
+export *
+}
