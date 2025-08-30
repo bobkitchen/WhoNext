@@ -56,7 +56,7 @@ class ChunkedAudioProcessor: ObservableObject {
     private func setupTranscription(enableDiarization: Bool) {
         if #available(macOS 26.0, *) {
             Task {
-                modernSpeechFramework = ModernSpeechFramework(enableDiarization: enableDiarization)
+                modernSpeechFramework = ModernSpeechFramework(locale: .current)
                 if let framework = modernSpeechFramework as? ModernSpeechFramework {
                     try? await framework.initialize()
                     print("✅ ChunkedAudioProcessor: Speech framework initialized")

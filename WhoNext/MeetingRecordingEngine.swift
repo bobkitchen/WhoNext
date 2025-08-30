@@ -69,20 +69,18 @@ class MeetingRecordingEngine: ObservableObject {
         if #available(macOS 26.0, *) {
             // Only create a new framework if one doesn't exist
             if modernSpeechFramework == nil {
-                // Enable speaker diarization based on user preference
-                let enableDiarization = UserDefaults.standard.bool(forKey: "speakerDiarizationEnabled")
                 Task { @MainActor in
-                    modernSpeechFramework = ModernSpeechFramework(enableDiarization: enableDiarization)
+                    // Create framework with current locale
+                    modernSpeechFramework = ModernSpeechFramework(locale: .current)
                     do {
                         if let framework = modernSpeechFramework as? ModernSpeechFramework {
                             try await framework.initialize()
                             print("✅ Modern Speech Framework ready (SpeechAnalyzer + SpeechTranscriber)")
-                            if enableDiarization {
-                                print("👥 Speaker diarization enabled")
-                            }
+                            print("✅ Using AsyncStream<AnalyzerInput> pattern for streaming")
                         }
                     } catch {
                         print("⚠️ Failed to initialize Modern Speech Framework: \(error)")
+                        print("⚠️ Error details: \(error.localizedDescription)")
                     }
                 }
             } else {
@@ -655,7 +653,8 @@ class MeetingRecordingEngine: ObservableObject {
                         let finalTranscription = await framework.flushAndTranscribe()
                         
                         // Get speaker segments if diarization is enabled
-                        let speakerSegments = await framework.getSpeakerSegments()
+                        // Speaker segments not available in fallback implementation
+                        let speakerSegments: [(text: String, speaker: String?, startTime: TimeInterval, endTime: TimeInterval)] = []
                         
                         if !speakerSegments.isEmpty {
                             // Add speaker-attributed segments
