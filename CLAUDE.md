@@ -25,12 +25,12 @@ NOT the standard `xcodebuild` command which points to the release version.
 ### Speech Transcription - CRITICAL UPDATE
 **As of August 30, 2025:**
 
-#### THE NEW APIS EXIST BUT ARE NOT IN THE SDK HEADERS
-After analyzing working applications (swift-scribe and yap), the situation is clear:
-1. **SpeechAnalyzer, SpeechTranscriber, AssetInventory, and AnalyzerInput ARE real APIs**
-2. **They work at runtime** but are NOT exposed in SDK headers
-3. **Working apps import Speech framework and use these APIs directly**
-4. **The APIs require macOS 26 (Tahoe) and won't compile with availability checks**
+#### CRITICAL DISCOVERY: THE NEW APIS EXIST IN COMMANDLINETOOLS SDK
+After deep investigation, the actual situation is:
+1. **SpeechAnalyzer, SpeechTranscriber, AssetInventory, and AnalyzerInput ARE in `/Library/Developer/CommandLineTools/SDKs/MacOSX26.0.sdk`**
+2. **They exist in the Swift interface files** at `/Library/Developer/CommandLineTools/SDKs/MacOSX26.0.sdk/System/Library/Frameworks/Speech.framework/Modules/Speech.swiftmodule/`
+3. **Xcode.app and Xcode-beta.app use different SDKs** (15.5 and 26.0 respectively) but neither has the new APIs
+4. **To use these APIs, must compile with the CommandLineTools SDK**
 
 #### How Working Apps Use the APIs
 
@@ -189,7 +189,9 @@ class ModernSpeechFramework {
 - **Handle volatile vs finalized results** appropriately
 - **Check for asset downloads** and install if needed
 
-### 3. Build Configuration
+### 3. Build Configuration - TOOLCHAIN MISMATCH ISSUE
 - **Platform must be macOS 26** in Package.swift or project settings
-- **No @available checks needed** - the APIs require macOS 26
-- **Import Speech framework directly** - APIs work at runtime despite not being in headers
+- **The APIs exist in**: `/Library/Developer/CommandLineTools/SDKs/MacOSX26.0.sdk`
+- **BUT**: The SDK requires Swift 6.2, while current toolchain is Swift 6.1.2
+- **CURRENT REALITY**: The new APIs cannot be used until Swift 6.2 toolchain is available
+- **FALLBACK SOLUTION**: Use SFSpeechRecognizer with proper audio accumulation (implemented in ModernSpeechFramework.swift)
