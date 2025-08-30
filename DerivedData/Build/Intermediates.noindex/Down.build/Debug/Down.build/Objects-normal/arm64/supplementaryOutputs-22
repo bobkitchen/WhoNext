@@ -1,0 +1,65 @@
+{
+  "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/SourcePackages/checkouts/Down/Sources/Down/AST/Nodes/Emphasis.swift" : {
+    "const-values" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/Down.build/Debug/Down.build/Objects-normal/arm64/Emphasis.swiftconstvalues",
+    "dependencies" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/Down.build/Debug/Down.build/Objects-normal/arm64/Emphasis.d",
+    "diagnostics" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/Down.build/Debug/Down.build/Objects-normal/arm64/Emphasis.dia",
+    "object" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/Down.build/Debug/Down.build/Objects-normal/arm64/Emphasis.o",
+    "swift-dependencies" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/Down.build/Debug/Down.build/Objects-normal/arm64/Emphasis.swiftdeps"
+  },
+  "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/SourcePackages/checkouts/Down/Sources/Down/AST/Nodes/Heading.swift" : {
+    "const-values" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/Down.build/Debug/Down.build/Objects-normal/arm64/Heading.swiftconstvalues",
+    "dependencies" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/Down.build/Debug/Down.build/Objects-normal/arm64/Heading.d",
+    "diagnostics" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/Down.build/Debug/Down.build/Objects-normal/arm64/Heading.dia",
+    "object" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/Down.build/Debug/Down.build/Objects-normal/arm64/Heading.o",
+    "swift-dependencies" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/Down.build/Debug/Down.build/Objects-normal/arm64/Heading.swiftdeps"
+  },
+  "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/SourcePackages/checkouts/Down/Sources/Down/AST/Nodes/HtmlBlock.swift" : {
+    "const-values" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/Down.build/Debug/Down.build/Objects-normal/arm64/HtmlBlock.swiftconstvalues",
+    "dependencies" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/Down.build/Debug/Down.build/Objects-normal/arm64/HtmlBlock.d",
+    "diagnostics" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/Down.build/Debug/Down.build/Objects-normal/arm64/HtmlBlock.dia",
+    "object" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/Down.build/Debug/Down.build/Objects-normal/arm64/HtmlBlock.o",
+    "swift-dependencies" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/Down.build/Debug/Down.build/Objects-normal/arm64/HtmlBlock.swiftdeps"
+  },
+  "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/SourcePackages/checkouts/Down/Sources/Down/AST/Nodes/HtmlInline.swift" : {
+    "const-values" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/Down.build/Debug/Down.build/Objects-normal/arm64/HtmlInline.swiftconstvalues",
+    "dependencies" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/Down.build/Debug/Down.build/Objects-normal/arm64/HtmlInline.d",
+    "diagnostics" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/Down.build/Debug/Down.build/Objects-normal/arm64/HtmlInline.dia",
+    "object" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/Down.build/Debug/Down.build/Objects-normal/arm64/HtmlInline.o",
+    "swift-dependencies" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/Down.build/Debug/Down.build/Objects-normal/arm64/HtmlInline.swiftdeps"
+  },
+  "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/SourcePackages/checkouts/Down/Sources/Down/AST/Nodes/Image.swift" : {
+    "const-values" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/Down.build/Debug/Down.build/Objects-normal/arm64/Image.swiftconstvalues",
+    "dependencies" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/Down.build/Debug/Down.build/Objects-normal/arm64/Image.d",
+    "diagnostics" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/Down.build/Debug/Down.build/Objects-normal/arm64/Image.dia",
+    "object" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/Down.build/Debug/Down.build/Objects-normal/arm64/Image.o",
+    "swift-dependencies" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/Down.build/Debug/Down.build/Objects-normal/arm64/Image.swiftdeps"
+  },
+  "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/SourcePackages/checkouts/Down/Sources/Down/AST/Nodes/Item.swift" : {
+    "const-values" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/Down.build/Debug/Down.build/Objects-normal/arm64/Item.swiftconstvalues",
+    "dependencies" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/Down.build/Debug/Down.build/Objects-normal/arm64/Item.d",
+    "diagnostics" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/Down.build/Debug/Down.build/Objects-normal/arm64/Item.dia",
+    "object" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/Down.build/Debug/Down.build/Objects-normal/arm64/Item.o",
+    "swift-dependencies" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/Down.build/Debug/Down.build/Objects-normal/arm64/Item.swiftdeps"
+  },
+  "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/SourcePackages/checkouts/Down/Sources/Down/AST/Nodes/LineBreak.swift" : {
+    "const-values" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/Down.build/Debug/Down.build/Objects-normal/arm64/LineBreak.swiftconstvalues",
+    "dependencies" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/Down.build/Debug/Down.build/Objects-normal/arm64/LineBreak.d",
+    "diagnostics" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/Down.build/Debug/Down.build/Objects-normal/arm64/LineBreak.dia",
+    "object" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/Down.build/Debug/Down.build/Objects-normal/arm64/LineBreak.o",
+    "swift-dependencies" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/Down.build/Debug/Down.build/Objects-normal/arm64/LineBreak.swiftdeps"
+  },
+  "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/SourcePackages/checkouts/Down/Sources/Down/AST/Nodes/Link.swift" : {
+    "const-values" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/Down.build/Debug/Down.build/Objects-normal/arm64/Link.swiftconstvalues",
+    "dependencies" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/Down.build/Debug/Down.build/Objects-normal/arm64/Link.d",
+    "diagnostics" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/Down.build/Debug/Down.build/Objects-normal/arm64/Link.dia",
+    "object" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/Down.build/Debug/Down.build/Objects-normal/arm64/Link.o",
+    "swift-dependencies" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/Down.build/Debug/Down.build/Objects-normal/arm64/Link.swiftdeps"
+  },
+  "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/SourcePackages/checkouts/Down/Sources/Down/AST/Nodes/List.swift" : {
+    "const-values" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/Down.build/Debug/Down.build/Objects-normal/arm64/List.swiftconstvalues",
+    "dependencies" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/Down.build/Debug/Down.build/Objects-normal/arm64/List.d",
+    "diagnostics" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/Down.build/Debug/Down.build/Objects-normal/arm64/List.dia",
+    "object" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/Down.build/Debug/Down.build/Objects-normal/arm64/List.o",
+    "swift-dependencies" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/Down.build/Debug/Down.build/Objects-normal/arm64/List.swiftdeps"
+  }
+}

@@ -1,0 +1,80 @@
+{
+  "source": "/Users/bobkitchen/Documents/GitHub/WhoNext/WhoNext/OverdueConversationsDetailView.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "Overdue Conversations",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 20
+        }
+      },
+      {
+        "comment": "",
+        "key": "%lld people haven't been contacted recently",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 24
+        }
+      },
+      {
+        "comment": "",
+        "key": "%lld days ago",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 423
+        }
+      },
+      {
+        "comment": "",
+        "key": "%lld conversations",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 433
+        }
+      },
+      {
+        "comment": "",
+        "key": "Email",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 449
+        }
+      },
+      {
+        "comment": "",
+        "key": "View",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 465
+        }
+      },
+      {
+        "comment": "",
+        "key": "Email Ready",
+        "location": {
+          "startingColumn": 29,
+          "startingLine": 482
+        }
+      },
+      {
+        "comment": "",
+        "key": "Press Cmd+N to create a new email, then paste (Cmd+V) the pre-filled content.",
+        "location": {
+          "startingColumn": 31,
+          "startingLine": 483
+        }
+      },
+      {
+        "comment": "",
+        "key": "OK",
+        "location": {
+          "startingColumn": 46,
+          "startingLine": 484
+        }
+      }
+    ]
+  },
+  "version": 1
+}

@@ -1,0 +1,32 @@
+{
+  "source": "/Users/bobkitchen/Documents/GitHub/WhoNext/WhoNext/LeftToolbarActions.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "New Conversation",
+        "location": {
+          "startingColumn": 19,
+          "startingLine": 15
+        }
+      },
+      {
+        "comment": "",
+        "key": "New Person",
+        "location": {
+          "startingColumn": 19,
+          "startingLine": 33
+        }
+      },
+      {
+        "comment": "",
+        "key": "Import Transcript",
+        "location": {
+          "startingColumn": 19,
+          "startingLine": 43
+        }
+      }
+    ]
+  },
+  "version": 1
+}

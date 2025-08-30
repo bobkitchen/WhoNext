@@ -1,0 +1,58 @@
+{
+  "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/SourcePackages/checkouts/Down/Sources/Down/AST/Styling/Helpers/Extensions/UIFont+Traits.swift" : {
+    "const-values" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/Down.build/Debug/Down.build/Objects-normal/arm64/UIFont+Traits.swiftconstvalues",
+    "dependencies" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/Down.build/Debug/Down.build/Objects-normal/arm64/UIFont+Traits.d",
+    "diagnostics" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/Down.build/Debug/Down.build/Objects-normal/arm64/UIFont+Traits.dia",
+    "object" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/Down.build/Debug/Down.build/Objects-normal/arm64/UIFont+Traits.o",
+    "swift-dependencies" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/Down.build/Debug/Down.build/Objects-normal/arm64/UIFont+Traits.swiftdeps"
+  },
+  "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/SourcePackages/checkouts/Down/Sources/Down/AST/Styling/Helpers/ListItemParagraphStyler.swift" : {
+    "const-values" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/Down.build/Debug/Down.build/Objects-normal/arm64/ListItemParagraphStyler.swiftconstvalues",
+    "dependencies" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/Down.build/Debug/Down.build/Objects-normal/arm64/ListItemParagraphStyler.d",
+    "diagnostics" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/Down.build/Debug/Down.build/Objects-normal/arm64/ListItemParagraphStyler.dia",
+    "object" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/Down.build/Debug/Down.build/Objects-normal/arm64/ListItemParagraphStyler.o",
+    "swift-dependencies" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/Down.build/Debug/Down.build/Objects-normal/arm64/ListItemParagraphStyler.swiftdeps"
+  },
+  "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/SourcePackages/checkouts/Down/Sources/Down/AST/Styling/Layout Managers/DownDebugLayoutManager.swift" : {
+    "const-values" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/Down.build/Debug/Down.build/Objects-normal/arm64/DownDebugLayoutManager.swiftconstvalues",
+    "dependencies" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/Down.build/Debug/Down.build/Objects-normal/arm64/DownDebugLayoutManager.d",
+    "diagnostics" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/Down.build/Debug/Down.build/Objects-normal/arm64/DownDebugLayoutManager.dia",
+    "object" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/Down.build/Debug/Down.build/Objects-normal/arm64/DownDebugLayoutManager.o",
+    "swift-dependencies" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/Down.build/Debug/Down.build/Objects-normal/arm64/DownDebugLayoutManager.swiftdeps"
+  },
+  "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/SourcePackages/checkouts/Down/Sources/Down/AST/Styling/Layout Managers/DownLayoutManager.swift" : {
+    "const-values" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/Down.build/Debug/Down.build/Objects-normal/arm64/DownLayoutManager.swiftconstvalues",
+    "dependencies" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/Down.build/Debug/Down.build/Objects-normal/arm64/DownLayoutManager.d",
+    "diagnostics" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/Down.build/Debug/Down.build/Objects-normal/arm64/DownLayoutManager.dia",
+    "object" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/Down.build/Debug/Down.build/Objects-normal/arm64/DownLayoutManager.o",
+    "swift-dependencies" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/Down.build/Debug/Down.build/Objects-normal/arm64/DownLayoutManager.swiftdeps"
+  },
+  "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/SourcePackages/checkouts/Down/Sources/Down/AST/Styling/Options/CodeBlockOptions.swift" : {
+    "const-values" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/Down.build/Debug/Down.build/Objects-normal/arm64/CodeBlockOptions.swiftconstvalues",
+    "dependencies" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/Down.build/Debug/Down.build/Objects-normal/arm64/CodeBlockOptions.d",
+    "diagnostics" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/Down.build/Debug/Down.build/Objects-normal/arm64/CodeBlockOptions.dia",
+    "object" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/Down.build/Debug/Down.build/Objects-normal/arm64/CodeBlockOptions.o",
+    "swift-dependencies" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/Down.build/Debug/Down.build/Objects-normal/arm64/CodeBlockOptions.swiftdeps"
+  },
+  "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/SourcePackages/checkouts/Down/Sources/Down/AST/Styling/Options/ListItemOptions.swift" : {
+    "const-values" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/Down.build/Debug/Down.build/Objects-normal/arm64/ListItemOptions.swiftconstvalues",
+    "dependencies" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/Down.build/Debug/Down.build/Objects-normal/arm64/ListItemOptions.d",
+    "diagnostics" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/Down.build/Debug/Down.build/Objects-normal/arm64/ListItemOptions.dia",
+    "object" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/Down.build/Debug/Down.build/Objects-normal/arm64/ListItemOptions.o",
+    "swift-dependencies" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/Down.build/Debug/Down.build/Objects-normal/arm64/ListItemOptions.swiftdeps"
+  },
+  "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/SourcePackages/checkouts/Down/Sources/Down/AST/Styling/Options/QuoteStripeOptions.swift" : {
+    "const-values" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/Down.build/Debug/Down.build/Objects-normal/arm64/QuoteStripeOptions.swiftconstvalues",
+    "dependencies" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/Down.build/Debug/Down.build/Objects-normal/arm64/QuoteStripeOptions.d",
+    "diagnostics" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/Down.build/Debug/Down.build/Objects-normal/arm64/QuoteStripeOptions.dia",
+    "object" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/Down.build/Debug/Down.build/Objects-normal/arm64/QuoteStripeOptions.o",
+    "swift-dependencies" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/Down.build/Debug/Down.build/Objects-normal/arm64/QuoteStripeOptions.swiftdeps"
+  },
+  "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/SourcePackages/checkouts/Down/Sources/Down/AST/Styling/Options/ThematicBreakOptions.swift" : {
+    "const-values" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/Down.build/Debug/Down.build/Objects-normal/arm64/ThematicBreakOptions.swiftconstvalues",
+    "dependencies" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/Down.build/Debug/Down.build/Objects-normal/arm64/ThematicBreakOptions.d",
+    "diagnostics" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/Down.build/Debug/Down.build/Objects-normal/arm64/ThematicBreakOptions.dia",
+    "object" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/Down.build/Debug/Down.build/Objects-normal/arm64/ThematicBreakOptions.o",
+    "swift-dependencies" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/Down.build/Debug/Down.build/Objects-normal/arm64/ThematicBreakOptions.swiftdeps"
+  }
+}

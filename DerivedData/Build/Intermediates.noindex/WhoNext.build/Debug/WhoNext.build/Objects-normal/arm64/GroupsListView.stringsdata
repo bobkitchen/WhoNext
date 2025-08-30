@@ -1,0 +1,128 @@
+{
+  "source": "/Users/bobkitchen/Documents/GitHub/WhoNext/WhoNext/GroupsListView.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "No Groups Yet",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 47
+        }
+      },
+      {
+        "comment": "",
+        "key": "Create groups to organize team meetings and track group dynamics.",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 52
+        }
+      },
+      {
+        "comment": "",
+        "key": "Create Your First Group",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 63
+        }
+      },
+      {
+        "comment": "",
+        "key": "%lld meetings",
+        "location": {
+          "startingColumn": 31,
+          "startingLine": 142
+        }
+      },
+      {
+        "comment": "",
+        "key": "View Meetings",
+        "location": {
+          "startingColumn": 27,
+          "startingLine": 167
+        }
+      },
+      {
+        "comment": "",
+        "key": "Add Meeting",
+        "location": {
+          "startingColumn": 27,
+          "startingLine": 177
+        }
+      },
+      {
+        "comment": "",
+        "key": "Create New Group",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 211
+        }
+      },
+      {
+        "comment": "",
+        "key": "Cancel",
+        "location": {
+          "startingColumn": 24,
+          "startingLine": 217
+        }
+      },
+      {
+        "comment": "",
+        "key": "Group Information",
+        "location": {
+          "startingColumn": 25,
+          "startingLine": 228
+        }
+      },
+      {
+        "comment": "",
+        "key": "Members (Optional)",
+        "location": {
+          "startingColumn": 25,
+          "startingLine": 235
+        }
+      },
+      {
+        "comment": "",
+        "key": "Group Name",
+        "location": {
+          "startingColumn": 31,
+          "startingLine": 229
+        }
+      },
+      {
+        "comment": "",
+        "key": "Description (optional)",
+        "location": {
+          "startingColumn": 31,
+          "startingLine": 231
+        }
+      },
+      {
+        "comment": "",
+        "key": "Select people who are typically in this group's meetings",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 236
+        }
+      },
+      {
+        "comment": "",
+        "key": "Cancel",
+        "location": {
+          "startingColumn": 24,
+          "startingLine": 273
+        }
+      },
+      {
+        "comment": "",
+        "key": "Create Group",
+        "location": {
+          "startingColumn": 24,
+          "startingLine": 278
+        }
+      }
+    ]
+  },
+  "version": 1
+}

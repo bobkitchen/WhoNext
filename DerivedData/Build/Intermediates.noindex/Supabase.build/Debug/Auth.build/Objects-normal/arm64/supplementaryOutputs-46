@@ -1,0 +1,23 @@
+{
+  "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/SourcePackages/checkouts/supabase-swift/Sources/Auth/Internal/CodeVerifierStorage.swift" : {
+    "const-values" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/Supabase.build/Debug/Auth.build/Objects-normal/arm64/CodeVerifierStorage.swiftconstvalues",
+    "dependencies" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/Supabase.build/Debug/Auth.build/Objects-normal/arm64/CodeVerifierStorage.d",
+    "diagnostics" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/Supabase.build/Debug/Auth.build/Objects-normal/arm64/CodeVerifierStorage.dia",
+    "object" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/Supabase.build/Debug/Auth.build/Objects-normal/arm64/CodeVerifierStorage.o",
+    "swift-dependencies" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/Supabase.build/Debug/Auth.build/Objects-normal/arm64/CodeVerifierStorage.swiftdeps"
+  },
+  "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/SourcePackages/checkouts/supabase-swift/Sources/Auth/Internal/Constants.swift" : {
+    "const-values" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/Supabase.build/Debug/Auth.build/Objects-normal/arm64/Constants.swiftconstvalues",
+    "dependencies" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/Supabase.build/Debug/Auth.build/Objects-normal/arm64/Constants.d",
+    "diagnostics" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/Supabase.build/Debug/Auth.build/Objects-normal/arm64/Constants.dia",
+    "object" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/Supabase.build/Debug/Auth.build/Objects-normal/arm64/Constants.o",
+    "swift-dependencies" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/Supabase.build/Debug/Auth.build/Objects-normal/arm64/Constants.swiftdeps"
+  },
+  "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/SourcePackages/checkouts/supabase-swift/Sources/Auth/Internal/Dependencies.swift" : {
+    "const-values" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/Supabase.build/Debug/Auth.build/Objects-normal/arm64/Dependencies.swiftconstvalues",
+    "dependencies" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/Supabase.build/Debug/Auth.build/Objects-normal/arm64/Dependencies.d",
+    "diagnostics" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/Supabase.build/Debug/Auth.build/Objects-normal/arm64/Dependencies.dia",
+    "object" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/Supabase.build/Debug/Auth.build/Objects-normal/arm64/Dependencies.o",
+    "swift-dependencies" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/Supabase.build/Debug/Auth.build/Objects-normal/arm64/Dependencies.swiftdeps"
+  }
+}

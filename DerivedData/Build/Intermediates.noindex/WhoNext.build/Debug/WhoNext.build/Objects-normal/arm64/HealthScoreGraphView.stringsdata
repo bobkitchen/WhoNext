@@ -1,0 +1,88 @@
+{
+  "source": "/Users/bobkitchen/Documents/GitHub/WhoNext/WhoNext/HealthScoreGraphView.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "Average Health Score Trend",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 9
+        }
+      },
+      {
+        "comment": "",
+        "key": "No health score data available",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 14
+        }
+      },
+      {
+        "comment": "",
+        "key": "Week Number (Calendar Year)",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 65
+        }
+      },
+      {
+        "comment": "",
+        "key": "Health Score",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 66
+        }
+      },
+      {
+        "comment": "",
+        "key": "Week",
+        "location": {
+          "startingColumn": 35,
+          "startingLine": 22
+        }
+      },
+      {
+        "comment": "",
+        "key": "Health Score",
+        "location": {
+          "startingColumn": 35,
+          "startingLine": 23
+        }
+      },
+      {
+        "comment": "",
+        "key": "Week",
+        "location": {
+          "startingColumn": 35,
+          "startingLine": 35
+        }
+      },
+      {
+        "comment": "",
+        "key": "Health Score",
+        "location": {
+          "startingColumn": 35,
+          "startingLine": 36
+        }
+      },
+      {
+        "comment": "",
+        "key": "Week",
+        "location": {
+          "startingColumn": 35,
+          "startingLine": 43
+        }
+      },
+      {
+        "comment": "",
+        "key": "Health Score",
+        "location": {
+          "startingColumn": 35,
+          "startingLine": 44
+        }
+      }
+    ]
+  },
+  "version": 1
+}

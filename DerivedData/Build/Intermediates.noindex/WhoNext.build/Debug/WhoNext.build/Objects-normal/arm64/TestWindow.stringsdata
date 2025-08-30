@@ -1,0 +1,24 @@
+{
+  "source": "/Users/bobkitchen/Documents/GitHub/WhoNext/WhoNext/TestWindow.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "Test Window",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 7
+        }
+      },
+      {
+        "comment": "",
+        "key": "Close Window",
+        "location": {
+          "startingColumn": 20,
+          "startingLine": 9
+        }
+      }
+    ]
+  },
+  "version": 1
+}

@@ -1,0 +1,80 @@
+{
+  "source": "/Users/bobkitchen/Documents/GitHub/WhoNext/WhoNext/GlobalNewConversationSheet.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "DEBUG AUTOCOMPLETE",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 29
+        }
+      },
+      {
+        "comment": "",
+        "key": "New Conversation",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 32
+        }
+      },
+      {
+        "comment": "",
+        "key": "Notes:",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 95
+        }
+      },
+      {
+        "comment": "",
+        "key": "Date",
+        "location": {
+          "startingColumn": 24,
+          "startingLine": 93
+        }
+      },
+      {
+        "comment": "",
+        "key": "To:",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 38
+        }
+      },
+      {
+        "comment": "",
+        "key": "Type a name...",
+        "location": {
+          "startingColumn": 31,
+          "startingLine": 40
+        }
+      },
+      {
+        "comment": "",
+        "key": "(%@)",
+        "location": {
+          "startingColumn": 54,
+          "startingLine": 71
+        }
+      },
+      {
+        "comment": "",
+        "key": "Cancel",
+        "location": {
+          "startingColumn": 24,
+          "startingLine": 107
+        }
+      },
+      {
+        "comment": "",
+        "key": "Save",
+        "location": {
+          "startingColumn": 24,
+          "startingLine": 112
+        }
+      }
+    ]
+  },
+  "version": 1
+}

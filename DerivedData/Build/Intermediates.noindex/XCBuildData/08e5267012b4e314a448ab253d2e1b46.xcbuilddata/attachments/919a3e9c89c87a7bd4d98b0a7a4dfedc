@@ -1,0 +1,66 @@
+/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/Down.build/Debug/Down.build/DerivedSources/resource_bundle_accessor.swift
+/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/SourcePackages/checkouts/Down/Sources/Down/AST/Nodes/BaseNode.swift
+/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/SourcePackages/checkouts/Down/Sources/Down/AST/Nodes/BlockQuote.swift
+/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/SourcePackages/checkouts/Down/Sources/Down/AST/Nodes/ChildSequence.swift
+/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/SourcePackages/checkouts/Down/Sources/Down/AST/Nodes/Code.swift
+/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/SourcePackages/checkouts/Down/Sources/Down/AST/Nodes/CodeBlock.swift
+/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/SourcePackages/checkouts/Down/Sources/Down/AST/Nodes/CustomBlock.swift
+/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/SourcePackages/checkouts/Down/Sources/Down/AST/Nodes/CustomInline.swift
+/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/SourcePackages/checkouts/Down/Sources/Down/AST/Nodes/Document.swift
+/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/SourcePackages/checkouts/Down/Sources/Down/AST/Nodes/Emphasis.swift
+/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/SourcePackages/checkouts/Down/Sources/Down/AST/Nodes/Heading.swift
+/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/SourcePackages/checkouts/Down/Sources/Down/AST/Nodes/HtmlBlock.swift
+/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/SourcePackages/checkouts/Down/Sources/Down/AST/Nodes/HtmlInline.swift
+/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/SourcePackages/checkouts/Down/Sources/Down/AST/Nodes/Image.swift
+/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/SourcePackages/checkouts/Down/Sources/Down/AST/Nodes/Item.swift
+/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/SourcePackages/checkouts/Down/Sources/Down/AST/Nodes/LineBreak.swift
+/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/SourcePackages/checkouts/Down/Sources/Down/AST/Nodes/Link.swift
+/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/SourcePackages/checkouts/Down/Sources/Down/AST/Nodes/List.swift
+/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/SourcePackages/checkouts/Down/Sources/Down/AST/Nodes/Node.swift
+/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/SourcePackages/checkouts/Down/Sources/Down/AST/Nodes/Paragraph.swift
+/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/SourcePackages/checkouts/Down/Sources/Down/AST/Nodes/SoftBreak.swift
+/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/SourcePackages/checkouts/Down/Sources/Down/AST/Nodes/Strong.swift
+/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/SourcePackages/checkouts/Down/Sources/Down/AST/Nodes/Text.swift
+/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/SourcePackages/checkouts/Down/Sources/Down/AST/Nodes/ThematicBreak.swift
+/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/SourcePackages/checkouts/Down/Sources/Down/AST/Styling/Attribute\ Collections/ColorCollection.swift
+/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/SourcePackages/checkouts/Down/Sources/Down/AST/Styling/Attribute\ Collections/FontCollection.swift
+/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/SourcePackages/checkouts/Down/Sources/Down/AST/Styling/Attribute\ Collections/ParagraphStyleCollection.swift
+/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/SourcePackages/checkouts/Down/Sources/Down/AST/Styling/Custom\ Attributes/BlockBackgroundColorAttribute.swift
+/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/SourcePackages/checkouts/Down/Sources/Down/AST/Styling/Custom\ Attributes/QuoteStripeAttribute.swift
+/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/SourcePackages/checkouts/Down/Sources/Down/AST/Styling/Custom\ Attributes/ThematicBreakAttribute.swift
+/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/SourcePackages/checkouts/Down/Sources/Down/AST/Styling/Helpers/Extensions/CGPoint+Translate.swift
+/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/SourcePackages/checkouts/Down/Sources/Down/AST/Styling/Helpers/Extensions/CGRect+Helpers.swift
+/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/SourcePackages/checkouts/Down/Sources/Down/AST/Styling/Helpers/Extensions/NSAttributedString+Helpers.swift
+/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/SourcePackages/checkouts/Down/Sources/Down/AST/Styling/Helpers/Extensions/NSMutableAttributedString+Attributes.swift
+/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/SourcePackages/checkouts/Down/Sources/Down/AST/Styling/Helpers/Extensions/UIFont+Traits.swift
+/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/SourcePackages/checkouts/Down/Sources/Down/AST/Styling/Helpers/ListItemParagraphStyler.swift
+/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/SourcePackages/checkouts/Down/Sources/Down/AST/Styling/Layout\ Managers/DownDebugLayoutManager.swift
+/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/SourcePackages/checkouts/Down/Sources/Down/AST/Styling/Layout\ Managers/DownLayoutManager.swift
+/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/SourcePackages/checkouts/Down/Sources/Down/AST/Styling/Options/CodeBlockOptions.swift
+/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/SourcePackages/checkouts/Down/Sources/Down/AST/Styling/Options/ListItemOptions.swift
+/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/SourcePackages/checkouts/Down/Sources/Down/AST/Styling/Options/QuoteStripeOptions.swift
+/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/SourcePackages/checkouts/Down/Sources/Down/AST/Styling/Options/ThematicBreakOptions.swift
+/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/SourcePackages/checkouts/Down/Sources/Down/AST/Styling/Stylers/DownStyler.swift
+/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/SourcePackages/checkouts/Down/Sources/Down/AST/Styling/Stylers/DownStylerConfiguration.swift
+/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/SourcePackages/checkouts/Down/Sources/Down/AST/Styling/Stylers/Styler.swift
+/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/SourcePackages/checkouts/Down/Sources/Down/AST/Styling/Text\ Views/DownDebugTextView.swift
+/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/SourcePackages/checkouts/Down/Sources/Down/AST/Styling/Text\ Views/DownTextView.swift
+/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/SourcePackages/checkouts/Down/Sources/Down/AST/Visitors/AttributedStringVisitor.swift
+/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/SourcePackages/checkouts/Down/Sources/Down/AST/Visitors/DebugVisitor.swift
+/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/SourcePackages/checkouts/Down/Sources/Down/AST/Visitors/ListItemPrefixGenerator.swift
+/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/SourcePackages/checkouts/Down/Sources/Down/AST/Visitors/Visitor.swift
+/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/SourcePackages/checkouts/Down/Sources/Down/Down.swift
+/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/SourcePackages/checkouts/Down/Sources/Down/Enums\ &\ Options/DownErrors.swift
+/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/SourcePackages/checkouts/Down/Sources/Down/Enums\ &\ Options/DownOptions.swift
+/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/SourcePackages/checkouts/Down/Sources/Down/Extensions/NSAttributedString+HTML.swift
+/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/SourcePackages/checkouts/Down/Sources/Down/Extensions/String+ToHTML.swift
+/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/SourcePackages/checkouts/Down/Sources/Down/Renderers/DownASTRenderable.swift
+/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/SourcePackages/checkouts/Down/Sources/Down/Renderers/DownAttributedStringRenderable.swift
+/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/SourcePackages/checkouts/Down/Sources/Down/Renderers/DownCommonMarkRenderable.swift
+/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/SourcePackages/checkouts/Down/Sources/Down/Renderers/DownGroffRenderable.swift
+/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/SourcePackages/checkouts/Down/Sources/Down/Renderers/DownHTMLRenderable.swift
+/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/SourcePackages/checkouts/Down/Sources/Down/Renderers/DownLaTeXRenderable.swift
+/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/SourcePackages/checkouts/Down/Sources/Down/Renderers/DownRenderable.swift
+/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/SourcePackages/checkouts/Down/Sources/Down/Renderers/DownXMLRenderable.swift
+/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/SourcePackages/checkouts/Down/Sources/Down/Views/BundleHelper.swift
+/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/SourcePackages/checkouts/Down/Sources/Down/Views/DownView.swift

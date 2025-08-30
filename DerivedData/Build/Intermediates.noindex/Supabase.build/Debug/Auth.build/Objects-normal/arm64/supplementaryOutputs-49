@@ -1,0 +1,23 @@
+{
+  "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/SourcePackages/checkouts/supabase-swift/Sources/Auth/Internal/SessionStorage.swift" : {
+    "const-values" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/Supabase.build/Debug/Auth.build/Objects-normal/arm64/SessionStorage.swiftconstvalues",
+    "dependencies" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/Supabase.build/Debug/Auth.build/Objects-normal/arm64/SessionStorage.d",
+    "diagnostics" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/Supabase.build/Debug/Auth.build/Objects-normal/arm64/SessionStorage.dia",
+    "object" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/Supabase.build/Debug/Auth.build/Objects-normal/arm64/SessionStorage.o",
+    "swift-dependencies" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/Supabase.build/Debug/Auth.build/Objects-normal/arm64/SessionStorage.swiftdeps"
+  },
+  "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/SourcePackages/checkouts/supabase-swift/Sources/Auth/Internal/URLOpener.swift" : {
+    "const-values" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/Supabase.build/Debug/Auth.build/Objects-normal/arm64/URLOpener.swiftconstvalues",
+    "dependencies" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/Supabase.build/Debug/Auth.build/Objects-normal/arm64/URLOpener.d",
+    "diagnostics" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/Supabase.build/Debug/Auth.build/Objects-normal/arm64/URLOpener.dia",
+    "object" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/Supabase.build/Debug/Auth.build/Objects-normal/arm64/URLOpener.o",
+    "swift-dependencies" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/Supabase.build/Debug/Auth.build/Objects-normal/arm64/URLOpener.swiftdeps"
+  },
+  "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/SourcePackages/checkouts/supabase-swift/Sources/Auth/Storage/AuthLocalStorage.swift" : {
+    "const-values" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/Supabase.build/Debug/Auth.build/Objects-normal/arm64/AuthLocalStorage.swiftconstvalues",
+    "dependencies" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/Supabase.build/Debug/Auth.build/Objects-normal/arm64/AuthLocalStorage.d",
+    "diagnostics" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/Supabase.build/Debug/Auth.build/Objects-normal/arm64/AuthLocalStorage.dia",
+    "object" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/Supabase.build/Debug/Auth.build/Objects-normal/arm64/AuthLocalStorage.o",
+    "swift-dependencies" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/Supabase.build/Debug/Auth.build/Objects-normal/arm64/AuthLocalStorage.swiftdeps"
+  }
+}

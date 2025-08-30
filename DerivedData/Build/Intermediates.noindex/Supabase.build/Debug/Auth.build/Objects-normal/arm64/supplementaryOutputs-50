@@ -1,0 +1,23 @@
+{
+  "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/SourcePackages/checkouts/supabase-swift/Sources/Auth/Storage/KeychainLocalStorage.swift" : {
+    "const-values" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/Supabase.build/Debug/Auth.build/Objects-normal/arm64/KeychainLocalStorage.swiftconstvalues",
+    "dependencies" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/Supabase.build/Debug/Auth.build/Objects-normal/arm64/KeychainLocalStorage.d",
+    "diagnostics" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/Supabase.build/Debug/Auth.build/Objects-normal/arm64/KeychainLocalStorage.dia",
+    "object" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/Supabase.build/Debug/Auth.build/Objects-normal/arm64/KeychainLocalStorage.o",
+    "swift-dependencies" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/Supabase.build/Debug/Auth.build/Objects-normal/arm64/KeychainLocalStorage.swiftdeps"
+  },
+  "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/SourcePackages/checkouts/supabase-swift/Sources/Auth/Storage/WinCredLocalStorage.swift" : {
+    "const-values" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/Supabase.build/Debug/Auth.build/Objects-normal/arm64/WinCredLocalStorage.swiftconstvalues",
+    "dependencies" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/Supabase.build/Debug/Auth.build/Objects-normal/arm64/WinCredLocalStorage.d",
+    "diagnostics" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/Supabase.build/Debug/Auth.build/Objects-normal/arm64/WinCredLocalStorage.dia",
+    "object" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/Supabase.build/Debug/Auth.build/Objects-normal/arm64/WinCredLocalStorage.o",
+    "swift-dependencies" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/Supabase.build/Debug/Auth.build/Objects-normal/arm64/WinCredLocalStorage.swiftdeps"
+  },
+  "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/SourcePackages/checkouts/supabase-swift/Sources/Auth/Types.swift" : {
+    "const-values" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/Supabase.build/Debug/Auth.build/Objects-normal/arm64/Types.swiftconstvalues",
+    "dependencies" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/Supabase.build/Debug/Auth.build/Objects-normal/arm64/Types.d",
+    "diagnostics" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/Supabase.build/Debug/Auth.build/Objects-normal/arm64/Types.dia",
+    "object" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/Supabase.build/Debug/Auth.build/Objects-normal/arm64/Types.o",
+    "swift-dependencies" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/Supabase.build/Debug/Auth.build/Objects-normal/arm64/Types.swiftdeps"
+  }
+}

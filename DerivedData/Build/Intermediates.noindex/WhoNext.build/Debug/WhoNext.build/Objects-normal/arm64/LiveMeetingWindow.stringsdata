@@ -1,0 +1,72 @@
+{
+  "source": "/Users/bobkitchen/Documents/GitHub/WhoNext/WhoNext/LiveMeetingWindow.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "Recording",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 125
+        }
+      },
+      {
+        "comment": "",
+        "key": "Toggle transcript",
+        "location": {
+          "startingColumn": 23,
+          "startingLine": 145
+        }
+      },
+      {
+        "comment": "",
+        "key": "Collapse",
+        "location": {
+          "startingColumn": 36,
+          "startingLine": 153
+        }
+      },
+      {
+        "comment": "",
+        "key": "Expand",
+        "location": {
+          "startingColumn": 49,
+          "startingLine": 153
+        }
+      },
+      {
+        "comment": "",
+        "key": "Stop recording",
+        "location": {
+          "startingColumn": 23,
+          "startingLine": 161
+        }
+      },
+      {
+        "comment": "",
+        "key": "%lld participants",
+        "location": {
+          "startingColumn": 27,
+          "startingLine": 175
+        }
+      },
+      {
+        "comment": "",
+        "key": "%lld%%",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 186
+        }
+      },
+      {
+        "comment": "",
+        "key": "Audio Recording",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 266
+        }
+      }
+    ]
+  },
+  "version": 1
+}

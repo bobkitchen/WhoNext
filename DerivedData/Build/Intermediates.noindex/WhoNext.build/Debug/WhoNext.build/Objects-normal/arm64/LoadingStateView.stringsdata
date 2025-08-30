@@ -1,0 +1,16 @@
+{
+  "source": "/Users/bobkitchen/Documents/GitHub/WhoNext/WhoNext/LoadingStateView.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "Content behind loading state",
+        "location": {
+          "startingColumn": 1,
+          "startingLine": 134
+        }
+      }
+    ]
+  },
+  "version": 1
+}

@@ -1,0 +1,23 @@
+{
+  "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/SourcePackages/checkouts/supabase-swift/Sources/Helpers/HTTP/HTTPRequest.swift" : {
+    "const-values" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/Supabase.build/Debug/Helpers.build/Objects-normal/arm64/HTTPRequest.swiftconstvalues",
+    "dependencies" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/Supabase.build/Debug/Helpers.build/Objects-normal/arm64/HTTPRequest.d",
+    "diagnostics" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/Supabase.build/Debug/Helpers.build/Objects-normal/arm64/HTTPRequest.dia",
+    "object" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/Supabase.build/Debug/Helpers.build/Objects-normal/arm64/HTTPRequest.o",
+    "swift-dependencies" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/Supabase.build/Debug/Helpers.build/Objects-normal/arm64/HTTPRequest.swiftdeps"
+  },
+  "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/SourcePackages/checkouts/supabase-swift/Sources/Helpers/HTTP/HTTPResponse.swift" : {
+    "const-values" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/Supabase.build/Debug/Helpers.build/Objects-normal/arm64/HTTPResponse.swiftconstvalues",
+    "dependencies" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/Supabase.build/Debug/Helpers.build/Objects-normal/arm64/HTTPResponse.d",
+    "diagnostics" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/Supabase.build/Debug/Helpers.build/Objects-normal/arm64/HTTPResponse.dia",
+    "object" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/Supabase.build/Debug/Helpers.build/Objects-normal/arm64/HTTPResponse.o",
+    "swift-dependencies" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/Supabase.build/Debug/Helpers.build/Objects-normal/arm64/HTTPResponse.swiftdeps"
+  },
+  "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/SourcePackages/checkouts/supabase-swift/Sources/Helpers/HTTP/LoggerInterceptor.swift" : {
+    "const-values" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/Supabase.build/Debug/Helpers.build/Objects-normal/arm64/LoggerInterceptor.swiftconstvalues",
+    "dependencies" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/Supabase.build/Debug/Helpers.build/Objects-normal/arm64/LoggerInterceptor.d",
+    "diagnostics" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/Supabase.build/Debug/Helpers.build/Objects-normal/arm64/LoggerInterceptor.dia",
+    "object" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/Supabase.build/Debug/Helpers.build/Objects-normal/arm64/LoggerInterceptor.o",
+    "swift-dependencies" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/Supabase.build/Debug/Helpers.build/Objects-normal/arm64/LoggerInterceptor.swiftdeps"
+  }
+}

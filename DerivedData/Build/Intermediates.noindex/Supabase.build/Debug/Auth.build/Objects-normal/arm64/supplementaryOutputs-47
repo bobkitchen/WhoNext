@@ -1,0 +1,23 @@
+{
+  "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/SourcePackages/checkouts/supabase-swift/Sources/Auth/Internal/EventEmitter.swift" : {
+    "const-values" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/Supabase.build/Debug/Auth.build/Objects-normal/arm64/EventEmitter.swiftconstvalues",
+    "dependencies" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/Supabase.build/Debug/Auth.build/Objects-normal/arm64/EventEmitter.d",
+    "diagnostics" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/Supabase.build/Debug/Auth.build/Objects-normal/arm64/EventEmitter.dia",
+    "object" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/Supabase.build/Debug/Auth.build/Objects-normal/arm64/EventEmitter.o",
+    "swift-dependencies" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/Supabase.build/Debug/Auth.build/Objects-normal/arm64/EventEmitter.swiftdeps"
+  },
+  "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/SourcePackages/checkouts/supabase-swift/Sources/Auth/Internal/FixedWidthInteger+Random.swift" : {
+    "const-values" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/Supabase.build/Debug/Auth.build/Objects-normal/arm64/FixedWidthInteger+Random.swiftconstvalues",
+    "dependencies" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/Supabase.build/Debug/Auth.build/Objects-normal/arm64/FixedWidthInteger+Random.d",
+    "diagnostics" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/Supabase.build/Debug/Auth.build/Objects-normal/arm64/FixedWidthInteger+Random.dia",
+    "object" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/Supabase.build/Debug/Auth.build/Objects-normal/arm64/FixedWidthInteger+Random.o",
+    "swift-dependencies" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/Supabase.build/Debug/Auth.build/Objects-normal/arm64/FixedWidthInteger+Random.swiftdeps"
+  },
+  "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/SourcePackages/checkouts/supabase-swift/Sources/Auth/Internal/Helpers.swift" : {
+    "const-values" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/Supabase.build/Debug/Auth.build/Objects-normal/arm64/Helpers.swiftconstvalues",
+    "dependencies" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/Supabase.build/Debug/Auth.build/Objects-normal/arm64/Helpers.d",
+    "diagnostics" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/Supabase.build/Debug/Auth.build/Objects-normal/arm64/Helpers.dia",
+    "object" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/Supabase.build/Debug/Auth.build/Objects-normal/arm64/Helpers.o",
+    "swift-dependencies" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/Supabase.build/Debug/Auth.build/Objects-normal/arm64/Helpers.swiftdeps"
+  }
+}

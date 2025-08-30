@@ -1,0 +1,30 @@
+{
+  "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/SourcePackages/checkouts/FluidAudio/Sources/FluidAudio/Diarizer/SpeakerManager.swift" : {
+    "const-values" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/FluidAudio.build/Debug/FluidAudio.build/Objects-normal/arm64/SpeakerManager.swiftconstvalues",
+    "dependencies" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/FluidAudio.build/Debug/FluidAudio.build/Objects-normal/arm64/SpeakerManager.d",
+    "diagnostics" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/FluidAudio.build/Debug/FluidAudio.build/Objects-normal/arm64/SpeakerManager.dia",
+    "object" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/FluidAudio.build/Debug/FluidAudio.build/Objects-normal/arm64/SpeakerManager.o",
+    "swift-dependencies" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/FluidAudio.build/Debug/FluidAudio.build/Objects-normal/arm64/SpeakerManager.swiftdeps"
+  },
+  "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/SourcePackages/checkouts/FluidAudio/Sources/FluidAudio/Diarizer/SpeakerOperations.swift" : {
+    "const-values" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/FluidAudio.build/Debug/FluidAudio.build/Objects-normal/arm64/SpeakerOperations.swiftconstvalues",
+    "dependencies" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/FluidAudio.build/Debug/FluidAudio.build/Objects-normal/arm64/SpeakerOperations.d",
+    "diagnostics" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/FluidAudio.build/Debug/FluidAudio.build/Objects-normal/arm64/SpeakerOperations.dia",
+    "object" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/FluidAudio.build/Debug/FluidAudio.build/Objects-normal/arm64/SpeakerOperations.o",
+    "swift-dependencies" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/FluidAudio.build/Debug/FluidAudio.build/Objects-normal/arm64/SpeakerOperations.swiftdeps"
+  },
+  "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/SourcePackages/checkouts/FluidAudio/Sources/FluidAudio/Diarizer/SpeakerTypes.swift" : {
+    "const-values" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/FluidAudio.build/Debug/FluidAudio.build/Objects-normal/arm64/SpeakerTypes.swiftconstvalues",
+    "dependencies" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/FluidAudio.build/Debug/FluidAudio.build/Objects-normal/arm64/SpeakerTypes.d",
+    "diagnostics" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/FluidAudio.build/Debug/FluidAudio.build/Objects-normal/arm64/SpeakerTypes.dia",
+    "object" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/FluidAudio.build/Debug/FluidAudio.build/Objects-normal/arm64/SpeakerTypes.o",
+    "swift-dependencies" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/FluidAudio.build/Debug/FluidAudio.build/Objects-normal/arm64/SpeakerTypes.swiftdeps"
+  },
+  "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/SourcePackages/checkouts/FluidAudio/Sources/FluidAudio/DownloadUtils.swift" : {
+    "const-values" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/FluidAudio.build/Debug/FluidAudio.build/Objects-normal/arm64/DownloadUtils.swiftconstvalues",
+    "dependencies" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/FluidAudio.build/Debug/FluidAudio.build/Objects-normal/arm64/DownloadUtils.d",
+    "diagnostics" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/FluidAudio.build/Debug/FluidAudio.build/Objects-normal/arm64/DownloadUtils.dia",
+    "object" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/FluidAudio.build/Debug/FluidAudio.build/Objects-normal/arm64/DownloadUtils.o",
+    "swift-dependencies" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/FluidAudio.build/Debug/FluidAudio.build/Objects-normal/arm64/DownloadUtils.swiftdeps"
+  }
+}

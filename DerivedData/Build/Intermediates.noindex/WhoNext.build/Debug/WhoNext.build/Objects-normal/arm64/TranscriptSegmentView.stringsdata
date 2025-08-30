@@ -1,0 +1,64 @@
+{
+  "source": "/Users/bobkitchen/Documents/GitHub/WhoNext/WhoNext/TranscriptSegmentView.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "Finalized by Whisper",
+        "location": {
+          "startingColumn": 39,
+          "startingLine": 43
+        }
+      },
+      {
+        "comment": "",
+        "key": "Processing...",
+        "location": {
+          "startingColumn": 39,
+          "startingLine": 48
+        }
+      },
+      {
+        "comment": "",
+        "key": "Copy",
+        "location": {
+          "startingColumn": 23,
+          "startingLine": 88
+        }
+      },
+      {
+        "comment": "",
+        "key": "Edit Speaker",
+        "location": {
+          "startingColumn": 23,
+          "startingLine": 103
+        }
+      },
+      {
+        "comment": "",
+        "key": "Flag",
+        "location": {
+          "startingColumn": 23,
+          "startingLine": 118
+        }
+      },
+      {
+        "comment": "",
+        "key": "Confidence: %lld%%",
+        "location": {
+          "startingColumn": 15,
+          "startingLine": 212
+        }
+      },
+      {
+        "comment": "",
+        "key": "**%@:** ",
+        "location": {
+          "startingColumn": 23,
+          "startingLine": 241
+        }
+      }
+    ]
+  },
+  "version": 1
+}

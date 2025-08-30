@@ -1,0 +1,32 @@
+{
+  "source": "/Users/bobkitchen/Documents/GitHub/WhoNext/WhoNext/PeopleAndGroupsView.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "People & Groups",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 45
+        }
+      },
+      {
+        "comment": "",
+        "key": "View Mode",
+        "location": {
+          "startingColumn": 20,
+          "startingLine": 52
+        }
+      },
+      {
+        "comment": "",
+        "key": "Search %@...",
+        "location": {
+          "startingColumn": 23,
+          "startingLine": 70
+        }
+      }
+    ]
+  },
+  "version": 1
+}

@@ -1,0 +1,80 @@
+{
+  "source": "/Users/bobkitchen/Documents/GitHub/WhoNext/WhoNext/LinkedInPDFDropZone.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "Files Ready:",
+        "location": {
+          "startingColumn": 38,
+          "startingLine": 42
+        }
+      },
+      {
+        "comment": "",
+        "key": "Drop LinkedIn Profile PDFs",
+        "location": {
+          "startingColumn": 38,
+          "startingLine": 58
+        }
+      },
+      {
+        "comment": "",
+        "key": "Supports 1-2 PDF files (Experience + Education pages)",
+        "location": {
+          "startingColumn": 38,
+          "startingLine": 62
+        }
+      },
+      {
+        "comment": "",
+        "key": "Generate Profile Summary",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 81
+        }
+      },
+      {
+        "comment": "",
+        "key": "How to use:",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 111
+        }
+      },
+      {
+        "comment": "",
+        "key": "1. Find the person on LinkedIn",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 116
+        }
+      },
+      {
+        "comment": "",
+        "key": "2. Print Experience page as PDF",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 117
+        }
+      },
+      {
+        "comment": "",
+        "key": "3. Print Education page as PDF (optional)",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 118
+        }
+      },
+      {
+        "comment": "",
+        "key": "4. Drag both PDFs here",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 119
+        }
+      }
+    ]
+  },
+  "version": 1
+}

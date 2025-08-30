@@ -1,0 +1,96 @@
+{
+  "source": "/Users/bobkitchen/Documents/GitHub/WhoNext/WhoNext/ChatView.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "Error",
+        "location": {
+          "startingColumn": 16,
+          "startingLine": 303
+        }
+      },
+      {
+        "comment": "",
+        "key": "Chat Insights",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 37
+        }
+      },
+      {
+        "comment": "",
+        "key": "Pop Out",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 58
+        }
+      },
+      {
+        "comment": "",
+        "key": "Ask me about your network",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 108
+        }
+      },
+      {
+        "comment": "",
+        "key": "I can help you stay connected",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 112
+        }
+      },
+      {
+        "comment": "",
+        "key": "Try asking:",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 118
+        }
+      },
+      {
+        "comment": "",
+        "key": "AI is thinking...",
+        "location": {
+          "startingColumn": 46,
+          "startingLine": 199
+        }
+      },
+      {
+        "comment": "",
+        "key": "Ask about your network...",
+        "location": {
+          "startingColumn": 35,
+          "startingLine": 246
+        }
+      },
+      {
+        "comment": "",
+        "key": "OK",
+        "location": {
+          "startingColumn": 20,
+          "startingLine": 304
+        }
+      },
+      {
+        "comment": "",
+        "key": "Welcome to Insights",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 518
+        }
+      },
+      {
+        "comment": "",
+        "key": "Get Started",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 559
+        }
+      }
+    ]
+  },
+  "version": 1
+}

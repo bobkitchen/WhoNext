@@ -1,0 +1,304 @@
+{
+  "source": "/Users/bobkitchen/Documents/GitHub/WhoNext/WhoNext/PersonDetailView.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "Direct Report",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 140
+        }
+      },
+      {
+        "comment": "",
+        "key": "LinkedIn",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 166
+        }
+      },
+      {
+        "comment": "",
+        "key": "Edit",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 176
+        }
+      },
+      {
+        "comment": "",
+        "key": "Profile Notes",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 198
+        }
+      },
+      {
+        "comment": "",
+        "key": "💡 Tip: Use 'Find on LinkedIn' button above, then copy/paste profile info here",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 212
+        }
+      },
+      {
+        "comment": "",
+        "key": "Open profile in new window",
+        "location": {
+          "startingColumn": 31,
+          "startingLine": 207
+        }
+      },
+      {
+        "comment": "",
+        "key": "No profile information available",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 225
+        }
+      },
+      {
+        "comment": "",
+        "key": "Click 'Find on LinkedIn' above to search for this person, then copy relevant details (job history, education, etc.) and paste them in the Edit view.",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 229
+        }
+      },
+      {
+        "comment": "",
+        "key": "Conversation Analytics",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 248
+        }
+      },
+      {
+        "comment": "",
+        "key": "(%lld conversations)",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 252
+        }
+      },
+      {
+        "comment": "",
+        "key": "No conversation data yet",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 263
+        }
+      },
+      {
+        "comment": "",
+        "key": "Start a conversation to see analytics",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 266
+        }
+      },
+      {
+        "comment": "",
+        "key": "Health Score",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 283
+        }
+      },
+      {
+        "comment": "",
+        "key": "Avg Sentiment",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 302
+        }
+      },
+      {
+        "comment": "",
+        "key": "%lld",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 326
+        }
+      },
+      {
+        "comment": "",
+        "key": "Conversations",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 321
+        }
+      },
+      {
+        "comment": "",
+        "key": "Pre-Meeting Brief",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 390
+        }
+      },
+      {
+        "comment": "",
+        "key": "Pop Out",
+        "location": {
+          "startingColumn": 42,
+          "startingLine": 405
+        }
+      },
+      {
+        "comment": "",
+        "key": "Copy",
+        "location": {
+          "startingColumn": 42,
+          "startingLine": 425
+        }
+      },
+      {
+        "comment": "",
+        "key": "Generating...",
+        "location": {
+          "startingColumn": 53,
+          "startingLine": 449
+        }
+      },
+      {
+        "comment": "",
+        "key": "Generate",
+        "location": {
+          "startingColumn": 71,
+          "startingLine": 449
+        }
+      },
+      {
+        "comment": "",
+        "key": "Conversations",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 476
+        }
+      },
+      {
+        "comment": "",
+        "key": "New",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 487
+        }
+      },
+      {
+        "comment": "",
+        "key": "No conversations yet",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 507
+        }
+      },
+      {
+        "comment": "",
+        "key": "Start your first conversation to begin building insights",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 510
+        }
+      },
+      {
+        "comment": "",
+        "key": "Add First Conversation",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 520
+        }
+      },
+      {
+        "comment": "",
+        "key": "Open in Window",
+        "location": {
+          "startingColumn": 23,
+          "startingLine": 707
+        }
+      },
+      {
+        "comment": "",
+        "key": "Delete",
+        "location": {
+          "startingColumn": 23,
+          "startingLine": 713
+        }
+      },
+      {
+        "comment": "",
+        "key": "%dm",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 775
+        }
+      },
+      {
+        "comment": "",
+        "key": "•",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 1048
+        }
+      },
+      {
+        "comment": "",
+        "key": "%@ - Full Profile",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 1113
+        }
+      },
+      {
+        "comment": "",
+        "key": "No profile information available",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 1140
+        }
+      },
+      {
+        "comment": "",
+        "key": "To add profile information:",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 1144
+        }
+      },
+      {
+        "comment": "",
+        "key": "1. Click 'Find on LinkedIn' to search for this person",
+        "location": {
+          "startingColumn": 35,
+          "startingLine": 1149
+        }
+      },
+      {
+        "comment": "",
+        "key": "2. Copy relevant profile details",
+        "location": {
+          "startingColumn": 35,
+          "startingLine": 1150
+        }
+      },
+      {
+        "comment": "",
+        "key": "3. Click 'Edit' and paste the information",
+        "location": {
+          "startingColumn": 35,
+          "startingLine": 1151
+        }
+      },
+      {
+        "comment": "",
+        "key": "Copy to Clipboard",
+        "location": {
+          "startingColumn": 27,
+          "startingLine": 1171
+        }
+      }
+    ]
+  },
+  "version": 1
+}

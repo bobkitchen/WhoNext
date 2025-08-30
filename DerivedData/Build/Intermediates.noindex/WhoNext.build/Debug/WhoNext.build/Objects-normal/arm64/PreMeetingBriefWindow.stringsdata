@@ -1,0 +1,48 @@
+{
+  "source": "/Users/bobkitchen/Documents/GitHub/WhoNext/WhoNext/PreMeetingBriefWindow.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "Pre-Meeting Brief",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 13
+        }
+      },
+      {
+        "comment": "",
+        "key": "Copy",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 32
+        }
+      },
+      {
+        "comment": "",
+        "key": " ",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 119
+        }
+      },
+      {
+        "comment": "",
+        "key": "•",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 101
+        }
+      },
+      {
+        "comment": "",
+        "key": "",
+        "location": {
+          "startingColumn": 47,
+          "startingLine": 130
+        }
+      }
+    ]
+  },
+  "version": 1
+}

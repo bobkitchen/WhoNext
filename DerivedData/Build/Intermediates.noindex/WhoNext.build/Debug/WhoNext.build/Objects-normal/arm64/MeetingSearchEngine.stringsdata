@@ -1,0 +1,184 @@
+{
+  "source": "/Users/bobkitchen/Documents/GitHub/WhoNext/WhoNext/MeetingSearchEngine.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "Searching...",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 673
+        }
+      },
+      {
+        "comment": "",
+        "key": "%lld results",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 683
+        }
+      },
+      {
+        "comment": "",
+        "key": "Filters",
+        "location": {
+          "startingColumn": 27,
+          "startingLine": 690
+        }
+      },
+      {
+        "comment": "",
+        "key": "Saved",
+        "location": {
+          "startingColumn": 27,
+          "startingLine": 694
+        }
+      },
+      {
+        "comment": "",
+        "key": "Search meetings and conversations...",
+        "location": {
+          "startingColumn": 27,
+          "startingLine": 724
+        }
+      },
+      {
+        "comment": "",
+        "key": "Any time",
+        "location": {
+          "startingColumn": 28,
+          "startingLine": 777
+        }
+      },
+      {
+        "comment": "",
+        "key": "Today",
+        "location": {
+          "startingColumn": 28,
+          "startingLine": 778
+        }
+      },
+      {
+        "comment": "",
+        "key": "This week",
+        "location": {
+          "startingColumn": 28,
+          "startingLine": 779
+        }
+      },
+      {
+        "comment": "",
+        "key": "This month",
+        "location": {
+          "startingColumn": 28,
+          "startingLine": 780
+        }
+      },
+      {
+        "comment": "",
+        "key": "Last 3 months",
+        "location": {
+          "startingColumn": 28,
+          "startingLine": 781
+        }
+      },
+      {
+        "comment": "",
+        "key": "All types",
+        "location": {
+          "startingColumn": 28,
+          "startingLine": 795
+        }
+      },
+      {
+        "comment": "",
+        "key": "Meetings only",
+        "location": {
+          "startingColumn": 28,
+          "startingLine": 796
+        }
+      },
+      {
+        "comment": "",
+        "key": "Conversations only",
+        "location": {
+          "startingColumn": 28,
+          "startingLine": 797
+        }
+      },
+      {
+        "comment": "",
+        "key": "Has recording",
+        "location": {
+          "startingColumn": 27,
+          "startingLine": 811
+        }
+      },
+      {
+        "comment": "",
+        "key": "Clear filters",
+        "location": {
+          "startingColumn": 31,
+          "startingLine": 822
+        }
+      },
+      {
+        "comment": "",
+        "key": "No results found",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 839
+        }
+      },
+      {
+        "comment": "",
+        "key": "Try adjusting your search terms or filters",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 843
+        }
+      },
+      {
+        "comment": "",
+        "key": "Relevance: %lld%%",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 914
+        }
+      },
+      {
+        "comment": "",
+        "key": "Saved Searches",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 941
+        }
+      },
+      {
+        "comment": "",
+        "key": "No saved searches",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 951
+        }
+      },
+      {
+        "comment": "",
+        "key": "Use",
+        "location": {
+          "startingColumn": 40,
+          "startingLine": 972
+        }
+      },
+      {
+        "comment": "",
+        "key": "Close",
+        "location": {
+          "startingColumn": 24,
+          "startingLine": 987
+        }
+      }
+    ]
+  },
+  "version": 1
+}

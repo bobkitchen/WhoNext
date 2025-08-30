@@ -1,0 +1,40 @@
+{
+  "source": "/Users/bobkitchen/Documents/GitHub/WhoNext/WhoNext/SentimentOverviewCardsView.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "Loading analytics...",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 17
+        }
+      },
+      {
+        "comment": "",
+        "key": "Priority Actions",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 63
+        }
+      },
+      {
+        "comment": "",
+        "key": "No analytics data available",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 79
+        }
+      },
+      {
+        "comment": "",
+        "key": "Add conversations with duration tracking to see insights",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 83
+        }
+      }
+    ]
+  },
+  "version": 1
+}

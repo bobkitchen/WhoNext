@@ -1,0 +1,80 @@
+{
+  "source": "/Users/bobkitchen/Documents/GitHub/WhoNext/WhoNext/SpeakerAnalyticsView.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "Speaker Analytics",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 48
+        }
+      },
+      {
+        "comment": "",
+        "key": "Time Range",
+        "location": {
+          "startingColumn": 24,
+          "startingLine": 53
+        }
+      },
+      {
+        "comment": "",
+        "key": "Hide Details",
+        "location": {
+          "startingColumn": 40,
+          "startingLine": 80
+        }
+      },
+      {
+        "comment": "",
+        "key": "Show Details",
+        "location": {
+          "startingColumn": 57,
+          "startingLine": 80
+        }
+      },
+      {
+        "comment": "",
+        "key": "Speaking Time Distribution",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 93
+        }
+      },
+      {
+        "comment": "",
+        "key": "Detailed Statistics",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 137
+        }
+      },
+      {
+        "comment": "",
+        "key": "Speaking for %@",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 201
+        }
+      },
+      {
+        "comment": "",
+        "key": "%@ is speaking",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 197
+        }
+      },
+      {
+        "comment": "",
+        "key": "confidence",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 214
+        }
+      }
+    ]
+  },
+  "version": 1
+}

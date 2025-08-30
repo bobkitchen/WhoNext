@@ -1,0 +1,104 @@
+{
+  "source": "/Users/bobkitchen/Documents/GitHub/WhoNext/WhoNext/NewConversationWindowView.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "Search for a person...",
+        "location": {
+          "startingColumn": 27,
+          "startingLine": 43
+        }
+      },
+      {
+        "comment": "",
+        "key": "Record a conversation with a team member",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 243
+        }
+      },
+      {
+        "comment": "",
+        "key": "New Conversation",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 236
+        }
+      },
+      {
+        "comment": "",
+        "key": "Person",
+        "location": {
+          "startingColumn": 27,
+          "startingLine": 256
+        }
+      },
+      {
+        "comment": "",
+        "key": "Date",
+        "location": {
+          "startingColumn": 27,
+          "startingLine": 265
+        }
+      },
+      {
+        "comment": "",
+        "key": "",
+        "location": {
+          "startingColumn": 32,
+          "startingLine": 269
+        }
+      },
+      {
+        "comment": "",
+        "key": "Duration",
+        "location": {
+          "startingColumn": 27,
+          "startingLine": 276
+        }
+      },
+      {
+        "comment": "",
+        "key": "Duration",
+        "location": {
+          "startingColumn": 32,
+          "startingLine": 281
+        }
+      },
+      {
+        "comment": "",
+        "key": "%lld min",
+        "location": {
+          "startingColumn": 38,
+          "startingLine": 283
+        }
+      },
+      {
+        "comment": "",
+        "key": "Notes",
+        "location": {
+          "startingColumn": 27,
+          "startingLine": 295
+        }
+      },
+      {
+        "comment": "",
+        "key": "Cancel",
+        "location": {
+          "startingColumn": 24,
+          "startingLine": 320
+        }
+      },
+      {
+        "comment": "",
+        "key": "Save Conversation",
+        "location": {
+          "startingColumn": 24,
+          "startingLine": 327
+        }
+      }
+    ]
+  },
+  "version": 1
+}

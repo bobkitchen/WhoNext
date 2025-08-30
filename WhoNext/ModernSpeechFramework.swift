@@ -280,6 +280,12 @@ class ModernSpeechFramework {
         lastPartialResult = ""
         audioBufferAccumulator.removeAll()
         accumulationStartTime = nil
+        isTranscribing = false
+        
+        // Reinitialize recognizer if needed (don't destroy it)
+        if recognizer == nil {
+            recognizer = SFSpeechRecognizer(locale: locale)
+        }
         
         print("[ModernSpeech] Reset complete")
     }

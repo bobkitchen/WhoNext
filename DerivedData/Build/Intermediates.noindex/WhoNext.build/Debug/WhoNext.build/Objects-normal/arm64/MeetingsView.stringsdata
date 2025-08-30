@@ -1,0 +1,184 @@
+{
+  "source": "/Users/bobkitchen/Documents/GitHub/WhoNext/WhoNext/MeetingsView.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "•",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 76
+        }
+      },
+      {
+        "comment": "",
+        "key": "Stop Recording",
+        "location": {
+          "startingColumn": 31,
+          "startingLine": 97
+        }
+      },
+      {
+        "comment": "",
+        "key": "Record",
+        "location": {
+          "startingColumn": 31,
+          "startingLine": 109
+        }
+      },
+      {
+        "comment": "",
+        "key": "Auto-Record",
+        "location": {
+          "startingColumn": 27,
+          "startingLine": 122
+        }
+      },
+      {
+        "comment": "",
+        "key": "Stop Monitoring",
+        "location": {
+          "startingColumn": 31,
+          "startingLine": 131
+        }
+      },
+      {
+        "comment": "",
+        "key": "Start Monitoring",
+        "location": {
+          "startingColumn": 31,
+          "startingLine": 138
+        }
+      },
+      {
+        "comment": "",
+        "key": "Recording Settings",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 231
+        }
+      },
+      {
+        "comment": "",
+        "key": "Open Full Settings",
+        "location": {
+          "startingColumn": 20,
+          "startingLine": 268
+        }
+      },
+      {
+        "comment": "",
+        "key": "High Quality Audio",
+        "location": {
+          "startingColumn": 24,
+          "startingLine": 262
+        }
+      },
+      {
+        "comment": "",
+        "key": "Confidence Threshold",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 239
+        }
+      },
+      {
+        "comment": "",
+        "key": "70%",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 243
+        }
+      },
+      {
+        "comment": "",
+        "key": "Minimum Duration",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 251
+        }
+      },
+      {
+        "comment": "",
+        "key": "30s",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 255
+        }
+      },
+      {
+        "comment": "",
+        "key": "Recording",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 393
+        }
+      },
+      {
+        "comment": "",
+        "key": "+%lld",
+        "location": {
+          "startingColumn": 38,
+          "startingLine": 413
+        }
+      },
+      {
+        "comment": "",
+        "key": "Brief",
+        "location": {
+          "startingColumn": 31,
+          "startingLine": 425
+        }
+      },
+      {
+        "comment": "",
+        "key": "Join",
+        "location": {
+          "startingColumn": 35,
+          "startingLine": 443
+        }
+      },
+      {
+        "comment": "",
+        "key": "Stop",
+        "location": {
+          "startingColumn": 35,
+          "startingLine": 455
+        }
+      },
+      {
+        "comment": "",
+        "key": "Record",
+        "location": {
+          "startingColumn": 35,
+          "startingLine": 463
+        }
+      },
+      {
+        "comment": "",
+        "key": "Pre-Meeting Brief",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 503
+        }
+      },
+      {
+        "comment": "",
+        "key": "No recent notes",
+        "location": {
+          "startingColumn": 42,
+          "startingLine": 527
+        }
+      },
+      {
+        "comment": "",
+        "key": "No participant information available",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 544
+        }
+      }
+    ]
+  },
+  "version": 1
+}

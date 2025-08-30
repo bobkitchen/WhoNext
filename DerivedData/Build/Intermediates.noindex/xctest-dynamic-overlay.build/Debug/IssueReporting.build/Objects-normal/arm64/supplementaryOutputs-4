@@ -1,0 +1,23 @@
+{
+  "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/SourcePackages/checkouts/xctest-dynamic-overlay/Sources/IssueReporting/Internal/XCTest.swift" : {
+    "const-values" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/xctest-dynamic-overlay.build/Debug/IssueReporting.build/Objects-normal/arm64/XCTest.swiftconstvalues",
+    "dependencies" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/xctest-dynamic-overlay.build/Debug/IssueReporting.build/Objects-normal/arm64/XCTest.d",
+    "diagnostics" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/xctest-dynamic-overlay.build/Debug/IssueReporting.build/Objects-normal/arm64/XCTest.dia",
+    "object" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/xctest-dynamic-overlay.build/Debug/IssueReporting.build/Objects-normal/arm64/XCTest.o",
+    "swift-dependencies" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/xctest-dynamic-overlay.build/Debug/IssueReporting.build/Objects-normal/arm64/XCTest.swiftdeps"
+  },
+  "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/SourcePackages/checkouts/xctest-dynamic-overlay/Sources/IssueReporting/IsTesting.swift" : {
+    "const-values" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/xctest-dynamic-overlay.build/Debug/IssueReporting.build/Objects-normal/arm64/IsTesting.swiftconstvalues",
+    "dependencies" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/xctest-dynamic-overlay.build/Debug/IssueReporting.build/Objects-normal/arm64/IsTesting.d",
+    "diagnostics" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/xctest-dynamic-overlay.build/Debug/IssueReporting.build/Objects-normal/arm64/IsTesting.dia",
+    "object" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/xctest-dynamic-overlay.build/Debug/IssueReporting.build/Objects-normal/arm64/IsTesting.o",
+    "swift-dependencies" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/xctest-dynamic-overlay.build/Debug/IssueReporting.build/Objects-normal/arm64/IsTesting.swiftdeps"
+  },
+  "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/SourcePackages/checkouts/xctest-dynamic-overlay/Sources/IssueReporting/IssueReporter.swift" : {
+    "const-values" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/xctest-dynamic-overlay.build/Debug/IssueReporting.build/Objects-normal/arm64/IssueReporter.swiftconstvalues",
+    "dependencies" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/xctest-dynamic-overlay.build/Debug/IssueReporting.build/Objects-normal/arm64/IssueReporter.d",
+    "diagnostics" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/xctest-dynamic-overlay.build/Debug/IssueReporting.build/Objects-normal/arm64/IssueReporter.dia",
+    "object" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/xctest-dynamic-overlay.build/Debug/IssueReporting.build/Objects-normal/arm64/IssueReporter.o",
+    "swift-dependencies" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/xctest-dynamic-overlay.build/Debug/IssueReporting.build/Objects-normal/arm64/IssueReporter.swiftdeps"
+  }
+}

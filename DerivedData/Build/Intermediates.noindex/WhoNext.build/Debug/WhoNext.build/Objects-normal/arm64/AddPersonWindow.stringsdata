@@ -1,0 +1,168 @@
+{
+  "source": "/Users/bobkitchen/Documents/GitHub/WhoNext/WhoNext/AddPersonWindow.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "Photo",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 27
+        }
+      },
+      {
+        "comment": "",
+        "key": "Click to paste image from clipboard",
+        "location": {
+          "startingColumn": 53,
+          "startingLine": 56
+        }
+      },
+      {
+        "comment": "",
+        "key": "Copy an image to clipboard first",
+        "location": {
+          "startingColumn": 93,
+          "startingLine": 56
+        }
+      },
+      {
+        "comment": "",
+        "key": "Choose Photo",
+        "location": {
+          "startingColumn": 40,
+          "startingLine": 59
+        }
+      },
+      {
+        "comment": "",
+        "key": "Paste from Clipboard",
+        "location": {
+          "startingColumn": 40,
+          "startingLine": 64
+        }
+      },
+      {
+        "comment": "",
+        "key": "Remove Photo",
+        "location": {
+          "startingColumn": 44,
+          "startingLine": 71
+        }
+      },
+      {
+        "comment": "",
+        "key": "Basic Information",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 83
+        }
+      },
+      {
+        "comment": "",
+        "key": "Direct Report",
+        "location": {
+          "startingColumn": 36,
+          "startingLine": 147
+        }
+      },
+      {
+        "comment": "",
+        "key": "Full Name",
+        "location": {
+          "startingColumn": 38,
+          "startingLine": 88
+        }
+      },
+      {
+        "comment": "",
+        "key": "Enter full name",
+        "location": {
+          "startingColumn": 43,
+          "startingLine": 91
+        }
+      },
+      {
+        "comment": "",
+        "key": "Role",
+        "location": {
+          "startingColumn": 38,
+          "startingLine": 96
+        }
+      },
+      {
+        "comment": "",
+        "key": "Job title or role",
+        "location": {
+          "startingColumn": 43,
+          "startingLine": 99
+        }
+      },
+      {
+        "comment": "",
+        "key": "Timezone",
+        "location": {
+          "startingColumn": 38,
+          "startingLine": 104
+        }
+      },
+      {
+        "comment": "",
+        "key": "Search timezones...",
+        "location": {
+          "startingColumn": 47,
+          "startingLine": 109
+        }
+      },
+      {
+        "comment": "",
+        "key": "💡 Tip: Use 'LinkedIn Search' button above to quickly import profile information",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 194
+        }
+      },
+      {
+        "comment": "",
+        "key": "Profile Notes",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 155
+        }
+      },
+      {
+        "comment": "",
+        "key": "LinkedIn Search",
+        "location": {
+          "startingColumn": 42,
+          "startingLine": 166
+        }
+      },
+      {
+        "comment": "",
+        "key": "Add notes about this person...",
+        "location": {
+          "startingColumn": 38,
+          "startingLine": 179
+        }
+      },
+      {
+        "comment": "",
+        "key": "Cancel",
+        "location": {
+          "startingColumn": 24,
+          "startingLine": 205
+        }
+      },
+      {
+        "comment": "",
+        "key": "Add Person",
+        "location": {
+          "startingColumn": 24,
+          "startingLine": 212
+        }
+      }
+    ]
+  },
+  "version": 1
+}

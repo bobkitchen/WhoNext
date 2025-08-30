@@ -1,0 +1,104 @@
+{
+  "source": "/Users/bobkitchen/Documents/GitHub/WhoNext/WhoNext/MeetingAudioPlayer.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "Meeting Recording",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 18
+        }
+      },
+      {
+        "comment": "",
+        "key": "Speed:",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 108
+        }
+      },
+      {
+        "comment": "",
+        "key": "Speed",
+        "location": {
+          "startingColumn": 24,
+          "startingLine": 111
+        }
+      },
+      {
+        "comment": "",
+        "key": "0.5×",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 112
+        }
+      },
+      {
+        "comment": "",
+        "key": "0.75×",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 113
+        }
+      },
+      {
+        "comment": "",
+        "key": "1×",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 114
+        }
+      },
+      {
+        "comment": "",
+        "key": "1.25×",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 115
+        }
+      },
+      {
+        "comment": "",
+        "key": "1.5×",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 116
+        }
+      },
+      {
+        "comment": "",
+        "key": "2×",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 117
+        }
+      },
+      {
+        "comment": "",
+        "key": "Show Transcript",
+        "location": {
+          "startingColumn": 27,
+          "startingLine": 142
+        }
+      },
+      {
+        "comment": "",
+        "key": "Export",
+        "location": {
+          "startingColumn": 27,
+          "startingLine": 146
+        }
+      },
+      {
+        "comment": "",
+        "key": "Jump to Text",
+        "location": {
+          "startingColumn": 31,
+          "startingLine": 151
+        }
+      }
+    ]
+  },
+  "version": 1
+}

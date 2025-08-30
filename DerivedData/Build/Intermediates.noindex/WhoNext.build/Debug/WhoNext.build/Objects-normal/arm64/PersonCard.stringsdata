@@ -1,0 +1,16 @@
+{
+  "source": "/Users/bobkitchen/Documents/GitHub/WhoNext/WhoNext/PersonCard.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "Last contact: %@",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 47
+        }
+      }
+    ]
+  },
+  "version": 1
+}

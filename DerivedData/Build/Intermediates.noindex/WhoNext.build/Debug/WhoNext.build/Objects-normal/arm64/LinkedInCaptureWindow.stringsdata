@@ -1,0 +1,120 @@
+{
+  "source": "/Users/bobkitchen/Documents/GitHub/WhoNext/WhoNext/LinkedInCaptureWindow.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "Close",
+        "location": {
+          "startingColumn": 20,
+          "startingLine": 63
+        }
+      },
+      {
+        "comment": "",
+        "key": "LinkedIn Profile Capture",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 52
+        }
+      },
+      {
+        "comment": "",
+        "key": "Searching for: %@",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 56
+        }
+      },
+      {
+        "comment": "",
+        "key": "Error: %@",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 112
+        }
+      },
+      {
+        "comment": "",
+        "key": "Processing LinkedIn Profile...",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 101
+        }
+      },
+      {
+        "comment": "",
+        "key": "AI is extracting and summarizing profile information",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 105
+        }
+      },
+      {
+        "comment": "",
+        "key": "AI-Generated Profile Summary",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 129
+        }
+      },
+      {
+        "comment": "",
+        "key": "%lld characters",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 135
+        }
+      },
+      {
+        "comment": "",
+        "key": "Edit Summary:",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 151
+        }
+      },
+      {
+        "comment": "",
+        "key": "Capture Profile",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 198
+        }
+      },
+      {
+        "comment": "",
+        "key": "Cancel",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 226
+        }
+      },
+      {
+        "comment": "",
+        "key": "Back to LinkedIn",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 251
+        }
+      },
+      {
+        "comment": "",
+        "key": "Edit More",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 277
+        }
+      },
+      {
+        "comment": "",
+        "key": "Save & Close",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 301
+        }
+      }
+    ]
+  },
+  "version": 1
+}

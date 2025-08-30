@@ -1,0 +1,168 @@
+{
+  "source": "/Users/bobkitchen/Documents/GitHub/WhoNext/WhoNext/MeetingAssignmentManager.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "No custom rules configured",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 517
+        }
+      },
+      {
+        "comment": "",
+        "key": "Recent Assignments",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 533
+        }
+      },
+      {
+        "comment": "",
+        "key": "Meeting Assignment Rules",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 504
+        }
+      },
+      {
+        "comment": "",
+        "key": "Add Rule",
+        "location": {
+          "startingColumn": 27,
+          "startingLine": 511
+        }
+      },
+      {
+        "comment": "",
+        "key": "→ %@",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 615
+        }
+      },
+      {
+        "comment": "",
+        "key": "Add Assignment Rule",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 643
+        }
+      },
+      {
+        "comment": "",
+        "key": "Rule Name",
+        "location": {
+          "startingColumn": 23,
+          "startingLine": 646
+        }
+      },
+      {
+        "comment": "",
+        "key": "Condition",
+        "location": {
+          "startingColumn": 20,
+          "startingLine": 649
+        }
+      },
+      {
+        "comment": "",
+        "key": "Value",
+        "location": {
+          "startingColumn": 23,
+          "startingLine": 656
+        }
+      },
+      {
+        "comment": "",
+        "key": "Assign To",
+        "location": {
+          "startingColumn": 20,
+          "startingLine": 660
+        }
+      },
+      {
+        "comment": "",
+        "key": "Target Group Name",
+        "location": {
+          "startingColumn": 27,
+          "startingLine": 667
+        }
+      },
+      {
+        "comment": "",
+        "key": "Title Contains",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 650
+        }
+      },
+      {
+        "comment": "",
+        "key": "Attendee Count",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 651
+        }
+      },
+      {
+        "comment": "",
+        "key": "Has Attendee",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 652
+        }
+      },
+      {
+        "comment": "",
+        "key": "Recurring",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 653
+        }
+      },
+      {
+        "comment": "",
+        "key": "Individual",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 661
+        }
+      },
+      {
+        "comment": "",
+        "key": "Group",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 662
+        }
+      },
+      {
+        "comment": "",
+        "key": "Mixed",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 663
+        }
+      },
+      {
+        "comment": "",
+        "key": "Cancel",
+        "location": {
+          "startingColumn": 24,
+          "startingLine": 672
+        }
+      },
+      {
+        "comment": "",
+        "key": "Save",
+        "location": {
+          "startingColumn": 24,
+          "startingLine": 674
+        }
+      }
+    ]
+  },
+  "version": 1
+}

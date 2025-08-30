@@ -1,0 +1,56 @@
+{
+  "source": "/Users/bobkitchen/Documents/GitHub/WhoNext/WhoNext/HomeView.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "Welcome to WhoNext",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 18
+        }
+      },
+      {
+        "comment": "",
+        "key": "Manage your professional relationships and conversations",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 22
+        }
+      },
+      {
+        "comment": "",
+        "key": "Get Started",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 34
+        }
+      },
+      {
+        "comment": "",
+        "key": "• Use the toolbar buttons to add people and conversations",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 39
+        }
+      },
+      {
+        "comment": "",
+        "key": "• Switch between People, Insights, and Analytics tabs",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 40
+        }
+      },
+      {
+        "comment": "",
+        "key": "• Search for contacts using the search bar",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 41
+        }
+      }
+    ]
+  },
+  "version": 1
+}

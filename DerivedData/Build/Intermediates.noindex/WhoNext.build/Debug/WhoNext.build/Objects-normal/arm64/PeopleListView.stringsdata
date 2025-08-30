@@ -1,0 +1,56 @@
+{
+  "source": "/Users/bobkitchen/Documents/GitHub/WhoNext/WhoNext/PeopleListView.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "No People Yet",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 66
+        }
+      },
+      {
+        "comment": "",
+        "key": "Add people to start tracking conversations and generating insights.",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 71
+        }
+      },
+      {
+        "comment": "",
+        "key": "Add Your First Person",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 82
+        }
+      },
+      {
+        "comment": "",
+        "key": "Double tap to view details",
+        "location": {
+          "startingColumn": 28,
+          "startingLine": 252
+        }
+      },
+      {
+        "comment": "",
+        "key": "%lld",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 215
+        }
+      },
+      {
+        "comment": "",
+        "key": "Delete %@",
+        "location": {
+          "startingColumn": 41,
+          "startingLine": 238
+        }
+      }
+    ]
+  },
+  "version": 1
+}

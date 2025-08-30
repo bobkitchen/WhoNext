@@ -1,0 +1,168 @@
+{
+  "source": "/Users/bobkitchen/Documents/GitHub/WhoNext/WhoNext/PersonEditView.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "Photo",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 29
+        }
+      },
+      {
+        "comment": "",
+        "key": "Click to paste image from clipboard",
+        "location": {
+          "startingColumn": 53,
+          "startingLine": 58
+        }
+      },
+      {
+        "comment": "",
+        "key": "Copy an image to clipboard first",
+        "location": {
+          "startingColumn": 93,
+          "startingLine": 58
+        }
+      },
+      {
+        "comment": "",
+        "key": "Choose Photo",
+        "location": {
+          "startingColumn": 40,
+          "startingLine": 61
+        }
+      },
+      {
+        "comment": "",
+        "key": "Paste from Clipboard",
+        "location": {
+          "startingColumn": 40,
+          "startingLine": 66
+        }
+      },
+      {
+        "comment": "",
+        "key": "Remove Photo",
+        "location": {
+          "startingColumn": 44,
+          "startingLine": 73
+        }
+      },
+      {
+        "comment": "",
+        "key": "Basic Information",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 85
+        }
+      },
+      {
+        "comment": "",
+        "key": "Direct Report",
+        "location": {
+          "startingColumn": 36,
+          "startingLine": 152
+        }
+      },
+      {
+        "comment": "",
+        "key": "Name",
+        "location": {
+          "startingColumn": 38,
+          "startingLine": 90
+        }
+      },
+      {
+        "comment": "",
+        "key": "Enter name",
+        "location": {
+          "startingColumn": 43,
+          "startingLine": 93
+        }
+      },
+      {
+        "comment": "",
+        "key": "Role",
+        "location": {
+          "startingColumn": 38,
+          "startingLine": 98
+        }
+      },
+      {
+        "comment": "",
+        "key": "Enter role",
+        "location": {
+          "startingColumn": 43,
+          "startingLine": 101
+        }
+      },
+      {
+        "comment": "",
+        "key": "Timezone",
+        "location": {
+          "startingColumn": 38,
+          "startingLine": 106
+        }
+      },
+      {
+        "comment": "",
+        "key": "Type to search timezone",
+        "location": {
+          "startingColumn": 47,
+          "startingLine": 111
+        }
+      },
+      {
+        "comment": "",
+        "key": "💡 Tip: Use the LinkedIn PDF button above to automatically generate a professional summary from LinkedIn profile pages.",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 227
+        }
+      },
+      {
+        "comment": "",
+        "key": "Profile Notes",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 160
+        }
+      },
+      {
+        "comment": "",
+        "key": "LinkedIn PDF",
+        "location": {
+          "startingColumn": 42,
+          "startingLine": 170
+        }
+      },
+      {
+        "comment": "",
+        "key": "Preview:",
+        "location": {
+          "startingColumn": 38,
+          "startingLine": 195
+        }
+      },
+      {
+        "comment": "",
+        "key": "Cancel",
+        "location": {
+          "startingColumn": 24,
+          "startingLine": 238
+        }
+      },
+      {
+        "comment": "",
+        "key": "Save",
+        "location": {
+          "startingColumn": 24,
+          "startingLine": 245
+        }
+      }
+    ]
+  },
+  "version": 1
+}

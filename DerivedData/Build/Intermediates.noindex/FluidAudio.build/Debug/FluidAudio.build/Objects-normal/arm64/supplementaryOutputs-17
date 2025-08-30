@@ -1,0 +1,30 @@
+{
+  "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/SourcePackages/checkouts/FluidAudio/Sources/FluidAudio/Diarizer/DiarizerTypes.swift" : {
+    "const-values" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/FluidAudio.build/Debug/FluidAudio.build/Objects-normal/arm64/DiarizerTypes.swiftconstvalues",
+    "dependencies" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/FluidAudio.build/Debug/FluidAudio.build/Objects-normal/arm64/DiarizerTypes.d",
+    "diagnostics" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/FluidAudio.build/Debug/FluidAudio.build/Objects-normal/arm64/DiarizerTypes.dia",
+    "object" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/FluidAudio.build/Debug/FluidAudio.build/Objects-normal/arm64/DiarizerTypes.o",
+    "swift-dependencies" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/FluidAudio.build/Debug/FluidAudio.build/Objects-normal/arm64/DiarizerTypes.swiftdeps"
+  },
+  "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/SourcePackages/checkouts/FluidAudio/Sources/FluidAudio/Diarizer/EmbeddingExtractor.swift" : {
+    "const-values" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/FluidAudio.build/Debug/FluidAudio.build/Objects-normal/arm64/EmbeddingExtractor.swiftconstvalues",
+    "dependencies" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/FluidAudio.build/Debug/FluidAudio.build/Objects-normal/arm64/EmbeddingExtractor.d",
+    "diagnostics" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/FluidAudio.build/Debug/FluidAudio.build/Objects-normal/arm64/EmbeddingExtractor.dia",
+    "object" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/FluidAudio.build/Debug/FluidAudio.build/Objects-normal/arm64/EmbeddingExtractor.o",
+    "swift-dependencies" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/FluidAudio.build/Debug/FluidAudio.build/Objects-normal/arm64/EmbeddingExtractor.swiftdeps"
+  },
+  "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/SourcePackages/checkouts/FluidAudio/Sources/FluidAudio/Diarizer/SegmentationProcessor.swift" : {
+    "const-values" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/FluidAudio.build/Debug/FluidAudio.build/Objects-normal/arm64/SegmentationProcessor.swiftconstvalues",
+    "dependencies" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/FluidAudio.build/Debug/FluidAudio.build/Objects-normal/arm64/SegmentationProcessor.d",
+    "diagnostics" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/FluidAudio.build/Debug/FluidAudio.build/Objects-normal/arm64/SegmentationProcessor.dia",
+    "object" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/FluidAudio.build/Debug/FluidAudio.build/Objects-normal/arm64/SegmentationProcessor.o",
+    "swift-dependencies" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/FluidAudio.build/Debug/FluidAudio.build/Objects-normal/arm64/SegmentationProcessor.swiftdeps"
+  },
+  "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/SourcePackages/checkouts/FluidAudio/Sources/FluidAudio/Diarizer/SlidingWindow.swift" : {
+    "const-values" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/FluidAudio.build/Debug/FluidAudio.build/Objects-normal/arm64/SlidingWindow.swiftconstvalues",
+    "dependencies" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/FluidAudio.build/Debug/FluidAudio.build/Objects-normal/arm64/SlidingWindow.d",
+    "diagnostics" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/FluidAudio.build/Debug/FluidAudio.build/Objects-normal/arm64/SlidingWindow.dia",
+    "object" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/FluidAudio.build/Debug/FluidAudio.build/Objects-normal/arm64/SlidingWindow.o",
+    "swift-dependencies" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/FluidAudio.build/Debug/FluidAudio.build/Objects-normal/arm64/SlidingWindow.swiftdeps"
+  }
+}

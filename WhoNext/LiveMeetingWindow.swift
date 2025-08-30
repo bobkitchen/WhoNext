@@ -199,7 +199,7 @@ struct LiveMeetingView: View {
                     ScrollView {
                         VStack(alignment: .leading, spacing: 8) {
                             ForEach(meeting.transcript.suffix(5)) { segment in
-                                TranscriptSegmentView(segment: segment)
+                                TranscriptSegmentView(segment: segment, expanded: true)
                                     .id(segment.id)
                             }
                         }
@@ -289,53 +289,6 @@ struct LiveMeetingView: View {
     }
 }
 
-/// View for a single transcript segment
-struct TranscriptSegmentView: View {
-    let segment: TranscriptSegment
-    var expanded: Bool = false
-    
-    var body: some View {
-        HStack(alignment: .top, spacing: 8) {
-            if expanded {
-                Text(segment.formattedTimestamp)
-                    .font(.system(size: 10, design: .monospaced))
-                    .foregroundColor(.secondary)
-                    .frame(width: 40)
-            }
-            
-            VStack(alignment: .leading, spacing: 2) {
-                if let speaker = segment.speakerName {
-                    Text(speaker)
-                        .font(.system(size: 11, weight: .medium))
-                        .foregroundColor(.accentColor)
-                }
-                
-                Text(segment.text)
-                    .font(.system(size: expanded ? 13 : 12))
-                    .foregroundColor(.primary)
-                    .lineLimit(expanded ? nil : 2)
-                    .fixedSize(horizontal: false, vertical: true)
-                
-                if !segment.isFinalized && expanded {
-                    Text("Processing...")
-                        .font(.system(size: 9))
-                        .foregroundColor(.orange)
-                        .italic()
-                }
-            }
-            
-            Spacer()
-        }
-        .padding(.vertical, 4)
-        .padding(.horizontal, expanded ? 0 : 4)
-        .background(
-            segment.isFinalized ?
-                Color.clear :
-                Color.orange.opacity(0.05)
-        )
-        .cornerRadius(4)
-    }
-}
 
 /// Participant chip view
 struct ParticipantChip: View {
@@ -382,7 +335,7 @@ struct ParticipantChip: View {
 class LiveMeetingWindowManager {
     static let shared = LiveMeetingWindowManager()
     
-    private var windowController: LiveMeetingWindowController?
+    private var windowController: EnhancedLiveMeetingWindowController?
     
     private init() {}
     
@@ -391,7 +344,7 @@ class LiveMeetingWindowManager {
             windowController.updateMeeting(meeting)
             windowController.showWindow(nil)
         } else {
-            windowController = LiveMeetingWindowController(meeting: meeting)
+            windowController = EnhancedLiveMeetingWindowController(meeting: meeting)
             windowController?.showWindow(nil)
         }
     }

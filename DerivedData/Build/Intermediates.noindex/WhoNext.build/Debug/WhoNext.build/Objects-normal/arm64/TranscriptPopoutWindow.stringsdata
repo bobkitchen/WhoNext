@@ -1,0 +1,192 @@
+{
+  "source": "/Users/bobkitchen/Documents/GitHub/WhoNext/WhoNext/TranscriptPopoutWindow.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "No transcript available",
+        "location": {
+          "startingColumn": 38,
+          "startingLine": 115
+        }
+      },
+      {
+        "comment": "",
+        "key": "Annotations",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 134
+        }
+      },
+      {
+        "comment": "",
+        "key": "Timestamps",
+        "location": {
+          "startingColumn": 20,
+          "startingLine": 265
+        }
+      },
+      {
+        "comment": "",
+        "key": "Speakers",
+        "location": {
+          "startingColumn": 20,
+          "startingLine": 266
+        }
+      },
+      {
+        "comment": "",
+        "key": "Color Code",
+        "location": {
+          "startingColumn": 20,
+          "startingLine": 267
+        }
+      },
+      {
+        "comment": "",
+        "key": "",
+        "location": {
+          "startingColumn": 20,
+          "startingLine": 295
+        }
+      },
+      {
+        "comment": "",
+        "key": "Search transcript...",
+        "location": {
+          "startingColumn": 27,
+          "startingLine": 256
+        }
+      },
+      {
+        "comment": "",
+        "key": "Size:",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 275
+        }
+      },
+      {
+        "comment": "",
+        "key": "%lldpt",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 277
+        }
+      },
+      {
+        "comment": "",
+        "key": "",
+        "location": {
+          "startingColumn": 25,
+          "startingLine": 276
+        }
+      },
+      {
+        "comment": "",
+        "key": "Play Audio",
+        "location": {
+          "startingColumn": 27,
+          "startingLine": 287
+        }
+      },
+      {
+        "comment": "",
+        "key": "Export",
+        "location": {
+          "startingColumn": 23,
+          "startingLine": 292
+        }
+      },
+      {
+        "comment": "",
+        "key": "%lld attendees",
+        "location": {
+          "startingColumn": 27,
+          "startingLine": 321
+        }
+      },
+      {
+        "comment": "",
+        "key": "",
+        "location": {
+          "startingColumn": 27,
+          "startingLine": 451
+        }
+      },
+      {
+        "comment": "",
+        "key": "Jump to segment",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 537
+        }
+      },
+      {
+        "comment": "",
+        "key": "Add Annotation",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 555
+        }
+      },
+      {
+        "comment": "",
+        "key": "Cancel",
+        "location": {
+          "startingColumn": 24,
+          "startingLine": 563
+        }
+      },
+      {
+        "comment": "",
+        "key": "Save",
+        "location": {
+          "startingColumn": 24,
+          "startingLine": 569
+        }
+      },
+      {
+        "comment": "",
+        "key": "%@ / %@",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 611
+        }
+      },
+      {
+        "comment": "",
+        "key": "Speed",
+        "location": {
+          "startingColumn": 20,
+          "startingLine": 615
+        }
+      },
+      {
+        "comment": "",
+        "key": "1×",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 616
+        }
+      },
+      {
+        "comment": "",
+        "key": "1.5×",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 617
+        }
+      },
+      {
+        "comment": "",
+        "key": "2×",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 618
+        }
+      }
+    ]
+  },
+  "version": 1
+}

@@ -1,0 +1,23 @@
+{
+  "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/SourcePackages/checkouts/xctest-dynamic-overlay/Sources/IssueReporting/Internal/FailureObserver.swift" : {
+    "const-values" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/xctest-dynamic-overlay.build/Debug/IssueReporting.build/Objects-normal/arm64/FailureObserver.swiftconstvalues",
+    "dependencies" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/xctest-dynamic-overlay.build/Debug/IssueReporting.build/Objects-normal/arm64/FailureObserver.d",
+    "diagnostics" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/xctest-dynamic-overlay.build/Debug/IssueReporting.build/Objects-normal/arm64/FailureObserver.dia",
+    "object" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/xctest-dynamic-overlay.build/Debug/IssueReporting.build/Objects-normal/arm64/FailureObserver.o",
+    "swift-dependencies" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/xctest-dynamic-overlay.build/Debug/IssueReporting.build/Objects-normal/arm64/FailureObserver.swiftdeps"
+  },
+  "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/SourcePackages/checkouts/xctest-dynamic-overlay/Sources/IssueReporting/Internal/LockIsolated.swift" : {
+    "const-values" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/xctest-dynamic-overlay.build/Debug/IssueReporting.build/Objects-normal/arm64/LockIsolated.swiftconstvalues",
+    "dependencies" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/xctest-dynamic-overlay.build/Debug/IssueReporting.build/Objects-normal/arm64/LockIsolated.d",
+    "diagnostics" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/xctest-dynamic-overlay.build/Debug/IssueReporting.build/Objects-normal/arm64/LockIsolated.dia",
+    "object" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/xctest-dynamic-overlay.build/Debug/IssueReporting.build/Objects-normal/arm64/LockIsolated.o",
+    "swift-dependencies" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/xctest-dynamic-overlay.build/Debug/IssueReporting.build/Objects-normal/arm64/LockIsolated.swiftdeps"
+  },
+  "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/SourcePackages/checkouts/xctest-dynamic-overlay/Sources/IssueReporting/Internal/Rethrows.swift" : {
+    "const-values" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/xctest-dynamic-overlay.build/Debug/IssueReporting.build/Objects-normal/arm64/Rethrows.swiftconstvalues",
+    "dependencies" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/xctest-dynamic-overlay.build/Debug/IssueReporting.build/Objects-normal/arm64/Rethrows.d",
+    "diagnostics" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/xctest-dynamic-overlay.build/Debug/IssueReporting.build/Objects-normal/arm64/Rethrows.dia",
+    "object" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/xctest-dynamic-overlay.build/Debug/IssueReporting.build/Objects-normal/arm64/Rethrows.o",
+    "swift-dependencies" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/xctest-dynamic-overlay.build/Debug/IssueReporting.build/Objects-normal/arm64/Rethrows.swiftdeps"
+  }
+}

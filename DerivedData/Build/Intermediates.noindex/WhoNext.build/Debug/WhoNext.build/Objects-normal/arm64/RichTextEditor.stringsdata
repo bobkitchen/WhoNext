@@ -1,0 +1,64 @@
+{
+  "source": "/Users/bobkitchen/Documents/GitHub/WhoNext/WhoNext/RichTextEditor.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "Bold",
+        "location": {
+          "startingColumn": 20,
+          "startingLine": 76
+        }
+      },
+      {
+        "comment": "",
+        "key": "Italic",
+        "location": {
+          "startingColumn": 20,
+          "startingLine": 79
+        }
+      },
+      {
+        "comment": "",
+        "key": "Underline",
+        "location": {
+          "startingColumn": 20,
+          "startingLine": 82
+        }
+      },
+      {
+        "comment": "",
+        "key": "Font",
+        "location": {
+          "startingColumn": 20,
+          "startingLine": 86
+        }
+      },
+      {
+        "comment": "",
+        "key": "Font Size",
+        "location": {
+          "startingColumn": 20,
+          "startingLine": 89
+        }
+      },
+      {
+        "comment": "",
+        "key": "Import Markdown",
+        "location": {
+          "startingColumn": 20,
+          "startingLine": 93
+        }
+      },
+      {
+        "comment": "",
+        "key": "Export Markdown",
+        "location": {
+          "startingColumn": 20,
+          "startingLine": 96
+        }
+      }
+    ]
+  },
+  "version": 1
+}

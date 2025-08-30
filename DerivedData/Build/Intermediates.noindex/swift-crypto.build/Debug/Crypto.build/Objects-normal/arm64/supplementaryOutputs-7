@@ -1,0 +1,72 @@
+{
+  "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/SourcePackages/checkouts/swift-crypto/Sources/Crypto/ASN1/PEMDocument.swift" : {
+    "const-values" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/swift-crypto.build/Debug/Crypto.build/Objects-normal/arm64/PEMDocument.swiftconstvalues",
+    "dependencies" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/swift-crypto.build/Debug/Crypto.build/Objects-normal/arm64/PEMDocument.d",
+    "diagnostics" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/swift-crypto.build/Debug/Crypto.build/Objects-normal/arm64/PEMDocument.dia",
+    "object" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/swift-crypto.build/Debug/Crypto.build/Objects-normal/arm64/PEMDocument.o",
+    "swift-dependencies" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/swift-crypto.build/Debug/Crypto.build/Objects-normal/arm64/PEMDocument.swiftdeps"
+  },
+  "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/SourcePackages/checkouts/swift-crypto/Sources/Crypto/ASN1/PKCS8PrivateKey.swift" : {
+    "const-values" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/swift-crypto.build/Debug/Crypto.build/Objects-normal/arm64/PKCS8PrivateKey.swiftconstvalues",
+    "dependencies" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/swift-crypto.build/Debug/Crypto.build/Objects-normal/arm64/PKCS8PrivateKey.d",
+    "diagnostics" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/swift-crypto.build/Debug/Crypto.build/Objects-normal/arm64/PKCS8PrivateKey.dia",
+    "object" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/swift-crypto.build/Debug/Crypto.build/Objects-normal/arm64/PKCS8PrivateKey.o",
+    "swift-dependencies" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/swift-crypto.build/Debug/Crypto.build/Objects-normal/arm64/PKCS8PrivateKey.swiftdeps"
+  },
+  "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/SourcePackages/checkouts/swift-crypto/Sources/Crypto/ASN1/SEC1PrivateKey.swift" : {
+    "const-values" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/swift-crypto.build/Debug/Crypto.build/Objects-normal/arm64/SEC1PrivateKey.swiftconstvalues",
+    "dependencies" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/swift-crypto.build/Debug/Crypto.build/Objects-normal/arm64/SEC1PrivateKey.d",
+    "diagnostics" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/swift-crypto.build/Debug/Crypto.build/Objects-normal/arm64/SEC1PrivateKey.dia",
+    "object" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/swift-crypto.build/Debug/Crypto.build/Objects-normal/arm64/SEC1PrivateKey.o",
+    "swift-dependencies" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/swift-crypto.build/Debug/Crypto.build/Objects-normal/arm64/SEC1PrivateKey.swiftdeps"
+  },
+  "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/SourcePackages/checkouts/swift-crypto/Sources/Crypto/ASN1/SubjectPublicKeyInfo.swift" : {
+    "const-values" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/swift-crypto.build/Debug/Crypto.build/Objects-normal/arm64/SubjectPublicKeyInfo.swiftconstvalues",
+    "dependencies" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/swift-crypto.build/Debug/Crypto.build/Objects-normal/arm64/SubjectPublicKeyInfo.d",
+    "diagnostics" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/swift-crypto.build/Debug/Crypto.build/Objects-normal/arm64/SubjectPublicKeyInfo.dia",
+    "object" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/swift-crypto.build/Debug/Crypto.build/Objects-normal/arm64/SubjectPublicKeyInfo.o",
+    "swift-dependencies" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/swift-crypto.build/Debug/Crypto.build/Objects-normal/arm64/SubjectPublicKeyInfo.swiftdeps"
+  },
+  "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/SourcePackages/checkouts/swift-crypto/Sources/Crypto/CryptoKitErrors.swift" : {
+    "const-values" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/swift-crypto.build/Debug/Crypto.build/Objects-normal/arm64/CryptoKitErrors.swiftconstvalues",
+    "dependencies" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/swift-crypto.build/Debug/Crypto.build/Objects-normal/arm64/CryptoKitErrors.d",
+    "diagnostics" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/swift-crypto.build/Debug/Crypto.build/Objects-normal/arm64/CryptoKitErrors.dia",
+    "object" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/swift-crypto.build/Debug/Crypto.build/Objects-normal/arm64/CryptoKitErrors.o",
+    "swift-dependencies" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/swift-crypto.build/Debug/Crypto.build/Objects-normal/arm64/CryptoKitErrors.swiftdeps"
+  },
+  "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/SourcePackages/checkouts/swift-crypto/Sources/Crypto/Digests/BoringSSL/Digest_boring.swift" : {
+    "const-values" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/swift-crypto.build/Debug/Crypto.build/Objects-normal/arm64/Digest_boring.swiftconstvalues",
+    "dependencies" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/swift-crypto.build/Debug/Crypto.build/Objects-normal/arm64/Digest_boring.d",
+    "diagnostics" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/swift-crypto.build/Debug/Crypto.build/Objects-normal/arm64/Digest_boring.dia",
+    "object" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/swift-crypto.build/Debug/Crypto.build/Objects-normal/arm64/Digest_boring.o",
+    "swift-dependencies" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/swift-crypto.build/Debug/Crypto.build/Objects-normal/arm64/Digest_boring.swiftdeps"
+  },
+  "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/SourcePackages/checkouts/swift-crypto/Sources/Crypto/Digests/Digest.swift" : {
+    "const-values" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/swift-crypto.build/Debug/Crypto.build/Objects-normal/arm64/Digest.swiftconstvalues",
+    "dependencies" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/swift-crypto.build/Debug/Crypto.build/Objects-normal/arm64/Digest.d",
+    "diagnostics" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/swift-crypto.build/Debug/Crypto.build/Objects-normal/arm64/Digest.dia",
+    "object" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/swift-crypto.build/Debug/Crypto.build/Objects-normal/arm64/Digest.o",
+    "swift-dependencies" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/swift-crypto.build/Debug/Crypto.build/Objects-normal/arm64/Digest.swiftdeps"
+  },
+  "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/SourcePackages/checkouts/swift-crypto/Sources/Crypto/Digests/Digests.swift" : {
+    "const-values" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/swift-crypto.build/Debug/Crypto.build/Objects-normal/arm64/Digests.swiftconstvalues",
+    "dependencies" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/swift-crypto.build/Debug/Crypto.build/Objects-normal/arm64/Digests.d",
+    "diagnostics" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/swift-crypto.build/Debug/Crypto.build/Objects-normal/arm64/Digests.dia",
+    "object" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/swift-crypto.build/Debug/Crypto.build/Objects-normal/arm64/Digests.o",
+    "swift-dependencies" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/swift-crypto.build/Debug/Crypto.build/Objects-normal/arm64/Digests.swiftdeps"
+  },
+  "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/SourcePackages/checkouts/swift-crypto/Sources/Crypto/Digests/HashFunctions.swift" : {
+    "const-values" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/swift-crypto.build/Debug/Crypto.build/Objects-normal/arm64/HashFunctions.swiftconstvalues",
+    "dependencies" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/swift-crypto.build/Debug/Crypto.build/Objects-normal/arm64/HashFunctions.d",
+    "diagnostics" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/swift-crypto.build/Debug/Crypto.build/Objects-normal/arm64/HashFunctions.dia",
+    "object" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/swift-crypto.build/Debug/Crypto.build/Objects-normal/arm64/HashFunctions.o",
+    "swift-dependencies" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/swift-crypto.build/Debug/Crypto.build/Objects-normal/arm64/HashFunctions.swiftdeps"
+  },
+  "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/SourcePackages/checkouts/swift-crypto/Sources/Crypto/Digests/HashFunctions_SHA2.swift" : {
+    "const-values" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/swift-crypto.build/Debug/Crypto.build/Objects-normal/arm64/HashFunctions_SHA2.swiftconstvalues",
+    "dependencies" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/swift-crypto.build/Debug/Crypto.build/Objects-normal/arm64/HashFunctions_SHA2.d",
+    "diagnostics" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/swift-crypto.build/Debug/Crypto.build/Objects-normal/arm64/HashFunctions_SHA2.dia",
+    "object" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/swift-crypto.build/Debug/Crypto.build/Objects-normal/arm64/HashFunctions_SHA2.o",
+    "swift-dependencies" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/swift-crypto.build/Debug/Crypto.build/Objects-normal/arm64/HashFunctions_SHA2.swiftdeps"
+  }
+}

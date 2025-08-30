@@ -14,6 +14,20 @@ class LiveMeeting: ObservableObject, Identifiable {
     @Published var identifiedParticipants: [IdentifiedParticipant] = []
     @Published var transcriptionProgress: Double = 0.0
     
+    // MARK: - Enhanced Metrics
+    @Published var wordCount: Int = 0
+    @Published var currentFileSize: Int64 = 0
+    @Published var averageConfidence: Float = 0.0
+    @Published var detectedLanguage: String? = nil
+    @Published var speakerTurnCount: Int = 0
+    @Published var overlapCount: Int = 0
+    
+    // MARK: - System Metrics
+    @Published var cpuUsage: Double = 0.0
+    @Published var memoryUsage: Int64 = 0
+    @Published var bufferHealth: BufferHealth = .good
+    @Published var droppedFrames: Int = 0
+    
     // MARK: - Meeting Metadata
     var startTime: Date = Date()
     var endTime: Date?
@@ -140,6 +154,38 @@ class IdentifiedParticipant: ObservableObject, Identifiable {
         }
     }
     
+    // MARK: - UI Support Properties
+    
+    /// Alias for isCurrentlySpeaking for UI compatibility
+    var isSpeaking: Bool {
+        isCurrentlySpeaking
+    }
+    
+    /// Alias for totalSpeakingTime for UI compatibility
+    var speakingDuration: TimeInterval {
+        totalSpeakingTime
+    }
+    
+    /// Color associated with this participant
+    var color: Color {
+        let colors: [Color] = [
+            .blue, .green, .orange, .purple,
+            .pink, .cyan, .indigo, .mint
+        ]
+        let index = abs(displayName.hashValue) % colors.count
+        return colors[index]
+    }
+    
+    /// Initials for avatar display
+    var initials: String {
+        let words = displayName.split(separator: " ")
+        if words.count >= 2 {
+            return String(words[0].prefix(1)) + String(words[1].prefix(1))
+        } else {
+            return String(displayName.prefix(2))
+        }
+    }
+    
     enum ConfidenceLevel {
         case high
         case medium
@@ -210,6 +256,30 @@ enum AudioQuality: String, Codable {
         case .fair: return .orange
         case .poor: return .red
         case .unknown: return .gray
+        }
+    }
+}
+
+// MARK: - Buffer Health
+
+enum BufferHealth: String, Codable {
+    case good
+    case warning
+    case critical
+    
+    var description: String {
+        switch self {
+        case .good: return "Good"
+        case .warning: return "Warning"
+        case .critical: return "Critical"
+        }
+    }
+    
+    var color: Color {
+        switch self {
+        case .good: return .green
+        case .warning: return .orange
+        case .critical: return .red
         }
     }
 }

@@ -1,0 +1,56 @@
+{
+  "source": "/Users/bobkitchen/Documents/GitHub/WhoNext/WhoNext/NewConversationWindow.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "New Conversation",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 40
+        }
+      },
+      {
+        "comment": "",
+        "key": "Notes:",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 92
+        }
+      },
+      {
+        "comment": "",
+        "key": "Date",
+        "location": {
+          "startingColumn": 24,
+          "startingLine": 91
+        }
+      },
+      {
+        "comment": "",
+        "key": "Search staff...",
+        "location": {
+          "startingColumn": 27,
+          "startingLine": 45
+        }
+      },
+      {
+        "comment": "",
+        "key": "Cancel",
+        "location": {
+          "startingColumn": 24,
+          "startingLine": 98
+        }
+      },
+      {
+        "comment": "",
+        "key": "Save",
+        "location": {
+          "startingColumn": 24,
+          "startingLine": 102
+        }
+      }
+    ]
+  },
+  "version": 1
+}

@@ -1,0 +1,37 @@
+{
+  "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/SourcePackages/checkouts/FluidAudio/Sources/FluidAudio/ASR/MLArrayCache.swift" : {
+    "const-values" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/FluidAudio.build/Debug/FluidAudio.build/Objects-normal/arm64/MLArrayCache.swiftconstvalues",
+    "dependencies" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/FluidAudio.build/Debug/FluidAudio.build/Objects-normal/arm64/MLArrayCache.d",
+    "diagnostics" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/FluidAudio.build/Debug/FluidAudio.build/Objects-normal/arm64/MLArrayCache.dia",
+    "object" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/FluidAudio.build/Debug/FluidAudio.build/Objects-normal/arm64/MLArrayCache.o",
+    "swift-dependencies" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/FluidAudio.build/Debug/FluidAudio.build/Objects-normal/arm64/MLArrayCache.swiftdeps"
+  },
+  "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/SourcePackages/checkouts/FluidAudio/Sources/FluidAudio/ASR/MetalAcceleration.swift" : {
+    "const-values" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/FluidAudio.build/Debug/FluidAudio.build/Objects-normal/arm64/MetalAcceleration.swiftconstvalues",
+    "dependencies" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/FluidAudio.build/Debug/FluidAudio.build/Objects-normal/arm64/MetalAcceleration.d",
+    "diagnostics" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/FluidAudio.build/Debug/FluidAudio.build/Objects-normal/arm64/MetalAcceleration.dia",
+    "object" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/FluidAudio.build/Debug/FluidAudio.build/Objects-normal/arm64/MetalAcceleration.o",
+    "swift-dependencies" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/FluidAudio.build/Debug/FluidAudio.build/Objects-normal/arm64/MetalAcceleration.swiftdeps"
+  },
+  "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/SourcePackages/checkouts/FluidAudio/Sources/FluidAudio/ASR/PerformanceMetrics.swift" : {
+    "const-values" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/FluidAudio.build/Debug/FluidAudio.build/Objects-normal/arm64/PerformanceMetrics.swiftconstvalues",
+    "dependencies" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/FluidAudio.build/Debug/FluidAudio.build/Objects-normal/arm64/PerformanceMetrics.d",
+    "diagnostics" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/FluidAudio.build/Debug/FluidAudio.build/Objects-normal/arm64/PerformanceMetrics.dia",
+    "object" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/FluidAudio.build/Debug/FluidAudio.build/Objects-normal/arm64/PerformanceMetrics.o",
+    "swift-dependencies" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/FluidAudio.build/Debug/FluidAudio.build/Objects-normal/arm64/PerformanceMetrics.swiftdeps"
+  },
+  "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/SourcePackages/checkouts/FluidAudio/Sources/FluidAudio/ASR/StreamingAsrManager.swift" : {
+    "const-values" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/FluidAudio.build/Debug/FluidAudio.build/Objects-normal/arm64/StreamingAsrManager.swiftconstvalues",
+    "dependencies" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/FluidAudio.build/Debug/FluidAudio.build/Objects-normal/arm64/StreamingAsrManager.d",
+    "diagnostics" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/FluidAudio.build/Debug/FluidAudio.build/Objects-normal/arm64/StreamingAsrManager.dia",
+    "object" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/FluidAudio.build/Debug/FluidAudio.build/Objects-normal/arm64/StreamingAsrManager.o",
+    "swift-dependencies" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/FluidAudio.build/Debug/FluidAudio.build/Objects-normal/arm64/StreamingAsrManager.swiftdeps"
+  },
+  "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/SourcePackages/checkouts/FluidAudio/Sources/FluidAudio/ASR/StreamingAsrSession.swift" : {
+    "const-values" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/FluidAudio.build/Debug/FluidAudio.build/Objects-normal/arm64/StreamingAsrSession.swiftconstvalues",
+    "dependencies" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/FluidAudio.build/Debug/FluidAudio.build/Objects-normal/arm64/StreamingAsrSession.d",
+    "diagnostics" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/FluidAudio.build/Debug/FluidAudio.build/Objects-normal/arm64/StreamingAsrSession.dia",
+    "object" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/FluidAudio.build/Debug/FluidAudio.build/Objects-normal/arm64/StreamingAsrSession.o",
+    "swift-dependencies" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/FluidAudio.build/Debug/FluidAudio.build/Objects-normal/arm64/StreamingAsrSession.swiftdeps"
+  }
+}

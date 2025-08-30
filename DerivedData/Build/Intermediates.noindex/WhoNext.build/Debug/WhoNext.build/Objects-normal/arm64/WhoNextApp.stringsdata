@@ -1,0 +1,88 @@
+{
+  "source": "/Users/bobkitchen/Documents/GitHub/WhoNext/WhoNext/WhoNextApp.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "Test Window",
+        "location": {
+          "startingColumn": 16,
+          "startingLine": 29
+        }
+      },
+      {
+        "comment": "",
+        "key": "Meeting Recording",
+        "location": {
+          "startingColumn": 16,
+          "startingLine": 33
+        }
+      },
+      {
+        "comment": "",
+        "key": "File",
+        "location": {
+          "startingColumn": 25,
+          "startingLine": 39
+        }
+      },
+      {
+        "comment": "",
+        "key": "Recording",
+        "location": {
+          "startingColumn": 25,
+          "startingLine": 46
+        }
+      },
+      {
+        "comment": "",
+        "key": "Import People from CSV…",
+        "location": {
+          "startingColumn": 24,
+          "startingLine": 40
+        }
+      },
+      {
+        "comment": "",
+        "key": "Start Monitoring",
+        "location": {
+          "startingColumn": 24,
+          "startingLine": 47
+        }
+      },
+      {
+        "comment": "",
+        "key": "Stop Monitoring",
+        "location": {
+          "startingColumn": 24,
+          "startingLine": 52
+        }
+      },
+      {
+        "comment": "",
+        "key": "Manual Start Recording",
+        "location": {
+          "startingColumn": 24,
+          "startingLine": 59
+        }
+      },
+      {
+        "comment": "",
+        "key": "Manual Stop Recording",
+        "location": {
+          "startingColumn": 24,
+          "startingLine": 64
+        }
+      },
+      {
+        "comment": "",
+        "key": "Show Recording Dashboard...",
+        "location": {
+          "startingColumn": 24,
+          "startingLine": 71
+        }
+      }
+    ]
+  },
+  "version": 1
+}

@@ -1,0 +1,29 @@
+{
+  "" : {
+    "diagnostics" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/xctest-dynamic-overlay.build/Debug/XCTestDynamicOverlay.build/Objects-normal/arm64/XCTestDynamicOverlay-primary.dia",
+    "emit-module-dependencies" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/xctest-dynamic-overlay.build/Debug/XCTestDynamicOverlay.build/Objects-normal/arm64/XCTestDynamicOverlay-primary-emit-module.d",
+    "emit-module-diagnostics" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/xctest-dynamic-overlay.build/Debug/XCTestDynamicOverlay.build/Objects-normal/arm64/XCTestDynamicOverlay-primary-emit-module.dia",
+    "pch" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/xctest-dynamic-overlay.build/Debug/XCTestDynamicOverlay.build/Objects-normal/arm64/XCTestDynamicOverlay-primary-Bridging-header.pch",
+    "swift-dependencies" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/xctest-dynamic-overlay.build/Debug/XCTestDynamicOverlay.build/Objects-normal/arm64/XCTestDynamicOverlay-primary.swiftdeps"
+  },
+  "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/SourcePackages/checkouts/xctest-dynamic-overlay/Sources/XCTestDynamicOverlay/Internal/Deprecations.swift" : {
+    "const-values" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/xctest-dynamic-overlay.build/Debug/XCTestDynamicOverlay.build/Objects-normal/arm64/Deprecations.swiftconstvalues",
+    "dependencies" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/xctest-dynamic-overlay.build/Debug/XCTestDynamicOverlay.build/Objects-normal/arm64/Deprecations.d",
+    "diagnostics" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/xctest-dynamic-overlay.build/Debug/XCTestDynamicOverlay.build/Objects-normal/arm64/Deprecations.dia",
+    "index-unit-output-path" : "/xctest-dynamic-overlay.build/Debug/XCTestDynamicOverlay.build/Objects-normal/arm64/Deprecations.o",
+    "llvm-bc" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/xctest-dynamic-overlay.build/Debug/XCTestDynamicOverlay.build/Objects-normal/arm64/Deprecations.bc",
+    "object" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/xctest-dynamic-overlay.build/Debug/XCTestDynamicOverlay.build/Objects-normal/arm64/Deprecations.o",
+    "swift-dependencies" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/xctest-dynamic-overlay.build/Debug/XCTestDynamicOverlay.build/Objects-normal/arm64/Deprecations.swiftdeps",
+    "swiftmodule" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/xctest-dynamic-overlay.build/Debug/XCTestDynamicOverlay.build/Objects-normal/arm64/Deprecations~partial.swiftmodule"
+  },
+  "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/SourcePackages/checkouts/xctest-dynamic-overlay/Sources/XCTestDynamicOverlay/Internal/Exports.swift" : {
+    "const-values" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/xctest-dynamic-overlay.build/Debug/XCTestDynamicOverlay.build/Objects-normal/arm64/Exports.swiftconstvalues",
+    "dependencies" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/xctest-dynamic-overlay.build/Debug/XCTestDynamicOverlay.build/Objects-normal/arm64/Exports.d",
+    "diagnostics" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/xctest-dynamic-overlay.build/Debug/XCTestDynamicOverlay.build/Objects-normal/arm64/Exports.dia",
+    "index-unit-output-path" : "/xctest-dynamic-overlay.build/Debug/XCTestDynamicOverlay.build/Objects-normal/arm64/Exports.o",
+    "llvm-bc" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/xctest-dynamic-overlay.build/Debug/XCTestDynamicOverlay.build/Objects-normal/arm64/Exports.bc",
+    "object" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/xctest-dynamic-overlay.build/Debug/XCTestDynamicOverlay.build/Objects-normal/arm64/Exports.o",
+    "swift-dependencies" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/xctest-dynamic-overlay.build/Debug/XCTestDynamicOverlay.build/Objects-normal/arm64/Exports.swiftdeps",
+    "swiftmodule" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/xctest-dynamic-overlay.build/Debug/XCTestDynamicOverlay.build/Objects-normal/arm64/Exports~partial.swiftmodule"
+  }
+}

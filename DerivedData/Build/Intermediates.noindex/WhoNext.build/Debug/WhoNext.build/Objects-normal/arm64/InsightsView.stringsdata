@@ -1,0 +1,160 @@
+{
+  "source": "/Users/bobkitchen/Documents/GitHub/WhoNext/WhoNext/InsightsView.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "To:",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 63
+        }
+      },
+      {
+        "comment": "",
+        "key": "Type a name...",
+        "location": {
+          "startingColumn": 31,
+          "startingLine": 66
+        }
+      },
+      {
+        "comment": "",
+        "key": "Notes:",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 118
+        }
+      },
+      {
+        "comment": "",
+        "key": "Save",
+        "location": {
+          "startingColumn": 24,
+          "startingLine": 128
+        }
+      },
+      {
+        "comment": "",
+        "key": "Dismiss follow-up",
+        "location": {
+          "startingColumn": 27,
+          "startingLine": 383
+        }
+      },
+      {
+        "comment": "",
+        "key": "Contacted %@",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 398
+        }
+      },
+      {
+        "comment": "",
+        "key": "Never contacted",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 407
+        }
+      },
+      {
+        "comment": "",
+        "key": "Meeting scheduled",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 418
+        }
+      },
+      {
+        "comment": "",
+        "key": "Email",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 432
+        }
+      },
+      {
+        "comment": "",
+        "key": "Email Ready",
+        "location": {
+          "startingColumn": 29,
+          "startingLine": 471
+        }
+      },
+      {
+        "comment": "",
+        "key": "Press Cmd+N to create a new email, then paste (Cmd+V) the pre-filled content.",
+        "location": {
+          "startingColumn": 31,
+          "startingLine": 472
+        }
+      },
+      {
+        "comment": "",
+        "key": "Got it",
+        "location": {
+          "startingColumn": 46,
+          "startingLine": 473
+        }
+      },
+      {
+        "comment": "",
+        "key": "Permission Required",
+        "location": {
+          "startingColumn": 29,
+          "startingLine": 478
+        }
+      },
+      {
+        "comment": "",
+        "key": "To automatically create emails, grant accessibility access in System Settings > Privacy & Security > Accessibility. Or continue with manual email creation.",
+        "location": {
+          "startingColumn": 31,
+          "startingLine": 479
+        }
+      },
+      {
+        "comment": "",
+        "key": "Open Settings",
+        "location": {
+          "startingColumn": 46,
+          "startingLine": 480
+        }
+      },
+      {
+        "comment": "",
+        "key": "Use Manual Method",
+        "location": {
+          "startingColumn": 48,
+          "startingLine": 485
+        }
+      },
+      {
+        "comment": "",
+        "key": "Meeting: %@",
+        "location": {
+          "startingColumn": 29,
+          "startingLine": 658
+        }
+      },
+      {
+        "comment": "",
+        "key": "Tap to view person details. %@",
+        "location": {
+          "startingColumn": 28,
+          "startingLine": 659
+        }
+      },
+      {
+        "comment": "",
+        "key": "External meeting",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 598
+        }
+      }
+    ]
+  },
+  "version": 1
+}

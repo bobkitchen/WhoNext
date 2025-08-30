@@ -1,0 +1,58 @@
+{
+  "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/SourcePackages/checkouts/Down/Sources/Down/AST/Styling/Stylers/DownStyler.swift" : {
+    "const-values" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/Down.build/Debug/Down.build/Objects-normal/arm64/DownStyler.swiftconstvalues",
+    "dependencies" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/Down.build/Debug/Down.build/Objects-normal/arm64/DownStyler.d",
+    "diagnostics" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/Down.build/Debug/Down.build/Objects-normal/arm64/DownStyler.dia",
+    "object" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/Down.build/Debug/Down.build/Objects-normal/arm64/DownStyler.o",
+    "swift-dependencies" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/Down.build/Debug/Down.build/Objects-normal/arm64/DownStyler.swiftdeps"
+  },
+  "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/SourcePackages/checkouts/Down/Sources/Down/AST/Styling/Stylers/DownStylerConfiguration.swift" : {
+    "const-values" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/Down.build/Debug/Down.build/Objects-normal/arm64/DownStylerConfiguration.swiftconstvalues",
+    "dependencies" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/Down.build/Debug/Down.build/Objects-normal/arm64/DownStylerConfiguration.d",
+    "diagnostics" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/Down.build/Debug/Down.build/Objects-normal/arm64/DownStylerConfiguration.dia",
+    "object" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/Down.build/Debug/Down.build/Objects-normal/arm64/DownStylerConfiguration.o",
+    "swift-dependencies" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/Down.build/Debug/Down.build/Objects-normal/arm64/DownStylerConfiguration.swiftdeps"
+  },
+  "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/SourcePackages/checkouts/Down/Sources/Down/AST/Styling/Stylers/Styler.swift" : {
+    "const-values" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/Down.build/Debug/Down.build/Objects-normal/arm64/Styler.swiftconstvalues",
+    "dependencies" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/Down.build/Debug/Down.build/Objects-normal/arm64/Styler.d",
+    "diagnostics" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/Down.build/Debug/Down.build/Objects-normal/arm64/Styler.dia",
+    "object" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/Down.build/Debug/Down.build/Objects-normal/arm64/Styler.o",
+    "swift-dependencies" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/Down.build/Debug/Down.build/Objects-normal/arm64/Styler.swiftdeps"
+  },
+  "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/SourcePackages/checkouts/Down/Sources/Down/AST/Styling/Text Views/DownDebugTextView.swift" : {
+    "const-values" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/Down.build/Debug/Down.build/Objects-normal/arm64/DownDebugTextView.swiftconstvalues",
+    "dependencies" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/Down.build/Debug/Down.build/Objects-normal/arm64/DownDebugTextView.d",
+    "diagnostics" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/Down.build/Debug/Down.build/Objects-normal/arm64/DownDebugTextView.dia",
+    "object" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/Down.build/Debug/Down.build/Objects-normal/arm64/DownDebugTextView.o",
+    "swift-dependencies" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/Down.build/Debug/Down.build/Objects-normal/arm64/DownDebugTextView.swiftdeps"
+  },
+  "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/SourcePackages/checkouts/Down/Sources/Down/AST/Styling/Text Views/DownTextView.swift" : {
+    "const-values" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/Down.build/Debug/Down.build/Objects-normal/arm64/DownTextView.swiftconstvalues",
+    "dependencies" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/Down.build/Debug/Down.build/Objects-normal/arm64/DownTextView.d",
+    "diagnostics" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/Down.build/Debug/Down.build/Objects-normal/arm64/DownTextView.dia",
+    "object" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/Down.build/Debug/Down.build/Objects-normal/arm64/DownTextView.o",
+    "swift-dependencies" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/Down.build/Debug/Down.build/Objects-normal/arm64/DownTextView.swiftdeps"
+  },
+  "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/SourcePackages/checkouts/Down/Sources/Down/AST/Visitors/AttributedStringVisitor.swift" : {
+    "const-values" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/Down.build/Debug/Down.build/Objects-normal/arm64/AttributedStringVisitor.swiftconstvalues",
+    "dependencies" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/Down.build/Debug/Down.build/Objects-normal/arm64/AttributedStringVisitor.d",
+    "diagnostics" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/Down.build/Debug/Down.build/Objects-normal/arm64/AttributedStringVisitor.dia",
+    "object" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/Down.build/Debug/Down.build/Objects-normal/arm64/AttributedStringVisitor.o",
+    "swift-dependencies" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/Down.build/Debug/Down.build/Objects-normal/arm64/AttributedStringVisitor.swiftdeps"
+  },
+  "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/SourcePackages/checkouts/Down/Sources/Down/AST/Visitors/DebugVisitor.swift" : {
+    "const-values" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/Down.build/Debug/Down.build/Objects-normal/arm64/DebugVisitor.swiftconstvalues",
+    "dependencies" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/Down.build/Debug/Down.build/Objects-normal/arm64/DebugVisitor.d",
+    "diagnostics" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/Down.build/Debug/Down.build/Objects-normal/arm64/DebugVisitor.dia",
+    "object" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/Down.build/Debug/Down.build/Objects-normal/arm64/DebugVisitor.o",
+    "swift-dependencies" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/Down.build/Debug/Down.build/Objects-normal/arm64/DebugVisitor.swiftdeps"
+  },
+  "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/SourcePackages/checkouts/Down/Sources/Down/AST/Visitors/ListItemPrefixGenerator.swift" : {
+    "const-values" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/Down.build/Debug/Down.build/Objects-normal/arm64/ListItemPrefixGenerator.swiftconstvalues",
+    "dependencies" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/Down.build/Debug/Down.build/Objects-normal/arm64/ListItemPrefixGenerator.d",
+    "diagnostics" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/Down.build/Debug/Down.build/Objects-normal/arm64/ListItemPrefixGenerator.dia",
+    "object" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/Down.build/Debug/Down.build/Objects-normal/arm64/ListItemPrefixGenerator.o",
+    "swift-dependencies" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/Down.build/Debug/Down.build/Objects-normal/arm64/ListItemPrefixGenerator.swiftdeps"
+  }
+}

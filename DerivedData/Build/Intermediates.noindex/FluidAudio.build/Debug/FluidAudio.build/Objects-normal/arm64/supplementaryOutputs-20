@@ -1,0 +1,30 @@
+{
+  "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/SourcePackages/checkouts/FluidAudio/Sources/FluidAudio/VAD/VadAudioProcessor.swift" : {
+    "const-values" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/FluidAudio.build/Debug/FluidAudio.build/Objects-normal/arm64/VadAudioProcessor.swiftconstvalues",
+    "dependencies" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/FluidAudio.build/Debug/FluidAudio.build/Objects-normal/arm64/VadAudioProcessor.d",
+    "diagnostics" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/FluidAudio.build/Debug/FluidAudio.build/Objects-normal/arm64/VadAudioProcessor.dia",
+    "object" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/FluidAudio.build/Debug/FluidAudio.build/Objects-normal/arm64/VadAudioProcessor.o",
+    "swift-dependencies" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/FluidAudio.build/Debug/FluidAudio.build/Objects-normal/arm64/VadAudioProcessor.swiftdeps"
+  },
+  "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/SourcePackages/checkouts/FluidAudio/Sources/FluidAudio/VAD/VadManager.swift" : {
+    "const-values" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/FluidAudio.build/Debug/FluidAudio.build/Objects-normal/arm64/VadManager.swiftconstvalues",
+    "dependencies" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/FluidAudio.build/Debug/FluidAudio.build/Objects-normal/arm64/VadManager.d",
+    "diagnostics" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/FluidAudio.build/Debug/FluidAudio.build/Objects-normal/arm64/VadManager.dia",
+    "object" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/FluidAudio.build/Debug/FluidAudio.build/Objects-normal/arm64/VadManager.o",
+    "swift-dependencies" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/FluidAudio.build/Debug/FluidAudio.build/Objects-normal/arm64/VadManager.swiftdeps"
+  },
+  "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/SourcePackages/checkouts/FluidAudio/Sources/FluidAudio/VAD/VadModelProcessor.swift" : {
+    "const-values" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/FluidAudio.build/Debug/FluidAudio.build/Objects-normal/arm64/VadModelProcessor.swiftconstvalues",
+    "dependencies" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/FluidAudio.build/Debug/FluidAudio.build/Objects-normal/arm64/VadModelProcessor.d",
+    "diagnostics" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/FluidAudio.build/Debug/FluidAudio.build/Objects-normal/arm64/VadModelProcessor.dia",
+    "object" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/FluidAudio.build/Debug/FluidAudio.build/Objects-normal/arm64/VadModelProcessor.o",
+    "swift-dependencies" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/FluidAudio.build/Debug/FluidAudio.build/Objects-normal/arm64/VadModelProcessor.swiftdeps"
+  },
+  "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/SourcePackages/checkouts/FluidAudio/Sources/FluidAudio/VAD/VadTypes.swift" : {
+    "const-values" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/FluidAudio.build/Debug/FluidAudio.build/Objects-normal/arm64/VadTypes.swiftconstvalues",
+    "dependencies" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/FluidAudio.build/Debug/FluidAudio.build/Objects-normal/arm64/VadTypes.d",
+    "diagnostics" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/FluidAudio.build/Debug/FluidAudio.build/Objects-normal/arm64/VadTypes.dia",
+    "object" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/FluidAudio.build/Debug/FluidAudio.build/Objects-normal/arm64/VadTypes.o",
+    "swift-dependencies" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/FluidAudio.build/Debug/FluidAudio.build/Objects-normal/arm64/VadTypes.swiftdeps"
+  }
+}

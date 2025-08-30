@@ -1,0 +1,104 @@
+{
+  "source": "/Users/bobkitchen/Documents/GitHub/WhoNext/WhoNext/ConversationDurationView.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "Conversation Analytics",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 16
+        }
+      },
+      {
+        "comment": "",
+        "key": "Average Duration",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 26
+        }
+      },
+      {
+        "comment": "",
+        "key": "%lld min",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 29
+        }
+      },
+      {
+        "comment": "",
+        "key": "Total Time",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 37
+        }
+      },
+      {
+        "comment": "",
+        "key": "Relationship Health",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 49
+        }
+      },
+      {
+        "comment": "",
+        "key": "Trend",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 63
+        }
+      },
+      {
+        "comment": "",
+        "key": "Insights",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 80
+        }
+      },
+      {
+        "comment": "",
+        "key": "Last conversation:",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 95
+        }
+      },
+      {
+        "comment": "",
+        "key": "(%lld days ago)",
+        "location": {
+          "startingColumn": 38,
+          "startingLine": 103
+        }
+      },
+      {
+        "comment": "",
+        "key": "No conversation data available for analysis",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 112
+        }
+      },
+      {
+        "comment": "",
+        "key": "Add more conversations with duration tracking to see analytics",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 116
+        }
+      },
+      {
+        "comment": "",
+        "key": "%lldm avg",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 275
+        }
+      }
+    ]
+  },
+  "version": 1
+}

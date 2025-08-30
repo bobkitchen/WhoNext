@@ -1,0 +1,136 @@
+{
+  "source": "/Users/bobkitchen/Documents/GitHub/WhoNext/WhoNext/TranscriptImportWindowView.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 178
+        }
+      },
+      {
+        "comment": "",
+        "key": "Back",
+        "location": {
+          "startingColumn": 36,
+          "startingLine": 23
+        }
+      },
+      {
+        "comment": "",
+        "key": "Review Recorded Meeting",
+        "location": {
+          "startingColumn": 48,
+          "startingLine": 38
+        }
+      },
+      {
+        "comment": "",
+        "key": "Import Meeting Transcript",
+        "location": {
+          "startingColumn": 76,
+          "startingLine": 38
+        }
+      },
+      {
+        "comment": "",
+        "key": "Review the transcription below, then process it to extract participants and generate summaries.",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 60
+        }
+      },
+      {
+        "comment": "",
+        "key": "Paste your meeting transcript below and let AI extract participants, generate summaries, and analyze sentiment.",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 61
+        }
+      },
+      {
+        "comment": "",
+        "key": "Meeting Transcript",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 72
+        }
+      },
+      {
+        "comment": "",
+        "key": "%lld words",
+        "location": {
+          "startingColumn": 38,
+          "startingLine": 88
+        }
+      },
+      {
+        "comment": "",
+        "key": "Live Recording",
+        "location": {
+          "startingColumn": 39,
+          "startingLine": 76
+        }
+      },
+      {
+        "comment": "",
+        "key": "Supported formats:",
+        "location": {
+          "startingColumn": 38,
+          "startingLine": 106
+        }
+      },
+      {
+        "comment": "",
+        "key": "• Zoom transcripts",
+        "location": {
+          "startingColumn": 42,
+          "startingLine": 111
+        }
+      },
+      {
+        "comment": "",
+        "key": "• Microsoft Teams transcripts",
+        "location": {
+          "startingColumn": 42,
+          "startingLine": 112
+        }
+      },
+      {
+        "comment": "",
+        "key": "• Generic timestamped transcripts",
+        "location": {
+          "startingColumn": 42,
+          "startingLine": 113
+        }
+      },
+      {
+        "comment": "",
+        "key": "• Manual notes",
+        "location": {
+          "startingColumn": 42,
+          "startingLine": 114
+        }
+      },
+      {
+        "comment": "",
+        "key": "Detected format: %@",
+        "location": {
+          "startingColumn": 38,
+          "startingLine": 128
+        }
+      },
+      {
+        "comment": "",
+        "key": "Clear",
+        "location": {
+          "startingColumn": 32,
+          "startingLine": 153
+        }
+      }
+    ]
+  },
+  "version": 1
+}

@@ -1,0 +1,128 @@
+{
+  "source": "/Users/bobkitchen/Documents/GitHub/WhoNext/WhoNext/PermissionsSettingsView.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "Permissions",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 13
+        }
+      },
+      {
+        "comment": "",
+        "key": "Granted",
+        "location": {
+          "startingColumn": 35,
+          "startingLine": 36
+        }
+      },
+      {
+        "comment": "",
+        "key": "Grant Access",
+        "location": {
+          "startingColumn": 36,
+          "startingLine": 40
+        }
+      },
+      {
+        "comment": "",
+        "key": "Microphone Access",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 25
+        }
+      },
+      {
+        "comment": "",
+        "key": "Required for recording meetings",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 28
+        }
+      },
+      {
+        "comment": "",
+        "key": "Granted",
+        "location": {
+          "startingColumn": 35,
+          "startingLine": 68
+        }
+      },
+      {
+        "comment": "",
+        "key": "Grant Access",
+        "location": {
+          "startingColumn": 36,
+          "startingLine": 72
+        }
+      },
+      {
+        "comment": "",
+        "key": "Screen Recording",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 57
+        }
+      },
+      {
+        "comment": "",
+        "key": "Optional: Enables system audio capture from meeting apps",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 60
+        }
+      },
+      {
+        "comment": "",
+        "key": "Permission Status",
+        "location": {
+          "startingColumn": 27,
+          "startingLine": 86
+        }
+      },
+      {
+        "comment": "",
+        "key": "Microphone access is required for WhoNext to function. Please grant permission in System Settings.",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 95
+        }
+      },
+      {
+        "comment": "",
+        "key": "Screen recording is optional but recommended. Without it, only your microphone audio will be recorded, not the audio from meeting participants.",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 106
+        }
+      },
+      {
+        "comment": "",
+        "key": "All permissions granted. WhoNext can capture both your voice and system audio from meeting apps.",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 117
+        }
+      },
+      {
+        "comment": "",
+        "key": "Reset Permission Prompts",
+        "location": {
+          "startingColumn": 24,
+          "startingLine": 128
+        }
+      },
+      {
+        "comment": "",
+        "key": "Refresh Status",
+        "location": {
+          "startingColumn": 24,
+          "startingLine": 136
+        }
+      }
+    ]
+  },
+  "version": 1
+}

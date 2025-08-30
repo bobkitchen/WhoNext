@@ -1,0 +1,48 @@
+{
+  "source": "/Users/bobkitchen/Documents/GitHub/WhoNext/WhoNext/PopoutChatWindow.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "Chat Insights",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 38
+        }
+      },
+      {
+        "comment": "",
+        "key": "Start a conversation",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 67
+        }
+      },
+      {
+        "comment": "",
+        "key": "Ask me anything about your network, meetings, or who you should connect with.",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 72
+        }
+      },
+      {
+        "comment": "",
+        "key": "AI is thinking...",
+        "location": {
+          "startingColumn": 46,
+          "startingLine": 119
+        }
+      },
+      {
+        "comment": "",
+        "key": "Ask about your network...",
+        "location": {
+          "startingColumn": 35,
+          "startingLine": 168
+        }
+      }
+    ]
+  },
+  "version": 1
+}

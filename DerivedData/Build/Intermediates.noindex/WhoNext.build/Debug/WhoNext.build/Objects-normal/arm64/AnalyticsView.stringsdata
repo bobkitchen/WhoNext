@@ -1,0 +1,144 @@
+{
+  "source": "/Users/bobkitchen/Documents/GitHub/WhoNext/WhoNext/AnalyticsView.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "Insights into your conversation patterns and team engagement",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 32
+        }
+      },
+      {
+        "comment": "",
+        "key": "Analytics",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 28
+        }
+      },
+      {
+        "comment": "",
+        "key": "Sentiment Analysis",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 41
+        }
+      },
+      {
+        "comment": "",
+        "key": "Priority Insights",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 74
+        }
+      },
+      {
+        "comment": "",
+        "key": "Low Health Score Alert",
+        "location": {
+          "startingColumn": 46,
+          "startingLine": 89
+        }
+      },
+      {
+        "comment": "",
+        "key": "4 relationships showing health scores",
+        "location": {
+          "startingColumn": 46,
+          "startingLine": 92
+        }
+      },
+      {
+        "comment": "",
+        "key": "Overdue Conversations",
+        "location": {
+          "startingColumn": 46,
+          "startingLine": 119
+        }
+      },
+      {
+        "comment": "",
+        "key": "2 people haven't been contacted in 30+ days",
+        "location": {
+          "startingColumn": 46,
+          "startingLine": 122
+        }
+      },
+      {
+        "comment": "",
+        "key": "Health Score Graph",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 144
+        }
+      },
+      {
+        "comment": "",
+        "key": "Activity Timeline",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 161
+        }
+      },
+      {
+        "comment": "",
+        "key": "Recent conversations and meetings",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 167
+        }
+      },
+      {
+        "comment": "",
+        "key": "",
+        "location": {
+          "startingColumn": 32,
+          "startingLine": 172
+        }
+      },
+      {
+        "comment": "",
+        "key": "Week",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 173
+        }
+      },
+      {
+        "comment": "",
+        "key": "Month",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 174
+        }
+      },
+      {
+        "comment": "",
+        "key": "Quarter",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 175
+        }
+      },
+      {
+        "comment": "",
+        "key": "Activity Heat Map",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 199
+        }
+      },
+      {
+        "comment": "",
+        "key": "Conversation patterns over the last 12 weeks",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 205
+        }
+      }
+    ]
+  },
+  "version": 1
+}

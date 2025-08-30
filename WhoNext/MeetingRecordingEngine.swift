@@ -453,6 +453,9 @@ class MeetingRecordingEngine: ObservableObject {
                                         
                                         // Update our tracking
                                         self.lastTranscriptionText = fullTranscript
+                                        
+                                        // Update meeting metrics
+                                        self.updateMeetingMetrics()
                                     }
                                 } else if !fullTranscript.isEmpty && self.lastTranscriptionText.isEmpty {
                                     // First transcription
@@ -613,17 +616,18 @@ class MeetingRecordingEngine: ObservableObject {
         // Start recording timer
         startRecordingTimer()
         
-        // Update state
+        // Update state and show window
         DispatchQueue.main.async {
             self.isRecording = true
             self.currentMeeting = meeting
             self.recordingState = .recording
+            
+            // Show recording window after state is set
+            print("🪟 Showing enhanced live meeting window")
+            LiveMeetingWindowManager.shared.showWindow(for: meeting)
         }
         
         print("✅ Recording started: \(meeting.id)")
-        
-        // Show recording window
-        showLiveMeetingWindow()
     }
     
     func stopRecording() {
@@ -1029,6 +1033,91 @@ class MeetingRecordingEngine: ObservableObject {
             stopRecording()
         }
         stopMonitoring()
+    }
+    
+    // MARK: - Meeting Metrics Updates
+    
+    /// Update all meeting metrics
+    private func updateMeetingMetrics() {
+        guard let meeting = currentMeeting else { return }
+        
+        DispatchQueue.main.async { [weak self] in
+            guard let self = self else { return }
+            
+            // Update word count
+            let wordCount = meeting.transcript.reduce(0) { count, segment in
+                count + segment.text.split(separator: " ").count
+            }
+            meeting.wordCount = wordCount
+            
+            // Update file size
+            if let path = meeting.audioFilePath {
+                let url = URL(fileURLWithPath: path)
+                if let attributes = try? FileManager.default.attributesOfItem(atPath: url.path),
+                   let fileSize = attributes[.size] as? Int64 {
+                    meeting.currentFileSize = fileSize
+                }
+            }
+            
+            // Update average confidence
+            if !meeting.transcript.isEmpty {
+                let totalConfidence = meeting.transcript.reduce(Float(0)) { $0 + $1.confidence }
+                meeting.averageConfidence = totalConfidence / Float(meeting.transcript.count)
+            }
+            
+            // Update speaker turn count (simplified - counts speaker changes)
+            var lastSpeaker: String? = nil
+            var turnCount = 0
+            for segment in meeting.transcript {
+                if let speaker = segment.speakerName, speaker != lastSpeaker {
+                    turnCount += 1
+                    lastSpeaker = speaker
+                }
+            }
+            meeting.speakerTurnCount = turnCount
+            
+            // Update system metrics
+            self.updateSystemMetrics()
+        }
+    }
+    
+    /// Update system performance metrics
+    private func updateSystemMetrics() {
+        guard let meeting = currentMeeting else { return }
+        
+        // Get CPU usage
+        var info = mach_task_basic_info()
+        var count = mach_msg_type_number_t(MemoryLayout<mach_task_basic_info>.size) / 4
+        
+        let result = withUnsafeMutablePointer(to: &info) { infoPtr in
+            infoPtr.withMemoryRebound(to: integer_t.self, capacity: Int(count)) { intPtr in
+                task_info(mach_task_self_,
+                         task_flavor_t(MACH_TASK_BASIC_INFO),
+                         intPtr,
+                         &count)
+            }
+        }
+        
+        if result == KERN_SUCCESS {
+            // Calculate CPU usage percentage (simplified)
+            let userTime = Double(info.user_time.seconds) + Double(info.user_time.microseconds) / 1_000_000
+            let systemTime = Double(info.system_time.seconds) + Double(info.system_time.microseconds) / 1_000_000
+            let totalTime = userTime + systemTime
+            let uptime = ProcessInfo.processInfo.systemUptime
+            meeting.cpuUsage = uptime > 0 ? min((totalTime / uptime) * 100, 100) : 0
+            
+            // Update memory usage
+            meeting.memoryUsage = Int64(info.resident_size)
+        }
+        
+        // Update buffer health based on dropped frames or processing delays
+        if meeting.droppedFrames > 10 {
+            meeting.bufferHealth = .critical
+        } else if meeting.droppedFrames > 5 {
+            meeting.bufferHealth = .warning
+        } else {
+            meeting.bufferHealth = .good
+        }
     }
 }
 

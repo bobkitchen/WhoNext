@@ -1,0 +1,72 @@
+{
+  "source": "/Users/bobkitchen/Documents/GitHub/WhoNext/WhoNext/AddPersonView.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "Choose Photo",
+        "location": {
+          "startingColumn": 28,
+          "startingLine": 38
+        }
+      },
+      {
+        "comment": "",
+        "key": "Full Name",
+        "location": {
+          "startingColumn": 31,
+          "startingLine": 43
+        }
+      },
+      {
+        "comment": "",
+        "key": "Role",
+        "location": {
+          "startingColumn": 31,
+          "startingLine": 47
+        }
+      },
+      {
+        "comment": "",
+        "key": "Timezone",
+        "location": {
+          "startingColumn": 28,
+          "startingLine": 53
+        }
+      },
+      {
+        "comment": "",
+        "key": "Direct Report",
+        "location": {
+          "startingColumn": 28,
+          "startingLine": 61
+        }
+      },
+      {
+        "comment": "",
+        "key": "Notes",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 68
+        }
+      },
+      {
+        "comment": "",
+        "key": "Cancel",
+        "location": {
+          "startingColumn": 24,
+          "startingLine": 79
+        }
+      },
+      {
+        "comment": "",
+        "key": "Add",
+        "location": {
+          "startingColumn": 24,
+          "startingLine": 84
+        }
+      }
+    ]
+  },
+  "version": 1
+}

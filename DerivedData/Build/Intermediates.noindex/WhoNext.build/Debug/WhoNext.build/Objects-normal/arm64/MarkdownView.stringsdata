@@ -1,0 +1,32 @@
+{
+  "source": "/Users/bobkitchen/Documents/GitHub/WhoNext/WhoNext/MarkdownView.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": " ",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 25
+        }
+      },
+      {
+        "comment": "",
+        "key": "•",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 41
+        }
+      },
+      {
+        "comment": "",
+        "key": "",
+        "location": {
+          "startingColumn": 27,
+          "startingLine": 57
+        }
+      }
+    ]
+  },
+  "version": 1
+}

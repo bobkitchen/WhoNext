@@ -1,0 +1,64 @@
+{
+  "source": "/Users/bobkitchen/Documents/GitHub/WhoNext/WhoNext/SentimentAnalysisBackgroundProcessor.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "Sentiment Analysis",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 266
+        }
+      },
+      {
+        "comment": "",
+        "key": "%lld of %lld conversations analyzed",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 289
+        }
+      },
+      {
+        "comment": "",
+        "key": "Start Analysis",
+        "location": {
+          "startingColumn": 28,
+          "startingLine": 298
+        }
+      },
+      {
+        "comment": "",
+        "key": "Resume",
+        "location": {
+          "startingColumn": 32,
+          "startingLine": 307
+        }
+      },
+      {
+        "comment": "",
+        "key": "Pause",
+        "location": {
+          "startingColumn": 32,
+          "startingLine": 313
+        }
+      },
+      {
+        "comment": "",
+        "key": "Stop",
+        "location": {
+          "startingColumn": 28,
+          "startingLine": 320
+        }
+      },
+      {
+        "comment": "",
+        "key": "Refresh",
+        "location": {
+          "startingColumn": 24,
+          "startingLine": 327
+        }
+      }
+    ]
+  },
+  "version": 1
+}

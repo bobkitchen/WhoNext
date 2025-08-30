@@ -1,0 +1,296 @@
+{
+  "source": "/Users/bobkitchen/Documents/GitHub/WhoNext/WhoNext/MeetingRecordingView.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "Meeting Recording",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 37
+        }
+      },
+      {
+        "comment": "",
+        "key": "Automatically detect and record meetings with transcription",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 41
+        }
+      },
+      {
+        "comment": "",
+        "key": "Monitoring",
+        "location": {
+          "startingColumn": 53,
+          "startingLine": 58
+        }
+      },
+      {
+        "comment": "",
+        "key": "Inactive",
+        "location": {
+          "startingColumn": 68,
+          "startingLine": 58
+        }
+      },
+      {
+        "comment": "",
+        "key": "Recording Status",
+        "location": {
+          "startingColumn": 27,
+          "startingLine": 73
+        }
+      },
+      {
+        "comment": "",
+        "key": "Auto-Record",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 91
+        }
+      },
+      {
+        "comment": "",
+        "key": "Enabled",
+        "location": {
+          "startingColumn": 60,
+          "startingLine": 92
+        }
+      },
+      {
+        "comment": "",
+        "key": "Disabled",
+        "location": {
+          "startingColumn": 72,
+          "startingLine": 92
+        }
+      },
+      {
+        "comment": "",
+        "key": "Confidence Threshold",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 102
+        }
+      },
+      {
+        "comment": "",
+        "key": "%lld%%",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 103
+        }
+      },
+      {
+        "comment": "",
+        "key": "Detection Status",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 112
+        }
+      },
+      {
+        "comment": "",
+        "key": "Active",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 114
+        }
+      },
+      {
+        "comment": "",
+        "key": "Inactive",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 119
+        }
+      },
+      {
+        "comment": "",
+        "key": "Live Recording",
+        "location": {
+          "startingColumn": 27,
+          "startingLine": 135
+        }
+      },
+      {
+        "comment": "",
+        "key": "Title",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 149
+        }
+      },
+      {
+        "comment": "",
+        "key": "Participants",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 159
+        }
+      },
+      {
+        "comment": "",
+        "key": "%lld",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 162
+        }
+      },
+      {
+        "comment": "",
+        "key": "Transcript",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 169
+        }
+      },
+      {
+        "comment": "",
+        "key": "%lld segments",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 172
+        }
+      },
+      {
+        "comment": "",
+        "key": "Latest Transcript",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 181
+        }
+      },
+      {
+        "comment": "",
+        "key": "Stop Recording",
+        "location": {
+          "startingColumn": 31,
+          "startingLine": 197
+        }
+      },
+      {
+        "comment": "",
+        "key": "Show Live Window",
+        "location": {
+          "startingColumn": 31,
+          "startingLine": 207
+        }
+      },
+      {
+        "comment": "",
+        "key": "Manual Controls",
+        "location": {
+          "startingColumn": 27,
+          "startingLine": 221
+        }
+      },
+      {
+        "comment": "",
+        "key": "Start Monitoring",
+        "location": {
+          "startingColumn": 35,
+          "startingLine": 232
+        }
+      },
+      {
+        "comment": "",
+        "key": "Stop Monitoring",
+        "location": {
+          "startingColumn": 35,
+          "startingLine": 242
+        }
+      },
+      {
+        "comment": "",
+        "key": "Start Recording",
+        "location": {
+          "startingColumn": 35,
+          "startingLine": 254
+        }
+      },
+      {
+        "comment": "",
+        "key": "Stop Recording",
+        "location": {
+          "startingColumn": 35,
+          "startingLine": 264
+        }
+      },
+      {
+        "comment": "",
+        "key": "Quick Settings",
+        "location": {
+          "startingColumn": 27,
+          "startingLine": 281
+        }
+      },
+      {
+        "comment": "",
+        "key": "Adjust settings in Settings → Recording",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 312
+        }
+      },
+      {
+        "comment": "",
+        "key": "Auto-Recording:",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 291
+        }
+      },
+      {
+        "comment": "",
+        "key": "Enabled",
+        "location": {
+          "startingColumn": 60,
+          "startingLine": 292
+        }
+      },
+      {
+        "comment": "",
+        "key": "Disabled",
+        "location": {
+          "startingColumn": 72,
+          "startingLine": 292
+        }
+      },
+      {
+        "comment": "",
+        "key": "Confidence:",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 299
+        }
+      },
+      {
+        "comment": "",
+        "key": "%lld%%",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 300
+        }
+      },
+      {
+        "comment": "",
+        "key": "Storage:",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 306
+        }
+      },
+      {
+        "comment": "",
+        "key": "%lld days retention",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 307
+        }
+      }
+    ]
+  },
+  "version": 1
+}

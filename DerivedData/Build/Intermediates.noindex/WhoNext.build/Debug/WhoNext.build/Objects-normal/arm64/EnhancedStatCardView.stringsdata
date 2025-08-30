@@ -1,0 +1,24 @@
+{
+  "source": "/Users/bobkitchen/Documents/GitHub/WhoNext/WhoNext/EnhancedStatCardView.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "%@: %@",
+        "location": {
+          "startingColumn": 29,
+          "startingLine": 78
+        }
+      },
+      {
+        "comment": "",
+        "key": "%lld%%",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 111
+        }
+      }
+    ]
+  },
+  "version": 1
+}

@@ -1,0 +1,128 @@
+{
+  "source": "/Users/bobkitchen/Documents/GitHub/WhoNext/WhoNext/LinkedInSearchWindow.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "LinkedIn Profile Search",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 47
+        }
+      },
+      {
+        "comment": "",
+        "key": "Close",
+        "location": {
+          "startingColumn": 20,
+          "startingLine": 52
+        }
+      },
+      {
+        "comment": "",
+        "key": "Search for a LinkedIn profile, then click 'Extract Profile Data' when you find the right person.",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 65
+        }
+      },
+      {
+        "comment": "",
+        "key": "Extracting profile data...",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 90
+        }
+      },
+      {
+        "comment": "",
+        "key": "Error: %@",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 94
+        }
+      },
+      {
+        "comment": "",
+        "key": "Extracted Profile Data",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 107
+        }
+      },
+      {
+        "comment": "",
+        "key": "Experience",
+        "location": {
+          "startingColumn": 38,
+          "startingLine": 118
+        }
+      },
+      {
+        "comment": "",
+        "key": "... and %lld more",
+        "location": {
+          "startingColumn": 42,
+          "startingLine": 126
+        }
+      },
+      {
+        "comment": "",
+        "key": "• %@ at %@",
+        "location": {
+          "startingColumn": 42,
+          "startingLine": 121
+        }
+      },
+      {
+        "comment": "",
+        "key": "Education",
+        "location": {
+          "startingColumn": 38,
+          "startingLine": 135
+        }
+      },
+      {
+        "comment": "",
+        "key": "• %@ at %@",
+        "location": {
+          "startingColumn": 42,
+          "startingLine": 138
+        }
+      },
+      {
+        "comment": "",
+        "key": "Extract Profile Data",
+        "location": {
+          "startingColumn": 24,
+          "startingLine": 160
+        }
+      },
+      {
+        "comment": "",
+        "key": "Back to Search",
+        "location": {
+          "startingColumn": 24,
+          "startingLine": 182
+        }
+      },
+      {
+        "comment": "",
+        "key": "Use This Data",
+        "location": {
+          "startingColumn": 24,
+          "startingLine": 189
+        }
+      },
+      {
+        "comment": "",
+        "key": "%@:",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 669
+        }
+      }
+    ]
+  },
+  "version": 1
+}

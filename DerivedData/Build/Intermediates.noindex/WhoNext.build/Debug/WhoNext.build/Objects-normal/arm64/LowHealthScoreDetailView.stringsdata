@@ -1,0 +1,32 @@
+{
+  "source": "/Users/bobkitchen/Documents/GitHub/WhoNext/WhoNext/LowHealthScoreDetailView.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "Low Health Score Alert",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 17
+        }
+      },
+      {
+        "comment": "",
+        "key": "%lld relationships need attention",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 21
+        }
+      },
+      {
+        "comment": "",
+        "key": "View Details",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 156
+        }
+      }
+    ]
+  },
+  "version": 1
+}

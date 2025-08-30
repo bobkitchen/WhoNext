@@ -1,0 +1,168 @@
+{
+  "source": "/Users/bobkitchen/Documents/GitHub/WhoNext/WhoNext/StorageMaintenanceManager.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "Automatic Maintenance",
+        "location": {
+          "startingColumn": 21,
+          "startingLine": 519
+        }
+      },
+      {
+        "comment": "",
+        "key": "Audio Retention",
+        "location": {
+          "startingColumn": 21,
+          "startingLine": 530
+        }
+      },
+      {
+        "comment": "",
+        "key": "Storage Optimization",
+        "location": {
+          "startingColumn": 21,
+          "startingLine": 545
+        }
+      },
+      {
+        "comment": "",
+        "key": "Storage Status",
+        "location": {
+          "startingColumn": 21,
+          "startingLine": 573
+        }
+      },
+      {
+        "comment": "",
+        "key": "Enable automatic maintenance",
+        "location": {
+          "startingColumn": 24,
+          "startingLine": 520
+        }
+      },
+      {
+        "comment": "",
+        "key": "Run daily at:",
+        "location": {
+          "startingColumn": 21,
+          "startingLine": 523
+        }
+      },
+      {
+        "comment": "",
+        "key": "Transcripts and summaries are always preserved",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 540
+        }
+      },
+      {
+        "comment": "",
+        "key": "Delete audio after:",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 532
+        }
+      },
+      {
+        "comment": "",
+        "key": "%lld days",
+        "location": {
+          "startingColumn": 25,
+          "startingLine": 534
+        }
+      },
+      {
+        "comment": "",
+        "key": "Compress old recordings",
+        "location": {
+          "startingColumn": 24,
+          "startingLine": 546
+        }
+      },
+      {
+        "comment": "",
+        "key": "Clean orphaned files",
+        "location": {
+          "startingColumn": 24,
+          "startingLine": 559
+        }
+      },
+      {
+        "comment": "",
+        "key": "Compress after:",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 550
+        }
+      },
+      {
+        "comment": "",
+        "key": "%lld days",
+        "location": {
+          "startingColumn": 29,
+          "startingLine": 552
+        }
+      },
+      {
+        "comment": "",
+        "key": "Grace period:",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 563
+        }
+      },
+      {
+        "comment": "",
+        "key": "%lld days",
+        "location": {
+          "startingColumn": 29,
+          "startingLine": 565
+        }
+      },
+      {
+        "comment": "",
+        "key": "Total Size:",
+        "location": {
+          "startingColumn": 36,
+          "startingLine": 575
+        }
+      },
+      {
+        "comment": "",
+        "key": "File Count:",
+        "location": {
+          "startingColumn": 36,
+          "startingLine": 576
+        }
+      },
+      {
+        "comment": "",
+        "key": "Last Maintenance:",
+        "location": {
+          "startingColumn": 40,
+          "startingLine": 578
+        }
+      },
+      {
+        "comment": "",
+        "key": "Run Maintenance Now",
+        "location": {
+          "startingColumn": 24,
+          "startingLine": 582
+        }
+      },
+      {
+        "comment": "",
+        "key": "Running maintenance...",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 592
+        }
+      }
+    ]
+  },
+  "version": 1
+}

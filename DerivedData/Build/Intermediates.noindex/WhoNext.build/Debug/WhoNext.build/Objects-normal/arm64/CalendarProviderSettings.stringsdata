@@ -1,0 +1,160 @@
+{
+  "source": "/Users/bobkitchen/Documents/GitHub/WhoNext/WhoNext/CalendarProviderSettings.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "Calendar Error",
+        "location": {
+          "startingColumn": 16,
+          "startingLine": 31
+        }
+      },
+      {
+        "comment": "",
+        "key": "Calendar Provider",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 13
+        }
+      },
+      {
+        "comment": "",
+        "key": "OK",
+        "location": {
+          "startingColumn": 20,
+          "startingLine": 32
+        }
+      },
+      {
+        "comment": "",
+        "key": "WhoNext needs access to your calendar to display upcoming meetings.",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 100
+        }
+      },
+      {
+        "comment": "",
+        "key": "Apple Calendar",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 65
+        }
+      },
+      {
+        "comment": "",
+        "key": "Use system calendar",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 74
+        }
+      },
+      {
+        "comment": "",
+        "key": "Connected",
+        "location": {
+          "startingColumn": 65,
+          "startingLine": 70
+        }
+      },
+      {
+        "comment": "",
+        "key": "Tap to connect",
+        "location": {
+          "startingColumn": 79,
+          "startingLine": 70
+        }
+      },
+      {
+        "comment": "",
+        "key": "You'll be redirected to Google to authorize access to your calendar.",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 189
+        }
+      },
+      {
+        "comment": "",
+        "key": "Sign Out",
+        "location": {
+          "startingColumn": 36,
+          "startingLine": 159
+        }
+      },
+      {
+        "comment": "",
+        "key": "Google Calendar",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 133
+        }
+      },
+      {
+        "comment": "",
+        "key": "Connected",
+        "location": {
+          "startingColumn": 38,
+          "startingLine": 140
+        }
+      },
+      {
+        "comment": "",
+        "key": "Tap to sign in",
+        "location": {
+          "startingColumn": 38,
+          "startingLine": 144
+        }
+      },
+      {
+        "comment": "",
+        "key": "Connect with Google",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 149
+        }
+      },
+      {
+        "comment": "",
+        "key": "Active Calendar",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 201
+        }
+      },
+      {
+        "comment": "",
+        "key": "Events will be fetched from: %@",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 254
+        }
+      },
+      {
+        "comment": "",
+        "key": "",
+        "location": {
+          "startingColumn": 24,
+          "startingLine": 213
+        }
+      },
+      {
+        "comment": "",
+        "key": "Loading calendars...",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 208
+        }
+      },
+      {
+        "comment": "",
+        "key": "All Calendars",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 228
+        }
+      }
+    ]
+  },
+  "version": 1
+}

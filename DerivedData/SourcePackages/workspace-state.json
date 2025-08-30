@@ -24,6 +24,23 @@
       {
         "basedOn" : null,
         "packageRef" : {
+          "identity" : "fluidaudio",
+          "kind" : "remoteSourceControl",
+          "location" : "https://github.com/FluidInference/FluidAudio.git",
+          "name" : "FluidAudio"
+        },
+        "state" : {
+          "checkoutState" : {
+            "revision" : "33c2e81dd15604aec2292c11410f8cdbde52b557",
+            "version" : "0.3.0"
+          },
+          "name" : "sourceControlCheckout"
+        },
+        "subpath" : "FluidAudio"
+      },
+      {
+        "basedOn" : null,
+        "packageRef" : {
           "identity" : "supabase-swift",
           "kind" : "remoteSourceControl",
           "location" : "https://github.com/supabase/supabase-swift",

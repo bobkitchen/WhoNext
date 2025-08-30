@@ -1,0 +1,88 @@
+{
+  "source": "/Users/bobkitchen/Documents/GitHub/WhoNext/WhoNext/SentimentInsightsView.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "Refresh",
+        "location": {
+          "startingColumn": 28,
+          "startingLine": 29
+        }
+      },
+      {
+        "comment": "",
+        "key": "Relationship Insights",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 19
+        }
+      },
+      {
+        "comment": "",
+        "key": "AI-powered analytics for your conversations",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 22
+        }
+      },
+      {
+        "comment": "",
+        "key": "Analyzing conversations...",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 39
+        }
+      },
+      {
+        "comment": "",
+        "key": "Overview",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 74
+        }
+      },
+      {
+        "comment": "",
+        "key": "Priority Insights",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 108
+        }
+      },
+      {
+        "comment": "",
+        "key": "Relationship Health",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 125
+        }
+      },
+      {
+        "comment": "",
+        "key": "No relationship data available",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 130
+        }
+      },
+      {
+        "comment": "",
+        "key": "And %lld more relationships...",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 144
+        }
+      },
+      {
+        "comment": "",
+        "key": "%lldm avg",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 353
+        }
+      }
+    ]
+  },
+  "version": 1
+}

@@ -1,0 +1,80 @@
+{
+  "source": "/Users/bobkitchen/Documents/GitHub/WhoNext/WhoNext/EnhancedLiveMeetingWindow.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "Recording",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 214
+        }
+      },
+      {
+        "comment": "",
+        "key": "Add Marker (⌘M)",
+        "location": {
+          "startingColumn": 27,
+          "startingLine": 238
+        }
+      },
+      {
+        "comment": "",
+        "key": "Pause",
+        "location": {
+          "startingColumn": 49,
+          "startingLine": 246
+        }
+      },
+      {
+        "comment": "",
+        "key": "Resume",
+        "location": {
+          "startingColumn": 59,
+          "startingLine": 246
+        }
+      },
+      {
+        "comment": "",
+        "key": "Stop Recording",
+        "location": {
+          "startingColumn": 27,
+          "startingLine": 255
+        }
+      },
+      {
+        "comment": "",
+        "key": "Show advanced metrics",
+        "location": {
+          "startingColumn": 19,
+          "startingLine": 337
+        }
+      },
+      {
+        "comment": "",
+        "key": "Processing...",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 371
+        }
+      },
+      {
+        "comment": "",
+        "key": "Add a note...",
+        "location": {
+          "startingColumn": 27,
+          "startingLine": 462
+        }
+      },
+      {
+        "comment": "",
+        "key": "Add",
+        "location": {
+          "startingColumn": 24,
+          "startingLine": 468
+        }
+      }
+    ]
+  },
+  "version": 1
+}

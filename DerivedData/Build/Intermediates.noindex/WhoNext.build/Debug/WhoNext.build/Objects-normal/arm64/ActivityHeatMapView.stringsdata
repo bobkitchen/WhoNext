@@ -1,0 +1,48 @@
+{
+  "source": "/Users/bobkitchen/Documents/GitHub/WhoNext/WhoNext/ActivityHeatMapView.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 17
+        }
+      },
+      {
+        "comment": "",
+        "key": "Less",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 67
+        }
+      },
+      {
+        "comment": "",
+        "key": "More",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 79
+        }
+      },
+      {
+        "comment": "",
+        "key": "%lld conversations",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 87
+        }
+      },
+      {
+        "comment": "",
+        "key": "in last 12 weeks",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 92
+        }
+      }
+    ]
+  },
+  "version": 1
+}

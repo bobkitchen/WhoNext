@@ -1,0 +1,128 @@
+{
+  "source": "/Users/bobkitchen/Documents/GitHub/WhoNext/WhoNext/TranscriptInputView.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "Import Transcript",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 133
+        }
+      },
+      {
+        "comment": "",
+        "key": "Import Meeting Transcript",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 16
+        }
+      },
+      {
+        "comment": "",
+        "key": "Paste your full meeting transcript below. The AI will extract participants, generate summary notes, and analyze sentiment.",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 20
+        }
+      },
+      {
+        "comment": "",
+        "key": "Meeting Transcript",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 29
+        }
+      },
+      {
+        "comment": "",
+        "key": "%lld words",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 35
+        }
+      },
+      {
+        "comment": "",
+        "key": "Paste your transcript here...",
+        "location": {
+          "startingColumn": 38,
+          "startingLine": 48
+        }
+      },
+      {
+        "comment": "",
+        "key": "Supported formats:",
+        "location": {
+          "startingColumn": 38,
+          "startingLine": 51
+        }
+      },
+      {
+        "comment": "",
+        "key": "• Zoom: John: Hello everyone...",
+        "location": {
+          "startingColumn": 42,
+          "startingLine": 56
+        }
+      },
+      {
+        "comment": "",
+        "key": "• Teams: [John] Hello everyone...",
+        "location": {
+          "startingColumn": 42,
+          "startingLine": 57
+        }
+      },
+      {
+        "comment": "",
+        "key": "• Generic: John - Hello everyone...",
+        "location": {
+          "startingColumn": 42,
+          "startingLine": 58
+        }
+      },
+      {
+        "comment": "",
+        "key": "• Manual notes",
+        "location": {
+          "startingColumn": 42,
+          "startingLine": 59
+        }
+      },
+      {
+        "comment": "",
+        "key": "Detected format: %@",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 81
+        }
+      },
+      {
+        "comment": "",
+        "key": "~%lld min meeting",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 87
+        }
+      },
+      {
+        "comment": "",
+        "key": "Cancel",
+        "location": {
+          "startingColumn": 28,
+          "startingLine": 118
+        }
+      },
+      {
+        "comment": "",
+        "key": "Process Transcript",
+        "location": {
+          "startingColumn": 28,
+          "startingLine": 125
+        }
+      }
+    ]
+  },
+  "version": 1
+}

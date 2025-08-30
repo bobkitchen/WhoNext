@@ -1,0 +1,72 @@
+{
+  "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/SourcePackages/checkouts/swift-crypto/Sources/Crypto/HPKE/Ciphersuite/HPKE-AEAD.swift" : {
+    "const-values" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/swift-crypto.build/Debug/Crypto.build/Objects-normal/arm64/HPKE-AEAD.swiftconstvalues",
+    "dependencies" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/swift-crypto.build/Debug/Crypto.build/Objects-normal/arm64/HPKE-AEAD.d",
+    "diagnostics" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/swift-crypto.build/Debug/Crypto.build/Objects-normal/arm64/HPKE-AEAD.dia",
+    "object" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/swift-crypto.build/Debug/Crypto.build/Objects-normal/arm64/HPKE-AEAD.o",
+    "swift-dependencies" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/swift-crypto.build/Debug/Crypto.build/Objects-normal/arm64/HPKE-AEAD.swiftdeps"
+  },
+  "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/SourcePackages/checkouts/swift-crypto/Sources/Crypto/HPKE/Ciphersuite/HPKE-Ciphersuite.swift" : {
+    "const-values" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/swift-crypto.build/Debug/Crypto.build/Objects-normal/arm64/HPKE-Ciphersuite.swiftconstvalues",
+    "dependencies" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/swift-crypto.build/Debug/Crypto.build/Objects-normal/arm64/HPKE-Ciphersuite.d",
+    "diagnostics" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/swift-crypto.build/Debug/Crypto.build/Objects-normal/arm64/HPKE-Ciphersuite.dia",
+    "object" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/swift-crypto.build/Debug/Crypto.build/Objects-normal/arm64/HPKE-Ciphersuite.o",
+    "swift-dependencies" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/swift-crypto.build/Debug/Crypto.build/Objects-normal/arm64/HPKE-Ciphersuite.swiftdeps"
+  },
+  "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/SourcePackages/checkouts/swift-crypto/Sources/Crypto/HPKE/Ciphersuite/HPKE-KDF.swift" : {
+    "const-values" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/swift-crypto.build/Debug/Crypto.build/Objects-normal/arm64/HPKE-KDF.swiftconstvalues",
+    "dependencies" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/swift-crypto.build/Debug/Crypto.build/Objects-normal/arm64/HPKE-KDF.d",
+    "diagnostics" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/swift-crypto.build/Debug/Crypto.build/Objects-normal/arm64/HPKE-KDF.dia",
+    "object" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/swift-crypto.build/Debug/Crypto.build/Objects-normal/arm64/HPKE-KDF.o",
+    "swift-dependencies" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/swift-crypto.build/Debug/Crypto.build/Objects-normal/arm64/HPKE-KDF.swiftdeps"
+  },
+  "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/SourcePackages/checkouts/swift-crypto/Sources/Crypto/HPKE/Ciphersuite/HPKE-KexKeyDerivation.swift" : {
+    "const-values" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/swift-crypto.build/Debug/Crypto.build/Objects-normal/arm64/HPKE-KexKeyDerivation.swiftconstvalues",
+    "dependencies" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/swift-crypto.build/Debug/Crypto.build/Objects-normal/arm64/HPKE-KexKeyDerivation.d",
+    "diagnostics" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/swift-crypto.build/Debug/Crypto.build/Objects-normal/arm64/HPKE-KexKeyDerivation.dia",
+    "object" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/swift-crypto.build/Debug/Crypto.build/Objects-normal/arm64/HPKE-KexKeyDerivation.o",
+    "swift-dependencies" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/swift-crypto.build/Debug/Crypto.build/Objects-normal/arm64/HPKE-KexKeyDerivation.swiftdeps"
+  },
+  "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/SourcePackages/checkouts/swift-crypto/Sources/Crypto/HPKE/Ciphersuite/HPKE-LabeledExtract.swift" : {
+    "const-values" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/swift-crypto.build/Debug/Crypto.build/Objects-normal/arm64/HPKE-LabeledExtract.swiftconstvalues",
+    "dependencies" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/swift-crypto.build/Debug/Crypto.build/Objects-normal/arm64/HPKE-LabeledExtract.d",
+    "diagnostics" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/swift-crypto.build/Debug/Crypto.build/Objects-normal/arm64/HPKE-LabeledExtract.dia",
+    "object" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/swift-crypto.build/Debug/Crypto.build/Objects-normal/arm64/HPKE-LabeledExtract.o",
+    "swift-dependencies" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/swift-crypto.build/Debug/Crypto.build/Objects-normal/arm64/HPKE-LabeledExtract.swiftdeps"
+  },
+  "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/SourcePackages/checkouts/swift-crypto/Sources/Crypto/HPKE/Ciphersuite/HPKE-Utils.swift" : {
+    "const-values" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/swift-crypto.build/Debug/Crypto.build/Objects-normal/arm64/HPKE-Utils.swiftconstvalues",
+    "dependencies" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/swift-crypto.build/Debug/Crypto.build/Objects-normal/arm64/HPKE-Utils.d",
+    "diagnostics" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/swift-crypto.build/Debug/Crypto.build/Objects-normal/arm64/HPKE-Utils.dia",
+    "object" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/swift-crypto.build/Debug/Crypto.build/Objects-normal/arm64/HPKE-Utils.o",
+    "swift-dependencies" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/swift-crypto.build/Debug/Crypto.build/Objects-normal/arm64/HPKE-Utils.swiftdeps"
+  },
+  "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/SourcePackages/checkouts/swift-crypto/Sources/Crypto/HPKE/Ciphersuite/KEM/Conformances/DHKEM.swift" : {
+    "const-values" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/swift-crypto.build/Debug/Crypto.build/Objects-normal/arm64/DHKEM.swiftconstvalues",
+    "dependencies" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/swift-crypto.build/Debug/Crypto.build/Objects-normal/arm64/DHKEM.d",
+    "diagnostics" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/swift-crypto.build/Debug/Crypto.build/Objects-normal/arm64/DHKEM.dia",
+    "object" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/swift-crypto.build/Debug/Crypto.build/Objects-normal/arm64/DHKEM.o",
+    "swift-dependencies" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/swift-crypto.build/Debug/Crypto.build/Objects-normal/arm64/DHKEM.swiftdeps"
+  },
+  "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/SourcePackages/checkouts/swift-crypto/Sources/Crypto/HPKE/Ciphersuite/KEM/Conformances/HPKE-KEM-Curve25519.swift" : {
+    "const-values" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/swift-crypto.build/Debug/Crypto.build/Objects-normal/arm64/HPKE-KEM-Curve25519.swiftconstvalues",
+    "dependencies" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/swift-crypto.build/Debug/Crypto.build/Objects-normal/arm64/HPKE-KEM-Curve25519.d",
+    "diagnostics" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/swift-crypto.build/Debug/Crypto.build/Objects-normal/arm64/HPKE-KEM-Curve25519.dia",
+    "object" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/swift-crypto.build/Debug/Crypto.build/Objects-normal/arm64/HPKE-KEM-Curve25519.o",
+    "swift-dependencies" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/swift-crypto.build/Debug/Crypto.build/Objects-normal/arm64/HPKE-KEM-Curve25519.swiftdeps"
+  },
+  "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/SourcePackages/checkouts/swift-crypto/Sources/Crypto/HPKE/Ciphersuite/KEM/Conformances/HPKE-NIST-EC-KEMs.swift" : {
+    "const-values" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/swift-crypto.build/Debug/Crypto.build/Objects-normal/arm64/HPKE-NIST-EC-KEMs.swiftconstvalues",
+    "dependencies" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/swift-crypto.build/Debug/Crypto.build/Objects-normal/arm64/HPKE-NIST-EC-KEMs.d",
+    "diagnostics" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/swift-crypto.build/Debug/Crypto.build/Objects-normal/arm64/HPKE-NIST-EC-KEMs.dia",
+    "object" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/swift-crypto.build/Debug/Crypto.build/Objects-normal/arm64/HPKE-NIST-EC-KEMs.o",
+    "swift-dependencies" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/swift-crypto.build/Debug/Crypto.build/Objects-normal/arm64/HPKE-NIST-EC-KEMs.swiftdeps"
+  },
+  "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/SourcePackages/checkouts/swift-crypto/Sources/Crypto/HPKE/Ciphersuite/KEM/HPKE-KEM.swift" : {
+    "const-values" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/swift-crypto.build/Debug/Crypto.build/Objects-normal/arm64/HPKE-KEM.swiftconstvalues",
+    "dependencies" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/swift-crypto.build/Debug/Crypto.build/Objects-normal/arm64/HPKE-KEM.d",
+    "diagnostics" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/swift-crypto.build/Debug/Crypto.build/Objects-normal/arm64/HPKE-KEM.dia",
+    "object" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/swift-crypto.build/Debug/Crypto.build/Objects-normal/arm64/HPKE-KEM.o",
+    "swift-dependencies" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/swift-crypto.build/Debug/Crypto.build/Objects-normal/arm64/HPKE-KEM.swiftdeps"
+  }
+}
