@@ -1,0 +1,4 @@
+module TensorUtils {
+    header "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/TensorUtils.build/TensorUtils-Swift.h"
+    requires objc
+}

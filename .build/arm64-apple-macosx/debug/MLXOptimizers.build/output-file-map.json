@@ -1,0 +1,11 @@
+{
+  "": {
+    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXOptimizers.build/master.swiftdeps"
+  },
+  "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/checkouts/mlx-swift/Source/MLXOptimizers/Optimizers.swift": {
+    "dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXOptimizers.build/Optimizers.d",
+    "object": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXOptimizers.build/Optimizers.swift.o",
+    "swiftmodule": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXOptimizers.build/Optimizers~partial.swiftmodule",
+    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXOptimizers.build/Optimizers.swiftdeps"
+  }
+}

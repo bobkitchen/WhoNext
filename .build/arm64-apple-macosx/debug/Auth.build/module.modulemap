@@ -1,0 +1,4 @@
+module Auth {
+    header "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/Auth.build/Auth-Swift.h"
+    requires objc
+}

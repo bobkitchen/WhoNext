@@ -1,0 +1,155 @@
+{
+  "": {
+    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/Auth.build/master.swiftdeps"
+  },
+  "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/checkouts/supabase-swift/Sources/Auth/AuthAdmin.swift": {
+    "dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/Auth.build/AuthAdmin.d",
+    "object": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/Auth.build/AuthAdmin.swift.o",
+    "swiftmodule": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/Auth.build/AuthAdmin~partial.swiftmodule",
+    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/Auth.build/AuthAdmin.swiftdeps"
+  },
+  "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/checkouts/supabase-swift/Sources/Auth/AuthClient.swift": {
+    "dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/Auth.build/AuthClient.d",
+    "object": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/Auth.build/AuthClient.swift.o",
+    "swiftmodule": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/Auth.build/AuthClient~partial.swiftmodule",
+    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/Auth.build/AuthClient.swiftdeps"
+  },
+  "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/checkouts/supabase-swift/Sources/Auth/AuthClientConfiguration.swift": {
+    "dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/Auth.build/AuthClientConfiguration.d",
+    "object": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/Auth.build/AuthClientConfiguration.swift.o",
+    "swiftmodule": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/Auth.build/AuthClientConfiguration~partial.swiftmodule",
+    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/Auth.build/AuthClientConfiguration.swiftdeps"
+  },
+  "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/checkouts/supabase-swift/Sources/Auth/AuthError.swift": {
+    "dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/Auth.build/AuthError.d",
+    "object": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/Auth.build/AuthError.swift.o",
+    "swiftmodule": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/Auth.build/AuthError~partial.swiftmodule",
+    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/Auth.build/AuthError.swiftdeps"
+  },
+  "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/checkouts/supabase-swift/Sources/Auth/AuthMFA.swift": {
+    "dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/Auth.build/AuthMFA.d",
+    "object": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/Auth.build/AuthMFA.swift.o",
+    "swiftmodule": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/Auth.build/AuthMFA~partial.swiftmodule",
+    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/Auth.build/AuthMFA.swiftdeps"
+  },
+  "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/checkouts/supabase-swift/Sources/Auth/AuthStateChangeListener.swift": {
+    "dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/Auth.build/AuthStateChangeListener.d",
+    "object": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/Auth.build/AuthStateChangeListener.swift.o",
+    "swiftmodule": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/Auth.build/AuthStateChangeListener~partial.swiftmodule",
+    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/Auth.build/AuthStateChangeListener.swiftdeps"
+  },
+  "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/checkouts/supabase-swift/Sources/Auth/Defaults.swift": {
+    "dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/Auth.build/Defaults.d",
+    "object": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/Auth.build/Defaults.swift.o",
+    "swiftmodule": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/Auth.build/Defaults~partial.swiftmodule",
+    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/Auth.build/Defaults.swiftdeps"
+  },
+  "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/checkouts/supabase-swift/Sources/Auth/Deprecated.swift": {
+    "dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/Auth.build/Deprecated.d",
+    "object": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/Auth.build/Deprecated.swift.o",
+    "swiftmodule": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/Auth.build/Deprecated~partial.swiftmodule",
+    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/Auth.build/Deprecated.swiftdeps"
+  },
+  "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/checkouts/supabase-swift/Sources/Auth/Exports.swift": {
+    "dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/Auth.build/Exports.d",
+    "object": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/Auth.build/Exports.swift.o",
+    "swiftmodule": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/Auth.build/Exports~partial.swiftmodule",
+    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/Auth.build/Exports.swiftdeps"
+  },
+  "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/checkouts/supabase-swift/Sources/Auth/Internal/APIClient.swift": {
+    "dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/Auth.build/APIClient.d",
+    "object": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/Auth.build/APIClient.swift.o",
+    "swiftmodule": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/Auth.build/APIClient~partial.swiftmodule",
+    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/Auth.build/APIClient.swiftdeps"
+  },
+  "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/checkouts/supabase-swift/Sources/Auth/Internal/CodeVerifierStorage.swift": {
+    "dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/Auth.build/CodeVerifierStorage.d",
+    "object": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/Auth.build/CodeVerifierStorage.swift.o",
+    "swiftmodule": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/Auth.build/CodeVerifierStorage~partial.swiftmodule",
+    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/Auth.build/CodeVerifierStorage.swiftdeps"
+  },
+  "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/checkouts/supabase-swift/Sources/Auth/Internal/Constants.swift": {
+    "dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/Auth.build/Constants.d",
+    "object": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/Auth.build/Constants.swift.o",
+    "swiftmodule": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/Auth.build/Constants~partial.swiftmodule",
+    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/Auth.build/Constants.swiftdeps"
+  },
+  "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/checkouts/supabase-swift/Sources/Auth/Internal/Dependencies.swift": {
+    "dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/Auth.build/Dependencies.d",
+    "object": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/Auth.build/Dependencies.swift.o",
+    "swiftmodule": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/Auth.build/Dependencies~partial.swiftmodule",
+    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/Auth.build/Dependencies.swiftdeps"
+  },
+  "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/checkouts/supabase-swift/Sources/Auth/Internal/EventEmitter.swift": {
+    "dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/Auth.build/EventEmitter.d",
+    "object": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/Auth.build/EventEmitter.swift.o",
+    "swiftmodule": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/Auth.build/EventEmitter~partial.swiftmodule",
+    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/Auth.build/EventEmitter.swiftdeps"
+  },
+  "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/checkouts/supabase-swift/Sources/Auth/Internal/FixedWidthInteger+Random.swift": {
+    "dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/Auth.build/FixedWidthInteger+Random.d",
+    "object": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/Auth.build/FixedWidthInteger+Random.swift.o",
+    "swiftmodule": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/Auth.build/FixedWidthInteger+Random~partial.swiftmodule",
+    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/Auth.build/FixedWidthInteger+Random.swiftdeps"
+  },
+  "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/checkouts/supabase-swift/Sources/Auth/Internal/Helpers.swift": {
+    "dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/Auth.build/Helpers.d",
+    "object": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/Auth.build/Helpers.swift.o",
+    "swiftmodule": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/Auth.build/Helpers~partial.swiftmodule",
+    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/Auth.build/Helpers.swiftdeps"
+  },
+  "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/checkouts/supabase-swift/Sources/Auth/Internal/Keychain.swift": {
+    "dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/Auth.build/Keychain.d",
+    "object": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/Auth.build/Keychain.swift.o",
+    "swiftmodule": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/Auth.build/Keychain~partial.swiftmodule",
+    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/Auth.build/Keychain.swiftdeps"
+  },
+  "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/checkouts/supabase-swift/Sources/Auth/Internal/PKCE.swift": {
+    "dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/Auth.build/PKCE.d",
+    "object": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/Auth.build/PKCE.swift.o",
+    "swiftmodule": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/Auth.build/PKCE~partial.swiftmodule",
+    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/Auth.build/PKCE.swiftdeps"
+  },
+  "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/checkouts/supabase-swift/Sources/Auth/Internal/SessionManager.swift": {
+    "dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/Auth.build/SessionManager.d",
+    "object": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/Auth.build/SessionManager.swift.o",
+    "swiftmodule": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/Auth.build/SessionManager~partial.swiftmodule",
+    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/Auth.build/SessionManager.swiftdeps"
+  },
+  "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/checkouts/supabase-swift/Sources/Auth/Internal/SessionStorage.swift": {
+    "dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/Auth.build/SessionStorage.d",
+    "object": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/Auth.build/SessionStorage.swift.o",
+    "swiftmodule": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/Auth.build/SessionStorage~partial.swiftmodule",
+    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/Auth.build/SessionStorage.swiftdeps"
+  },
+  "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/checkouts/supabase-swift/Sources/Auth/Internal/URLOpener.swift": {
+    "dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/Auth.build/URLOpener.d",
+    "object": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/Auth.build/URLOpener.swift.o",
+    "swiftmodule": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/Auth.build/URLOpener~partial.swiftmodule",
+    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/Auth.build/URLOpener.swiftdeps"
+  },
+  "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/checkouts/supabase-swift/Sources/Auth/Storage/AuthLocalStorage.swift": {
+    "dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/Auth.build/AuthLocalStorage.d",
+    "object": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/Auth.build/AuthLocalStorage.swift.o",
+    "swiftmodule": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/Auth.build/AuthLocalStorage~partial.swiftmodule",
+    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/Auth.build/AuthLocalStorage.swiftdeps"
+  },
+  "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/checkouts/supabase-swift/Sources/Auth/Storage/KeychainLocalStorage.swift": {
+    "dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/Auth.build/KeychainLocalStorage.d",
+    "object": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/Auth.build/KeychainLocalStorage.swift.o",
+    "swiftmodule": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/Auth.build/KeychainLocalStorage~partial.swiftmodule",
+    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/Auth.build/KeychainLocalStorage.swiftdeps"
+  },
+  "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/checkouts/supabase-swift/Sources/Auth/Storage/WinCredLocalStorage.swift": {
+    "dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/Auth.build/WinCredLocalStorage.d",
+    "object": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/Auth.build/WinCredLocalStorage.swift.o",
+    "swiftmodule": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/Auth.build/WinCredLocalStorage~partial.swiftmodule",
+    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/Auth.build/WinCredLocalStorage.swiftdeps"
+  },
+  "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/checkouts/supabase-swift/Sources/Auth/Types.swift": {
+    "dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/Auth.build/Types.d",
+    "object": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/Auth.build/Types.swift.o",
+    "swiftmodule": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/Auth.build/Types~partial.swiftmodule",
+    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/Auth.build/Types.swiftdeps"
+  }
+}

@@ -248,7 +248,7 @@ enum NativeSpeechError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .unsupportedOS:
-            return "macOS 26 or later is required for native speech transcription"
+            return "macOS 13 or later is required for native speech transcription"
         case .authorizationDenied:
             return "Speech recognition authorization denied"
         case .languageNotSupported:

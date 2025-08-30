@@ -18,7 +18,7 @@ class HybridAIService: ObservableObject {
         SecureStorage.getAPIKey(for: .openrouter)
     }
     
-    private var appleIntelligenceService: AppleIntelligenceService?
+    private var appleIntelligenceService: Any? // Will be AppleIntelligenceService when available
     private var aiService: AIService
     
     init() {
@@ -41,10 +41,13 @@ class HybridAIService: ObservableObject {
     
     // MARK: - Provider Selection
     var isAppleIntelligenceAvailable: Bool {
-        guard let appleService = appleIntelligenceService else {
-            return false
+        if #available(iOS 18.1, macOS 15.5, *) {
+            guard let appleService = appleIntelligenceService as? AppleIntelligenceService else {
+                return false
+            }
+            return appleService.isFoundationModelsAvailable
         }
-        return appleService.isFoundationModelsAvailable
+        return false
     }
     
     var preferredProvider: HybridAIProvider {
@@ -81,7 +84,7 @@ class HybridAIService: ObservableObject {
         switch preferredProvider {
         case .appleIntelligence:
             if #available(iOS 18.1, macOS 15.5, *),
-               let appleService = appleIntelligenceService {
+               let appleService = appleIntelligenceService as? AppleIntelligenceService {
                 do {
                     return try await appleService.analyzeSentiment(text: text)
                 } catch {
@@ -102,7 +105,7 @@ class HybridAIService: ObservableObject {
         switch preferredProvider {
         case .appleIntelligence:
             if #available(iOS 18.1, macOS 15.5, *),
-               let appleService = appleIntelligenceService {
+               let appleService = appleIntelligenceService as? AppleIntelligenceService {
                 do {
                     return try await appleService.generateMeetingSummary(transcript: transcript)
                 } catch {
@@ -123,7 +126,7 @@ class HybridAIService: ObservableObject {
         switch preferredProvider {
         case .appleIntelligence:
             if #available(iOS 18.1, macOS 15.5, *),
-               let appleService = appleIntelligenceService {
+               let appleService = appleIntelligenceService as? AppleIntelligenceService {
                 do {
                     return try await appleService.generatePreMeetingBrief(personData: personData, context: context)
                 } catch {
@@ -164,10 +167,15 @@ class HybridAIService: ObservableObject {
         case .appleIntelligence:
             print(" [HybridAI] Attempting Apple Intelligence...")
             do {
-                if let appleService = appleIntelligenceService {
-                    return try await appleService.enhanceChat(message: message, context: context)
+                if #available(iOS 18.1, macOS 15.5, *) {
+                    if let appleService = appleIntelligenceService as? AppleIntelligenceService {
+                        return try await appleService.enhanceChat(message: message, context: context)
+                    } else {
+                        print(" [HybridAI] Apple Intelligence service not initialized")
+                        throw HybridAIError.serviceUnavailable
+                    }
                 } else {
-                    print(" [HybridAI] Apple Intelligence service not initialized")
+                    print(" [HybridAI] Apple Intelligence requires macOS 15.5 or later")
                     throw HybridAIError.serviceUnavailable
                 }
             } catch {
@@ -218,7 +226,7 @@ class HybridAIService: ObservableObject {
         switch provider {
         case .appleIntelligence:
             if #available(iOS 18.1, macOS 15.5, *),
-               let appleService = appleIntelligenceService {
+               let appleService = appleIntelligenceService as? AppleIntelligenceService {
                 do {
                     return try await appleService.extractParticipants(from: transcript)
                 } catch {

@@ -1,0 +1,17 @@
+{
+  "": {
+    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/Generation.build/master.swiftdeps"
+  },
+  "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/checkouts/swift-transformers/Sources/Generation/Generation.swift": {
+    "dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/Generation.build/Generation.d",
+    "object": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/Generation.build/Generation.swift.o",
+    "swiftmodule": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/Generation.build/Generation~partial.swiftmodule",
+    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/Generation.build/Generation.swiftdeps"
+  },
+  "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/checkouts/swift-transformers/Sources/Generation/GenerationConfig.swift": {
+    "dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/Generation.build/GenerationConfig.d",
+    "object": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/Generation.build/GenerationConfig.swift.o",
+    "swiftmodule": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/Generation.build/GenerationConfig~partial.swiftmodule",
+    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/Generation.build/GenerationConfig.swiftdeps"
+  }
+}

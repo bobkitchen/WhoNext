@@ -1,0 +1,4 @@
+module PostgREST {
+    header "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/PostgREST.build/PostgREST-Swift.h"
+    requires objc
+}

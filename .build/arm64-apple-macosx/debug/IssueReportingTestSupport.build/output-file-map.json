@@ -1,0 +1,17 @@
+{
+  "": {
+    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/IssueReportingTestSupport.build/master.swiftdeps"
+  },
+  "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/checkouts/xctest-dynamic-overlay/Sources/IssueReportingTestSupport/SwiftTesting.swift": {
+    "dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/IssueReportingTestSupport.build/SwiftTesting.d",
+    "object": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/IssueReportingTestSupport.build/SwiftTesting.swift.o",
+    "swiftmodule": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/IssueReportingTestSupport.build/SwiftTesting~partial.swiftmodule",
+    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/IssueReportingTestSupport.build/SwiftTesting.swiftdeps"
+  },
+  "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/checkouts/xctest-dynamic-overlay/Sources/IssueReportingTestSupport/XCTest.swift": {
+    "dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/IssueReportingTestSupport.build/XCTest.d",
+    "object": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/IssueReportingTestSupport.build/XCTest.swift.o",
+    "swiftmodule": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/IssueReportingTestSupport.build/XCTest~partial.swiftmodule",
+    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/IssueReportingTestSupport.build/XCTest.swiftdeps"
+  }
+}

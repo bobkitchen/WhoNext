@@ -1,0 +1,35 @@
+{
+  "": {
+    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/HTTPTypesFoundation.build/master.swiftdeps"
+  },
+  "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/checkouts/swift-http-types/Sources/HTTPTypesFoundation/HTTPRequest+URL.swift": {
+    "dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/HTTPTypesFoundation.build/HTTPRequest+URL.d",
+    "object": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/HTTPTypesFoundation.build/HTTPRequest+URL.swift.o",
+    "swiftmodule": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/HTTPTypesFoundation.build/HTTPRequest+URL~partial.swiftmodule",
+    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/HTTPTypesFoundation.build/HTTPRequest+URL.swiftdeps"
+  },
+  "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/checkouts/swift-http-types/Sources/HTTPTypesFoundation/HTTPTypes+ISOLatin1.swift": {
+    "dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/HTTPTypesFoundation.build/HTTPTypes+ISOLatin1.d",
+    "object": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/HTTPTypesFoundation.build/HTTPTypes+ISOLatin1.swift.o",
+    "swiftmodule": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/HTTPTypesFoundation.build/HTTPTypes+ISOLatin1~partial.swiftmodule",
+    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/HTTPTypesFoundation.build/HTTPTypes+ISOLatin1.swiftdeps"
+  },
+  "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/checkouts/swift-http-types/Sources/HTTPTypesFoundation/URLRequest+HTTPTypes.swift": {
+    "dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/HTTPTypesFoundation.build/URLRequest+HTTPTypes.d",
+    "object": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/HTTPTypesFoundation.build/URLRequest+HTTPTypes.swift.o",
+    "swiftmodule": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/HTTPTypesFoundation.build/URLRequest+HTTPTypes~partial.swiftmodule",
+    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/HTTPTypesFoundation.build/URLRequest+HTTPTypes.swiftdeps"
+  },
+  "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/checkouts/swift-http-types/Sources/HTTPTypesFoundation/URLResponse+HTTPTypes.swift": {
+    "dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/HTTPTypesFoundation.build/URLResponse+HTTPTypes.d",
+    "object": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/HTTPTypesFoundation.build/URLResponse+HTTPTypes.swift.o",
+    "swiftmodule": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/HTTPTypesFoundation.build/URLResponse+HTTPTypes~partial.swiftmodule",
+    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/HTTPTypesFoundation.build/URLResponse+HTTPTypes.swiftdeps"
+  },
+  "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/checkouts/swift-http-types/Sources/HTTPTypesFoundation/URLSession+HTTPTypes.swift": {
+    "dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/HTTPTypesFoundation.build/URLSession+HTTPTypes.d",
+    "object": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/HTTPTypesFoundation.build/URLSession+HTTPTypes.swift.o",
+    "swiftmodule": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/HTTPTypesFoundation.build/URLSession+HTTPTypes~partial.swiftmodule",
+    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/HTTPTypesFoundation.build/URLSession+HTTPTypes.swiftdeps"
+  }
+}

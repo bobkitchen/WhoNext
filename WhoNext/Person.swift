@@ -3,6 +3,11 @@ import CoreData
 
 @objc(Person)
 public class Person: NSManagedObject {
+    
+    @nonobjc public class func fetchRequest() -> NSFetchRequest<Person> {
+        return NSFetchRequest<Person>(entityName: "Person")
+    }
+    
     @NSManaged public var identifier: UUID?
     @NSManaged public var isDirectReport: Bool
     @NSManaged public var name: String?

@@ -1,0 +1,4 @@
+module MLXEmbedders {
+    header "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXEmbedders.build/MLXEmbedders-Swift.h"
+    requires objc
+}

@@ -1,0 +1,4 @@
+module Functions {
+    header "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/Functions.build/Functions-Swift.h"
+    requires objc
+}

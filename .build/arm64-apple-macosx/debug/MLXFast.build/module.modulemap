@@ -1,0 +1,4 @@
+module MLXFast {
+    header "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXFast.build/MLXFast-Swift.h"
+    requires objc
+}

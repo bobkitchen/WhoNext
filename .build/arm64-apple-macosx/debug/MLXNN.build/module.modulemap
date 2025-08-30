@@ -1,0 +1,4 @@
+module MLXNN {
+    header "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXNN.build/MLXNN-Swift.h"
+    requires objc
+}

@@ -1,0 +1,4 @@
+module StableDiffusion {
+    header "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/StableDiffusion.build/StableDiffusion-Swift.h"
+    requires objc
+}

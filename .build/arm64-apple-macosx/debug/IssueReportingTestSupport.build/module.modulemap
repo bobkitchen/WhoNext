@@ -1,0 +1,4 @@
+module IssueReportingTestSupport {
+    header "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/IssueReportingTestSupport.build/IssueReportingTestSupport-Swift.h"
+    requires objc
+}

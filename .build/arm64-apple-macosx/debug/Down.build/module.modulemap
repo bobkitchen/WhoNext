@@ -1,0 +1,4 @@
+module Down {
+    header "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/Down.build/Down-Swift.h"
+    requires objc
+}

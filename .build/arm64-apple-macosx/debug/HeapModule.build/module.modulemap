@@ -1,0 +1,4 @@
+module HeapModule {
+    header "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/HeapModule.build/HeapModule-Swift.h"
+    requires objc
+}

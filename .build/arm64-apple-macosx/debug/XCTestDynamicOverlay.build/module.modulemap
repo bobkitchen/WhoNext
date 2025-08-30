@@ -1,0 +1,4 @@
+module XCTestDynamicOverlay {
+    header "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/XCTestDynamicOverlay.build/XCTestDynamicOverlay-Swift.h"
+    requires objc
+}

@@ -1,0 +1,4 @@
+module MLXLLM {
+    header "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXLLM.build/MLXLLM-Swift.h"
+    requires objc
+}

@@ -1,0 +1,4 @@
+module Clocks {
+    header "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/Clocks.build/Clocks-Swift.h"
+    requires objc
+}

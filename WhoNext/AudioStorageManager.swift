@@ -2,6 +2,7 @@ import Foundation
 import AVFoundation
 import AppKit
 import UniformTypeIdentifiers
+import CoreData
 
 /// Manages audio file storage, compression, and lifecycle for recorded meetings
 class AudioStorageManager {
@@ -87,8 +88,8 @@ class AudioStorageManager {
         return fileURL
     }
     
-    /// Schedule automatic deletion for a meeting
-    func scheduleAutoDelete(for meetingID: UUID, afterDays days: Int) {
+    /// Schedule automatic deletion for a meeting (default 30 days)
+    func scheduleAutoDelete(for meetingID: UUID, afterDays days: Int = 30) {
         let deleteDate = Calendar.current.date(byAdding: .day, value: days, to: Date())!
         
         // Store deletion date in user defaults
@@ -96,12 +97,36 @@ class AudioStorageManager {
         scheduledDeletions[meetingID.uuidString] = deleteDate
         UserDefaults.standard.set(scheduledDeletions, forKey: "ScheduledAudioDeletions")
         
-        print("🗓️ Scheduled deletion for \(meetingID.uuidString) on \(deleteDate)")
+        // Also update Core Data if meeting exists
+        updateMeetingAudioExpiration(meetingID: meetingID, expirationDate: deleteDate)
+        
+        print("🗓️ Scheduled audio deletion for \(meetingID.uuidString) on \(deleteDate) (in \(days) days)")
+        print("📝 Note: Transcript and summary will be preserved permanently")
     }
     
-    /// Delete expired audio files
+    /// Update Core Data with audio expiration date
+    private func updateMeetingAudioExpiration(meetingID: UUID, expirationDate: Date) {
+        let context = PersistenceController.shared.container.viewContext
+        
+        // Try to find GroupMeeting with this ID
+        let fetchRequest = NSFetchRequest<GroupMeeting>(entityName: "GroupMeeting")
+        fetchRequest.predicate = NSPredicate(format: "identifier == %@", meetingID as CVarArg)
+        
+        do {
+            let meetings = try context.fetch(fetchRequest)
+            if let meeting = meetings.first {
+                meeting.scheduledDeletion = expirationDate
+                try context.save()
+                print("✅ Updated Core Data with audio expiration date")
+            }
+        } catch {
+            print("⚠️ Could not update Core Data with expiration: \(error)")
+        }
+    }
+    
+    /// Delete expired audio files (but preserve transcripts and summaries)
     func deleteExpiredFiles() {
-        print("🧹 Checking for expired audio files...")
+        print("🧹 Checking for expired audio files (transcripts will be preserved)...")
         
         var scheduledDeletions = UserDefaults.standard.dictionary(forKey: "ScheduledAudioDeletions") as? [String: Date] ?? [:]
         let now = Date()
@@ -109,14 +134,18 @@ class AudioStorageManager {
         
         for (meetingID, deleteDate) in scheduledDeletions {
             if deleteDate <= now {
-                // Delete the file
+                // Delete the audio file only
                 let fileURL = getAudioDirectory().appendingPathComponent("\(meetingID).m4a")
                 
                 if fileManager.fileExists(atPath: fileURL.path) {
                     do {
                         try fileManager.removeItem(at: fileURL)
                         deletedCount += 1
-                        print("🗑️ Deleted expired file: \(meetingID)")
+                        print("🗑️ Deleted expired audio file: \(meetingID)")
+                        
+                        // Update Core Data to clear audio path but keep all other data
+                        clearAudioPathInCoreData(meetingID: meetingID)
+                        
                     } catch {
                         print("❌ Failed to delete file: \(error)")
                     }
@@ -132,6 +161,28 @@ class AudioStorageManager {
         
         if deletedCount > 0 {
             print("✅ Deleted \(deletedCount) expired audio files")
+            print("📝 All transcripts, summaries, and action items have been preserved")
+        }
+    }
+    
+    /// Clear audio file path in Core Data when audio is deleted
+    private func clearAudioPathInCoreData(meetingID: String) {
+        guard let uuid = UUID(uuidString: meetingID) else { return }
+        
+        let context = PersistenceController.shared.container.viewContext
+        let fetchRequest = NSFetchRequest<GroupMeeting>(entityName: "GroupMeeting")
+        fetchRequest.predicate = NSPredicate(format: "identifier == %@", uuid as CVarArg)
+        
+        do {
+            let meetings = try context.fetch(fetchRequest)
+            if let meeting = meetings.first {
+                meeting.audioFilePath = nil
+                meeting.scheduledDeletion = nil
+                try context.save()
+                print("✅ Cleared audio path in Core Data, preserved transcript and summary")
+            }
+        } catch {
+            print("⚠️ Could not update Core Data: \(error)")
         }
     }
     

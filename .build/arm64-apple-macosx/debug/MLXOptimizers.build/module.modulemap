@@ -1,0 +1,4 @@
+module MLXOptimizers {
+    header "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXOptimizers.build/MLXOptimizers-Swift.h"
+    requires objc
+}

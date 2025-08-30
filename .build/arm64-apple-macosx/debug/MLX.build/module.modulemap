@@ -1,0 +1,4 @@
+module MLX {
+    header "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLX.build/MLX-Swift.h"
+    requires objc
+}

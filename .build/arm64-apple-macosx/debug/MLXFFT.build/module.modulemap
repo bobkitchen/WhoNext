@@ -1,0 +1,4 @@
+module MLXFFT {
+    header "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXFFT.build/MLXFFT-Swift.h"
+    requires objc
+}
