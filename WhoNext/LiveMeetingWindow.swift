@@ -335,26 +335,45 @@ struct ParticipantChip: View {
 class LiveMeetingWindowManager {
     static let shared = LiveMeetingWindowManager()
     
-    private var windowController: EnhancedLiveMeetingWindowController?
+    private var windowController: NSWindowController?
+    private var currentWindowController: NSWindowController?
     
     private init() {}
     
     func showWindow(for meeting: LiveMeeting) {
-        if let windowController = windowController {
-            windowController.updateMeeting(meeting)
+        print("🪟 LiveMeetingWindowManager.showWindow called")
+        print("🪟 Current thread: \(Thread.current)")
+        print("🪟 Is main thread: \(Thread.isMainThread)")
+        
+        DispatchQueue.main.async { [weak self] in
+            guard let self = self else { return }
+            
+            print("🪟 On main thread, creating window")
+            
+            // Close existing window if any
+            self.currentWindowController?.close()
+            
+            // Create refined recording window with improved UI
+            print("🪟 Creating RefinedRecordingWindowController")
+            let windowController = RefinedRecordingWindowController(meeting: meeting)
+            self.currentWindowController = windowController
+            
+            print("🪟 Showing window")
             windowController.showWindow(nil)
-        } else {
-            windowController = EnhancedLiveMeetingWindowController(meeting: meeting)
-            windowController?.showWindow(nil)
+            
+            print("🪟 Window should be visible now")
         }
     }
     
     func hideWindow() {
-        windowController?.close()
-        windowController = nil
+        DispatchQueue.main.async { [weak self] in
+            self?.currentWindowController?.close()
+            self?.currentWindowController = nil
+        }
     }
     
     func updateMeeting(_ meeting: LiveMeeting) {
-        windowController?.updateMeeting(meeting)
+        // CompactRecordingWindowController doesn't have updateMeeting method
+        // The meeting is observed directly via @ObservedObject
     }
 }

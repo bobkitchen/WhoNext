@@ -79,6 +79,24 @@ class LiveMeeting: ObservableObject, Identifiable {
     
     func addTranscriptSegment(_ segment: TranscriptSegment) {
         transcript.append(segment)
+        
+        // Update word count
+        let words = segment.text.split(separator: " ").count
+        wordCount += words
+        
+        // Update average confidence
+        if transcript.count == 1 {
+            averageConfidence = segment.confidence
+        } else {
+            // Running average
+            averageConfidence = ((averageConfidence * Float(transcript.count - 1)) + segment.confidence) / Float(transcript.count)
+        }
+        
+        // Track speaker changes
+        if let speakerID = segment.speakerID, 
+           speakerID != transcript.dropLast().last?.speakerID {
+            speakerTurnCount += 1
+        }
     }
     
     func identifyParticipant(_ participant: IdentifiedParticipant) {

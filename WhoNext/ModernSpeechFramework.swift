@@ -91,8 +91,14 @@ class ModernSpeechFramework {
     
     /// Process an audio buffer by accumulating and transcribing
     func processAudioStream(_ buffer: AVAudioPCMBuffer) async throws -> String {
-        guard isTranscribing else {
+        // Ensure recognizer is available (start transcription if needed)
+        guard recognizer != nil else {
             throw ModernSpeechError.transcriberNotInitialized
+        }
+        
+        // Auto-start transcription if not already running
+        if !isTranscribing {
+            isTranscribing = true
         }
         
         // Start accumulation if needed

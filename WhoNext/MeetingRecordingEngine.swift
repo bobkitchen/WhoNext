@@ -559,6 +559,13 @@ class MeetingRecordingEngine: ObservableObject {
         meeting.isManual = isManual
         meeting.startTime = recordingStartTime!
         
+        // Initialize metrics
+        meeting.wordCount = 0
+        meeting.currentFileSize = 0
+        meeting.averageConfidence = 0.0
+        meeting.bufferHealth = .good
+        meeting.detectedLanguage = "English" // Will be updated by transcription
+        
         // Try to get calendar context
         if let calendarEvent = getUpcomingCalendarEvent() {
             meeting.calendarTitle = calendarEvent.title
