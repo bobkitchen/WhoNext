@@ -189,9 +189,16 @@ class ModernSpeechFramework {
 - **Handle volatile vs finalized results** appropriately
 - **Check for asset downloads** and install if needed
 
-### 3. Build Configuration - TOOLCHAIN MISMATCH ISSUE
+### 3. Build Configuration - WORKING SOLUTION
 - **Platform must be macOS 26** in Package.swift or project settings
 - **The APIs exist in**: `/Library/Developer/CommandLineTools/SDKs/MacOSX26.0.sdk`
-- **BUT**: The SDK requires Swift 6.2, while current toolchain is Swift 6.1.2
-- **CURRENT REALITY**: The new APIs cannot be used until Swift 6.2 toolchain is available
-- **FALLBACK SOLUTION**: Use SFSpeechRecognizer with proper audio accumulation (implemented in ModernSpeechFramework.swift)
+- **Swift 6.2 is available**: In Xcode-beta.app at `/Applications/Xcode-beta.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swift`
+- **To compile with new APIs**:
+  ```bash
+  SDKROOT=/Library/Developer/CommandLineTools/SDKs/MacOSX26.0.sdk \
+  /Applications/Xcode-beta.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swift build
+  ```
+- **API differences from documentation**:
+  - Use `AssetInventory.reserve(locale:)` not `allocate(locale:)`
+  - Use `AssetInventory.reservedLocales` not `allocatedLocales`
+  - Use `AssetInventory.release(reservedLocale:)` not `deallocate(locale:)`
