@@ -11,17 +11,17 @@ struct ParticipantConfirmationView: View {
     @Environment(\.managedObjectContext) private var viewContext
     
     @StateObject private var voicePrintManager = VoicePrintManager()
-    @StateObject private var audioPlayer = MeetingAudioPlayer()
+    @StateObject private var audioPlayer = ParticipantAudioPlayer()
     
     // Meeting data
     let meeting: LiveMeeting
-    let diarizationResults: DiarizationResult?
+    let diarizationResults: ParticipantDiarizationResult?
     let audioFileURL: URL?
     
     // UI State
-    @State private var speakerAssignments: [Int: Person?] = [:]
+    @State private var speakerAssignments: [String: Person?] = [:]
     @State private var showingPersonPicker = false
-    @State private var selectedSpeakerId: Int?
+    @State private var selectedSpeakerId: String?
     @State private var isProcessing = false
     @State private var showingNewPersonSheet = false
     @State private var newPersonName = ""
@@ -192,7 +192,7 @@ struct ParticipantConfirmationView: View {
                 
                 // Assignment status
                 if let person = speakerAssignments[speaker.speakerId] as? Person {
-                    assignedPersonView(person)
+                    assignedPersonView(person, speakerId: speaker.speakerId)
                 } else {
                     unassignedView(speakerId: speaker.speakerId)
                 }
@@ -217,7 +217,7 @@ struct ParticipantConfirmationView: View {
         )
     }
     
-    private func assignedPersonView(_ person: Person) -> some View {
+    private func assignedPersonView(_ person: Person, speakerId: String) -> some View {
         HStack(spacing: 8) {
             // Person avatar
             if let photoData = person.photo, let image = NSImage(data: photoData) {
@@ -257,7 +257,7 @@ struct ParticipantConfirmationView: View {
             }
             
             Button(action: {
-                speakerAssignments[person.id.hashValue] = nil
+                speakerAssignments[speakerId] = nil
             }) {
                 Image(systemName: "xmark.circle.fill")
                     .foregroundColor(.secondary)
@@ -270,7 +270,7 @@ struct ParticipantConfirmationView: View {
         .cornerRadius(6)
     }
     
-    private func unassignedView(speakerId: Int) -> some View {
+    private func unassignedView(speakerId: String) -> some View {
         Button(action: {
             selectedSpeakerId = speakerId
             showingPersonPicker = true
@@ -473,7 +473,7 @@ struct ParticipantConfirmationView: View {
         
         Task {
             // Build embeddings dictionary
-            var embeddings: [Int: [Float]] = [:]
+            var embeddings: [String: [Float]] = [:]
             for speaker in results.speakers {
                 if let embedding = speaker.averageEmbedding {
                     embeddings[speaker.speakerId] = embedding
@@ -624,7 +624,7 @@ struct PersonRow: View {
 
 // MARK: - Audio Player Helper
 
-class MeetingAudioPlayer: ObservableObject {
+class ParticipantAudioPlayer: ObservableObject {
     @Published var isPlaying = false
     private var audioPlayer: AVAudioPlayer?
     
@@ -652,13 +652,13 @@ class MeetingAudioPlayer: ObservableObject {
 
 // MARK: - Diarization Result Types (Placeholder)
 
-struct DiarizationResult {
+struct ParticipantDiarizationResult {
     let speakers: [DiarizationSpeaker]
     let totalDuration: TimeInterval
 }
 
 struct DiarizationSpeaker {
-    let speakerId: Int
+    let speakerId: String
     let segments: [DiarizationSpeakerSegment]
     let totalSpeakingTime: TimeInterval
     let segmentCount: Int

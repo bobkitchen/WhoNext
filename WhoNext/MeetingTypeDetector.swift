@@ -1,6 +1,9 @@
 import Foundation
 import AVFoundation
 import CoreData
+#if canImport(FluidAudio)
+import FluidAudio
+#endif
 
 /// Integrates DiarizationManager with VoicePrintManager and LiveMeeting
 /// Handles automatic meeting type detection and speaker identification
@@ -26,6 +29,7 @@ class MeetingTypeDetector: ObservableObject {
     
     // MARK: - Meeting Type Detection
     
+    #if canImport(FluidAudio)
     /// Process diarization results to detect meeting type and update LiveMeeting
     func processDiarizationResults(_ results: DiarizationResult?, for meeting: LiveMeeting) {
         guard let results = results else {
@@ -34,8 +38,9 @@ class MeetingTypeDetector: ObservableObject {
             return
         }
         
-        // Update speaker count
-        let speakerCount = results.speakers.count
+        // Update speaker count by getting unique speaker IDs from segments
+        let uniqueSpeakers = Set(results.segments.map { $0.speakerId })
+        let speakerCount = uniqueSpeakers.count
         meeting.detectedSpeakerCount = speakerCount
         
         // Determine meeting type based on speaker count
@@ -67,14 +72,16 @@ class MeetingTypeDetector: ObservableObject {
         // 2. Speaker separation quality
         // 3. Number of segments
         
+        // Calculate total duration from segments
+        let totalDuration = results.segments.reduce(0.0) { $0 + Double($1.endTimeSeconds - $1.startTimeSeconds) }
         let minDurationForHighConfidence: TimeInterval = 60.0 // 1 minute
-        let durationConfidence = Float(min(results.totalDuration / minDurationForHighConfidence, 1.0))
+        let durationConfidence = Float(min(totalDuration / minDurationForHighConfidence, 1.0))
         
         // Check speaker separation quality (distinct speakers should have different patterns)
-        let separationConfidence = calculateSeparationConfidence(results.speakers)
+        let separationConfidence = calculateSeparationConfidence(results.segments)
         
         // More segments = better confidence
-        let totalSegments = results.speakers.reduce(0) { $0 + $1.segmentCount }
+        let totalSegments = results.segments.count
         let segmentConfidence = Float(min(Double(totalSegments) / 20.0, 1.0))
         
         // Weighted average
@@ -82,19 +89,28 @@ class MeetingTypeDetector: ObservableObject {
     }
     
     /// Calculate how well-separated the speakers are
-    private func calculateSeparationConfidence(_ speakers: [DiarizationSpeaker]) -> Float {
-        guard speakers.count > 1 else { return 1.0 }
+    private func calculateSeparationConfidence(_ segments: [TimedSpeakerSegment]) -> Float {
+        guard segments.count > 1 else { return 1.0 }
+        
+        // Group segments by speaker and get average embeddings
+        var speakerEmbeddings: [String: [[Float]]] = [:]
+        for segment in segments {
+            speakerEmbeddings[segment.speakerId, default: []].append(segment.embedding)
+        }
+        
+        guard speakerEmbeddings.count >= 2 else { return 1.0 }
         
         // Compare embeddings between speakers
         var totalSimilarity: Float = 0.0
         var comparisons = 0
         
-        for i in 0..<speakers.count {
-            for j in (i+1)..<speakers.count {
-                if let embedding1 = speakers[i].averageEmbedding,
-                   let embedding2 = speakers[j].averageEmbedding {
+        let speakerIds = Array(speakerEmbeddings.keys)
+        for i in 0..<speakerIds.count {
+            for j in (i+1)..<speakerIds.count {
+                if let embeddings1 = speakerEmbeddings[speakerIds[i]]?.first,
+                   let embeddings2 = speakerEmbeddings[speakerIds[j]]?.first {
                     // Lower similarity between different speakers = better separation
-                    let similarity = cosineSimilarity(embedding1, embedding2)
+                    let similarity = cosineSimilarity(embeddings1, embeddings2)
                     totalSimilarity += similarity
                     comparisons += 1
                 }
@@ -118,11 +134,12 @@ class MeetingTypeDetector: ObservableObject {
         
         isProcessing = true
         
-        // Build embeddings dictionary
-        var embeddings: [Int: [Float]] = [:]
-        for speaker in results.speakers {
-            if let embedding = speaker.averageEmbedding {
-                embeddings[speaker.speakerId] = embedding
+        // Build embeddings dictionary from segments
+        var embeddings: [String: [Float]] = [:]
+        // Group segments by speaker and take first embedding
+        for segment in results.segments {
+            if embeddings[segment.speakerId] == nil {
+                embeddings[segment.speakerId] = segment.embedding
             }
         }
         
@@ -187,14 +204,8 @@ class MeetingTypeDetector: ObservableObject {
     func prepareForMeeting(_ calendarEvent: UpcomingMeeting) async {
         print("[MeetingTypeDetector] Preparing for meeting: \(calendarEvent.title)")
         
-        // Extract attendee names
-        let attendeeNames = calendarEvent.attendees?.compactMap { attendee in
-            // Extract name from attendee string or EKParticipant
-            if let name = attendee as? String {
-                return name
-            }
-            return nil
-        } ?? []
+        // Extract attendee names - attendees is already [String]?
+        let attendeeNames = calendarEvent.attendees ?? []
         
         // Pre-load voice embeddings
         await preloadParticipants(names: attendeeNames)
@@ -219,7 +230,7 @@ class MeetingTypeDetector: ObservableObject {
         let notification = NSUserNotification()
         notification.title = "Ready to Record"
         notification.informativeText = "\(meeting.title) - Voice recognition prepared for \(meeting.attendees?.count ?? 0) participants"
-        notification.soundName = NSUserNotificationSoundName.defaultCriticalSoundName
+        notification.soundName = nil // No sound for deprecated API
         notification.hasActionButton = true
         notification.actionButtonTitle = "Start Recording"
         
@@ -246,6 +257,7 @@ class MeetingTypeDetector: ObservableObject {
         
         return dotProduct / denominator
     }
+    #endif
 }
 
 // MARK: - LiveMeeting Extensions
@@ -274,6 +286,7 @@ extension LiveMeeting {
 
 // MARK: - Integration with MeetingRecordingEngine
 
+#if canImport(FluidAudio)
 extension MeetingRecordingEngine {
     /// Process diarization and update meeting type
     func processDiarizationUpdate(_ results: DiarizationResult?) {
@@ -301,3 +314,4 @@ extension MeetingRecordingEngine {
         }
     }
 }
+#endif

@@ -1,0 +1,224 @@
+{
+  "source": "/Users/bobkitchen/Documents/GitHub/WhoNext/WhoNext/ParticipantConfirmationView.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "Cancel",
+        "location": {
+          "startingColumn": 20,
+          "startingLine": 95
+        }
+      },
+      {
+        "comment": "",
+        "key": "Confirm Meeting Participants",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 84
+        }
+      },
+      {
+        "comment": "",
+        "key": "Assign speakers to people to improve voice recognition",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 88
+        }
+      },
+      {
+        "comment": "",
+        "key": "%lld speakers",
+        "location": {
+          "startingColumn": 35,
+          "startingLine": 119
+        }
+      },
+      {
+        "comment": "",
+        "key": "Expected Participants",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 143
+        }
+      },
+      {
+        "comment": "",
+        "key": "%@",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 174
+        }
+      },
+      {
+        "comment": "",
+        "key": "Speaker %@",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 180
+        }
+      },
+      {
+        "comment": "",
+        "key": "%lld segments",
+        "location": {
+          "startingColumn": 31,
+          "startingLine": 185
+        }
+      },
+      {
+        "comment": "",
+        "key": "%lld%% match",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 252
+        }
+      },
+      {
+        "comment": "",
+        "key": "Assign Person",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 282
+        }
+      },
+      {
+        "comment": "",
+        "key": "Play Voice Sample",
+        "location": {
+          "startingColumn": 23,
+          "startingLine": 298
+        }
+      },
+      {
+        "comment": "",
+        "key": "Voice Match Confidence:",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 312
+        }
+      },
+      {
+        "comment": "",
+        "key": "%lld%%",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 319
+        }
+      },
+      {
+        "comment": "",
+        "key": "No speakers detected",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 332
+        }
+      },
+      {
+        "comment": "",
+        "key": "Speaker diarization data is not available for this meeting",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 335
+        }
+      },
+      {
+        "comment": "",
+        "key": "Skip",
+        "location": {
+          "startingColumn": 23,
+          "startingLine": 349
+        }
+      },
+      {
+        "comment": "",
+        "key": "Auto-Assign",
+        "location": {
+          "startingColumn": 23,
+          "startingLine": 356
+        }
+      },
+      {
+        "comment": "",
+        "key": "Confirm & Save",
+        "location": {
+          "startingColumn": 23,
+          "startingLine": 362
+        }
+      },
+      {
+        "comment": "",
+        "key": "Select Person",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 415
+        }
+      },
+      {
+        "comment": "",
+        "key": "%lld%% confidence",
+        "location": {
+          "startingColumn": 42,
+          "startingLine": 394
+        }
+      },
+      {
+        "comment": "",
+        "key": "%d samples",
+        "location": {
+          "startingColumn": 43,
+          "startingLine": 391
+        }
+      },
+      {
+        "comment": "",
+        "key": "Create New Person",
+        "location": {
+          "startingColumn": 27,
+          "startingLine": 411
+        }
+      },
+      {
+        "comment": "",
+        "key": "Cancel",
+        "location": {
+          "startingColumn": 28,
+          "startingLine": 418
+        }
+      },
+      {
+        "comment": "",
+        "key": "New Person",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 438
+        }
+      },
+      {
+        "comment": "",
+        "key": "Name",
+        "location": {
+          "startingColumn": 27,
+          "startingLine": 430
+        }
+      },
+      {
+        "comment": "",
+        "key": "Create & Assign",
+        "location": {
+          "startingColumn": 27,
+          "startingLine": 433
+        }
+      },
+      {
+        "comment": "",
+        "key": "Cancel",
+        "location": {
+          "startingColumn": 28,
+          "startingLine": 441
+        }
+      }
+    ]
+  },
+  "version": 1
+}

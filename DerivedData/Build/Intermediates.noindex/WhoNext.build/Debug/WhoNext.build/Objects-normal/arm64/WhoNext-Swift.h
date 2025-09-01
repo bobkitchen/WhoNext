@@ -478,6 +478,10 @@ SWIFT_CLASS_NAMED("Person")
 @property (nonatomic, copy) NSDate * _Nullable modifiedAt;
 @property (nonatomic) BOOL isSoftDeleted;
 @property (nonatomic, copy) NSDate * _Nullable deletedAt;
+@property (nonatomic, copy) NSData * _Nullable voiceEmbeddings;
+@property (nonatomic, copy) NSDate * _Nullable lastVoiceUpdate;
+@property (nonatomic) float voiceConfidence;
+@property (nonatomic) int32_t voiceSampleCount;
 - (void)awakeFromInsert;
 - (nonnull instancetype)initWithEntity:(NSEntityDescription * _Nonnull)entity insertIntoManagedObjectContext:(NSManagedObjectContext * _Nullable)context OBJC_DESIGNATED_INITIALIZER;
 @end

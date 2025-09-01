@@ -128,8 +128,8 @@ class VoicePrintManager: ObservableObject {
     }
     
     /// Match multiple embeddings to a list of expected attendees
-    func matchToAttendees(_ embeddings: [Int: [Float]], attendeeNames: [String]) -> [Int: Person] {
-        var matches: [Int: Person] = [:]
+    func matchToAttendees(_ embeddings: [String: [Float]], attendeeNames: [String]) -> [String: Person] {
+        var matches: [String: Person] = [:]
         
         // First, try to find existing people by name
         let context = persistenceController.container.viewContext
@@ -166,7 +166,11 @@ class VoicePrintManager: ObservableObject {
             // If no match among attendees, search all people
             if bestMatch == nil {
                 if let match = findMatchingPerson(for: embedding) {
-                    bestMatch = match
+                    // match is (Person?, Float) but bestMatch needs (Person, Float)
+                    // Only assign if we have a valid Person
+                    if let person = match.0 {
+                        bestMatch = (person, match.1)
+                    }
                 }
             }
             
@@ -366,7 +370,7 @@ struct CompletedMeeting {
 /// Represents a confirmed participant with voice data
 struct ConfirmedParticipant {
     let person: Person?
-    let speakerId: Int
+    let speakerId: String
     let voiceEmbeddings: [[Float]]?
     let speakingDuration: TimeInterval
 }

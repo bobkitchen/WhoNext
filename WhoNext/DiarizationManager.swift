@@ -120,8 +120,9 @@ class DiarizationManager: ObservableObject {
             let result = try diarizer.performCompleteDiarization(audioSamples)
             let processingTime = Date().timeIntervalSince(startTime)
             
+            let uniqueSpeakers = Set(result.segments.map { $0.speakerId })
             print("📊 [DiarizationManager] Processed \(chunkDuration)s chunk in \(String(format: "%.2f", processingTime))s")
-            print("👥 [DiarizationManager] Found \(result.speakerCount) speakers with \(result.segments.count) segments")
+            print("👥 [DiarizationManager] Found \(uniqueSpeakers.count) speakers with \(result.segments.count) segments")
             
             // Adjust timestamps for stream position
             var adjustedSegments: [TimedSpeakerSegment] = []
@@ -142,7 +143,9 @@ class DiarizationManager: ObservableObject {
             
             // Update results
             let adjustedResult = DiarizationResult(
-                segments: adjustedSegments
+                segments: adjustedSegments,
+                speakerDatabase: result.speakerDatabase,
+                timings: result.timings
             )
             
             await MainActor.run {
@@ -203,7 +206,9 @@ class DiarizationManager: ObservableObject {
             }
             
             let adjustedResult = DiarizationResult(
-                segments: adjustedSegments
+                segments: adjustedSegments,
+                speakerDatabase: result.speakerDatabase,
+                timings: result.timings
             )
             
             await MainActor.run {
@@ -216,7 +221,8 @@ class DiarizationManager: ObservableObject {
             // Clear the buffer
             audioBuffer.removeAll()
             
-            print("✅ [DiarizationManager] Final diarization complete: \(adjustedResult.speakerCount) speakers")
+            let uniqueSpeakers = Set(adjustedResult.segments.map { $0.speakerId })
+            print("✅ [DiarizationManager] Final diarization complete: \(uniqueSpeakers.count) speakers")
             
         } catch {
             print("❌ [DiarizationManager] Final processing failed: \(error)")
