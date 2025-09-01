@@ -4,10 +4,98 @@
     "Localizable": [
       {
         "comment": "",
+        "key": "User Profile",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 289
+        }
+      },
+      {
+        "comment": "",
+        "key": "Configure your profile to exclude yourself from meeting attendees and personalize the app experience.",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 292
+        }
+      },
+      {
+        "comment": "",
+        "key": "Name:",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 297
+        }
+      },
+      {
+        "comment": "",
+        "key": "Your Name",
+        "location": {
+          "startingColumn": 31,
+          "startingLine": 299
+        }
+      },
+      {
+        "comment": "",
+        "key": "Email:",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 308
+        }
+      },
+      {
+        "comment": "",
+        "key": "your.email@example.com",
+        "location": {
+          "startingColumn": 31,
+          "startingLine": 310
+        }
+      },
+      {
+        "comment": "",
+        "key": "Job Title:",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 319
+        }
+      },
+      {
+        "comment": "",
+        "key": "Your Job Title",
+        "location": {
+          "startingColumn": 31,
+          "startingLine": 321
+        }
+      },
+      {
+        "comment": "",
+        "key": "Organization:",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 330
+        }
+      },
+      {
+        "comment": "",
+        "key": "Your Organization",
+        "location": {
+          "startingColumn": 31,
+          "startingLine": 332
+        }
+      },
+      {
+        "comment": "",
+        "key": "Your information is used to filter you out of meeting attendee lists and personalize your experience.",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 343
+        }
+      },
+      {
+        "comment": "",
         "key": "Warning + Danger",
         "location": {
           "startingColumn": 22,
-          "startingLine": 288
+          "startingLine": 357
         }
       },
       {
@@ -15,7 +103,7 @@
         "key": "Reset App",
         "location": {
           "startingColumn": 24,
-          "startingLine": 296
+          "startingLine": 365
         }
       },
       {
@@ -23,7 +111,7 @@
         "key": "Deletes all People records from both this device and iCloud. This cannot be undone!",
         "location": {
           "startingColumn": 23,
-          "startingLine": 307
+          "startingLine": 376
         }
       },
       {
@@ -31,7 +119,7 @@
         "key": "Reset Who You've Spoken To",
         "location": {
           "startingColumn": 27,
-          "startingLine": 294
+          "startingLine": 363
         }
       },
       {
@@ -39,7 +127,7 @@
         "key": "Reset",
         "location": {
           "startingColumn": 28,
-          "startingLine": 297
+          "startingLine": 366
         }
       },
       {
@@ -47,7 +135,7 @@
         "key": "Cancel",
         "location": {
           "startingColumn": 28,
-          "startingLine": 298
+          "startingLine": 367
         }
       },
       {
@@ -55,7 +143,7 @@
         "key": "This will reset all memory of who you've spoken to and who needs to be spoken to next. Conversation records and notes will NOT be deleted.",
         "location": {
           "startingColumn": 26,
-          "startingLine": 300
+          "startingLine": 369
         }
       },
       {
@@ -63,7 +151,7 @@
         "key": "Delete All People",
         "location": {
           "startingColumn": 27,
-          "startingLine": 305
+          "startingLine": 374
         }
       },
       {
@@ -71,7 +159,7 @@
         "key": "AI Provider",
         "location": {
           "startingColumn": 22,
-          "startingLine": 317
+          "startingLine": 386
         }
       },
       {
@@ -79,7 +167,7 @@
         "key": "AI Provider",
         "location": {
           "startingColumn": 24,
-          "startingLine": 319
+          "startingLine": 388
         }
       },
       {
@@ -87,7 +175,7 @@
         "key": "🍎 Apple Intelligence (On-Device)",
         "location": {
           "startingColumn": 30,
-          "startingLine": 321
+          "startingLine": 390
         }
       },
       {
@@ -95,7 +183,7 @@
         "key": "OpenAI",
         "location": {
           "startingColumn": 26,
-          "startingLine": 323
+          "startingLine": 392
         }
       },
       {
@@ -103,7 +191,7 @@
         "key": "Claude",
         "location": {
           "startingColumn": 26,
-          "startingLine": 324
+          "startingLine": 393
         }
       },
       {
@@ -111,7 +199,7 @@
         "key": "OpenRouter (Free)",
         "location": {
           "startingColumn": 26,
-          "startingLine": 325
+          "startingLine": 394
         }
       },
       {
@@ -119,7 +207,7 @@
         "key": "✅ Complete Privacy - Processing stays on device",
         "location": {
           "startingColumn": 30,
-          "startingLine": 332
+          "startingLine": 401
         }
       },
       {
@@ -127,7 +215,7 @@
         "key": "✅ No API costs or internet required",
         "location": {
           "startingColumn": 30,
-          "startingLine": 335
+          "startingLine": 404
         }
       },
       {
@@ -135,7 +223,7 @@
         "key": "✅ Fast response times",
         "location": {
           "startingColumn": 30,
-          "startingLine": 338
+          "startingLine": 407
         }
       },
       {
@@ -143,7 +231,7 @@
         "key": "⚠️ Requires iOS 18.1+ or macOS 15.1+",
         "location": {
           "startingColumn": 34,
-          "startingLine": 342
+          "startingLine": 411
         }
       },
       {
@@ -151,7 +239,7 @@
         "key": "API Key",
         "location": {
           "startingColumn": 26,
-          "startingLine": 353
+          "startingLine": 422
         }
       },
       {
@@ -159,7 +247,7 @@
         "key": "Validating...",
         "location": {
           "startingColumn": 34,
-          "startingLine": 366
+          "startingLine": 435
         }
       },
       {
@@ -167,7 +255,7 @@
         "key": "✓ Valid API Key",
         "location": {
           "startingColumn": 34,
-          "startingLine": 369
+          "startingLine": 438
         }
       },
       {
@@ -175,7 +263,7 @@
         "key": "✗ %@",
         "location": {
           "startingColumn": 34,
-          "startingLine": 372
+          "startingLine": 441
         }
       },
       {
@@ -183,7 +271,7 @@
         "key": "Validating...",
         "location": {
           "startingColumn": 34,
-          "startingLine": 386
+          "startingLine": 455
         }
       },
       {
@@ -191,7 +279,7 @@
         "key": "✓ Valid API Key",
         "location": {
           "startingColumn": 34,
-          "startingLine": 389
+          "startingLine": 458
         }
       },
       {
@@ -199,7 +287,7 @@
         "key": "✗ %@",
         "location": {
           "startingColumn": 34,
-          "startingLine": 392
+          "startingLine": 461
         }
       },
       {
@@ -207,7 +295,7 @@
         "key": "sk-...",
         "location": {
           "startingColumn": 41,
-          "startingLine": 357
+          "startingLine": 426
         }
       },
       {
@@ -215,7 +303,7 @@
         "key": "Validate",
         "location": {
           "startingColumn": 36,
-          "startingLine": 359
+          "startingLine": 428
         }
       },
       {
@@ -223,7 +311,7 @@
         "key": "ck-...",
         "location": {
           "startingColumn": 41,
-          "startingLine": 377
+          "startingLine": 446
         }
       },
       {
@@ -231,7 +319,7 @@
         "key": "Validate",
         "location": {
           "startingColumn": 36,
-          "startingLine": 379
+          "startingLine": 448
         }
       },
       {
@@ -239,7 +327,7 @@
         "key": "OpenRouter provides free access to Llama 3.1 8B and other models. Vision analysis will fallback to OpenAI if configured.",
         "location": {
           "startingColumn": 34,
-          "startingLine": 406
+          "startingLine": 475
         }
       },
       {
@@ -247,7 +335,7 @@
         "key": "Current: %@",
         "location": {
           "startingColumn": 34,
-          "startingLine": 424
+          "startingLine": 493
         }
       },
       {
@@ -255,7 +343,7 @@
         "key": "or-...",
         "location": {
           "startingColumn": 45,
-          "startingLine": 398
+          "startingLine": 467
         }
       },
       {
@@ -263,7 +351,7 @@
         "key": "Get Free Key",
         "location": {
           "startingColumn": 40,
-          "startingLine": 400
+          "startingLine": 469
         }
       },
       {
@@ -271,7 +359,7 @@
         "key": "Model",
         "location": {
           "startingColumn": 38,
-          "startingLine": 410
+          "startingLine": 479
         }
       },
       {
@@ -279,7 +367,7 @@
         "key": "Select Model",
         "location": {
           "startingColumn": 40,
-          "startingLine": 412
+          "startingLine": 481
         }
       },
       {
@@ -287,7 +375,7 @@
         "key": "Llama 3.1 8B (Free)",
         "location": {
           "startingColumn": 42,
-          "startingLine": 413
+          "startingLine": 482
         }
       },
       {
@@ -295,7 +383,7 @@
         "key": "Llama 3.2 3B (Free)",
         "location": {
           "startingColumn": 42,
-          "startingLine": 414
+          "startingLine": 483
         }
       },
       {
@@ -303,7 +391,7 @@
         "key": "Mistral 7B (Free)",
         "location": {
           "startingColumn": 42,
-          "startingLine": 415
+          "startingLine": 484
         }
       },
       {
@@ -311,7 +399,7 @@
         "key": "Nous Hermes 2 Mixtral (Free)",
         "location": {
           "startingColumn": 42,
-          "startingLine": 416
+          "startingLine": 485
         }
       },
       {
@@ -319,7 +407,7 @@
         "key": "Phi-3 Mini (Free)",
         "location": {
           "startingColumn": 42,
-          "startingLine": 417
+          "startingLine": 486
         }
       },
       {
@@ -327,7 +415,7 @@
         "key": "Gemma 2 9B (Free)",
         "location": {
           "startingColumn": 42,
-          "startingLine": 418
+          "startingLine": 487
         }
       },
       {
@@ -335,7 +423,7 @@
         "key": "Qwen 2.5 7B (Free)",
         "location": {
           "startingColumn": 42,
-          "startingLine": 419
+          "startingLine": 488
         }
       },
       {
@@ -343,7 +431,7 @@
         "key": "Pre-Meeting Brief Prompt",
         "location": {
           "startingColumn": 22,
-          "startingLine": 436
+          "startingLine": 505
         }
       },
       {
@@ -351,7 +439,7 @@
         "key": "Customize the AI prompt used for generating pre-meeting briefs",
         "location": {
           "startingColumn": 22,
-          "startingLine": 438
+          "startingLine": 507
         }
       },
       {
@@ -359,7 +447,7 @@
         "key": "%lld characters",
         "location": {
           "startingColumn": 26,
-          "startingLine": 469
+          "startingLine": 538
         }
       },
       {
@@ -367,7 +455,7 @@
         "key": "Reset to Default",
         "location": {
           "startingColumn": 28,
-          "startingLine": 451
+          "startingLine": 520
         }
       },
       {
@@ -375,7 +463,7 @@
         "key": "Summarization Prompt",
         "location": {
           "startingColumn": 22,
-          "startingLine": 477
+          "startingLine": 546
         }
       },
       {
@@ -383,7 +471,7 @@
         "key": "Customize the AI prompt used for generating meeting summaries",
         "location": {
           "startingColumn": 22,
-          "startingLine": 479
+          "startingLine": 548
         }
       },
       {
@@ -391,7 +479,7 @@
         "key": "%lld characters",
         "location": {
           "startingColumn": 26,
-          "startingLine": 536
+          "startingLine": 605
         }
       },
       {
@@ -399,7 +487,7 @@
         "key": "Reset to Default",
         "location": {
           "startingColumn": 28,
-          "startingLine": 492
+          "startingLine": 561
         }
       },
       {
@@ -407,7 +495,7 @@
         "key": "Email Templates",
         "location": {
           "startingColumn": 22,
-          "startingLine": 549
+          "startingLine": 618
         }
       },
       {
@@ -415,7 +503,7 @@
         "key": "Customize the email templates used for follow-up emails. Use {name} for full name and {firstName} for first name.",
         "location": {
           "startingColumn": 22,
-          "startingLine": 551
+          "startingLine": 620
         }
       },
       {
@@ -423,7 +511,7 @@
         "key": "Reset to Defaults",
         "location": {
           "startingColumn": 28,
-          "startingLine": 580
+          "startingLine": 649
         }
       },
       {
@@ -431,7 +519,7 @@
         "key": "Subject Template",
         "location": {
           "startingColumn": 30,
-          "startingLine": 557
+          "startingLine": 626
         }
       },
       {
@@ -439,7 +527,7 @@
         "key": "Body Template",
         "location": {
           "startingColumn": 30,
-          "startingLine": 569
+          "startingLine": 638
         }
       },
       {
@@ -447,7 +535,7 @@
         "key": "Import Org Chart",
         "location": {
           "startingColumn": 22,
-          "startingLine": 603
+          "startingLine": 672
         }
       },
       {
@@ -455,7 +543,7 @@
         "key": "Drop a file to automatically extract team member details using AI",
         "location": {
           "startingColumn": 22,
-          "startingLine": 605
+          "startingLine": 674
         }
       },
       {
@@ -463,7 +551,7 @@
         "key": "Import Team Members (CSV)",
         "location": {
           "startingColumn": 22,
-          "startingLine": 637
+          "startingLine": 706
         }
       },
       {
@@ -471,7 +559,7 @@
         "key": "Import CSV file with columns: Name, Role, Direct Report (true/false), Timezone",
         "location": {
           "startingColumn": 22,
-          "startingLine": 639
+          "startingLine": 708
         }
       },
       {
@@ -479,7 +567,7 @@
         "key": "Select CSV File",
         "location": {
           "startingColumn": 28,
-          "startingLine": 644
+          "startingLine": 713
         }
       },
       {
@@ -487,7 +575,7 @@
         "key": "Recording Triggers",
         "location": {
           "startingColumn": 22,
-          "startingLine": 757
+          "startingLine": 826
         }
       },
       {
@@ -495,7 +583,7 @@
         "key": "Configure what triggers automatic meeting recording",
         "location": {
           "startingColumn": 22,
-          "startingLine": 759
+          "startingLine": 828
         }
       },
       {
@@ -503,7 +591,7 @@
         "key": "Two-Way Audio Detection",
         "location": {
           "startingColumn": 28,
-          "startingLine": 764
+          "startingLine": 833
         }
       },
       {
@@ -511,7 +599,7 @@
         "key": "Automatically detect conversations based on audio patterns",
         "location": {
           "startingColumn": 31,
-          "startingLine": 765
+          "startingLine": 834
         }
       },
       {
@@ -519,7 +607,7 @@
         "key": "Calendar Integration",
         "location": {
           "startingColumn": 28,
-          "startingLine": 766
+          "startingLine": 835
         }
       },
       {
@@ -527,7 +615,7 @@
         "key": "Start recording for scheduled calendar events",
         "location": {
           "startingColumn": 31,
-          "startingLine": 767
+          "startingLine": 836
         }
       },
       {
@@ -535,7 +623,7 @@
         "key": "Meeting App Detection",
         "location": {
           "startingColumn": 28,
-          "startingLine": 768
+          "startingLine": 837
         }
       },
       {
@@ -543,7 +631,7 @@
         "key": "Detect when meeting apps like Zoom are active",
         "location": {
           "startingColumn": 31,
-          "startingLine": 769
+          "startingLine": 838
         }
       },
       {
@@ -551,7 +639,7 @@
         "key": "Keyword Detection",
         "location": {
           "startingColumn": 28,
-          "startingLine": 770
+          "startingLine": 839
         }
       },
       {
@@ -559,7 +647,7 @@
         "key": "Trigger recording when specific keywords are mentioned",
         "location": {
           "startingColumn": 31,
-          "startingLine": 771
+          "startingLine": 840
         }
       },
       {
@@ -567,7 +655,7 @@
         "key": "Auto-Recording",
         "location": {
           "startingColumn": 22,
-          "startingLine": 780
+          "startingLine": 849
         }
       },
       {
@@ -575,7 +663,7 @@
         "key": "Control automatic recording behavior",
         "location": {
           "startingColumn": 22,
-          "startingLine": 782
+          "startingLine": 851
         }
       },
       {
@@ -583,7 +671,7 @@
         "key": "Enable Auto-Recording",
         "location": {
           "startingColumn": 28,
-          "startingLine": 787
+          "startingLine": 856
         }
       },
       {
@@ -591,7 +679,7 @@
         "key": "Automatically start recording when meetings are detected",
         "location": {
           "startingColumn": 31,
-          "startingLine": 788
+          "startingLine": 857
         }
       },
       {
@@ -599,7 +687,7 @@
         "key": "Higher values reduce false positives but may miss some meetings",
         "location": {
           "startingColumn": 35,
-          "startingLine": 799
+          "startingLine": 868
         }
       },
       {
@@ -607,7 +695,7 @@
         "key": "Confidence Threshold",
         "location": {
           "startingColumn": 34,
-          "startingLine": 792
+          "startingLine": 861
         }
       },
       {
@@ -615,7 +703,7 @@
         "key": "%lld%%",
         "location": {
           "startingColumn": 34,
-          "startingLine": 794
+          "startingLine": 863
         }
       },
       {
@@ -623,7 +711,7 @@
         "key": "Audio Quality",
         "location": {
           "startingColumn": 22,
-          "startingLine": 809
+          "startingLine": 878
         }
       },
       {
@@ -631,7 +719,7 @@
         "key": "Configure recording quality settings",
         "location": {
           "startingColumn": 22,
-          "startingLine": 811
+          "startingLine": 880
         }
       },
       {
@@ -639,7 +727,7 @@
         "key": "Enable Compression",
         "location": {
           "startingColumn": 28,
-          "startingLine": 840
+          "startingLine": 909
         }
       },
       {
@@ -647,7 +735,7 @@
         "key": "Reduces file size but may slightly affect quality",
         "location": {
           "startingColumn": 31,
-          "startingLine": 841
+          "startingLine": 910
         }
       },
       {
@@ -655,7 +743,7 @@
         "key": "Sample Rate",
         "location": {
           "startingColumn": 30,
-          "startingLine": 817
+          "startingLine": 886
         }
       },
       {
@@ -663,7 +751,7 @@
         "key": "",
         "location": {
           "startingColumn": 32,
-          "startingLine": 819
+          "startingLine": 888
         }
       },
       {
@@ -671,7 +759,7 @@
         "key": "16 kHz",
         "location": {
           "startingColumn": 34,
-          "startingLine": 820
+          "startingLine": 889
         }
       },
       {
@@ -679,7 +767,7 @@
         "key": "44.1 kHz",
         "location": {
           "startingColumn": 34,
-          "startingLine": 821
+          "startingLine": 890
         }
       },
       {
@@ -687,7 +775,7 @@
         "key": "48 kHz",
         "location": {
           "startingColumn": 34,
-          "startingLine": 822
+          "startingLine": 891
         }
       },
       {
@@ -695,7 +783,7 @@
         "key": "Bit Rate",
         "location": {
           "startingColumn": 30,
-          "startingLine": 829
+          "startingLine": 898
         }
       },
       {
@@ -703,7 +791,7 @@
         "key": "",
         "location": {
           "startingColumn": 32,
-          "startingLine": 831
+          "startingLine": 900
         }
       },
       {
@@ -711,7 +799,7 @@
         "key": "32 kbps",
         "location": {
           "startingColumn": 34,
-          "startingLine": 832
+          "startingLine": 901
         }
       },
       {
@@ -719,7 +807,7 @@
         "key": "64 kbps",
         "location": {
           "startingColumn": 34,
-          "startingLine": 833
+          "startingLine": 902
         }
       },
       {
@@ -727,7 +815,7 @@
         "key": "128 kbps",
         "location": {
           "startingColumn": 34,
-          "startingLine": 834
+          "startingLine": 903
         }
       },
       {
@@ -735,7 +823,7 @@
         "key": "Transcription",
         "location": {
           "startingColumn": 22,
-          "startingLine": 850
+          "startingLine": 919
         }
       },
       {
@@ -743,7 +831,7 @@
         "key": "Configure transcription preferences",
         "location": {
           "startingColumn": 22,
-          "startingLine": 852
+          "startingLine": 921
         }
       },
       {
@@ -751,7 +839,7 @@
         "key": "Use Local Transcription (Parakeet)",
         "location": {
           "startingColumn": 28,
-          "startingLine": 857
+          "startingLine": 926
         }
       },
       {
@@ -759,7 +847,7 @@
         "key": "Process transcription locally for privacy",
         "location": {
           "startingColumn": 31,
-          "startingLine": 858
+          "startingLine": 927
         }
       },
       {
@@ -767,7 +855,7 @@
         "key": "Whisper API Refinement",
         "location": {
           "startingColumn": 28,
-          "startingLine": 859
+          "startingLine": 928
         }
       },
       {
@@ -775,7 +863,7 @@
         "key": "Use OpenAI Whisper for higher accuracy",
         "location": {
           "startingColumn": 31,
-          "startingLine": 860
+          "startingLine": 929
         }
       },
       {
@@ -783,7 +871,7 @@
         "key": "Speaker Diarization",
         "location": {
           "startingColumn": 28,
-          "startingLine": 861
+          "startingLine": 930
         }
       },
       {
@@ -791,7 +879,7 @@
         "key": "Identify different speakers in the conversation",
         "location": {
           "startingColumn": 31,
-          "startingLine": 862
+          "startingLine": 931
         }
       },
       {
@@ -799,7 +887,7 @@
         "key": "Include Punctuation",
         "location": {
           "startingColumn": 28,
-          "startingLine": 863
+          "startingLine": 932
         }
       },
       {
@@ -807,7 +895,7 @@
         "key": "Add punctuation to transcripts",
         "location": {
           "startingColumn": 31,
-          "startingLine": 864
+          "startingLine": 933
         }
       },
       {
@@ -815,7 +903,7 @@
         "key": "Privacy & Storage",
         "location": {
           "startingColumn": 22,
-          "startingLine": 873
+          "startingLine": 942
         }
       },
       {
@@ -823,7 +911,7 @@
         "key": "Control privacy and data retention",
         "location": {
           "startingColumn": 22,
-          "startingLine": 875
+          "startingLine": 944
         }
       },
       {
@@ -831,7 +919,7 @@
         "key": "Notify on Recording Start",
         "location": {
           "startingColumn": 28,
-          "startingLine": 880
+          "startingLine": 949
         }
       },
       {
@@ -839,7 +927,7 @@
         "key": "Show notification when recording begins",
         "location": {
           "startingColumn": 31,
-          "startingLine": 881
+          "startingLine": 950
         }
       },
       {
@@ -847,7 +935,7 @@
         "key": "Show Recording Indicator",
         "location": {
           "startingColumn": 28,
-          "startingLine": 882
+          "startingLine": 951
         }
       },
       {
@@ -855,7 +943,7 @@
         "key": "Display visual indicator during recording",
         "location": {
           "startingColumn": 31,
-          "startingLine": 883
+          "startingLine": 952
         }
       },
       {
@@ -863,7 +951,7 @@
         "key": "Pause in Private Browsing",
         "location": {
           "startingColumn": 28,
-          "startingLine": 884
+          "startingLine": 953
         }
       },
       {
@@ -871,7 +959,7 @@
         "key": "Disable recording when private browsing is detected",
         "location": {
           "startingColumn": 31,
-          "startingLine": 885
+          "startingLine": 954
         }
       },
       {
@@ -879,7 +967,7 @@
         "key": "Automatically delete recordings after this period",
         "location": {
           "startingColumn": 27,
-          "startingLine": 900
+          "startingLine": 969
         }
       },
       {
@@ -887,7 +975,7 @@
         "key": "Storage Retention",
         "location": {
           "startingColumn": 30,
-          "startingLine": 888
+          "startingLine": 957
         }
       },
       {
@@ -895,7 +983,7 @@
         "key": "",
         "location": {
           "startingColumn": 32,
-          "startingLine": 890
+          "startingLine": 959
         }
       },
       {
@@ -903,7 +991,7 @@
         "key": "7 days",
         "location": {
           "startingColumn": 34,
-          "startingLine": 891
+          "startingLine": 960
         }
       },
       {
@@ -911,7 +999,7 @@
         "key": "14 days",
         "location": {
           "startingColumn": 34,
-          "startingLine": 892
+          "startingLine": 961
         }
       },
       {
@@ -919,7 +1007,7 @@
         "key": "30 days",
         "location": {
           "startingColumn": 34,
-          "startingLine": 893
+          "startingLine": 962
         }
       },
       {
@@ -927,7 +1015,7 @@
         "key": "60 days",
         "location": {
           "startingColumn": 34,
-          "startingLine": 894
+          "startingLine": 963
         }
       },
       {
@@ -935,7 +1023,7 @@
         "key": "90 days",
         "location": {
           "startingColumn": 34,
-          "startingLine": 895
+          "startingLine": 964
         }
       },
       {
@@ -943,7 +1031,7 @@
         "key": "Cloud Sync",
         "location": {
           "startingColumn": 22,
-          "startingLine": 914
+          "startingLine": 983
         }
       },
       {
@@ -951,7 +1039,7 @@
         "key": "Keep your data synchronized across all devices",
         "location": {
           "startingColumn": 22,
-          "startingLine": 916
+          "startingLine": 985
         }
       },
       {
@@ -959,7 +1047,7 @@
         "key": "Syncing...",
         "location": {
           "startingColumn": 55,
-          "startingLine": 979
+          "startingLine": 1048
         }
       },
       {
@@ -967,7 +1055,7 @@
         "key": "Sync Now",
         "location": {
           "startingColumn": 70,
-          "startingLine": 979
+          "startingLine": 1048
         }
       },
       {
@@ -975,7 +1063,7 @@
         "key": "Syncing...",
         "location": {
           "startingColumn": 42,
-          "startingLine": 931
+          "startingLine": 1000
         }
       },
       {
@@ -983,7 +1071,7 @@
         "key": "Ready to sync",
         "location": {
           "startingColumn": 42,
-          "startingLine": 963
+          "startingLine": 1032
         }
       },
       {
@@ -991,7 +1079,7 @@
         "key": "Sync completed successfully",
         "location": {
           "startingColumn": 46,
-          "startingLine": 941
+          "startingLine": 1010
         }
       },
       {
@@ -999,7 +1087,7 @@
         "key": "Last sync: %lld operations in %@s",
         "location": {
           "startingColumn": 46,
-          "startingLine": 944
+          "startingLine": 1013
         }
       },
       {
@@ -1007,7 +1095,7 @@
         "key": "Sync failed",
         "location": {
           "startingColumn": 46,
-          "startingLine": 948
+          "startingLine": 1017
         }
       },
       {
@@ -1015,7 +1103,7 @@
         "key": "Partial sync completed",
         "location": {
           "startingColumn": 46,
-          "startingLine": 955
+          "startingLine": 1024
         }
       },
       {
@@ -1023,7 +1111,7 @@
         "key": "%lld operations, %lld errors",
         "location": {
           "startingColumn": 46,
-          "startingLine": 958
+          "startingLine": 1027
         }
       },
       {
@@ -1031,7 +1119,7 @@
         "key": "Last successful: %@",
         "location": {
           "startingColumn": 42,
-          "startingLine": 969
+          "startingLine": 1038
         }
       },
       {
@@ -1039,7 +1127,7 @@
         "key": "Smart conflict resolution and data deduplication",
         "location": {
           "startingColumn": 30,
-          "startingLine": 993
+          "startingLine": 1062
         }
       },
       {
@@ -1047,7 +1135,7 @@
         "key": "Local Data",
         "location": {
           "startingColumn": 22,
-          "startingLine": 1006
+          "startingLine": 1075
         }
       },
       {
@@ -1055,7 +1143,7 @@
         "key": "Current data in your local database",
         "location": {
           "startingColumn": 22,
-          "startingLine": 1008
+          "startingLine": 1077
         }
       },
       {
@@ -1063,7 +1151,7 @@
         "key": "People:",
         "location": {
           "startingColumn": 30,
-          "startingLine": 1014
+          "startingLine": 1083
         }
       },
       {
@@ -1071,7 +1159,7 @@
         "key": "%lld",
         "location": {
           "startingColumn": 30,
-          "startingLine": 1016
+          "startingLine": 1085
         }
       },
       {
@@ -1079,7 +1167,7 @@
         "key": "Conversations:",
         "location": {
           "startingColumn": 30,
-          "startingLine": 1021
+          "startingLine": 1090
         }
       },
       {
@@ -1087,7 +1175,7 @@
         "key": "%lld",
         "location": {
           "startingColumn": 30,
-          "startingLine": 1023
+          "startingLine": 1092
         }
       },
       {
@@ -1095,7 +1183,7 @@
         "key": "Sync Health",
         "location": {
           "startingColumn": 22,
-          "startingLine": 1037
+          "startingLine": 1106
         }
       },
       {
@@ -1103,7 +1191,7 @@
         "key": "Monitor and maintain data synchronization across your devices",
         "location": {
           "startingColumn": 22,
-          "startingLine": 1039
+          "startingLine": 1108
         }
       },
       {
@@ -1111,7 +1199,7 @@
         "key": "Hide Advanced Options",
         "location": {
           "startingColumn": 50,
-          "startingLine": 1112
+          "startingLine": 1181
         }
       },
       {
@@ -1119,7 +1207,7 @@
         "key": "Show Advanced Options",
         "location": {
           "startingColumn": 76,
-          "startingLine": 1112
+          "startingLine": 1181
         }
       },
       {
@@ -1127,7 +1215,7 @@
         "key": "Complete Reset",
         "location": {
           "startingColumn": 24,
-          "startingLine": 1121
+          "startingLine": 1190
         }
       },
       {
@@ -1135,7 +1223,7 @@
         "key": "Clean Orphaned Data",
         "location": {
           "startingColumn": 24,
-          "startingLine": 1129
+          "startingLine": 1198
         }
       },
       {
@@ -1143,7 +1231,7 @@
         "key": "Checking...",
         "location": {
           "startingColumn": 51,
-          "startingLine": 1045
+          "startingLine": 1114
         }
       },
       {
@@ -1151,7 +1239,7 @@
         "key": "Check Status",
         "location": {
           "startingColumn": 67,
-          "startingLine": 1045
+          "startingLine": 1114
         }
       },
       {
@@ -1159,7 +1247,7 @@
         "key": "Run diagnostics to check for sync issues",
         "location": {
           "startingColumn": 27,
-          "startingLine": 1050
+          "startingLine": 1119
         }
       },
       {
@@ -1167,7 +1255,7 @@
         "key": "Auto-Fix Issues",
         "location": {
           "startingColumn": 28,
-          "startingLine": 1052
+          "startingLine": 1121
         }
       },
       {
@@ -1175,7 +1263,7 @@
         "key": "Automatically detect and resolve common sync problems",
         "location": {
           "startingColumn": 27,
-          "startingLine": 1058
+          "startingLine": 1127
         }
       },
       {
@@ -1183,7 +1271,7 @@
         "key": "Advanced Recovery Options",
         "location": {
           "startingColumn": 30,
-          "startingLine": 1067
+          "startingLine": 1136
         }
       },
       {
@@ -1191,7 +1279,7 @@
         "key": "⚠️ These options should only be used when guided by support",
         "location": {
           "startingColumn": 30,
-          "startingLine": 1071
+          "startingLine": 1140
         }
       },
       {
@@ -1199,7 +1287,7 @@
         "key": "Clean Orphaned Data",
         "location": {
           "startingColumn": 36,
-          "startingLine": 1093
+          "startingLine": 1162
         }
       },
       {
@@ -1207,7 +1295,7 @@
         "key": "Remove conversations that aren't linked to people",
         "location": {
           "startingColumn": 35,
-          "startingLine": 1097
+          "startingLine": 1166
         }
       },
       {
@@ -1215,7 +1303,7 @@
         "key": "Test Direct Report Sync",
         "location": {
           "startingColumn": 32,
-          "startingLine": 1101
+          "startingLine": 1170
         }
       },
       {
@@ -1223,7 +1311,7 @@
         "key": "Check if direct report status is syncing correctly",
         "location": {
           "startingColumn": 31,
-          "startingLine": 1107
+          "startingLine": 1176
         }
       },
       {
@@ -1231,7 +1319,7 @@
         "key": "Reset from Cloud",
         "location": {
           "startingColumn": 36,
-          "startingLine": 1077
+          "startingLine": 1146
         }
       },
       {
@@ -1239,7 +1327,7 @@
         "key": "Delete all local data and rebuild from cloud",
         "location": {
           "startingColumn": 35,
-          "startingLine": 1081
+          "startingLine": 1150
         }
       },
       {
@@ -1247,7 +1335,7 @@
         "key": "Reset Sync State",
         "location": {
           "startingColumn": 36,
-          "startingLine": 1083
+          "startingLine": 1152
         }
       },
       {
@@ -1255,7 +1343,7 @@
         "key": "Force a complete sync on next operation",
         "location": {
           "startingColumn": 35,
-          "startingLine": 1088
+          "startingLine": 1157
         }
       },
       {
@@ -1263,7 +1351,7 @@
         "key": "Reset",
         "location": {
           "startingColumn": 28,
-          "startingLine": 1122
+          "startingLine": 1191
         }
       },
       {
@@ -1271,7 +1359,7 @@
         "key": "Cancel",
         "location": {
           "startingColumn": 28,
-          "startingLine": 1125
+          "startingLine": 1194
         }
       },
       {
@@ -1279,7 +1367,7 @@
         "key": "This will delete all local data and rebuild from the cloud. Only use if guided by support.",
         "location": {
           "startingColumn": 26,
-          "startingLine": 1127
+          "startingLine": 1196
         }
       },
       {
@@ -1287,7 +1375,7 @@
         "key": "Clean",
         "location": {
           "startingColumn": 28,
-          "startingLine": 1130
+          "startingLine": 1199
         }
       },
       {
@@ -1295,7 +1383,7 @@
         "key": "Cancel",
         "location": {
           "startingColumn": 28,
-          "startingLine": 1137
+          "startingLine": 1206
         }
       },
       {
@@ -1303,7 +1391,7 @@
         "key": "This will remove conversations that aren't properly linked to people. This action cannot be undone.",
         "location": {
           "startingColumn": 26,
-          "startingLine": 1139
+          "startingLine": 1208
         }
       },
       {
@@ -1311,7 +1399,7 @@
         "key": "Drop a file to import org chart",
         "location": {
           "startingColumn": 34,
-          "startingLine": 2534
+          "startingLine": 2603
         }
       },
       {
@@ -1319,7 +1407,7 @@
         "key": "Supports: PDF, PowerPoint (.ppt/.pptx), Images (.jpg/.png)",
         "location": {
           "startingColumn": 34,
-          "startingLine": 2536
+          "startingLine": 2605
         }
       }
     ]

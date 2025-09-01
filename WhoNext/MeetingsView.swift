@@ -358,6 +358,26 @@ struct MeetingCard: View {
     @State private var isExpanded = false
     @State private var showingBrief = false
     
+    // Helper function to extract name from email or return original string
+    private func extractName(from attendee: String) -> String {
+        // If it's an email address, extract the name part
+        if attendee.contains("@") {
+            // Take the part before @ and clean it up
+            let namePart = attendee.split(separator: "@").first ?? Substring(attendee)
+            let name = String(namePart)
+                .replacingOccurrences(of: ".", with: " ")
+                .replacingOccurrences(of: "_", with: " ")
+                .replacingOccurrences(of: "-", with: " ")
+            
+            // Capitalize each word
+            return name.split(separator: " ")
+                .map { $0.prefix(1).uppercased() + $0.dropFirst().lowercased() }
+                .joined(separator: " ")
+        }
+        // If it's already a name, return as is
+        return attendee
+    }
+    
     var body: some View {
         GroupBox {
             VStack(alignment: .leading, spacing: 12) {
@@ -397,22 +417,26 @@ struct MeetingCard: View {
                     }
                 }
                 
-                // Attendees
+                // Attendees (excluding current user)
                 if let attendees = meeting.attendees, !attendees.isEmpty {
-                    ScrollView(.horizontal, showsIndicators: false) {
-                        HStack(spacing: 8) {
-                            ForEach(attendees.prefix(5), id: \.self) { attendee in
-                                Text(attendee)
-                                    .font(.caption)
-                                    .padding(.horizontal, 8)
-                                    .padding(.vertical, 2)
-                                    .background(Color(NSColor.controlBackgroundColor))
-                                    .cornerRadius(10)
-                            }
-                            if attendees.count > 5 {
-                                Text("+\(attendees.count - 5)")
-                                    .font(.caption)
-                                    .foregroundColor(.secondary)
+                    let filteredAttendees = attendees.filter { !UserProfile.shared.isCurrentUser($0) }
+                    if !filteredAttendees.isEmpty {
+                        ScrollView(.horizontal, showsIndicators: false) {
+                            HStack(spacing: 8) {
+                                ForEach(filteredAttendees.prefix(5), id: \.self) { attendee in
+                                    Text(extractName(from: attendee))
+                                        .font(.caption)
+                                        .padding(.horizontal, 8)
+                                        .padding(.vertical, 2)
+                                        .background(Color(NSColor.controlBackgroundColor))
+                                        .cornerRadius(10)
+                                        .help(attendee) // Show full email on hover
+                                }
+                                if filteredAttendees.count > 5 {
+                                    Text("+\(filteredAttendees.count - 5)")
+                                        .font(.caption)
+                                        .foregroundColor(.secondary)
+                                }
                             }
                         }
                     }
@@ -428,8 +452,8 @@ struct MeetingCard: View {
                     .buttonStyle(.bordered)
                     .controlSize(.small)
                     .popover(isPresented: $showingBrief) {
-                        PreMeetingBriefView(meeting: meeting)
-                            .frame(width: 400, height: 500)
+                        PreMeetingBriefView(meeting: meeting, showingPopover: $showingBrief)
+                            .frame(width: 600, height: 700)
                     }
                     
                     // Join meeting (if URL available)
@@ -474,8 +498,22 @@ struct MeetingCard: View {
     
     private var timeString: String {
         let formatter = DateFormatter()
-        formatter.timeStyle = .short
-        return formatter.string(from: meeting.startDate)
+        
+        // Check if the meeting is today
+        let calendar = Calendar.current
+        if calendar.isDateInToday(meeting.startDate) {
+            // For today, just show the time
+            formatter.timeStyle = .short
+            return formatter.string(from: meeting.startDate)
+        } else {
+            // For other days, show day and time
+            formatter.dateFormat = "EEE" // Short day format (Mon, Tue, etc.)
+            let dayString = formatter.string(from: meeting.startDate)
+            formatter.timeStyle = .short
+            formatter.dateStyle = .none
+            let timeString = formatter.string(from: meeting.startDate)
+            return "\(dayString) • \(timeString)"
+        }
     }
     
     private var isMeetingActive: Bool {
@@ -495,13 +533,123 @@ struct MeetingCard: View {
 // MARK: - Pre-Meeting Brief View
 struct PreMeetingBriefView: View {
     let meeting: UpcomingMeeting
+    @Binding var showingPopover: Bool
     @Environment(\.managedObjectContext) private var viewContext
     @State private var personNotes: [(Person, String?)] = []
+    @State private var showingWindow = false
+    @State private var groupMeetingNotes: [String] = []
+    @State private var aiBriefContent: String? = nil
+    @State private var isGeneratingBrief = false
+    @State private var briefGenerationError: String? = nil
+    @State private var showRawNotes = false
+    
+    enum MeetingType {
+        case oneOnOne
+        case group
+    }
+    
+    // Determine meeting type based on attendee count
+    private var meetingType: MeetingType {
+        let filteredAttendees = (meeting.attendees ?? []).filter { !UserProfile.shared.isCurrentUser($0) }
+        return filteredAttendees.count <= 1 ? .oneOnOne : .group
+    }
+    
+    // Helper function to extract name from email or return original string
+    private func extractName(from attendee: String) -> String {
+        // If it's an email address, extract the name part
+        if attendee.contains("@") {
+            // Take the part before @ and clean it up
+            let namePart = attendee.split(separator: "@").first ?? Substring(attendee)
+            let name = String(namePart)
+                .replacingOccurrences(of: ".", with: " ")
+                .replacingOccurrences(of: "_", with: " ")
+                .replacingOccurrences(of: "-", with: " ")
+            
+            // Capitalize each word
+            return name.split(separator: " ")
+                .map { $0.prefix(1).uppercased() + $0.dropFirst().lowercased() }
+                .joined(separator: " ")
+        }
+        // If it's already a name, return as is
+        return attendee
+    }
     
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text("Pre-Meeting Brief")
-                .font(.headline)
+            // Header with pop-out button and meeting type indicator
+            HStack {
+                HStack(spacing: 8) {
+                    Text("Pre-Meeting Brief")
+                        .font(.headline)
+                    
+                    // Meeting type badge
+                    Text(meetingType == .oneOnOne ? "1:1" : "Group")
+                        .font(.caption)
+                        .fontWeight(.medium)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 2)
+                        .background(meetingType == .oneOnOne ? Color.blue.opacity(0.2) : Color.green.opacity(0.2))
+                        .foregroundColor(meetingType == .oneOnOne ? .blue : .green)
+                        .cornerRadius(4)
+                    
+                    // AI indicator
+                    if aiBriefContent != nil {
+                        HStack(spacing: 4) {
+                            Image(systemName: "sparkles")
+                                .font(.system(size: 10))
+                            Text("AI")
+                                .font(.system(size: 10, weight: .semibold))
+                        }
+                        .foregroundColor(.purple)
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 2)
+                        .background(Color.purple.opacity(0.1))
+                        .cornerRadius(4)
+                    }
+                }
+                
+                Spacer()
+                
+                // Generate/Refresh AI Brief button
+                if !isGeneratingBrief {
+                    Button(action: {
+                        generateAIBrief()
+                    }) {
+                        HStack(spacing: 4) {
+                            Image(systemName: aiBriefContent != nil ? "arrow.clockwise" : "sparkles")
+                                .font(.system(size: 12))
+                            Text(aiBriefContent != nil ? "Refresh" : "Generate AI Brief")
+                                .font(.caption)
+                        }
+                        .foregroundColor(.accentColor)
+                    }
+                    .buttonStyle(.plain)
+                } else {
+                    ProgressView()
+                        .scaleEffect(0.7)
+                }
+                
+                // Toggle view button
+                if aiBriefContent != nil {
+                    Button(action: {
+                        showRawNotes.toggle()
+                    }) {
+                        Image(systemName: showRawNotes ? "doc.text" : "sparkles.rectangle.stack")
+                            .foregroundColor(.secondary)
+                            .help(showRawNotes ? "Show AI Brief" : "Show Raw Notes")
+                    }
+                    .buttonStyle(.plain)
+                }
+                
+                Button(action: {
+                    openInWindow()
+                }) {
+                    Image(systemName: "arrow.up.forward.square")
+                        .foregroundColor(.secondary)
+                        .help("Open in separate window")
+                }
+                .buttonStyle(.plain)
+            }
             
             Text(meeting.title)
                 .font(.title3)
@@ -509,44 +657,378 @@ struct PreMeetingBriefView: View {
             
             Divider()
             
-            if !personNotes.isEmpty {
+            // Show AI Brief if available and not showing raw notes
+            if let aiBrief = aiBriefContent, !showRawNotes {
                 ScrollView {
-                    VStack(alignment: .leading, spacing: 12) {
-                        ForEach(personNotes, id: \.0.identifier) { person, notes in
+                    VStack(alignment: .leading, spacing: 16) {
+                        // Parse and render AI-generated markdown
+                        ForEach(formatAIBriefIntoSections(aiBrief), id: \.self) { section in
                             VStack(alignment: .leading, spacing: 8) {
-                                Text(person.name ?? "Unknown")
-                                    .font(.subheadline)
-                                    .fontWeight(.medium)
-                                
-                                if let notes = notes, !notes.isEmpty {
-                                    Text(notes)
-                                        .font(.caption)
-                                        .foregroundColor(.secondary)
-                                        .lineLimit(3)
+                                // Check if this is a header (starts with ## or is in bold **)
+                                if section.hasPrefix("##") {
+                                    let headerText = section.replacingOccurrences(of: "##", with: "").trimmingCharacters(in: .whitespaces)
+                                    HStack(spacing: 6) {
+                                        Image(systemName: "chevron.right.circle.fill")
+                                            .font(.system(size: 14))
+                                            .foregroundColor(.accentColor)
+                                        Text(headerText)
+                                            .font(.system(.headline, design: .rounded))
+                                            .fontWeight(.semibold)
+                                            .foregroundColor(.primary)
+                                    }
+                                    .padding(.top, 8)
+                                } else if section.hasPrefix("**") && section.hasSuffix("**") {
+                                    // Bold text
+                                    Text(section.replacingOccurrences(of: "**", with: ""))
+                                        .font(.system(.subheadline, design: .rounded))
+                                        .fontWeight(.semibold)
+                                        .foregroundColor(.primary)
+                                } else if section.contains("•") || section.contains("-") || section.hasPrefix("*") {
+                                    // Bullet points
+                                    VStack(alignment: .leading, spacing: 8) {
+                                        ForEach(section.components(separatedBy: .newlines).filter { !$0.isEmpty }, id: \.self) { line in
+                                            HStack(alignment: .top, spacing: 10) {
+                                                let cleanLine = line.trimmingCharacters(in: .whitespaces)
+                                                if cleanLine.hasPrefix("•") || cleanLine.hasPrefix("-") || cleanLine.hasPrefix("*") {
+                                                    Circle()
+                                                        .fill(Color.accentColor.opacity(0.3))
+                                                        .frame(width: 6, height: 6)
+                                                        .offset(y: 8)
+                                                    Text(cleanLine.dropFirst().trimmingCharacters(in: .whitespaces))
+                                                        .font(.system(.body))
+                                                        .foregroundColor(.primary.opacity(0.9))
+                                                        .fixedSize(horizontal: false, vertical: true)
+                                                } else if let firstChar = cleanLine.first, firstChar.isNumber {
+                                                    // Numbered list
+                                                    Text(cleanLine)
+                                                        .font(.system(.body))
+                                                        .foregroundColor(.primary.opacity(0.9))
+                                                        .fixedSize(horizontal: false, vertical: true)
+                                                } else {
+                                                    Text(line)
+                                                        .font(.system(.body))
+                                                        .foregroundColor(.primary.opacity(0.9))
+                                                        .fixedSize(horizontal: false, vertical: true)
+                                                }
+                                            }
+                                        }
+                                    }
+                                    .padding(12)
+                                    .background(Color.accentColor.opacity(0.05))
+                                    .cornerRadius(8)
                                 } else {
-                                    Text("No recent notes")
-                                        .font(.caption)
-                                        .foregroundColor(.secondary)
-                                        .italic()
+                                    // Regular paragraph
+                                    Text(section)
+                                        .font(.system(.body))
+                                        .foregroundColor(.primary.opacity(0.85))
+                                        .lineSpacing(4)
+                                        .fixedSize(horizontal: false, vertical: true)
                                 }
                             }
-                            .padding()
-                            .background(Color(NSColor.controlBackgroundColor))
-                            .cornerRadius(8)
+                        }
+                    }
+                    .padding()
+                    .background(Color(NSColor.controlBackgroundColor).opacity(0.5))
+                    .cornerRadius(10)
+                }
+            } else if briefGenerationError != nil {
+                // Show error state
+                VStack(alignment: .center, spacing: 12) {
+                    Image(systemName: "exclamationmark.triangle")
+                        .font(.largeTitle)
+                        .foregroundColor(.orange)
+                    Text(briefGenerationError!)
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                        .multilineTextAlignment(.center)
+                    Button("Retry") {
+                        generateAIBrief()
+                    }
+                    .buttonStyle(.link)
+                }
+                .frame(maxWidth: .infinity)
+                .padding()
+            } else if aiBriefContent == nil || showRawNotes {
+                // Show raw notes (existing content)
+                // Show meeting agenda from calendar if available
+            if meetingType == .group, let notes = meeting.notes, !notes.isEmpty {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Meeting Agenda")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                    
+                    ScrollView {
+                        VStack(alignment: .leading, spacing: 4) {
+                            ForEach(formatAgendaItems(notes), id: \.self) { item in
+                                HStack(alignment: .top, spacing: 8) {
+                                    Text("•")
+                                        .foregroundColor(.secondary)
+                                    Text(item)
+                                        .font(.system(.body, design: .default))
+                                        .fixedSize(horizontal: false, vertical: true)
+                                        .textSelection(.enabled)
+                                }
+                                .padding(.vertical, 2)
+                            }
+                        }
+                        .padding()
+                        .background(Color(NSColor.controlBackgroundColor))
+                        .cornerRadius(8)
+                    }
+                    .frame(maxHeight: 200)
+                }
+            }
+            
+            // Show content based on meeting type
+            if meetingType == .oneOnOne {
+                // For 1:1 meetings, show person notes with better formatting
+                if let attendees = meeting.attendees, !attendees.isEmpty {
+                    let filteredAttendees = attendees.filter { !UserProfile.shared.isCurrentUser($0) }
+                    if !filteredAttendees.isEmpty {
+                        VStack(alignment: .leading, spacing: 8) {
+                            HStack {
+                                Image(systemName: "doc.text.fill")
+                                    .font(.system(size: 14))
+                                    .foregroundColor(.accentColor)
+                                Text("Recent Notes")
+                                    .font(.system(.subheadline, design: .rounded))
+                                    .fontWeight(.semibold)
+                                    .foregroundColor(.primary)
+                            }
+                            .padding(.bottom, 4)
+                        
+                        ScrollView {
+                            VStack(alignment: .leading, spacing: 20) {
+                                if !personNotes.isEmpty {
+                                // Show people with notes
+                                ForEach(personNotes, id: \.0.identifier) { person, notes in
+                                    VStack(alignment: .leading, spacing: 12) {
+                                        HStack {
+                                            Image(systemName: "person.circle.fill")
+                                                .font(.system(size: 20))
+                                                .foregroundColor(.accentColor)
+                                            Text(person.name ?? "Unknown")
+                                                .font(.system(.body, design: .rounded))
+                                                .fontWeight(.semibold)
+                                        }
+                                        
+                                        if let notes = notes, !notes.isEmpty {
+                                            // Format and display notes with modern card-based design
+                                            VStack(alignment: .leading, spacing: 16) {
+                                                ForEach(formatNotesIntoSections(notes), id: \.self) { section in
+                                                    VStack(alignment: .leading, spacing: 8) {
+                                                        // Check if section looks like a header
+                                                        if section.hasPrefix("#") || (section.uppercased() == section && section.count < 50 && section.count > 2) || section.hasSuffix(":") {
+                                                            HStack(spacing: 6) {
+                                                                Image(systemName: "chevron.right.circle.fill")
+                                                                    .font(.system(size: 12))
+                                                                    .foregroundColor(.accentColor)
+                                                                Text(section.replacingOccurrences(of: "#", with: "")
+                                                                    .replacingOccurrences(of: ":", with: "")
+                                                                    .trimmingCharacters(in: .whitespaces))
+                                                                    .font(.system(.subheadline, design: .rounded))
+                                                                    .fontWeight(.semibold)
+                                                                    .foregroundColor(.primary)
+                                                            }
+                                                            .padding(.bottom, 4)
+                                                        } else if section.contains("•") || section.contains("-") || section.contains("*") {
+                                                            // Bullet points with better spacing
+                                                            VStack(alignment: .leading, spacing: 10) {
+                                                                ForEach(section.components(separatedBy: .newlines).filter { !$0.isEmpty }, id: \.self) { line in
+                                                                    HStack(alignment: .top, spacing: 10) {
+                                                                        let cleanLine = line.trimmingCharacters(in: .whitespaces)
+                                                                        if cleanLine.first == "•" || cleanLine.first == "-" || cleanLine.first == "*" {
+                                                                            Circle()
+                                                                                .fill(Color.accentColor.opacity(0.3))
+                                                                                .frame(width: 6, height: 6)
+                                                                                .offset(y: 6)
+                                                                            Text(cleanLine.dropFirst()
+                                                                                .trimmingCharacters(in: .whitespaces))
+                                                                                .font(.system(.body, design: .default))
+                                                                                .foregroundColor(.primary.opacity(0.9))
+                                                                                .fixedSize(horizontal: false, vertical: true)
+                                                                                .lineSpacing(2)
+                                                                        } else if let firstChar = cleanLine.first, firstChar.isNumber {
+                                                                            // Numbered list
+                                                                            let numberEnd = cleanLine.firstIndex(where: { !$0.isNumber && $0 != "." && $0 != ")" }) ?? cleanLine.endIndex
+                                                                            let number = String(cleanLine[..<numberEnd])
+                                                                            let content = String(cleanLine[numberEnd...]).trimmingCharacters(in: .whitespaces)
+                                                                            
+                                                                            HStack(alignment: .top, spacing: 8) {
+                                                                                Text(number)
+                                                                                    .font(.system(.caption, design: .monospaced))
+                                                                                    .foregroundColor(.accentColor)
+                                                                                    .frame(minWidth: 20, alignment: .trailing)
+                                                                                Text(content)
+                                                                                    .font(.system(.body, design: .default))
+                                                                                    .foregroundColor(.primary.opacity(0.9))
+                                                                                    .fixedSize(horizontal: false, vertical: true)
+                                                                                    .lineSpacing(2)
+                                                                            }
+                                                                        } else {
+                                                                            Text(line)
+                                                                                .font(.system(.body, design: .default))
+                                                                                .foregroundColor(.primary.opacity(0.9))
+                                                                                .fixedSize(horizontal: false, vertical: true)
+                                                                                .lineSpacing(2)
+                                                                        }
+                                                                    }
+                                                                    .padding(.horizontal, 8)
+                                                                }
+                                                            }
+                                                            .padding(.vertical, 6)
+                                                            .padding(.horizontal, 8)
+                                                            .background(Color.accentColor.opacity(0.05))
+                                                            .cornerRadius(6)
+                                                        } else {
+                                                            // Regular paragraph text
+                                                            Text(section)
+                                                                .font(.system(.body, design: .default))
+                                                                .foregroundColor(.primary.opacity(0.85))
+                                                                .lineSpacing(4)
+                                                                .fixedSize(horizontal: false, vertical: true)
+                                                                .padding(.horizontal, 8)
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                            .padding(.leading, 16)
+                                        } else {
+                                            HStack(spacing: 8) {
+                                                Image(systemName: "note.text")
+                                                    .font(.system(size: 14))
+                                                    .foregroundColor(.secondary.opacity(0.5))
+                                                Text("No recent notes available")
+                                                    .font(.system(.body, design: .default))
+                                                    .foregroundColor(.secondary)
+                                                    .italic()
+                                            }
+                                            .padding(.horizontal, 8)
+                                            .padding(.leading, 16)
+                                        }
+                                    }
+                                    .padding(16)
+                                    .background(Color(NSColor.controlBackgroundColor))
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 10)
+                                            .stroke(Color.secondary.opacity(0.1), lineWidth: 1)
+                                    )
+                                    .cornerRadius(10)
+                                    .shadow(color: .black.opacity(0.05), radius: 2, x: 0, y: 1)
+                                }
+                            }
+                            
+                            // Show remaining attendees without Person records
+                            let matchedNames = personNotes.compactMap { person, _ in person.name }
+                            let unmatchedAttendees = filteredAttendees.filter { attendee in
+                                let extractedName = extractName(from: attendee)
+                                return !matchedNames.contains(where: { name in
+                                    name.localizedCaseInsensitiveContains(extractedName) ||
+                                    extractedName.localizedCaseInsensitiveContains(name)
+                                })
+                            }
+                            
+                            if !unmatchedAttendees.isEmpty {
+                                ForEach(unmatchedAttendees, id: \.self) { attendee in
+                                    VStack(alignment: .leading, spacing: 10) {
+                                        HStack {
+                                            Image(systemName: "person.crop.circle.badge.questionmark")
+                                                .font(.system(size: 20))
+                                                .foregroundColor(.secondary.opacity(0.7))
+                                            Text(extractName(from: attendee))
+                                                .font(.system(.body, design: .rounded))
+                                                .fontWeight(.medium)
+                                                .foregroundColor(.primary)
+                                        }
+                                        HStack(spacing: 8) {
+                                            Image(systemName: "info.circle")
+                                                .font(.system(size: 12))
+                                                .foregroundColor(.secondary.opacity(0.5))
+                                            Text("No profile created yet")
+                                                .font(.system(.caption, design: .default))
+                                                .foregroundColor(.secondary)
+                                                .italic()
+                                        }
+                                        .padding(.leading, 28)
+                                    }
+                                    .padding(16)
+                                    .background(Color(NSColor.controlBackgroundColor).opacity(0.3))
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 10)
+                                            .stroke(Color.secondary.opacity(0.05), lineWidth: 1)
+                                    )
+                                    .cornerRadius(10)
+                                }
+                            }
+                        }
+                    }
+                }
+                    } // Close filtered attendees if
+                } // Close attendees if
+            } else if meetingType == .group {
+                // For group meetings, show different content
+                if let attendees = meeting.attendees, !attendees.isEmpty {
+                    let filteredAttendees = attendees.filter { !UserProfile.shared.isCurrentUser($0) }
+                    
+                    VStack(alignment: .leading, spacing: 12) {
+                        // Show attendee list
+                        Text("Participants (\(filteredAttendees.count))")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                        
+                        HStack {
+                            ForEach(Array(filteredAttendees.prefix(5)), id: \.self) { attendee in
+                                Text(extractName(from: attendee))
+                                    .font(.caption)
+                                    .padding(.horizontal, 8)
+                                    .padding(.vertical, 4)
+                                    .background(Color(NSColor.controlBackgroundColor))
+                                    .cornerRadius(4)
+                            }
+                            if filteredAttendees.count > 5 {
+                                Text("+\(filteredAttendees.count - 5)")
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                            }
+                        }
+                        
+                        // Show group meeting history if available
+                        if !groupMeetingNotes.isEmpty {
+                            Divider()
+                            
+                            Text("Previous Group Meetings")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                            
+                            ScrollView {
+                                VStack(alignment: .leading, spacing: 8) {
+                                    ForEach(groupMeetingNotes, id: \.self) { note in
+                                        Text(note)
+                                            .font(.system(.body, design: .default))
+                                            .lineSpacing(4)
+                                            .textSelection(.enabled)
+                                            .padding()
+                                            .background(Color(NSColor.controlBackgroundColor))
+                                            .cornerRadius(8)
+                                    }
+                                }
+                            }
+                            .frame(maxHeight: 200)
                         }
                     }
                 }
             } else {
                 VStack(spacing: 8) {
-                    Image(systemName: "doc.text")
+                    Image(systemName: "person.3")
                         .font(.largeTitle)
                         .foregroundColor(.secondary)
-                    Text("No participant information available")
+                    Text("No attendees listed")
                         .font(.caption)
                         .foregroundColor(.secondary)
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
+            } // Close the if/else for AI content vs raw notes
         }
         .padding()
         .onAppear {
@@ -557,26 +1039,784 @@ struct PreMeetingBriefView: View {
     private func loadParticipantNotes() {
         guard let attendees = meeting.attendees else { return }
         
-        let fetchRequest = NSFetchRequest<Person>(entityName: "Person")
+        // For group meetings, try to find matching group meetings instead of individual notes
+        if meetingType == .group {
+            loadGroupMeetingNotes()
+        } else {
+            // For 1:1 meetings, load individual conversation notes
+            let fetchRequest = NSFetchRequest<Person>(entityName: "Person")
+            
+            do {
+                let allPeople = try viewContext.fetch(fetchRequest)
+                
+                personNotes = attendees.compactMap { attendee in
+                    // Skip current user
+                    if UserProfile.shared.isCurrentUser(attendee) {
+                        return nil
+                    }
+                    
+                    // Extract name from email if needed
+                    let extractedName = extractName(from: attendee)
+                    
+                    // Try to find a matching person by name
+                    if let person = allPeople.first(where: { person in
+                        // Check if person's name matches the extracted name
+                        if let personName = person.name {
+                            // Exact match
+                            if personName.localizedCaseInsensitiveCompare(extractedName) == .orderedSame {
+                                return true
+                            }
+                            // Check if the person's name contains all parts of the extracted name
+                            let extractedParts = extractedName.split(separator: " ").map { String($0).lowercased() }
+                            let personParts = personName.split(separator: " ").map { String($0).lowercased() }
+                            if extractedParts.allSatisfy({ part in
+                                personParts.contains(part)
+                            }) {
+                                return true
+                            }
+                        }
+                        
+                        return false
+                    }) {
+                        // Get most recent conversation notes
+                        let recentNotes = (person.conversations as? Set<Conversation>)?
+                            .sorted { ($0.date ?? Date.distantPast) > ($1.date ?? Date.distantPast) }
+                            .first?.notes
+                        
+                        return (person, recentNotes)
+                    }
+                    return nil
+                }
+            } catch {
+                print("Error fetching participant notes: \(error)")
+            }
+        }
+    }
+    
+    private func loadGroupMeetingNotes() {
+        let fetchRequest = NSFetchRequest<GroupMeeting>(entityName: "GroupMeeting")
+        fetchRequest.sortDescriptors = [NSSortDescriptor(keyPath: \GroupMeeting.date, ascending: false)]
+        fetchRequest.fetchLimit = 3 // Get last 3 group meetings
         
         do {
-            let allPeople = try viewContext.fetch(fetchRequest)
+            let recentMeetings = try viewContext.fetch(fetchRequest)
             
-            personNotes = attendees.compactMap { attendeeName in
-                if let person = allPeople.first(where: { 
-                    $0.name?.localizedCaseInsensitiveContains(attendeeName) == true 
-                }) {
-                    // Get most recent conversation notes
-                    let recentNotes = (person.conversations as? Set<Conversation>)?
-                        .sorted { ($0.date ?? Date.distantPast) > ($1.date ?? Date.distantPast) }
-                        .first?.notes
+            // Filter for meetings with similar attendee sets
+            let filteredAttendees = (meeting.attendees ?? []).filter { !UserProfile.shared.isCurrentUser($0) }
+            let attendeeSet = Set(filteredAttendees.map { extractName(from: $0).lowercased() })
+            
+            groupMeetingNotes = recentMeetings.compactMap { groupMeeting in
+                // Check if this group meeting has a similar attendee set
+                if let meetingAttendees = groupMeeting.attendees as? Set<Person> {
+                    let meetingAttendeeNames = Set(meetingAttendees.compactMap { $0.name?.lowercased() })
                     
-                    return (person, recentNotes)
+                    // If there's significant overlap, include this meeting's notes
+                    let intersection = attendeeSet.intersection(meetingAttendeeNames)
+                    if intersection.count >= min(2, attendeeSet.count - 1) { // At least 2 or most attendees match
+                        if let summary = groupMeeting.summary {
+                            let dateFormatter = DateFormatter()
+                            dateFormatter.dateStyle = .medium
+                            let dateString = groupMeeting.date.map { dateFormatter.string(from: $0) } ?? "Unknown date"
+                            return "**\(dateString)**: \(summary)"
+                        }
+                    }
                 }
                 return nil
             }
         } catch {
-            print("Error fetching participant notes: \(error)")
+            print("Error fetching group meeting notes: \(error)")
         }
+    }
+    
+    // Helper function to format notes into readable sections
+    private func formatNotesIntoSections(_ notes: String) -> [String] {
+        var formattedSections: [String] = []
+        
+        // First, try to identify clear sections (headers, bullet points, paragraphs)
+        let lines = notes.components(separatedBy: .newlines)
+        var currentSection = ""
+        var isInList = false
+        
+        for line in lines {
+            let trimmed = line.trimmingCharacters(in: .whitespacesAndNewlines)
+            
+            // Check if this is a header (all caps, or starts with #, or ends with :)
+            let isHeader = (trimmed.uppercased() == trimmed && trimmed.count < 50 && trimmed.count > 2) ||
+                          trimmed.hasPrefix("#") ||
+                          (trimmed.hasSuffix(":") && trimmed.count < 50)
+            
+            // Check if this is a bullet point
+            let isBullet = trimmed.hasPrefix("•") || trimmed.hasPrefix("-") || trimmed.hasPrefix("*") ||
+                          (trimmed.first?.isNumber ?? false && (trimmed.contains(".") || trimmed.contains(")")))
+            
+            if isHeader && !currentSection.isEmpty {
+                // Save current section and start new one with header
+                formattedSections.append(currentSection.trimmingCharacters(in: .whitespacesAndNewlines))
+                currentSection = trimmed
+                isInList = false
+            } else if isBullet {
+                if !isInList && !currentSection.isEmpty {
+                    // Save current section and start a list
+                    formattedSections.append(currentSection.trimmingCharacters(in: .whitespacesAndNewlines))
+                    currentSection = trimmed
+                } else {
+                    // Continue adding to list
+                    currentSection += "\n" + trimmed
+                }
+                isInList = true
+            } else if trimmed.isEmpty {
+                // Empty line - potential section break
+                if !currentSection.isEmpty {
+                    formattedSections.append(currentSection.trimmingCharacters(in: .whitespacesAndNewlines))
+                    currentSection = ""
+                    isInList = false
+                }
+            } else {
+                // Regular text
+                if isInList && !currentSection.isEmpty {
+                    // End the list and start new section
+                    formattedSections.append(currentSection.trimmingCharacters(in: .whitespacesAndNewlines))
+                    currentSection = trimmed
+                    isInList = false
+                } else {
+                    // Add to current section
+                    if !currentSection.isEmpty {
+                        currentSection += " "
+                    }
+                    currentSection += trimmed
+                }
+            }
+        }
+        
+        // Add any remaining content
+        if !currentSection.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            formattedSections.append(currentSection.trimmingCharacters(in: .whitespacesAndNewlines))
+        }
+        
+        // If no sections were created, split by sentences for readability
+        if formattedSections.isEmpty || (formattedSections.count == 1 && formattedSections[0].count > 300) {
+            let text = formattedSections.first ?? notes
+            let sentences = text.replacingOccurrences(of: ". ", with: ".\n").components(separatedBy: "\n")
+            var newSections: [String] = []
+            var currentParagraph = ""
+            
+            for (index, sentence) in sentences.enumerated() {
+                let trimmed = sentence.trimmingCharacters(in: .whitespacesAndNewlines)
+                if !trimmed.isEmpty {
+                    if !currentParagraph.isEmpty {
+                        currentParagraph += " "
+                    }
+                    currentParagraph += trimmed
+                    if !trimmed.hasSuffix(".") && !trimmed.hasSuffix("!") && !trimmed.hasSuffix("?") {
+                        currentParagraph += "."
+                    }
+                    
+                    // Create new paragraph every 2-3 sentences or at natural breaks
+                    if (index + 1) % 3 == 0 || trimmed.hasSuffix(":") || index == sentences.count - 1 {
+                        newSections.append(currentParagraph.trimmingCharacters(in: .whitespacesAndNewlines))
+                        currentParagraph = ""
+                    }
+                }
+            }
+            
+            if !currentParagraph.isEmpty {
+                newSections.append(currentParagraph.trimmingCharacters(in: .whitespacesAndNewlines))
+            }
+            
+            return newSections.isEmpty ? [notes] : newSections
+        }
+        
+        return formattedSections
+    }
+    
+    // Helper function to format agenda items from calendar notes
+    private func formatAgendaItems(_ notes: String) -> [String] {
+        // Look for common agenda patterns
+        let lines = notes.components(separatedBy: .newlines).filter { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+        
+        var agendaItems: [String] = []
+        
+        for line in lines {
+            let trimmed = line.trimmingCharacters(in: .whitespacesAndNewlines)
+            
+            // Skip common headers
+            if trimmed.lowercased().contains("agenda") || trimmed.lowercased().contains("topics") {
+                continue
+            }
+            
+            // Remove common bullet points and numbering
+            var cleanedLine = trimmed
+            if cleanedLine.hasPrefix("•") || cleanedLine.hasPrefix("-") || cleanedLine.hasPrefix("*") {
+                cleanedLine = String(cleanedLine.dropFirst()).trimmingCharacters(in: .whitespaces)
+            } else if let firstChar = cleanedLine.first, firstChar.isNumber {
+                // Remove numbered lists (1. 2. etc)
+                if let dotIndex = cleanedLine.firstIndex(of: ".") {
+                    cleanedLine = String(cleanedLine[cleanedLine.index(after: dotIndex)...]).trimmingCharacters(in: .whitespaces)
+                }
+            }
+            
+            if !cleanedLine.isEmpty {
+                agendaItems.append(cleanedLine)
+            }
+        }
+        
+        // If no structured items found, just split by sentences
+        if agendaItems.isEmpty {
+            return notes.components(separatedBy: ". ").filter { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+        }
+        
+        return agendaItems
+    }
+    
+    // Format AI-generated brief into sections for display
+    private func formatAIBriefIntoSections(_ brief: String) -> [String] {
+        var sections: [String] = []
+        let lines = brief.components(separatedBy: .newlines)
+        var currentSection = ""
+        
+        for line in lines {
+            let trimmed = line.trimmingCharacters(in: .whitespacesAndNewlines)
+            
+            if trimmed.isEmpty {
+                // Empty line - save current section if not empty
+                if !currentSection.isEmpty {
+                    sections.append(currentSection)
+                    currentSection = ""
+                }
+            } else if trimmed.hasPrefix("##") || trimmed.hasPrefix("#") {
+                // Header - save previous section and start new one
+                if !currentSection.isEmpty {
+                    sections.append(currentSection)
+                }
+                sections.append(trimmed)
+                currentSection = ""
+            } else if trimmed.hasPrefix("**") && trimmed.hasSuffix("**") && trimmed.count < 100 {
+                // Bold header line
+                if !currentSection.isEmpty {
+                    sections.append(currentSection)
+                }
+                sections.append(trimmed)
+                currentSection = ""
+            } else {
+                // Add to current section
+                if !currentSection.isEmpty {
+                    currentSection += "\n"
+                }
+                currentSection += trimmed
+            }
+        }
+        
+        // Add any remaining content
+        if !currentSection.isEmpty {
+            sections.append(currentSection)
+        }
+        
+        return sections.filter { !$0.isEmpty }
+    }
+    
+    // Generate AI brief for the meeting
+    private func generateAIBrief() {
+        guard !isGeneratingBrief else { return }
+        
+        isGeneratingBrief = true
+        briefGenerationError = nil
+        
+        // For 1:1 meetings, use the person-specific AI service
+        if meetingType == .oneOnOne && !personNotes.isEmpty,
+           let (person, _) = personNotes.first {
+            
+            PreMeetingBriefService.generateBrief(for: person, apiKey: AIService.shared.apiKey) { result in
+                DispatchQueue.main.async {
+                    switch result {
+                    case .success(let brief):
+                        self.aiBriefContent = brief
+                        self.isGeneratingBrief = false
+                    case .failure(let error):
+                        self.briefGenerationError = "Failed to generate AI brief: \(error.localizedDescription)"
+                        self.isGeneratingBrief = false
+                    }
+                }
+            }
+        } else {
+            // For group meetings or when no person is found, generate a generic brief
+            generateGenericAIBrief()
+        }
+    }
+    
+    // Generate generic AI brief for group meetings or unknown attendees
+    private func generateGenericAIBrief() {
+        var context = "=== PRE-MEETING BRIEF ===\n"
+        context += "Meeting: \(meeting.title)\n"
+        context += "Type: \(meetingType == .group ? "Group Meeting" : "1:1 Meeting")\n"
+        
+        if let attendees = meeting.attendees {
+            context += "Attendees: \(attendees.joined(separator: ", "))\n"
+        }
+        
+        if let notes = meeting.notes, !notes.isEmpty {
+            context += "\nMeeting Agenda/Notes:\n\(notes)\n"
+        }
+        
+        // Add group meeting history if available
+        if !groupMeetingNotes.isEmpty {
+            context += "\nPrevious Group Meeting Summaries:\n"
+            for note in groupMeetingNotes {
+                context += "- \(note)\n"
+            }
+        }
+        
+        // Add raw person notes if available
+        if !personNotes.isEmpty {
+            context += "\nParticipant Notes:\n"
+            for (person, notes) in personNotes {
+                if let notes = notes {
+                    context += "\n\(person.name ?? "Unknown"):\n\(notes)\n"
+                }
+            }
+        }
+        
+        let prompt = """
+        Generate a comprehensive pre-meeting brief based on the context provided. Focus on:
+        1. Key discussion topics and agenda items
+        2. Action items and follow-ups from previous meetings
+        3. Strategic recommendations for this meeting
+        4. Important context about participants (if available)
+        
+        Format the output with clear sections using markdown headers (##) and bullet points.
+        Be concise but thorough. Highlight the most important information.
+        """
+        
+        Task {
+            do {
+                let response = try await AIService.shared.sendMessage(prompt, context: context)
+                DispatchQueue.main.async {
+                    self.aiBriefContent = response
+                    self.isGeneratingBrief = false
+                }
+            } catch {
+                DispatchQueue.main.async {
+                    self.briefGenerationError = "Failed to generate AI brief: \(error.localizedDescription)"
+                    self.isGeneratingBrief = false
+                }
+            }
+        }
+    }
+    
+    private func openInWindow() {
+        // Create a new window for the pre-meeting brief
+        let window = NSWindow(
+            contentRect: NSRect(x: 0, y: 0, width: 700, height: 800),
+            styleMask: [.titled, .closable, .resizable, .miniaturizable],
+            backing: .buffered,
+            defer: false
+        )
+        
+        window.title = "Pre-Meeting Brief: \(meeting.title)"
+        window.center()
+        
+        // Create a SwiftUI view for the window content
+        let contentView = VStack(alignment: .leading, spacing: 16) {
+            Text("Pre-Meeting Brief")
+                .font(.headline)
+            
+            Text(meeting.title)
+                .font(.title3)
+                .fontWeight(.semibold)
+            
+            Divider()
+            
+            // Reuse the same content as the popover
+            PreMeetingBriefWindowContent(meeting: meeting)
+                .environment(\.managedObjectContext, viewContext)
+        }
+        .padding()
+        
+        window.contentView = NSHostingView(rootView: contentView)
+        window.makeKeyAndOrderFront(nil)
+        
+        // Close the popover
+        showingPopover = false
+    }
+}
+
+// MARK: - Pre-Meeting Brief Window Content
+struct PreMeetingBriefWindowContent: View {
+    let meeting: UpcomingMeeting
+    @Environment(\.managedObjectContext) private var viewContext
+    @State private var personNotes: [(Person, String?)] = []
+    @State private var groupMeetingNotes: [String] = []
+    
+    enum MeetingType {
+        case oneOnOne
+        case group
+    }
+    
+    // Determine meeting type based on attendee count
+    private var meetingType: MeetingType {
+        let filteredAttendees = (meeting.attendees ?? []).filter { !UserProfile.shared.isCurrentUser($0) }
+        return filteredAttendees.count <= 1 ? .oneOnOne : .group
+    }
+    
+    // Helper function to extract name from email or return original string
+    private func extractName(from attendee: String) -> String {
+        // If it's an email address, extract the name part
+        if attendee.contains("@") {
+            // Take the part before @ and clean it up
+            let namePart = attendee.split(separator: "@").first ?? Substring(attendee)
+            let name = String(namePart)
+                .replacingOccurrences(of: ".", with: " ")
+                .replacingOccurrences(of: "_", with: " ")
+                .replacingOccurrences(of: "-", with: " ")
+            
+            // Capitalize each word
+            return name.split(separator: " ")
+                .map { $0.prefix(1).uppercased() + $0.dropFirst().lowercased() }
+                .joined(separator: " ")
+        }
+        // If it's already a name, return as is
+        return attendee
+    }
+    
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 16) {
+                // Show attendees section (excluding current user)
+                if let attendees = meeting.attendees, !attendees.isEmpty {
+                    let filteredAttendees = attendees.filter { !UserProfile.shared.isCurrentUser($0) }
+                    if !filteredAttendees.isEmpty {
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("Attendees")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                            
+                            VStack(alignment: .leading, spacing: 12) {
+                                if !personNotes.isEmpty {
+                                    // Show people with notes
+                                    ForEach(personNotes, id: \.0.identifier) { person, notes in
+                                        VStack(alignment: .leading, spacing: 8) {
+                                            HStack {
+                                                Image(systemName: "person.circle.fill")
+                                                    .foregroundColor(.accentColor)
+                                                Text(person.name ?? "Unknown")
+                                                    .font(.subheadline)
+                                                    .fontWeight(.medium)
+                                            }
+                                            
+                                            if let notes = notes, !notes.isEmpty {
+                                                // Format notes with proper spacing and readability
+                                                VStack(alignment: .leading, spacing: 8) {
+                                                    ForEach(formatNotesIntoSections(notes), id: \.self) { section in
+                                                        if let attributedString = try? AttributedString(markdown: section) {
+                                                            Text(attributedString)
+                                                                .font(.system(.body, design: .default))
+                                                                .foregroundColor(.primary)
+                                                                .lineSpacing(4)
+                                                                .textSelection(.enabled)
+                                                        } else {
+                                                            Text(section)
+                                                                .font(.system(.body, design: .default))
+                                                                .foregroundColor(.primary)
+                                                                .lineSpacing(4)
+                                                                .textSelection(.enabled)
+                                                        }
+                                                    }
+                                                }
+                                                .padding(.leading, 24)
+                                            } else {
+                                                Text("No recent notes")
+                                                    .font(.caption)
+                                                    .foregroundColor(.secondary)
+                                                    .italic()
+                                                    .padding(.leading, 24)
+                                            }
+                                        }
+                                        .padding()
+                                        .background(Color(NSColor.controlBackgroundColor))
+                                        .cornerRadius(8)
+                                    }
+                                }
+                                
+                                // Show remaining attendees without Person records
+                                let matchedNames = personNotes.compactMap { person, _ in person.name }
+                                let unmatchedAttendees = filteredAttendees.filter { attendee in
+                                    let extractedName = extractName(from: attendee)
+                                    return !matchedNames.contains(where: { name in
+                                        name.localizedCaseInsensitiveContains(extractedName) ||
+                                        extractedName.localizedCaseInsensitiveContains(name)
+                                    })
+                                }
+                                
+                                if !unmatchedAttendees.isEmpty {
+                                    ForEach(unmatchedAttendees, id: \.self) { attendee in
+                                        VStack(alignment: .leading, spacing: 8) {
+                                            HStack {
+                                                Image(systemName: "person.circle")
+                                                    .foregroundColor(.secondary)
+                                                Text(extractName(from: attendee))
+                                                    .font(.subheadline)
+                                                    .fontWeight(.medium)
+                                            }
+                                            Text("No profile found")
+                                                .font(.caption)
+                                                .foregroundColor(.secondary)
+                                                .italic()
+                                                .padding(.leading, 24)
+                                        }
+                                        .padding()
+                                        .background(Color(NSColor.controlBackgroundColor).opacity(0.5))
+                                        .cornerRadius(8)
+                                    }
+                                }
+                            }
+                        }
+                    }
+                } else {
+                    VStack(spacing: 8) {
+                        Image(systemName: "person.3")
+                            .font(.largeTitle)
+                            .foregroundColor(.secondary)
+                        Text("No attendees listed")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                }
+            }
+        }
+        .onAppear {
+            loadParticipantNotes()
+        }
+    }
+    
+    private func loadParticipantNotes() {
+        guard let attendees = meeting.attendees else { return }
+        
+        // For group meetings, try to find matching group meetings instead of individual notes
+        if meetingType == .group {
+            loadGroupMeetingNotes()
+        } else {
+            // For 1:1 meetings, load individual conversation notes
+            let fetchRequest = NSFetchRequest<Person>(entityName: "Person")
+            
+            do {
+                let allPeople = try viewContext.fetch(fetchRequest)
+                
+                personNotes = attendees.compactMap { attendee in
+                    // Skip current user
+                    if UserProfile.shared.isCurrentUser(attendee) {
+                        return nil
+                    }
+                    
+                    // Extract name from email if needed
+                    let extractedName = extractName(from: attendee)
+                    
+                    // Try to find a matching person by name
+                    if let person = allPeople.first(where: { person in
+                        // Check if person's name matches the extracted name
+                        if let personName = person.name {
+                            // Exact match
+                            if personName.localizedCaseInsensitiveCompare(extractedName) == .orderedSame {
+                                return true
+                            }
+                            // Check if the person's name contains all parts of the extracted name
+                            let extractedParts = extractedName.split(separator: " ").map { String($0).lowercased() }
+                            let personParts = personName.split(separator: " ").map { String($0).lowercased() }
+                            if extractedParts.allSatisfy({ part in
+                                personParts.contains(part)
+                            }) {
+                                return true
+                            }
+                        }
+                        
+                        return false
+                    }) {
+                        // Get most recent conversation notes
+                        let recentNotes = (person.conversations as? Set<Conversation>)?
+                            .sorted { ($0.date ?? Date.distantPast) > ($1.date ?? Date.distantPast) }
+                            .first?.notes
+                        
+                        return (person, recentNotes)
+                    }
+                    return nil
+                }
+            } catch {
+                print("Error fetching participant notes: \(error)")
+            }
+        }
+    }
+    
+    private func loadGroupMeetingNotes() {
+        let fetchRequest = NSFetchRequest<GroupMeeting>(entityName: "GroupMeeting")
+        fetchRequest.sortDescriptors = [NSSortDescriptor(keyPath: \GroupMeeting.date, ascending: false)]
+        fetchRequest.fetchLimit = 3 // Get last 3 group meetings
+        
+        do {
+            let recentMeetings = try viewContext.fetch(fetchRequest)
+            
+            // Filter for meetings with similar attendee sets
+            let filteredAttendees = (meeting.attendees ?? []).filter { !UserProfile.shared.isCurrentUser($0) }
+            let attendeeSet = Set(filteredAttendees.map { extractName(from: $0).lowercased() })
+            
+            groupMeetingNotes = recentMeetings.compactMap { groupMeeting in
+                // Check if this group meeting has a similar attendee set
+                if let meetingAttendees = groupMeeting.attendees as? Set<Person> {
+                    let meetingAttendeeNames = Set(meetingAttendees.compactMap { $0.name?.lowercased() })
+                    
+                    // If there's significant overlap, include this meeting's notes
+                    let intersection = attendeeSet.intersection(meetingAttendeeNames)
+                    if intersection.count >= min(2, attendeeSet.count - 1) { // At least 2 or most attendees match
+                        if let summary = groupMeeting.summary {
+                            let dateFormatter = DateFormatter()
+                            dateFormatter.dateStyle = .medium
+                            let dateString = groupMeeting.date.map { dateFormatter.string(from: $0) } ?? "Unknown date"
+                            return "**\(dateString)**: \(summary)"
+                        }
+                    }
+                }
+                return nil
+            }
+        } catch {
+            print("Error fetching group meeting notes: \(error)")
+        }
+    }
+    
+    // Helper function to format notes into readable sections
+    private func formatNotesIntoSections(_ notes: String) -> [String] {
+        var formattedSections: [String] = []
+        
+        // First, try to identify clear sections (headers, bullet points, paragraphs)
+        let lines = notes.components(separatedBy: .newlines)
+        var currentSection = ""
+        var isInList = false
+        
+        for line in lines {
+            let trimmed = line.trimmingCharacters(in: .whitespacesAndNewlines)
+            
+            // Check if this is a header (all caps, or starts with #, or ends with :)
+            let isHeader = (trimmed.uppercased() == trimmed && trimmed.count < 50 && trimmed.count > 2) ||
+                          trimmed.hasPrefix("#") ||
+                          (trimmed.hasSuffix(":") && trimmed.count < 50)
+            
+            // Check if this is a bullet point
+            let isBullet = trimmed.hasPrefix("•") || trimmed.hasPrefix("-") || trimmed.hasPrefix("*") ||
+                          (trimmed.first?.isNumber ?? false && (trimmed.contains(".") || trimmed.contains(")")))
+            
+            if isHeader && !currentSection.isEmpty {
+                // Save current section and start new one with header
+                formattedSections.append(currentSection.trimmingCharacters(in: .whitespacesAndNewlines))
+                currentSection = trimmed
+                isInList = false
+            } else if isBullet {
+                if !isInList && !currentSection.isEmpty {
+                    // Save current section and start a list
+                    formattedSections.append(currentSection.trimmingCharacters(in: .whitespacesAndNewlines))
+                    currentSection = trimmed
+                } else {
+                    // Continue adding to list
+                    currentSection += "\n" + trimmed
+                }
+                isInList = true
+            } else if trimmed.isEmpty {
+                // Empty line - potential section break
+                if !currentSection.isEmpty {
+                    formattedSections.append(currentSection.trimmingCharacters(in: .whitespacesAndNewlines))
+                    currentSection = ""
+                    isInList = false
+                }
+            } else {
+                // Regular text
+                if isInList && !currentSection.isEmpty {
+                    // End the list and start new section
+                    formattedSections.append(currentSection.trimmingCharacters(in: .whitespacesAndNewlines))
+                    currentSection = trimmed
+                    isInList = false
+                } else {
+                    // Add to current section
+                    if !currentSection.isEmpty {
+                        currentSection += " "
+                    }
+                    currentSection += trimmed
+                }
+            }
+        }
+        
+        // Add any remaining content
+        if !currentSection.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            formattedSections.append(currentSection.trimmingCharacters(in: .whitespacesAndNewlines))
+        }
+        
+        // If no sections were created, split by sentences for readability
+        if formattedSections.isEmpty || (formattedSections.count == 1 && formattedSections[0].count > 300) {
+            let text = formattedSections.first ?? notes
+            let sentences = text.replacingOccurrences(of: ". ", with: ".\n").components(separatedBy: "\n")
+            var newSections: [String] = []
+            var currentParagraph = ""
+            
+            for (index, sentence) in sentences.enumerated() {
+                let trimmed = sentence.trimmingCharacters(in: .whitespacesAndNewlines)
+                if !trimmed.isEmpty {
+                    if !currentParagraph.isEmpty {
+                        currentParagraph += " "
+                    }
+                    currentParagraph += trimmed
+                    if !trimmed.hasSuffix(".") && !trimmed.hasSuffix("!") && !trimmed.hasSuffix("?") {
+                        currentParagraph += "."
+                    }
+                    
+                    // Create new paragraph every 2-3 sentences or at natural breaks
+                    if (index + 1) % 3 == 0 || trimmed.hasSuffix(":") || index == sentences.count - 1 {
+                        newSections.append(currentParagraph.trimmingCharacters(in: .whitespacesAndNewlines))
+                        currentParagraph = ""
+                    }
+                }
+            }
+            
+            if !currentParagraph.isEmpty {
+                newSections.append(currentParagraph.trimmingCharacters(in: .whitespacesAndNewlines))
+            }
+            
+            return newSections.isEmpty ? [notes] : newSections
+        }
+        
+        return formattedSections
+    }
+    
+    // Helper function to format agenda items from calendar notes
+    private func formatAgendaItems(_ notes: String) -> [String] {
+        // Look for common agenda patterns
+        let lines = notes.components(separatedBy: .newlines).filter { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+        
+        var agendaItems: [String] = []
+        
+        for line in lines {
+            let trimmed = line.trimmingCharacters(in: .whitespacesAndNewlines)
+            
+            // Skip common headers
+            if trimmed.lowercased().contains("agenda") || trimmed.lowercased().contains("topics") {
+                continue
+            }
+            
+            // Remove common bullet points and numbering
+            var cleanedLine = trimmed
+            if cleanedLine.hasPrefix("•") || cleanedLine.hasPrefix("-") || cleanedLine.hasPrefix("*") {
+                cleanedLine = String(cleanedLine.dropFirst()).trimmingCharacters(in: .whitespaces)
+            } else if let firstChar = cleanedLine.first, firstChar.isNumber {
+                // Remove numbered lists (1. 2. etc)
+                if let dotIndex = cleanedLine.firstIndex(of: ".") {
+                    cleanedLine = String(cleanedLine[cleanedLine.index(after: dotIndex)...]).trimmingCharacters(in: .whitespaces)
+                }
+            }
+            
+            if !cleanedLine.isEmpty {
+                agendaItems.append(cleanedLine)
+            }
+        }
+        
+        // If no structured items found, just split by sentences
+        if agendaItems.isEmpty {
+            return notes.components(separatedBy: ". ").filter { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+        }
+        
+        return agendaItems
     }
 }

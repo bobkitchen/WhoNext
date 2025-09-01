@@ -1,0 +1,112 @@
+{
+  "source": "/Users/bobkitchen/Documents/GitHub/WhoNext/WhoNext/CompactRecordingWindow.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "Transcript",
+        "location": {
+          "startingColumn": 31,
+          "startingLine": 88
+        }
+      },
+      {
+        "comment": "",
+        "key": "Speakers",
+        "location": {
+          "startingColumn": 31,
+          "startingLine": 94
+        }
+      },
+      {
+        "comment": "",
+        "key": "Details",
+        "location": {
+          "startingColumn": 31,
+          "startingLine": 100
+        }
+      },
+      {
+        "comment": "",
+        "key": "Recording",
+        "location": {
+          "startingColumn": 48,
+          "startingLine": 133
+        }
+      },
+      {
+        "comment": "",
+        "key": "Paused",
+        "location": {
+          "startingColumn": 62,
+          "startingLine": 133
+        }
+      },
+      {
+        "comment": "",
+        "key": "%lld",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 164
+        }
+      },
+      {
+        "comment": "",
+        "key": "%lld",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 173
+        }
+      },
+      {
+        "comment": "",
+        "key": "%lld%%",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 183
+        }
+      },
+      {
+        "comment": "",
+        "key": "Listening...",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 207
+        }
+      },
+      {
+        "comment": "",
+        "key": "No speakers identified yet",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 282
+        }
+      },
+      {
+        "comment": "",
+        "key": "%lld%%",
+        "location": {
+          "startingColumn": 38,
+          "startingLine": 324
+        }
+      },
+      {
+        "comment": "",
+        "key": "%@ speaking",
+        "location": {
+          "startingColumn": 42,
+          "startingLine": 307
+        }
+      },
+      {
+        "comment": "",
+        "key": "Speaking",
+        "location": {
+          "startingColumn": 47,
+          "startingLine": 312
+        }
+      }
+    ]
+  },
+  "version": 1
+}

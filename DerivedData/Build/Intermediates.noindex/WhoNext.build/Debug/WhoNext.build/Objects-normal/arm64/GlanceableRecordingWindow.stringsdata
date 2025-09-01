@@ -1,0 +1,96 @@
+{
+  "source": "/Users/bobkitchen/Documents/GitHub/WhoNext/WhoNext/GlanceableRecordingWindow.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "Recording",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 136
+        }
+      },
+      {
+        "comment": "",
+        "key": "Stop Recording",
+        "location": {
+          "startingColumn": 23,
+          "startingLine": 156
+        }
+      },
+      {
+        "comment": "",
+        "key": "Listening...",
+        "location": {
+          "startingColumn": 38,
+          "startingLine": 174
+        }
+      },
+      {
+        "comment": "",
+        "key": "Transcript will appear here",
+        "location": {
+          "startingColumn": 38,
+          "startingLine": 178
+        }
+      },
+      {
+        "comment": "",
+        "key": "SPEAKERS",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 273
+        }
+      },
+      {
+        "comment": "",
+        "key": "No speakers yet",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 278
+        }
+      },
+      {
+        "comment": "",
+        "key": "+%lld more",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 296
+        }
+      },
+      {
+        "comment": "",
+        "key": "METRICS",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 310
+        }
+      },
+      {
+        "comment": "",
+        "key": "No one speaking",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 380
+        }
+      },
+      {
+        "comment": "",
+        "key": "%lld speaking",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 375
+        }
+      },
+      {
+        "comment": "",
+        "key": "%lld%%",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 498
+        }
+      }
+    ]
+  },
+  "version": 1
+}

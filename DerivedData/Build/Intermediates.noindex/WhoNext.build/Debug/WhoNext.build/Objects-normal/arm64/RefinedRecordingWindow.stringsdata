@@ -1,0 +1,104 @@
+{
+  "source": "/Users/bobkitchen/Documents/GitHub/WhoNext/WhoNext/RefinedRecordingWindow.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "•",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 145
+        }
+      },
+      {
+        "comment": "",
+        "key": "Recording",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 148
+        }
+      },
+      {
+        "comment": "",
+        "key": "Listening...",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 209
+        }
+      },
+      {
+        "comment": "",
+        "key": "Transcript will appear here",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 213
+        }
+      },
+      {
+        "comment": "",
+        "key": "ACTIVE SPEAKERS",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 322
+        }
+      },
+      {
+        "comment": "",
+        "key": "%lld",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 332
+        }
+      },
+      {
+        "comment": "",
+        "key": "Awaiting first speaker...",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 346
+        }
+      },
+      {
+        "comment": "",
+        "key": "+%lld more speakers",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 361
+        }
+      },
+      {
+        "comment": "",
+        "key": "MEETING STATS",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 376
+        }
+      },
+      {
+        "comment": "",
+        "key": "No one speaking",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 442
+        }
+      },
+      {
+        "comment": "",
+        "key": "%@ speaking",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 437
+        }
+      },
+      {
+        "comment": "",
+        "key": "%lld%%",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 582
+        }
+      }
+    ]
+  },
+  "version": 1
+}

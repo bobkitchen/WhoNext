@@ -17,6 +17,7 @@
 /Users/bobkitchen/Documents/GitHub/WhoNext/WhoNext/ChatSessionHolder.swift
 /Users/bobkitchen/Documents/GitHub/WhoNext/WhoNext/ChatView.swift
 /Users/bobkitchen/Documents/GitHub/WhoNext/WhoNext/ChunkedAudioProcessor.swift
+/Users/bobkitchen/Documents/GitHub/WhoNext/WhoNext/CompactRecordingWindow.swift
 /Users/bobkitchen/Documents/GitHub/WhoNext/WhoNext/ContentView.swift
 /Users/bobkitchen/Documents/GitHub/WhoNext/WhoNext/Conversation.swift
 /Users/bobkitchen/Documents/GitHub/WhoNext/WhoNext/ConversationDetailView.swift
@@ -33,6 +34,8 @@
 /Users/bobkitchen/Documents/GitHub/WhoNext/WhoNext/ErrorManager.swift
 /Users/bobkitchen/Documents/GitHub/WhoNext/WhoNext/ExportManager.swift
 /Users/bobkitchen/Documents/GitHub/WhoNext/WhoNext/FollowUpNeededView.swift
+/Users/bobkitchen/Documents/GitHub/WhoNext/WhoNext/FoundationModelsService.swift
+/Users/bobkitchen/Documents/GitHub/WhoNext/WhoNext/GlanceableRecordingWindow.swift
 /Users/bobkitchen/Documents/GitHub/WhoNext/WhoNext/GlobalNewConversationSheet.swift
 /Users/bobkitchen/Documents/GitHub/WhoNext/WhoNext/GoogleCalendarProvider.swift
 /Users/bobkitchen/Documents/GitHub/WhoNext/WhoNext/Group+CoreDataClass.swift
@@ -89,6 +92,7 @@
 /Users/bobkitchen/Documents/GitHub/WhoNext/WhoNext/PreMeetingBriefContextHelper.swift
 /Users/bobkitchen/Documents/GitHub/WhoNext/WhoNext/PreMeetingBriefService.swift
 /Users/bobkitchen/Documents/GitHub/WhoNext/WhoNext/PreMeetingBriefWindow.swift
+/Users/bobkitchen/Documents/GitHub/WhoNext/WhoNext/RefinedRecordingWindow.swift
 /Users/bobkitchen/Documents/GitHub/WhoNext/WhoNext/RichTextEditor.swift
 /Users/bobkitchen/Documents/GitHub/WhoNext/WhoNext/RightToolbarActions.swift
 /Users/bobkitchen/Documents/GitHub/WhoNext/WhoNext/RobustSyncManager.swift
@@ -124,6 +128,7 @@
 /Users/bobkitchen/Documents/GitHub/WhoNext/WhoNext/TranscriptSegmentView.swift
 /Users/bobkitchen/Documents/GitHub/WhoNext/WhoNext/TwoWayAudioDetector.swift
 /Users/bobkitchen/Documents/GitHub/WhoNext/WhoNext/UpcomingMeetingsView.swift
+/Users/bobkitchen/Documents/GitHub/WhoNext/WhoNext/UserProfile.swift
 /Users/bobkitchen/Documents/GitHub/WhoNext/WhoNext/WhisperCoreMLTranscriber.swift
 /Users/bobkitchen/Documents/GitHub/WhoNext/WhoNext/WhoNextApp.swift
 /Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/WhoNext.build/Debug/WhoNext.build/DerivedSources/GeneratedAssetSymbols.swift

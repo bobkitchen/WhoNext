@@ -310,6 +310,15 @@ typedef unsigned int swift_uint4  __attribute__((__ext_vector_type__(4)));
 
 #if defined(__OBJC__)
 
+@class NSCoder;
+@class NSWindow;
+/// Compact, clean recording status window
+SWIFT_CLASS("_TtC7WhoNext32CompactRecordingWindowController")
+@interface CompactRecordingWindowController : NSWindowController
+- (nullable instancetype)initWithCoder:(NSCoder * _Nonnull)coder OBJC_DESIGNATED_INITIALIZER;
+- (nonnull instancetype)initWithWindow:(NSWindow * _Nullable)window SWIFT_UNAVAILABLE;
+@end
+
 @class NSDate;
 @class NSString;
 @class NSUUID;
@@ -342,8 +351,6 @@ SWIFT_CLASS_NAMED("Conversation")
 - (nonnull instancetype)initWithEntity:(NSEntityDescription * _Nonnull)entity insertIntoManagedObjectContext:(NSManagedObjectContext * _Nullable)context OBJC_DESIGNATED_INITIALIZER;
 @end
 
-@class NSCoder;
-@class NSWindow;
 /// Enhanced floating window that displays comprehensive recording status and metrics
 SWIFT_CLASS("_TtC7WhoNext35EnhancedLiveMeetingWindowController")
 @interface EnhancedLiveMeetingWindowController : NSWindowController
@@ -354,6 +361,13 @@ SWIFT_CLASS("_TtC7WhoNext35EnhancedLiveMeetingWindowController")
 @class NSNotification;
 @interface EnhancedLiveMeetingWindowController (SWIFT_EXTENSION(WhoNext)) <NSWindowDelegate>
 - (void)windowDidMove:(NSNotification * _Nonnull)notification;
+@end
+
+/// Glanceable recording window that shows all information at once
+SWIFT_CLASS("_TtC7WhoNext35GlanceableRecordingWindowController")
+@interface GlanceableRecordingWindowController : NSWindowController
+- (nullable instancetype)initWithCoder:(NSCoder * _Nonnull)coder OBJC_DESIGNATED_INITIALIZER;
+- (nonnull instancetype)initWithWindow:(NSWindow * _Nullable)window SWIFT_UNAVAILABLE;
 @end
 
 /// Implementation of CalendarProvider using Google Calendar API
@@ -495,6 +509,13 @@ SWIFT_CLASS("_TtC7WhoNext23ProfileWindowController")
 
 @interface ProfileWindowController (SWIFT_EXTENSION(WhoNext)) <NSWindowDelegate>
 - (void)windowWillClose:(NSNotification * _Nonnull)notification;
+@end
+
+/// Refined recording window with improved UI/UX
+SWIFT_CLASS("_TtC7WhoNext32RefinedRecordingWindowController")
+@interface RefinedRecordingWindowController : NSWindowController
+- (nullable instancetype)initWithCoder:(NSCoder * _Nonnull)coder OBJC_DESIGNATED_INITIALIZER;
+- (nonnull instancetype)initWithWindow:(NSWindow * _Nullable)window SWIFT_UNAVAILABLE;
 @end
 
 /// Captures both microphone and system audio for two-way conversation detection

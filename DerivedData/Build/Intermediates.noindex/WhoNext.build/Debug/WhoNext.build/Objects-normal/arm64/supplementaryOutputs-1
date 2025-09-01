@@ -1,86 +1,23 @@
 {
+  "/Users/bobkitchen/Documents/GitHub/WhoNext/WhoNext/CompactRecordingWindow.swift" : {
+    "const-values" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/WhoNext.build/Debug/WhoNext.build/Objects-normal/arm64/CompactRecordingWindow.swiftconstvalues",
+    "dependencies" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/WhoNext.build/Debug/WhoNext.build/Objects-normal/arm64/CompactRecordingWindow.d",
+    "diagnostics" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/WhoNext.build/Debug/WhoNext.build/Objects-normal/arm64/CompactRecordingWindow.dia",
+    "object" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/WhoNext.build/Debug/WhoNext.build/Objects-normal/arm64/CompactRecordingWindow.o",
+    "swift-dependencies" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/WhoNext.build/Debug/WhoNext.build/Objects-normal/arm64/CompactRecordingWindow.swiftdeps"
+  },
+  "/Users/bobkitchen/Documents/GitHub/WhoNext/WhoNext/EnhancedLiveMeetingWindow.swift" : {
+    "const-values" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/WhoNext.build/Debug/WhoNext.build/Objects-normal/arm64/EnhancedLiveMeetingWindow.swiftconstvalues",
+    "dependencies" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/WhoNext.build/Debug/WhoNext.build/Objects-normal/arm64/EnhancedLiveMeetingWindow.d",
+    "diagnostics" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/WhoNext.build/Debug/WhoNext.build/Objects-normal/arm64/EnhancedLiveMeetingWindow.dia",
+    "object" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/WhoNext.build/Debug/WhoNext.build/Objects-normal/arm64/EnhancedLiveMeetingWindow.o",
+    "swift-dependencies" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/WhoNext.build/Debug/WhoNext.build/Objects-normal/arm64/EnhancedLiveMeetingWindow.swiftdeps"
+  },
   "/Users/bobkitchen/Documents/GitHub/WhoNext/WhoNext/ExportManager.swift" : {
     "const-values" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/WhoNext.build/Debug/WhoNext.build/Objects-normal/arm64/ExportManager.swiftconstvalues",
     "dependencies" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/WhoNext.build/Debug/WhoNext.build/Objects-normal/arm64/ExportManager.d",
     "diagnostics" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/WhoNext.build/Debug/WhoNext.build/Objects-normal/arm64/ExportManager.dia",
     "object" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/WhoNext.build/Debug/WhoNext.build/Objects-normal/arm64/ExportManager.o",
     "swift-dependencies" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/WhoNext.build/Debug/WhoNext.build/Objects-normal/arm64/ExportManager.swiftdeps"
-  },
-  "/Users/bobkitchen/Documents/GitHub/WhoNext/WhoNext/FollowUpNeededView.swift" : {
-    "const-values" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/WhoNext.build/Debug/WhoNext.build/Objects-normal/arm64/FollowUpNeededView.swiftconstvalues",
-    "dependencies" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/WhoNext.build/Debug/WhoNext.build/Objects-normal/arm64/FollowUpNeededView.d",
-    "diagnostics" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/WhoNext.build/Debug/WhoNext.build/Objects-normal/arm64/FollowUpNeededView.dia",
-    "object" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/WhoNext.build/Debug/WhoNext.build/Objects-normal/arm64/FollowUpNeededView.o",
-    "swift-dependencies" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/WhoNext.build/Debug/WhoNext.build/Objects-normal/arm64/FollowUpNeededView.swiftdeps"
-  },
-  "/Users/bobkitchen/Documents/GitHub/WhoNext/WhoNext/GlobalNewConversationSheet.swift" : {
-    "const-values" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/WhoNext.build/Debug/WhoNext.build/Objects-normal/arm64/GlobalNewConversationSheet.swiftconstvalues",
-    "dependencies" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/WhoNext.build/Debug/WhoNext.build/Objects-normal/arm64/GlobalNewConversationSheet.d",
-    "diagnostics" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/WhoNext.build/Debug/WhoNext.build/Objects-normal/arm64/GlobalNewConversationSheet.dia",
-    "object" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/WhoNext.build/Debug/WhoNext.build/Objects-normal/arm64/GlobalNewConversationSheet.o",
-    "swift-dependencies" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/WhoNext.build/Debug/WhoNext.build/Objects-normal/arm64/GlobalNewConversationSheet.swiftdeps"
-  },
-  "/Users/bobkitchen/Documents/GitHub/WhoNext/WhoNext/GoogleCalendarProvider.swift" : {
-    "const-values" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/WhoNext.build/Debug/WhoNext.build/Objects-normal/arm64/GoogleCalendarProvider.swiftconstvalues",
-    "dependencies" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/WhoNext.build/Debug/WhoNext.build/Objects-normal/arm64/GoogleCalendarProvider.d",
-    "diagnostics" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/WhoNext.build/Debug/WhoNext.build/Objects-normal/arm64/GoogleCalendarProvider.dia",
-    "object" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/WhoNext.build/Debug/WhoNext.build/Objects-normal/arm64/GoogleCalendarProvider.o",
-    "swift-dependencies" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/WhoNext.build/Debug/WhoNext.build/Objects-normal/arm64/GoogleCalendarProvider.swiftdeps"
-  },
-  "/Users/bobkitchen/Documents/GitHub/WhoNext/WhoNext/Group+CoreDataClass.swift" : {
-    "const-values" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/WhoNext.build/Debug/WhoNext.build/Objects-normal/arm64/Group+CoreDataClass.swiftconstvalues",
-    "dependencies" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/WhoNext.build/Debug/WhoNext.build/Objects-normal/arm64/Group+CoreDataClass.d",
-    "diagnostics" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/WhoNext.build/Debug/WhoNext.build/Objects-normal/arm64/Group+CoreDataClass.dia",
-    "object" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/WhoNext.build/Debug/WhoNext.build/Objects-normal/arm64/Group+CoreDataClass.o",
-    "swift-dependencies" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/WhoNext.build/Debug/WhoNext.build/Objects-normal/arm64/Group+CoreDataClass.swiftdeps"
-  },
-  "/Users/bobkitchen/Documents/GitHub/WhoNext/WhoNext/Group+CoreDataProperties.swift" : {
-    "const-values" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/WhoNext.build/Debug/WhoNext.build/Objects-normal/arm64/Group+CoreDataProperties.swiftconstvalues",
-    "dependencies" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/WhoNext.build/Debug/WhoNext.build/Objects-normal/arm64/Group+CoreDataProperties.d",
-    "diagnostics" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/WhoNext.build/Debug/WhoNext.build/Objects-normal/arm64/Group+CoreDataProperties.dia",
-    "object" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/WhoNext.build/Debug/WhoNext.build/Objects-normal/arm64/Group+CoreDataProperties.o",
-    "swift-dependencies" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/WhoNext.build/Debug/WhoNext.build/Objects-normal/arm64/Group+CoreDataProperties.swiftdeps"
-  },
-  "/Users/bobkitchen/Documents/GitHub/WhoNext/WhoNext/GroupMeeting+CoreDataClass.swift" : {
-    "const-values" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/WhoNext.build/Debug/WhoNext.build/Objects-normal/arm64/GroupMeeting+CoreDataClass.swiftconstvalues",
-    "dependencies" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/WhoNext.build/Debug/WhoNext.build/Objects-normal/arm64/GroupMeeting+CoreDataClass.d",
-    "diagnostics" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/WhoNext.build/Debug/WhoNext.build/Objects-normal/arm64/GroupMeeting+CoreDataClass.dia",
-    "object" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/WhoNext.build/Debug/WhoNext.build/Objects-normal/arm64/GroupMeeting+CoreDataClass.o",
-    "swift-dependencies" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/WhoNext.build/Debug/WhoNext.build/Objects-normal/arm64/GroupMeeting+CoreDataClass.swiftdeps"
-  },
-  "/Users/bobkitchen/Documents/GitHub/WhoNext/WhoNext/GroupMeeting+CoreDataProperties.swift" : {
-    "const-values" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/WhoNext.build/Debug/WhoNext.build/Objects-normal/arm64/GroupMeeting+CoreDataProperties.swiftconstvalues",
-    "dependencies" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/WhoNext.build/Debug/WhoNext.build/Objects-normal/arm64/GroupMeeting+CoreDataProperties.d",
-    "diagnostics" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/WhoNext.build/Debug/WhoNext.build/Objects-normal/arm64/GroupMeeting+CoreDataProperties.dia",
-    "object" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/WhoNext.build/Debug/WhoNext.build/Objects-normal/arm64/GroupMeeting+CoreDataProperties.o",
-    "swift-dependencies" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/WhoNext.build/Debug/WhoNext.build/Objects-normal/arm64/GroupMeeting+CoreDataProperties.swiftdeps"
-  },
-  "/Users/bobkitchen/Documents/GitHub/WhoNext/WhoNext/GroupsListView.swift" : {
-    "const-values" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/WhoNext.build/Debug/WhoNext.build/Objects-normal/arm64/GroupsListView.swiftconstvalues",
-    "dependencies" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/WhoNext.build/Debug/WhoNext.build/Objects-normal/arm64/GroupsListView.d",
-    "diagnostics" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/WhoNext.build/Debug/WhoNext.build/Objects-normal/arm64/GroupsListView.dia",
-    "object" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/WhoNext.build/Debug/WhoNext.build/Objects-normal/arm64/GroupsListView.o",
-    "swift-dependencies" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/WhoNext.build/Debug/WhoNext.build/Objects-normal/arm64/GroupsListView.swiftdeps"
-  },
-  "/Users/bobkitchen/Documents/GitHub/WhoNext/WhoNext/HealthScoreGraphView.swift" : {
-    "const-values" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/WhoNext.build/Debug/WhoNext.build/Objects-normal/arm64/HealthScoreGraphView.swiftconstvalues",
-    "dependencies" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/WhoNext.build/Debug/WhoNext.build/Objects-normal/arm64/HealthScoreGraphView.d",
-    "diagnostics" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/WhoNext.build/Debug/WhoNext.build/Objects-normal/arm64/HealthScoreGraphView.dia",
-    "object" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/WhoNext.build/Debug/WhoNext.build/Objects-normal/arm64/HealthScoreGraphView.o",
-    "swift-dependencies" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/WhoNext.build/Debug/WhoNext.build/Objects-normal/arm64/HealthScoreGraphView.swiftdeps"
-  },
-  "/Users/bobkitchen/Documents/GitHub/WhoNext/WhoNext/HomeView.swift" : {
-    "const-values" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/WhoNext.build/Debug/WhoNext.build/Objects-normal/arm64/HomeView.swiftconstvalues",
-    "dependencies" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/WhoNext.build/Debug/WhoNext.build/Objects-normal/arm64/HomeView.d",
-    "diagnostics" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/WhoNext.build/Debug/WhoNext.build/Objects-normal/arm64/HomeView.dia",
-    "object" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/WhoNext.build/Debug/WhoNext.build/Objects-normal/arm64/HomeView.o",
-    "swift-dependencies" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/WhoNext.build/Debug/WhoNext.build/Objects-normal/arm64/HomeView.swiftdeps"
-  },
-  "/Users/bobkitchen/Documents/GitHub/WhoNext/WhoNext/HybridAIService.swift" : {
-    "const-values" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/WhoNext.build/Debug/WhoNext.build/Objects-normal/arm64/HybridAIService.swiftconstvalues",
-    "dependencies" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/WhoNext.build/Debug/WhoNext.build/Objects-normal/arm64/HybridAIService.d",
-    "diagnostics" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/WhoNext.build/Debug/WhoNext.build/Objects-normal/arm64/HybridAIService.dia",
-    "object" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/WhoNext.build/Debug/WhoNext.build/Objects-normal/arm64/HybridAIService.o",
-    "swift-dependencies" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/WhoNext.build/Debug/WhoNext.build/Objects-normal/arm64/HybridAIService.swiftdeps"
   }
 }

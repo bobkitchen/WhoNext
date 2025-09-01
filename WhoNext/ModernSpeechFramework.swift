@@ -3,8 +3,8 @@ import AVFoundation
 import Speech
 import CoreMedia
 
-/// Modern speech transcription implementation
-/// Uses SFSpeechRecognizer as fallback until new APIs are in SDK headers
+/// Modern speech transcription implementation using new macOS 26 Speech APIs
+/// Based on patterns from YAP and Swift Scribe implementations
 @available(macOS 26.0, *)
 @MainActor
 class ModernSpeechFramework {
@@ -12,26 +12,31 @@ class ModernSpeechFramework {
     // MARK: - Properties
     
     private let locale: Locale
-    private var recognizer: SFSpeechRecognizer?
-    private var recognitionRequest: SFSpeechAudioBufferRecognitionRequest?
-    private var recognitionTask: SFSpeechRecognitionTask?
+    
+    // New Speech API components
+    private var transcriber: SpeechTranscriber?
+    private var analyzer: SpeechAnalyzer?
+    private var recognizerTask: Task<(), any Error>?
+    
+    // AsyncStream for audio input
+    private var inputStream: AsyncStream<AnalyzerInput>
+    private var inputContinuation: AsyncStream<AnalyzerInput>.Continuation
     
     // Buffer management
     private let converter = BufferConverter()
-    private var audioFormat: AVAudioFormat?
+    private var analyzerFormat: AVAudioFormat?
     
     // Transcription state
     private var isTranscribing = false
     
     // Results
-    private var accumulatedTranscript: String = ""
-    private var lastPartialResult: String = ""
+    private var finalizedTranscript: String = ""
+    private var volatileTranscript: String = ""
     
-    // Audio accumulation for better transcription
-    private var audioBufferAccumulator: [AVAudioPCMBuffer] = []
-    private var accumulationStartTime: Date?
-    private let accumulationDuration: TimeInterval = 30.0 // 30 seconds
-    private let maxAccumulationDuration: TimeInterval = 60.0 // 60 seconds max
+    // Advanced features
+    private var transcriptionSegments: [SpeechTranscriptionSegment] = []
+    private var speakerAttributions: [SpeakerAttribution] = []
+    private var currentSpeakerId: Int = 0
     
     // MARK: - Initialization
     
@@ -39,188 +44,222 @@ class ModernSpeechFramework {
         self.locale = locale
         print("[ModernSpeech] Initializing with locale: \(locale.identifier)")
         
-        // Set up recognizer
-        if let recognizer = SFSpeechRecognizer(locale: locale) {
-            self.recognizer = recognizer
-            print("[ModernSpeech] SFSpeechRecognizer created for locale: \(locale.identifier)")
-        } else {
-            // Fallback to en-US if locale not supported
-            self.recognizer = SFSpeechRecognizer(locale: Locale(identifier: "en-US"))
-            print("[ModernSpeech] Fallback to en-US recognizer")
-        }
-        
-        // Set up audio format for 16kHz mono, which is optimal for speech
-        audioFormat = AVAudioFormat(
-            commonFormat: .pcmFormatFloat32,
-            sampleRate: 16000,
-            channels: 1,
-            interleaved: false
-        )
+        // Create AsyncStream for audio input
+        let (stream, continuation) = AsyncStream<AnalyzerInput>.makeStream()
+        self.inputStream = stream
+        self.inputContinuation = continuation
     }
     
     // MARK: - Setup
     
-    /// Initialize the speech recognizer
+    /// Initialize the speech recognizer using new APIs
     func initialize() async throws {
-        print("[ModernSpeech] Starting initialization...")
+        print("[ModernSpeech] Starting initialization with new Speech APIs...")
         
-        // Request authorization if needed
-        let authStatus = await requestSpeechAuthorization()
-        guard authStatus == .authorized else {
-            throw ModernSpeechError.transcriptionFailed("Speech recognition not authorized")
+        // Deallocate any existing locales first (like yap does)
+        let allocatedLocales = await AssetInventory.reservedLocales
+        for locale in allocatedLocales {
+            await AssetInventory.release(reservedLocale: locale)
         }
         
-        // Check recognizer availability
-        guard let recognizer = recognizer, recognizer.isAvailable else {
+        // Create SpeechTranscriber with advanced options
+        transcriber = SpeechTranscriber(
+            locale: locale,
+            transcriptionOptions: [],
+            reportingOptions: [.volatileResults],
+            attributeOptions: [.audioTimeRange]
+        )
+        
+        guard let transcriber = transcriber else {
+            throw ModernSpeechError.transcriberNotInitialized
+        }
+        
+        print("[ModernSpeech] SpeechTranscriber created successfully")
+        
+        // Create SpeechAnalyzer with transcriber module
+        analyzer = SpeechAnalyzer(modules: [transcriber])
+        print("[ModernSpeech] SpeechAnalyzer created with transcriber module")
+        
+        // Ensure language model is available
+        try await ensureLanguageModel(for: transcriber, locale: locale)
+        
+        // Get best audio format for the analyzer
+        analyzerFormat = await SpeechAnalyzer.bestAvailableAudioFormat(compatibleWith: [transcriber])
+        print("[ModernSpeech] Best audio format: \(String(describing: analyzerFormat))")
+        
+        guard analyzerFormat != nil else {
             throw ModernSpeechError.languageNotSupported
         }
         
-        print("[ModernSpeech] Speech recognizer ready and authorized")
+        // Create recognition task FIRST (before starting analyzer) - this is the correct order
+        recognizerTask = Task { [weak self] in
+            guard let self = self else { return }
+            print("[ModernSpeech] Starting recognition task to listen for results...")
+            
+            do {
+                var resultCount = 0
+                for try await result in transcriber.results {
+                    resultCount += 1
+                    let text = result.text
+                    
+                    // Extract advanced features
+                    let confidence: Float = 1.0 // Default confidence (API doesn't expose it yet)
+                    // Time range tracking would be done manually based on buffer timing
+                    let timeRange: (start: TimeInterval, end: TimeInterval)? = nil
+                    let speakerId: Int? = nil // Speaker attribution not yet available
+                    
+                    // Create transcription segment
+                    let segment = SpeechTranscriptionSegment(
+                        text: String(text.characters),
+                        startTime: timeRange?.start ?? 0,
+                        endTime: timeRange?.end ?? 0,
+                        confidence: confidence,
+                        isFinal: result.isFinal,
+                        speakerId: speakerId,
+                        alternatives: []  // Alternatives not available in current API
+                    )
+                    
+                    // Store segment
+                    self.transcriptionSegments.append(segment)
+                    
+                    // Handle speaker changes
+                    if let speakerId = speakerId, speakerId != self.currentSpeakerId {
+                        self.currentSpeakerId = speakerId
+                        self.handleSpeakerChange(speakerId: speakerId, at: timeRange?.start ?? 0)
+                    }
+                    
+                    if result.isFinal {
+                        // Final result - add to finalized transcript
+                        let textString = String(text.characters)
+                        if !textString.isEmpty {
+                            if !self.finalizedTranscript.isEmpty {
+                                self.finalizedTranscript += " "
+                            }
+                            self.finalizedTranscript += textString
+                            self.volatileTranscript = ""
+                            print("[ModernSpeech] Final segment #\(resultCount): '\(textString)' (confidence: \(confidence))")
+                        }
+                    } else {
+                        // Volatile result - store for display
+                        let textString = String(text.characters)
+                        self.volatileTranscript = textString
+                        if textString.count > 10 {
+                            print("[ModernSpeech] Partial #\(resultCount): '\(String(textString.suffix(50)))...' (confidence: \(confidence))")
+                        }
+                    }
+                }
+                print("[ModernSpeech] Recognition task completed after \(resultCount) results")
+            } catch {
+                print("[ModernSpeech] Recognition error: \(error.localizedDescription)")
+            }
+        }
+        
+        // THEN start the analyzer with input stream (after recognition task is listening)
+        try await analyzer?.start(inputSequence: inputStream)
+        print("[ModernSpeech] SpeechAnalyzer started successfully")
+        
         isTranscribing = true
     }
     
-    private func requestSpeechAuthorization() async -> SFSpeechRecognizerAuthorizationStatus {
-        await withCheckedContinuation { continuation in
-            SFSpeechRecognizer.requestAuthorization { status in
-                continuation.resume(returning: status)
+    /// Ensure language model is available and reserved
+    private func ensureLanguageModel(for transcriber: SpeechTranscriber, locale: Locale) async throws {
+        print("[ModernSpeech] Ensuring language model for locale: \(locale.identifier)")
+        
+        // Check if download is needed
+        if let installRequest = try await AssetInventory.assetInstallationRequest(supporting: [transcriber]) {
+            print("[ModernSpeech] Downloading required speech assets...")
+            try await installRequest.downloadAndInstall()
+            print("[ModernSpeech] Speech assets downloaded successfully")
+        }
+        
+        // Check supported locales
+        let supportedLocales = await SpeechTranscriber.supportedLocales
+        print("[ModernSpeech] Supported locales: \(supportedLocales.map { $0.identifier })")
+        
+        guard supportedLocales.contains(where: { $0.identifier(.bcp47) == locale.identifier(.bcp47) }) else {
+            // Try fallback to en-US
+            let fallbackLocale = Locale(identifier: "en-US")
+            if supportedLocales.contains(where: { $0.identifier(.bcp47) == fallbackLocale.identifier(.bcp47) }) {
+                print("[ModernSpeech] Using fallback locale: en-US")
+                try await allocateLocale(fallbackLocale)
+                return
             }
+            throw ModernSpeechError.languageNotSupported
+        }
+        
+        // Allocate the locale
+        try await allocateLocale(locale)
+    }
+    
+    /// Allocate locale for speech recognition using correct API
+    private func allocateLocale(_ locale: Locale) async throws {
+        print("[ModernSpeech] Allocating locale: \(locale.identifier)")
+        
+        // Check if locale is already allocated
+        let allocatedLocales = await AssetInventory.reservedLocales
+        if !allocatedLocales.contains(where: { $0.identifier(.bcp47) == locale.identifier(.bcp47) }) {
+            // Allocate the locale using the correct API
+            try await AssetInventory.reserve(locale: locale)
+            print("[ModernSpeech] Locale allocated successfully: \(locale.identifier)")
+        } else {
+            print("[ModernSpeech] Locale already allocated: \(locale.identifier)")
         }
     }
     
     // MARK: - Audio Processing
     
-    /// Process an audio buffer by accumulating and transcribing
+    /// Process an audio buffer using AsyncStream
     func processAudioStream(_ buffer: AVAudioPCMBuffer) async throws -> String {
-        // Ensure recognizer is available (start transcription if needed)
-        guard recognizer != nil else {
+        // Ensure analyzer is initialized
+        if analyzer == nil {
+            // Auto-initialize if needed
+            try await initialize()
+        }
+        
+        guard let analyzerFormat = analyzerFormat else {
             throw ModernSpeechError.transcriberNotInitialized
         }
         
-        // Auto-start transcription if not already running
-        if !isTranscribing {
-            isTranscribing = true
-        }
+        // Convert buffer to optimal format and yield immediately (like swift-scribe)
+        let convertedBuffer = try converter.convertBuffer(buffer, to: analyzerFormat)
         
-        // Start accumulation if needed
-        if accumulationStartTime == nil {
-            accumulationStartTime = Date()
-            startNewRecognitionRequest()
-        }
+        // Create AnalyzerInput and yield to stream immediately
+        let input = AnalyzerInput(buffer: convertedBuffer)
+        inputContinuation.yield(input)
         
-        // Convert buffer to optimal format
-        let convertedBuffer: AVAudioPCMBuffer
-        if let targetFormat = audioFormat {
-            convertedBuffer = try converter.convertBuffer(buffer, to: targetFormat)
-        } else {
-            convertedBuffer = buffer
-        }
-        
-        // Add to accumulator
-        audioBufferAccumulator.append(convertedBuffer)
-        
-        // Append to recognition request
-        recognitionRequest?.append(convertedBuffer)
-        
-        // Check if we should process accumulated audio
-        let elapsedTime = Date().timeIntervalSince(accumulationStartTime ?? Date())
-        
-        // Process if we've accumulated enough audio or hit the max duration
-        if elapsedTime >= accumulationDuration || elapsedTime >= maxAccumulationDuration {
-            print("[ModernSpeech] Processing accumulated audio (\(Int(elapsedTime))s)")
-            try await processAccumulatedAudio()
-        }
-        
-        return accumulatedTranscript
-    }
-    
-    private func startNewRecognitionRequest() {
-        // Cancel existing task if any
-        recognitionTask?.cancel()
-        
-        // Create new recognition request
-        recognitionRequest = SFSpeechAudioBufferRecognitionRequest()
-        recognitionRequest?.shouldReportPartialResults = true
-        recognitionRequest?.requiresOnDeviceRecognition = false
-        recognitionRequest?.taskHint = .dictation
-        
-        guard let recognitionRequest = recognitionRequest,
-              let recognizer = recognizer else { return }
-        
-        // Start recognition task
-        recognitionTask = recognizer.recognitionTask(with: recognitionRequest) { [weak self] result, error in
-            guard let self = self else { return }
-            
-            if let result = result {
-                let transcription = result.bestTranscription.formattedString
-                
-                if result.isFinal {
-                    // Final result - add to accumulated transcript
-                    if !transcription.isEmpty {
-                        if !self.accumulatedTranscript.isEmpty {
-                            self.accumulatedTranscript += " "
-                        }
-                        self.accumulatedTranscript += transcription
-                        print("[ModernSpeech] Final segment: '\(transcription)'")
-                    }
-                    self.lastPartialResult = ""
-                } else {
-                    // Partial result - store for display but don't accumulate yet
-                    self.lastPartialResult = transcription
-                    if transcription.count > 10 { // Only log meaningful partials
-                        print("[ModernSpeech] Partial: '\(transcription.suffix(50))...'")
-                    }
-                }
-            }
-            
-            if let error = error {
-                print("[ModernSpeech] Recognition error: \(error.localizedDescription)")
-            }
-        }
-        
-        print("[ModernSpeech] Started new recognition request")
-    }
-    
-    private func processAccumulatedAudio() async throws {
-        // End current request to get final result
-        recognitionRequest?.endAudio()
-        
-        // Wait a bit for final result
-        try await Task.sleep(nanoseconds: 500_000_000) // 0.5 seconds
-        
-        // Clear accumulator
-        audioBufferAccumulator.removeAll()
-        accumulationStartTime = Date()
-        
-        // Start new request for next batch
-        startNewRecognitionRequest()
-        
-        // Re-process any remaining buffers
-        for buffer in audioBufferAccumulator {
-            recognitionRequest?.append(buffer)
-        }
+        return getCurrentTranscript()
     }
     
     /// Process an entire audio file
     func transcribeFile(at url: URL) async throws -> String {
         print("[ModernSpeech] Transcribing file: \(url.lastPathComponent)")
         
-        guard let recognizer = recognizer else {
+        // Ensure initialized
+        if analyzer == nil {
+            try await initialize()
+        }
+        
+        guard let analyzer = analyzer else {
             throw ModernSpeechError.transcriberNotInitialized
         }
         
-        let request = SFSpeechURLRecognitionRequest(url: url)
-        request.shouldReportPartialResults = false
-        request.requiresOnDeviceRecognition = false
+        // Open audio file
+        let audioFile = try AVAudioFile(forReading: url)
         
-        return try await withCheckedThrowingContinuation { continuation in
-            recognizer.recognitionTask(with: request) { result, error in
-                if let error = error {
-                    continuation.resume(throwing: error)
-                } else if let result = result, result.isFinal {
-                    continuation.resume(returning: result.bestTranscription.formattedString)
+        // Start analyzer with file input
+        try await analyzer.start(inputAudioFile: audioFile, finishAfterFile: true)
+        
+        // Wait for transcription to complete
+        var finalTranscript = ""
+        if let transcriber = transcriber {
+            for try await result in transcriber.results {
+                if result.isFinal {
+                    finalTranscript += String(result.text.characters)
                 }
             }
         }
+        
+        return finalTranscript
     }
     
     // MARK: - State Management
@@ -232,18 +271,13 @@ class ModernSpeechFramework {
         print("[ModernSpeech] Starting transcription...")
         
         // Initialize if not already done
-        if recognizer == nil {
+        if analyzer == nil {
             try await initialize()
         }
         
         isTranscribing = true
-        accumulatedTranscript = ""
-        lastPartialResult = ""
-        audioBufferAccumulator.removeAll()
-        accumulationStartTime = nil
-        
-        // Start recognition
-        startNewRecognitionRequest()
+        finalizedTranscript = ""
+        volatileTranscript = ""
     }
     
     /// Stop transcription and finalize
@@ -252,67 +286,115 @@ class ModernSpeechFramework {
         
         print("[ModernSpeech] Stopping transcription...")
         
-        // Process any remaining audio
-        if !audioBufferAccumulator.isEmpty {
-            try await processAccumulatedAudio()
-        }
+        // Finish the input stream
+        inputContinuation.finish()
         
-        // End recognition
-        recognitionRequest?.endAudio()
-        recognitionTask?.finish()
+        // Finalize the analyzer
+        try await analyzer?.finalizeAndFinishThroughEndOfInput()
         
-        // Wait for final results
-        try await Task.sleep(nanoseconds: 1_000_000_000) // 1 second
-        
-        recognitionTask?.cancel()
-        recognitionTask = nil
-        recognitionRequest = nil
+        // Cancel recognition task
+        recognizerTask?.cancel()
+        recognizerTask = nil
         
         isTranscribing = false
         
         print("[ModernSpeech] Transcription stopped")
-        print("[ModernSpeech] Final transcript: \(accumulatedTranscript)")
+        print("[ModernSpeech] Final transcript: \(finalizedTranscript)")
     }
     
     /// Reset the transcriber
     func reset() {
         print("[ModernSpeech] Resetting...")
         
-        recognitionTask?.cancel()
-        recognitionTask = nil
-        recognitionRequest = nil
+        // Cancel ongoing tasks
+        recognizerTask?.cancel()
+        recognizerTask = nil
         
-        accumulatedTranscript = ""
-        lastPartialResult = ""
-        audioBufferAccumulator.removeAll()
-        accumulationStartTime = nil
+        // Clear transcripts
+        finalizedTranscript = ""
+        volatileTranscript = ""
+        transcriptionSegments.removeAll()
+        speakerAttributions.removeAll()
+        currentSpeakerId = 0
         isTranscribing = false
         
-        // Reinitialize recognizer if needed (don't destroy it)
-        if recognizer == nil {
-            recognizer = SFSpeechRecognizer(locale: locale)
-        }
+        // Create new input stream
+        let (stream, continuation) = AsyncStream<AnalyzerInput>.makeStream()
+        self.inputStream = stream
+        self.inputContinuation = continuation
         
         print("[ModernSpeech] Reset complete")
     }
     
     // MARK: - Results
     
-    /// Get the current transcript
+    /// Get the current transcript (finalized + volatile)
     func getCurrentTranscript() -> String {
-        // Combine accumulated and current partial
-        if !lastPartialResult.isEmpty {
-            if !accumulatedTranscript.isEmpty {
-                return accumulatedTranscript + " " + lastPartialResult
+        if !volatileTranscript.isEmpty {
+            if !finalizedTranscript.isEmpty {
+                return finalizedTranscript + " " + volatileTranscript
             }
-            return lastPartialResult
+            return volatileTranscript
         }
-        return accumulatedTranscript
+        return finalizedTranscript
     }
     
     /// Get finalized transcript only
     func getFinalizedTranscript() -> String {
-        return accumulatedTranscript
+        return finalizedTranscript
+    }
+    
+    /// Get transcription segments with metadata
+    func getTranscriptionSegments() -> [SpeechTranscriptionSegment] {
+        return transcriptionSegments
+    }
+    
+    /// Get speaker attributions
+    func getSpeakerAttributions() -> [SpeakerAttribution] {
+        return speakerAttributions
+    }
+    
+    /// Get average confidence score
+    func getAverageConfidence() -> Float {
+        guard !transcriptionSegments.isEmpty else { return 0.0 }
+        let totalConfidence = transcriptionSegments.reduce(0) { $0 + $1.confidence }
+        return totalConfidence / Float(transcriptionSegments.count)
+    }
+    
+    // MARK: - Helper Methods
+    
+    /// Extract alternative transcriptions from result
+    private func extractAlternatives(from result: SpeechTranscriber.Result) -> [AlternativeTranscription] {
+        // If the API provides alternatives, extract them
+        // For now, return empty array as placeholder
+        return []
+    }
+    
+    /// Handle speaker change event
+    private func handleSpeakerChange(speakerId: Int, at time: TimeInterval) {
+        print("[ModernSpeech] Speaker changed to ID: \(speakerId) at \(time)s")
+        
+        // Create speaker attribution entry
+        let attribution = SpeakerAttribution(
+            speakerId: speakerId,
+            startTime: time,
+            endTime: time, // Will be updated when speaker changes again
+            voiceCharacteristics: nil // Could be extracted if API provides
+        )
+        
+        // Update previous speaker's end time if exists
+        if !speakerAttributions.isEmpty {
+            var lastAttribution = speakerAttributions.removeLast()
+            lastAttribution = SpeakerAttribution(
+                speakerId: lastAttribution.speakerId,
+                startTime: lastAttribution.startTime,
+                endTime: time,
+                voiceCharacteristics: lastAttribution.voiceCharacteristics
+            )
+            speakerAttributions.append(lastAttribution)
+        }
+        
+        speakerAttributions.append(attribution)
     }
     
     /// Flush any remaining audio and get final transcription
@@ -335,14 +417,59 @@ class ModernSpeechFramework {
             try? await stopTranscription()
         }
         
-        recognizer = nil
+        // Deallocate locale using correct API
+        let allocatedLocales = await AssetInventory.reservedLocales
+        for locale in allocatedLocales {
+            if locale.identifier(.bcp47) == self.locale.identifier(.bcp47) {
+                await AssetInventory.release(reservedLocale: locale)
+                print("[ModernSpeech] Deallocated locale: \(locale.identifier)")
+            }
+        }
+        
+        transcriber = nil
+        analyzer = nil
         
         print("[ModernSpeech] Cleanup complete")
     }
     
     deinit {
-        recognitionTask?.cancel()
+        recognizerTask?.cancel()
+        inputContinuation.finish()
     }
+}
+
+// MARK: - Data Structures
+
+/// Represents a segment of transcribed text with metadata
+struct SpeechTranscriptionSegment {
+    let text: String
+    let startTime: TimeInterval
+    let endTime: TimeInterval
+    let confidence: Float
+    let isFinal: Bool
+    let speakerId: Int?
+    let alternatives: [AlternativeTranscription]
+}
+
+/// Alternative transcription with confidence score
+struct AlternativeTranscription {
+    let text: String
+    let confidence: Float
+}
+
+/// Speaker attribution information
+struct SpeakerAttribution {
+    let speakerId: Int
+    let startTime: TimeInterval
+    let endTime: TimeInterval
+    let voiceCharacteristics: VoiceCharacteristics?
+}
+
+/// Voice characteristics for speaker identification
+struct VoiceCharacteristics {
+    let pitch: Float
+    let speakingRate: Float
+    let volumeLevel: Float
 }
 
 // MARK: - Errors

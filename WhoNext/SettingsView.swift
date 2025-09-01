@@ -6,6 +6,7 @@ import Supabase
 
 struct SettingsView: View {
     @Environment(\.managedObjectContext) private var viewContext
+    @ObservedObject private var userProfile = UserProfile.shared
     // Secure API key storage with @State bindings
     @State private var apiKey: String = ""
     @State private var claudeApiKey: String = ""
@@ -283,6 +284,74 @@ Best regards
     // MARK: - General Settings
     private var generalSettingsView: some View {
         VStack(alignment: .leading, spacing: 20) {
+            // User Profile Section
+            VStack(alignment: .leading, spacing: 12) {
+                Text("User Profile")
+                    .font(.headline)
+                
+                Text("Configure your profile to exclude yourself from meeting attendees and personalize the app experience.")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                
+                HStack {
+                    Text("Name:")
+                        .frame(width: 100, alignment: .trailing)
+                    TextField("Your Name", text: .init(
+                        get: { UserProfile.shared.name },
+                        set: { UserProfile.shared.name = $0 }
+                    ))
+                    .textFieldStyle(.roundedBorder)
+                    .frame(maxWidth: 300)
+                }
+                
+                HStack {
+                    Text("Email:")
+                        .frame(width: 100, alignment: .trailing)
+                    TextField("your.email@example.com", text: .init(
+                        get: { UserProfile.shared.email },
+                        set: { UserProfile.shared.email = $0 }
+                    ))
+                    .textFieldStyle(.roundedBorder)
+                    .frame(maxWidth: 300)
+                }
+                
+                HStack {
+                    Text("Job Title:")
+                        .frame(width: 100, alignment: .trailing)
+                    TextField("Your Job Title", text: .init(
+                        get: { UserProfile.shared.jobTitle },
+                        set: { UserProfile.shared.jobTitle = $0 }
+                    ))
+                    .textFieldStyle(.roundedBorder)
+                    .frame(maxWidth: 300)
+                }
+                
+                HStack {
+                    Text("Organization:")
+                        .frame(width: 100, alignment: .trailing)
+                    TextField("Your Organization", text: .init(
+                        get: { UserProfile.shared.organization },
+                        set: { UserProfile.shared.organization = $0 }
+                    ))
+                    .textFieldStyle(.roundedBorder)
+                    .frame(maxWidth: 300)
+                }
+                
+                HStack {
+                    Spacer()
+                        .frame(width: 100)
+                    Text("Your information is used to filter you out of meeting attendee lists and personalize your experience.")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                        .frame(maxWidth: 300, alignment: .leading)
+                }
+            }
+            .padding()
+            .background(Color(NSColor.controlBackgroundColor))
+            .cornerRadius(8)
+            
+            Divider()
+            
             // Reset App Section
             VStack(alignment: .leading, spacing: 8) {
                 Text("Warning + Danger")

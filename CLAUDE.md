@@ -202,3 +202,359 @@ class ModernSpeechFramework {
   - Use `AssetInventory.reserve(locale:)` not `allocate(locale:)`
   - Use `AssetInventory.reservedLocales` not `allocatedLocales`
   - Use `AssetInventory.release(reservedLocale:)` not `deallocate(locale:)`
+
+## Phase 2: UI/UX Overhaul and Auto-Detection (August 31, 2025)
+
+### Overview
+The app has evolved from a 1:1 meeting tool to support all meeting types, but the UI remains 1:1-focused. This phase implements:
+1. Automatic meeting type detection (1:1 vs Group)
+2. Voice-based participant identification
+3. Unified meeting interface
+4. Progressive voice learning system
+
+### Current State Analysis
+
+#### ✅ Already Implemented
+1. **Speaker Diarization (DiarizationManager.swift)**
+   - FluidAudio integration for "who spoke when"
+   - Real-time speaker detection and segmentation
+   - Speaker embeddings for voice identification
+   - Can identify 2+ speakers automatically
+
+2. **Voice Prints (LiveMeeting.swift)**
+   - VoicePrint struct with MFCC features defined
+   - IdentifiedParticipant class with voicePrint property
+   - Basic infrastructure for voice-based identification
+
+3. **Calendar Integration (CalendarService.swift)**
+   - EventKit integration for Apple Calendar
+   - Google Calendar provider support
+   - Fetches meeting title, attendees, duration
+   - Can pre-populate expected participants
+
+4. **Group Support (Core Data)**
+   - Group entity with members and meetings
+   - GroupMeeting entity for non-1:1 meetings
+   - Relationship tracking between groups and people
+
+5. **Auto-Detection Infrastructure**
+   - Two-way audio detection for automatic recording start
+   - Meeting detection from calendar events
+   - Auto-recording capability exists
+
+#### ❌ Missing/Needs Implementation
+1. **Meeting Type Auto-Classification**
+   - No automatic 1:1 vs Group detection based on voice count
+   - LiveMeeting lacks meetingType property
+   - No logic to classify based on participant count
+
+2. **Voice Learning & Persistence**
+   - VoicePrint not connected to Person records
+   - No persistent storage of voice embeddings
+   - No progressive learning system
+   - Speaker matching not linked to People directory
+
+3. **Unified Meeting View**
+   - Current UI is 1:1 focused
+   - No unified view showing both meeting types
+   - Missing visual differentiation
+
+4. **Smart Participant Identification**
+   - Diarization identifies speakers but doesn't match to people
+   - Calendar attendees not correlated with detected voices
+   - No post-meeting participant confirmation UI
+
+5. **Automatic Meeting Detection**
+   - Has calendar integration but not automatic start
+   - No proactive meeting preparation
+   - Missing real-time participant identification display
+
+### Implementation Phases
+
+#### Phase 1: Core Meeting Type Detection (Quick Win)
+**Goal**: Automatically classify meetings as 1:1 or Group based on speaker count
+
+1. **Add meetingType to LiveMeeting.swift**
+```swift
+enum MeetingType: String, Codable {
+    case oneOnOne = "1:1"
+    case group = "Group"
+}
+@Published var meetingType: MeetingType?
+@Published var detectedSpeakerCount: Int = 0
+```
+
+2. **Integrate with DiarizationManager**
+   - In MeetingRecordingEngine.swift, monitor diarization results
+   - When speaker count changes:
+     ```swift
+     if let result = diarizationManager.lastResult {
+         liveMeeting.detectedSpeakerCount = result.speakerCount
+         liveMeeting.meetingType = result.speakerCount == 2 ? .oneOnOne : .group
+     }
+     ```
+
+3. **Update Recording Windows**
+   - Add meeting type badge to RefinedRecordingWindow
+   - Show participant count from diarization
+   - Visual differentiation: Blue for 1:1, Green for Group
+
+#### Phase 2: Voice-Person Linking
+**Goal**: Connect detected speakers to Person records
+
+1. **Extend Person Core Data Model**
+```swift
+// Add to Person+CoreDataProperties.swift
+@NSManaged public var voiceEmbeddings: Data? // Stores FluidAudio embeddings
+@NSManaged public var lastVoiceUpdate: Date?
+@NSManaged public var voiceConfidence: Float
+```
+
+2. **Create VoicePrintManager.swift**
+```swift
+class VoicePrintManager {
+    // Store embedding from DiarizationManager
+    func saveEmbedding(_ embedding: [Float], for person: Person)
+    
+    // Match diarization embedding to known people
+    func findMatchingPerson(for embedding: [Float]) -> (Person?, Float)?
+    
+    // Progressive confidence improvement
+    func updateConfidence(for person: Person, with newEmbedding: [Float])
+}
+```
+
+3. **Post-Meeting Participant Assignment UI**
+   - New view: ParticipantConfirmationView
+   - Shows "Speaker 1", "Speaker 2" with audio clips
+   - Allows assignment to existing Person or create new
+   - Saves embeddings for future matching
+
+#### Phase 3: Smart Calendar Integration
+**Goal**: Proactive meeting preparation using calendar data
+
+1. **Pre-Meeting Preparation (MeetingRecordingEngine)**
+```swift
+func prepareForUpcomingMeeting() {
+    // Check calendar 5 minutes before
+    if let nextMeeting = calendarService.getNextMeeting(within: 5.minutes) {
+        // Load expected participants
+        let participants = nextMeeting.attendees
+        
+        // Pre-load voice embeddings
+        for participant in participants {
+            if let person = findPerson(named: participant) {
+                voicePrintManager.preloadEmbedding(for: person)
+            }
+        }
+        
+        // Show notification
+        showNotification("Ready to record: \(nextMeeting.title)")
+    }
+}
+```
+
+2. **During-Meeting Correlation**
+```swift
+func correlateDetectedSpeakers() {
+    let calendarAttendees = currentMeeting?.attendees ?? []
+    let detectedSpeakers = diarizationManager.currentSpeakers
+    
+    // Match detected to expected
+    for speaker in detectedSpeakers {
+        if let match = voicePrintManager.matchToAttendee(speaker, attendees: calendarAttendees) {
+            liveMeeting.identifyParticipant(match)
+        } else {
+            // Flag as unexpected participant
+            liveMeeting.addUnexpectedParticipant(speaker)
+        }
+    }
+}
+```
+
+#### Phase 4: UI Overhaul
+**Goal**: Unified interface for all meeting types
+
+1. **New Dashboard Structure (MeetingsView.swift)**
+```swift
+struct MeetingsView: View {
+    @State private var filter: MeetingFilter = .all
+    
+    enum MeetingFilter {
+        case all, oneOnOne, group
+    }
+    
+    var body: some View {
+        VStack {
+            // Filter tabs
+            Picker("Filter", selection: $filter) {
+                Text("All").tag(MeetingFilter.all)
+                Text("1:1s").tag(MeetingFilter.oneOnOne)
+                Text("Groups").tag(MeetingFilter.group)
+            }
+            
+            // Unified meeting list
+            List(filteredMeetings) { meeting in
+                MeetingCard(meeting: meeting)
+            }
+        }
+    }
+}
+```
+
+2. **Meeting Cards with Type Indicators**
+```swift
+struct MeetingCard: View {
+    let meeting: Meeting
+    
+    var body: some View {
+        HStack {
+            // Type indicator
+            Image(systemName: meeting.type == .oneOnOne ? "person.2" : "person.3")
+                .foregroundColor(meeting.type == .oneOnOne ? .blue : .green)
+            
+            VStack(alignment: .leading) {
+                Text(meeting.title)
+                Text("\(meeting.participantCount) participants")
+                    .font(.caption)
+            }
+            
+            Spacer()
+            
+            // Auto-detected label
+            if meeting.wasAutoDetected {
+                Label("Auto", systemImage: "wand.and.stars")
+                    .font(.caption)
+            }
+        }
+    }
+}
+```
+
+3. **Simplified Navigation**
+   - Remove complex nested views
+   - Single meetings list with smart filters
+   - Progressive disclosure for details
+
+#### Phase 5: Progressive Voice Learning
+**Goal**: System improves with each confirmed meeting
+
+1. **Automatic Improvement System**
+```swift
+class VoiceLearningSystem {
+    func improveModels(from meeting: CompletedMeeting) {
+        for participant in meeting.confirmedParticipants {
+            if let person = participant.person,
+               let embedding = participant.voiceEmbedding {
+                // Update person's voice model
+                voicePrintManager.updateModel(for: person, with: embedding)
+                
+                // Increase confidence
+                person.voiceConfidence = min(person.voiceConfidence + 0.05, 1.0)
+            }
+        }
+    }
+}
+```
+
+2. **Voice Recognition Status in Person Profile**
+```swift
+struct PersonDetailView: View {
+    var body: some View {
+        Section("Voice Recognition") {
+            HStack {
+                Text("Recognition Confidence")
+                Spacer()
+                Text("\(Int(person.voiceConfidence * 100))%")
+            }
+            
+            if person.voiceConfidence < 0.8 {
+                Text("Needs \(3 - person.voiceSampleCount) more samples")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }
+        }
+    }
+}
+```
+
+3. **Smart Notifications**
+```swift
+func showVoiceNotifications() {
+    // During meeting
+    if newSpeakerDetected {
+        showNotification("New voice detected in meeting")
+    }
+    
+    // High confidence match
+    if matchConfidence > 0.95 {
+        showNotification("Identified as \(person.name) with 95% confidence")
+    }
+    
+    // Post-meeting
+    if hasUnconfirmedParticipants {
+        showNotification("Please confirm participants for meeting")
+    }
+}
+```
+
+### Technical Architecture
+
+#### Data Flow
+```
+Calendar Event → Pre-load Participants → Start Recording
+                                             ↓
+                                    DiarizationManager
+                                             ↓
+                                    Speaker Count → Meeting Type
+                                             ↓
+                                    Voice Embeddings → Match to People
+                                             ↓
+                                    Post-Meeting Confirmation
+                                             ↓
+                                    Save & Improve Models
+```
+
+#### Key Components Integration
+1. **DiarizationManager** → Provides speaker count and embeddings
+2. **CalendarService** → Provides expected participants
+3. **VoicePrintManager** (new) → Matches embeddings to people
+4. **LiveMeeting** → Enhanced with meetingType and speaker tracking
+5. **Person** → Extended with voice embeddings and confidence
+
+### Database Schema Changes
+
+```swift
+// Person entity additions
+voiceEmbeddings: Binary Data // Serialized [Float] arrays
+lastVoiceUpdate: Date
+voiceConfidence: Float // 0.0 to 1.0
+voiceSampleCount: Int32
+
+// Meeting entity additions  
+meetingType: String // "1:1" or "Group"
+wasAutoDetected: Boolean
+detectedSpeakerCount: Int32
+confirmedParticipants: Relationship to Person (many-to-many)
+```
+
+### Migration Strategy
+1. **Phase 1** can be deployed immediately (just UI changes)
+2. **Phase 2** requires Core Data migration (lightweight)
+3. **Phase 3-5** are progressive enhancements
+4. System works without voice data (graceful degradation)
+
+### Success Metrics
+- Meeting type correctly detected 95%+ of the time
+- Voice recognition accuracy improves to 90%+ after 5 meetings
+- Zero manual meeting creation required
+- Participant confirmation takes < 30 seconds post-meeting
+
+### Next Steps When Resuming
+1. Start with Phase 1 - Add meetingType to LiveMeeting
+2. Test speaker count detection with existing DiarizationManager
+3. Update UI to show meeting type badges
+4. Implement VoicePrintManager for Phase 2
+5. Add Core Data migrations for voice embeddings
+
+This comprehensive plan ensures the app evolves from 1:1-focused to a smart, auto-detecting meeting recorder that handles all meeting types elegantly.

@@ -126,6 +126,22 @@ struct RefinedRecordingView: View {
                 Text(meeting.displayTitle)
                     .font(.system(size: 14, weight: .medium))
                 
+                // Meeting type badge
+                if meeting.meetingType != .unknown {
+                    HStack(spacing: 4) {
+                        Image(systemName: meeting.meetingType.icon)
+                            .font(.system(size: 10))
+                        Text(meeting.meetingType.displayName)
+                            .font(.system(size: 11, weight: .medium))
+                    }
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 3)
+                    .background(meeting.meetingType.color.opacity(0.2))
+                    .foregroundColor(meeting.meetingType.color)
+                    .clipShape(Capsule())
+                    .animation(.easeInOut(duration: 0.3), value: meeting.meetingType)
+                }
+                
                 Text("•")
                     .foregroundColor(.secondary)
                 
@@ -302,9 +318,24 @@ struct RefinedRecordingView: View {
     
     private var speakersCard: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("ACTIVE SPEAKERS")
-                .font(.system(size: 9, weight: .semibold))
-                .foregroundColor(.secondary)
+            HStack {
+                Text("ACTIVE SPEAKERS")
+                    .font(.system(size: 9, weight: .semibold))
+                    .foregroundColor(.secondary)
+                
+                if meeting.detectedSpeakerCount > 0 {
+                    Spacer()
+                    
+                    HStack(spacing: 4) {
+                        Image(systemName: "person.2.wave.2")
+                            .font(.system(size: 9))
+                        Text("\(meeting.detectedSpeakerCount)")
+                            .font(.system(size: 10, weight: .semibold))
+                    }
+                    .foregroundColor(meeting.meetingType.color)
+                    .animation(.easeInOut(duration: 0.3), value: meeting.detectedSpeakerCount)
+                }
+            }
             
             if meeting.identifiedParticipants.isEmpty {
                 HStack {

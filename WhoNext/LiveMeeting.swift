@@ -1,6 +1,34 @@
 import Foundation
 import SwiftUI
 
+// MARK: - Meeting Type
+
+enum MeetingType: String, Codable {
+    case oneOnOne = "1:1"
+    case group = "Group"
+    case unknown = "Unknown"
+    
+    var displayName: String {
+        rawValue
+    }
+    
+    var color: Color {
+        switch self {
+        case .oneOnOne: return .blue
+        case .group: return .green
+        case .unknown: return .gray
+        }
+    }
+    
+    var icon: String {
+        switch self {
+        case .oneOnOne: return "person.2"
+        case .group: return "person.3"
+        case .unknown: return "questionmark.circle"
+        }
+    }
+}
+
 /// Represents a meeting currently being recorded and transcribed
 class LiveMeeting: ObservableObject, Identifiable {
     
@@ -13,6 +41,12 @@ class LiveMeeting: ObservableObject, Identifiable {
     @Published var transcript: [TranscriptSegment] = []
     @Published var identifiedParticipants: [IdentifiedParticipant] = []
     @Published var transcriptionProgress: Double = 0.0
+    
+    // MARK: - Meeting Type Detection
+    @Published var meetingType: MeetingType = .unknown
+    @Published var detectedSpeakerCount: Int = 0
+    @Published var speakerDetectionConfidence: Float = 0.0
+    @Published var typeDetectionTimestamp: Date?
     
     // MARK: - Enhanced Metrics
     @Published var wordCount: Int = 0
@@ -117,6 +151,29 @@ class LiveMeeting: ObservableObject, Identifiable {
                 return segment.text
             }
         }.joined(separator: "\n")
+    }
+    
+    // MARK: - Meeting Type Detection
+    
+    func updateMeetingType(speakerCount: Int, confidence: Float = 1.0) {
+        detectedSpeakerCount = speakerCount
+        speakerDetectionConfidence = confidence
+        
+        // Auto-classify based on speaker count
+        let previousType = meetingType
+        switch speakerCount {
+        case 0...1:
+            meetingType = .unknown
+        case 2:
+            meetingType = .oneOnOne
+        default:
+            meetingType = .group
+        }
+        
+        // Record when type was first detected
+        if previousType == .unknown && meetingType != .unknown {
+            typeDetectionTimestamp = Date()
+        }
     }
 }
 

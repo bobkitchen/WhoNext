@@ -111,15 +111,15 @@
         "key": "Recording",
         "location": {
           "startingColumn": 34,
-          "startingLine": 393
+          "startingLine": 413
         }
       },
       {
         "comment": "",
         "key": "+%lld",
         "location": {
-          "startingColumn": 38,
-          "startingLine": 413
+          "startingColumn": 42,
+          "startingLine": 436
         }
       },
       {
@@ -127,7 +127,7 @@
         "key": "Brief",
         "location": {
           "startingColumn": 31,
-          "startingLine": 425
+          "startingLine": 449
         }
       },
       {
@@ -135,7 +135,7 @@
         "key": "Join",
         "location": {
           "startingColumn": 35,
-          "startingLine": 443
+          "startingLine": 467
         }
       },
       {
@@ -143,7 +143,7 @@
         "key": "Stop",
         "location": {
           "startingColumn": 35,
-          "startingLine": 455
+          "startingLine": 479
         }
       },
       {
@@ -151,7 +151,159 @@
         "key": "Record",
         "location": {
           "startingColumn": 35,
-          "startingLine": 463
+          "startingLine": 487
+        }
+      },
+      {
+        "comment": "",
+        "key": "Pre-Meeting Brief",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 582
+        }
+      },
+      {
+        "comment": "",
+        "key": "1:1",
+        "location": {
+          "startingColumn": 53,
+          "startingLine": 586
+        }
+      },
+      {
+        "comment": "",
+        "key": "Group",
+        "location": {
+          "startingColumn": 61,
+          "startingLine": 586
+        }
+      },
+      {
+        "comment": "",
+        "key": "AI",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 600
+        }
+      },
+      {
+        "comment": "",
+        "key": "Refresh",
+        "location": {
+          "startingColumn": 58,
+          "startingLine": 621
+        }
+      },
+      {
+        "comment": "",
+        "key": "Generate AI Brief",
+        "location": {
+          "startingColumn": 70,
+          "startingLine": 621
+        }
+      },
+      {
+        "comment": "",
+        "key": "Show AI Brief",
+        "location": {
+          "startingColumn": 50,
+          "startingLine": 639
+        }
+      },
+      {
+        "comment": "",
+        "key": "Show Raw Notes",
+        "location": {
+          "startingColumn": 68,
+          "startingLine": 639
+        }
+      },
+      {
+        "comment": "",
+        "key": "Open in separate window",
+        "location": {
+          "startingColumn": 31,
+          "startingLine": 649
+        }
+      },
+      {
+        "comment": "",
+        "key": "Retry",
+        "location": {
+          "startingColumn": 28,
+          "startingLine": 744
+        }
+      },
+      {
+        "comment": "",
+        "key": "Meeting Agenda",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 756
+        }
+      },
+      {
+        "comment": "",
+        "key": "•",
+        "location": {
+          "startingColumn": 42,
+          "startingLine": 764
+        }
+      },
+      {
+        "comment": "",
+        "key": "Recent Notes",
+        "location": {
+          "startingColumn": 38,
+          "startingLine": 793
+        }
+      },
+      {
+        "comment": "",
+        "key": "No recent notes available",
+        "location": {
+          "startingColumn": 54,
+          "startingLine": 901
+        }
+      },
+      {
+        "comment": "",
+        "key": "No profile created yet",
+        "location": {
+          "startingColumn": 50,
+          "startingLine": 947
+        }
+      },
+      {
+        "comment": "",
+        "key": "Participants (%lld)",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 975
+        }
+      },
+      {
+        "comment": "",
+        "key": "Previous Group Meetings",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 999
+        }
+      },
+      {
+        "comment": "",
+        "key": "+%lld",
+        "location": {
+          "startingColumn": 38,
+          "startingLine": 989
+        }
+      },
+      {
+        "comment": "",
+        "key": "No attendees listed",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 1025
         }
       },
       {
@@ -159,23 +311,39 @@
         "key": "Pre-Meeting Brief",
         "location": {
           "startingColumn": 18,
-          "startingLine": 503
+          "startingLine": 1419
+        }
+      },
+      {
+        "comment": "",
+        "key": "Attendees",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 1488
         }
       },
       {
         "comment": "",
         "key": "No recent notes",
         "location": {
-          "startingColumn": 42,
-          "startingLine": 527
+          "startingColumn": 54,
+          "startingLine": 1526
         }
       },
       {
         "comment": "",
-        "key": "No participant information available",
+        "key": "No profile found",
         "location": {
-          "startingColumn": 26,
-          "startingLine": 544
+          "startingColumn": 50,
+          "startingLine": 1559
+        }
+      },
+      {
+        "comment": "",
+        "key": "No attendees listed",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 1578
         }
       }
     ]

@@ -39,6 +39,11 @@ class MeetingRecordingEngine: ObservableObject {
     private var transcriptProcessor: TranscriptProcessor?
     private let calendarService = CalendarService.shared
     
+    // MARK: - Diarization (Speaker Detection)
+    #if canImport(FluidAudio)
+    private var diarizationManager: DiarizationManager?
+    #endif
+    
     // MARK: - Recording Properties
     private var audioWriter: AVAudioFile?
     private var recordingStartTime: Date?
@@ -62,6 +67,7 @@ class MeetingRecordingEngine: ObservableObject {
         setupNotifications()
         loadPreferences()
         setupTranscription()
+        setupDiarization()
     }
     
     private func setupTranscription() {
@@ -87,6 +93,20 @@ class MeetingRecordingEngine: ObservableObject {
                 print("ℹ️ Modern Speech Framework already initialized")
             }
         }
+    }
+    
+    private func setupDiarization() {
+        #if canImport(FluidAudio)
+        Task { @MainActor in
+            diarizationManager = DiarizationManager(isEnabled: true, enableRealTimeProcessing: true)
+            do {
+                try await diarizationManager?.initialize()
+                print("✅ DiarizationManager initialized for speaker detection")
+            } catch {
+                print("⚠️ Failed to initialize DiarizationManager: \(error)")
+            }
+        }
+        #endif
     }
     
     // MARK: - Permission Handling
@@ -423,6 +443,33 @@ class MeetingRecordingEngine: ObservableObject {
             if let mixedBuffer = audioCapture.mixAudioBuffers(mic: mic, system: system) {
                 saveAudioBuffer(mixedBuffer)
                 
+                // Process for diarization (speaker detection)
+                #if canImport(FluidAudio)
+                if let diarizationManager = diarizationManager {
+                    Task {
+                        await diarizationManager.processAudioBuffer(mixedBuffer)
+                        
+                        // Update meeting type based on speaker count
+                        await MainActor.run {
+                            if let result = diarizationManager.lastResult {
+                                let speakerCount = result.speakerCount
+                                let progressValue = diarizationManager.processingProgress
+                                
+                                self.currentMeeting?.updateMeetingType(
+                                    speakerCount: speakerCount,
+                                    confidence: progressValue > 0 ? Float(progressValue) : 0.5
+                                )
+                                
+                                // Log detection
+                                if let meetingType = self.currentMeeting?.meetingType {
+                                    print("🎙️ Detected \(speakerCount) speakers → Meeting Type: \(meetingType.displayName)")
+                                }
+                            }
+                        }
+                    }
+                }
+                #endif
+                
                 // Process for real-time transcription using modern Speech framework
                 if #available(macOS 26.0, *) {
                     if let framework = modernSpeechFramework as? ModernSpeechFramework {
@@ -663,9 +710,36 @@ class MeetingRecordingEngine: ObservableObject {
                         print("🔄 Flushing remaining audio for transcription...")
                         let finalTranscription = await framework.flushAndTranscribe()
                         
+                        // Finalize diarization results
+                        #if canImport(FluidAudio)
+                        var speakerSegments: [(text: String, speaker: String?, startTime: TimeInterval, endTime: TimeInterval)] = []
+                        if let diarizationManager = self.diarizationManager {
+                            if let finalResult = await diarizationManager.finishProcessing() {
+                                print("📊 Final diarization: \(finalResult.speakerCount) speakers detected")
+                                
+                                // Final update to meeting type
+                                await MainActor.run {
+                                    meeting.updateMeetingType(
+                                        speakerCount: finalResult.speakerCount,
+                                        confidence: 1.0 // High confidence after full processing
+                                    )
+                                    print("✅ Final Meeting Type: \(meeting.meetingType.displayName)")
+                                }
+                                
+                                // Could also process speaker segments here if needed
+                                // for segment in finalResult.segments { ... }
+                            }
+                            
+                            // Reset diarization for next meeting
+                            await MainActor.run {
+                                diarizationManager.reset()
+                            }
+                        }
+                        #else
                         // Get speaker segments if diarization is enabled
                         // Speaker segments not available in fallback implementation
                         let speakerSegments: [(text: String, speaker: String?, startTime: TimeInterval, endTime: TimeInterval)] = []
+                        #endif
                         
                         if !speakerSegments.isEmpty {
                             // Add speaker-attributed segments
