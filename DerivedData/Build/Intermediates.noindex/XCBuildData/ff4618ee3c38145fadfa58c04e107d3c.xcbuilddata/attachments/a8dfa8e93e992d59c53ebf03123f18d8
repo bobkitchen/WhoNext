@@ -1,0 +1,4 @@
+module SwiftCSV {
+header "SwiftCSV-Swift.h"
+export *
+}

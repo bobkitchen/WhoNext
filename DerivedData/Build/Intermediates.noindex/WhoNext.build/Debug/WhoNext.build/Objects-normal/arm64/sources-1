@@ -69,6 +69,7 @@
 /Users/bobkitchen/Documents/GitHub/WhoNext/WhoNext/MeetingRecordingView.swift
 /Users/bobkitchen/Documents/GitHub/WhoNext/WhoNext/MeetingSearchEngine.swift
 /Users/bobkitchen/Documents/GitHub/WhoNext/WhoNext/MeetingsView.swift
+/Users/bobkitchen/Documents/GitHub/WhoNext/WhoNext/MeetingTypeDetector.swift
 /Users/bobkitchen/Documents/GitHub/WhoNext/WhoNext/ModernSpeechFramework.swift
 /Users/bobkitchen/Documents/GitHub/WhoNext/WhoNext/NativeSpeechFramework.swift
 /Users/bobkitchen/Documents/GitHub/WhoNext/WhoNext/NavigationStateManager.swift
@@ -79,6 +80,7 @@
 /Users/bobkitchen/Documents/GitHub/WhoNext/WhoNext/OverdueConversationsDetailView.swift
 /Users/bobkitchen/Documents/GitHub/WhoNext/WhoNext/ParakeetMLXModel.swift
 /Users/bobkitchen/Documents/GitHub/WhoNext/WhoNext/ParakeetMLXTranscriber.swift
+/Users/bobkitchen/Documents/GitHub/WhoNext/WhoNext/ParticipantConfirmationView.swift
 /Users/bobkitchen/Documents/GitHub/WhoNext/WhoNext/PDFOrgChartProcessor.swift
 /Users/bobkitchen/Documents/GitHub/WhoNext/WhoNext/PeopleAndGroupsView.swift
 /Users/bobkitchen/Documents/GitHub/WhoNext/WhoNext/PeopleListView.swift
@@ -129,6 +131,7 @@
 /Users/bobkitchen/Documents/GitHub/WhoNext/WhoNext/TwoWayAudioDetector.swift
 /Users/bobkitchen/Documents/GitHub/WhoNext/WhoNext/UpcomingMeetingsView.swift
 /Users/bobkitchen/Documents/GitHub/WhoNext/WhoNext/UserProfile.swift
+/Users/bobkitchen/Documents/GitHub/WhoNext/WhoNext/VoicePrintManager.swift
 /Users/bobkitchen/Documents/GitHub/WhoNext/WhoNext/WhisperCoreMLTranscriber.swift
 /Users/bobkitchen/Documents/GitHub/WhoNext/WhoNext/WhoNextApp.swift
 /Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/WhoNext.build/Debug/WhoNext.build/DerivedSources/GeneratedAssetSymbols.swift

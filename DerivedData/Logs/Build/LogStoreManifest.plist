@@ -48,48 +48,6 @@
 			<key>uniqueIdentifier</key>
 			<string>9F87086D-C96D-4DAF-BE2C-4F0AA4F4D7E3</string>
 		</dict>
-		<key>EC45DE43-4029-42B0-8F7C-26DCCEBAB845</key>
-		<dict>
-			<key>className</key>
-			<string>IDECommandLineBuildLog</string>
-			<key>documentTypeString</key>
-			<string>&lt;nil&gt;</string>
-			<key>domainType</key>
-			<string>Xcode.IDEActivityLogDomainType.BuildLog</string>
-			<key>fileName</key>
-			<string>EC45DE43-4029-42B0-8F7C-26DCCEBAB845.xcactivitylog</string>
-			<key>hasPrimaryLog</key>
-			<true/>
-			<key>primaryObservable</key>
-			<dict>
-				<key>highLevelStatus</key>
-				<string>E</string>
-				<key>totalNumberOfAnalyzerIssues</key>
-				<integer>0</integer>
-				<key>totalNumberOfErrors</key>
-				<integer>3</integer>
-				<key>totalNumberOfTestFailures</key>
-				<integer>0</integer>
-				<key>totalNumberOfWarnings</key>
-				<integer>5</integer>
-			</dict>
-			<key>schemeIdentifier-containerName</key>
-			<string>WhoNext project</string>
-			<key>schemeIdentifier-schemeName</key>
-			<string>WhoNext</string>
-			<key>schemeIdentifier-sharedScheme</key>
-			<integer>1</integer>
-			<key>signature</key>
-			<string>Building project WhoNext with scheme WhoNext and configuration Debug</string>
-			<key>timeStartedRecording</key>
-			<real>778423336.01032996</real>
-			<key>timeStoppedRecording</key>
-			<real>778423356.83662295</real>
-			<key>title</key>
-			<string>Building project WhoNext with scheme WhoNext and configuration Debug</string>
-			<key>uniqueIdentifier</key>
-			<string>EC45DE43-4029-42B0-8F7C-26DCCEBAB845</string>
-		</dict>
 	</dict>
 </dict>
 </plist>

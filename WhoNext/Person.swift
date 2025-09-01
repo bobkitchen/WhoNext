@@ -23,6 +23,12 @@ public class Person: NSManagedObject {
     @NSManaged public var modifiedAt: Date?
     @NSManaged public var isSoftDeleted: Bool
     @NSManaged public var deletedAt: Date?
+    
+    // Voice recognition properties
+    @NSManaged public var voiceEmbeddings: Data?
+    @NSManaged public var lastVoiceUpdate: Date?
+    @NSManaged public var voiceConfidence: Float
+    @NSManaged public var voiceSampleCount: Int32
 
     // Guarantee that every newly-inserted Person gets a unique identifier
     public override func awakeFromInsert() {
