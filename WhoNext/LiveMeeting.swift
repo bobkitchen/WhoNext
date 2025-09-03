@@ -116,8 +116,8 @@ class LiveMeeting: ObservableObject, Identifiable {
     func addTranscriptSegment(_ segment: TranscriptSegment) {
         transcript.append(segment)
         
-        // Update word count
-        let words = segment.text.split(separator: " ").count
+        // Update word count - use safer word counting
+        let words = segment.text.components(separatedBy: .whitespacesAndNewlines).filter { !$0.isEmpty }.count
         wordCount += words
         
         // Update average confidence
@@ -128,10 +128,13 @@ class LiveMeeting: ObservableObject, Identifiable {
             averageConfidence = ((averageConfidence * Float(transcript.count - 1)) + segment.confidence) / Float(transcript.count)
         }
         
-        // Track speaker changes
-        if let speakerID = segment.speakerID, 
-           speakerID != transcript.dropLast().last?.speakerID {
-            speakerTurnCount += 1
+        // Track speaker changes - fixed array access
+        if let speakerID = segment.speakerID {
+            // Get the previous segment's speaker ID safely
+            let previousSpeakerID = transcript.count >= 2 ? transcript[transcript.count - 2].speakerID : nil
+            if speakerID != previousSpeakerID {
+                speakerTurnCount += 1
+            }
         }
     }
     
@@ -200,7 +203,7 @@ struct TranscriptSegment: Identifiable, Codable {
     let text: String
     let timestamp: TimeInterval // Seconds from start of recording
     let speakerID: String?
-    let speakerName: String?
+    var speakerName: String? // Made mutable for live editing
     let confidence: Float
     let isFinalized: Bool // true if refined by Whisper, false if from Parakeet
     

@@ -1073,24 +1073,50 @@ struct ProfileContentView: View {
     }
     
     private func processInlineFormatting(_ text: String) -> AttributedString {
-        var result = AttributedString(text)
+        var processedText = text
+        var result = AttributedString()
         
-        // Process bold text
-        if let regex = try? NSRegularExpression(pattern: "\\*\\*(.*?)\\*\\*", options: []) {
-            let nsString = text as NSString
-            let matches = regex.matches(in: text, options: [], range: NSRange(location: 0, length: nsString.length))
+        // Replace **text** with bold formatting
+        let boldPattern = "\\*\\*([^*]+)\\*\\*"
+        
+        do {
+            let regex = try NSRegularExpression(pattern: boldPattern, options: [])
+            let nsString = processedText as NSString
+            let matches = regex.matches(in: processedText, options: [], range: NSRange(location: 0, length: nsString.length))
             
-            for match in matches.reversed() {
-                if let range = Range(match.range(at: 1), in: text) {
-                    let boldText = String(text[range])
-                    if let attrRange = result.range(of: "**\(boldText)**") {
-                        result.replaceSubrange(attrRange, with: AttributedString(boldText))
-                        if let newRange = result.range(of: boldText) {
-                            result[newRange].font = .system(size: 14, weight: .semibold)
-                        }
-                    }
+            var lastEndIndex = 0
+            
+            for match in matches {
+                // Add text before the bold part
+                let beforeRange = NSRange(location: lastEndIndex, length: match.range.location - lastEndIndex)
+                if let beforeText = nsString.substring(with: beforeRange) as String?, !beforeText.isEmpty {
+                    result.append(AttributedString(beforeText))
                 }
+                
+                // Add the bold text
+                if let boldRange = Range(match.range(at: 1), in: processedText) {
+                    var boldText = AttributedString(String(processedText[boldRange]))
+                    boldText.font = .system(size: 14, weight: .semibold)
+                    result.append(boldText)
+                }
+                
+                lastEndIndex = match.range.location + match.range.length
             }
+            
+            // Add any remaining text after the last match
+            if lastEndIndex < nsString.length {
+                let remainingText = nsString.substring(from: lastEndIndex)
+                result.append(AttributedString(remainingText))
+            }
+            
+            // If no matches found, just return the original text
+            if matches.isEmpty {
+                result = AttributedString(text)
+            }
+            
+        } catch {
+            // If regex fails, return the text as-is
+            result = AttributedString(text)
         }
         
         return result

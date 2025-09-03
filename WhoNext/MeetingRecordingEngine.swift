@@ -480,29 +480,69 @@ class MeetingRecordingEngine: ObservableObject {
                                 // Check if we have new content (the transcript grows incrementally)
                                 if fullTranscript.count > self.lastTranscriptionText.count {
                                     // Extract only the new portion
-                                    let newContent = String(fullTranscript.dropFirst(self.lastTranscriptionText.count))
-                                        .trimmingCharacters(in: .whitespacesAndNewlines)
+                                    let rawNewContent = String(fullTranscript.dropFirst(self.lastTranscriptionText.count))
                                     
-                                    if !newContent.isEmpty {
-                                        // Add only the new content as a segment
+                                    // Find the last complete sentence in the new content
+                                    var completeContent = ""
+                                    var lastSentenceEnd = -1
+                                    
+                                    // Look for sentence endings
+                                    for (index, char) in rawNewContent.enumerated() {
+                                        if char == "." || char == "!" || char == "?" {
+                                            // Check if there's a space or end of string after it (to avoid abbreviations)
+                                            let nextIndex = rawNewContent.index(rawNewContent.startIndex, offsetBy: index + 1)
+                                            if nextIndex == rawNewContent.endIndex || rawNewContent[nextIndex].isWhitespace {
+                                                lastSentenceEnd = index
+                                            }
+                                        }
+                                    }
+                                    
+                                    // If we found at least one complete sentence
+                                    if lastSentenceEnd >= 0 {
+                                        let endIndex = rawNewContent.index(rawNewContent.startIndex, offsetBy: lastSentenceEnd + 1)
+                                        completeContent = String(rawNewContent[..<endIndex]).trimmingCharacters(in: .whitespacesAndNewlines)
+                                    } else {
+                                        // If no sentence ending, but we have a lot of content, find the last complete word
+                                        let words = rawNewContent.components(separatedBy: .whitespacesAndNewlines).filter { !$0.isEmpty }
+                                        
+                                        // Wait until we have at least 100 words or 500 characters
+                                        if words.count >= 100 || rawNewContent.count >= 500 {
+                                            // Take all complete words except the last one (which might be partial)
+                                            if words.count > 1 {
+                                                let completeWords = words.dropLast()
+                                                completeContent = completeWords.joined(separator: " ")
+                                            }
+                                        }
+                                    }
+                                    
+                                    // Add the segment if we have complete content
+                                    if !completeContent.isEmpty {
                                         let segment = TranscriptSegment(
-                                            text: newContent,
+                                            text: completeContent,
                                             timestamp: Date().timeIntervalSince(self.recordingStartTime ?? Date()),
-                                            speakerID: nil,
+                                            speakerID: "speaker_1",  // Default speaker ID
                                             speakerName: nil,
                                             confidence: 0.95,
                                             isFinalized: true
                                         )
                                         self.currentMeeting?.addTranscriptSegment(segment)
                                         
-                                        print("📝 New segment #\(self.currentMeeting?.transcript.count ?? 0): \(newContent.split(separator: " ").count) words")
-                                        print("📊 Total transcript: \(fullTranscript.split(separator: " ").count) words")
+                                        // Update tracking to the position after the complete content
+                                        let processedLength = self.lastTranscriptionText.count + completeContent.count
+                                        if processedLength <= fullTranscript.count {
+                                            self.lastTranscriptionText = String(fullTranscript.prefix(processedLength))
+                                        }
                                         
-                                        // Update our tracking
-                                        self.lastTranscriptionText = fullTranscript
+                                        let wordCount = completeContent.components(separatedBy: .whitespacesAndNewlines).filter { !$0.isEmpty }.count
+                                        print("📝 New segment #\(self.currentMeeting?.transcript.count ?? 0): \(wordCount) words")
+                                        print("📊 Total transcript: \(fullTranscript.split(separator: " ").count) words")
                                         
                                         // Update meeting metrics
                                         self.updateMeetingMetrics()
+                                    } else {
+                                        // Keep accumulating
+                                        let bufferedWords = rawNewContent.components(separatedBy: .whitespacesAndNewlines).filter { !$0.isEmpty }.count
+                                        print("📝 Buffering: \(bufferedWords) words, \(rawNewContent.count) chars (waiting for sentence end)")
                                     }
                                 } else if !fullTranscript.isEmpty && self.lastTranscriptionText.isEmpty {
                                     // First transcription
@@ -595,10 +635,32 @@ class MeetingRecordingEngine: ObservableObject {
                     if let framework = modernSpeechFramework as? ModernSpeechFramework {
                         framework.reset()
                         print("✅ Reset transcription framework for auto-recording")
+                        
+                        // Start transcription
+                        do {
+                            try await framework.startTranscription()
+                            print("✅ Started transcription for auto-recording")
+                        } catch {
+                            print("❌ Failed to start transcription: \(error)")
+                        }
                     }
                 }
             }
             lastTranscriptionText = "" // Reset transcript tracking
+        } else {
+            // For manual recording, also start transcription
+            if #available(macOS 26.0, *) {
+                Task { @MainActor in
+                    if let framework = modernSpeechFramework as? ModernSpeechFramework {
+                        do {
+                            try await framework.startTranscription()
+                            print("✅ Started transcription for manual recording")
+                        } catch {
+                            print("❌ Failed to start transcription: \(error)")
+                        }
+                    }
+                }
+            }
         }
         
         // Create live meeting object
@@ -707,8 +769,18 @@ class MeetingRecordingEngine: ObservableObject {
                 // Force transcription of any remaining audio before processing meeting
                 if #available(macOS 26.0, *) {
                     if let framework = modernSpeechFramework as? ModernSpeechFramework {
-                        print("🔄 Flushing remaining audio for transcription...")
-                        let finalTranscription = await framework.flushAndTranscribe()
+                        print("🔄 Stopping transcription and flushing remaining audio...")
+                        
+                        // Stop transcription properly
+                        do {
+                            try await framework.stopTranscription()
+                            print("✅ Transcription stopped successfully")
+                        } catch {
+                            print("⚠️ Error stopping transcription: \(error)")
+                        }
+                        
+                        // Get final transcript
+                        let finalTranscription = await framework.getFinalizedTranscript()
                         
                         // Finalize diarization results
                         #if canImport(FluidAudio)

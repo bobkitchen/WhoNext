@@ -15,9 +15,9 @@ class RefinedRecordingWindowController: NSWindowController {
         let hostingController = NSHostingController(rootView: contentView)
         self.hostingController = hostingController
         
-        // Create a floating panel
+        // Create a floating panel with better default size
         let panel = NSPanel(
-            contentRect: NSRect(x: 0, y: 0, width: 420, height: 540),
+            contentRect: NSRect(x: 0, y: 0, width: 480, height: 640),
             styleMask: [.titled, .closable, .miniaturizable, .resizable, .fullSizeContentView, .nonactivatingPanel],
             backing: .buffered,
             defer: false
@@ -35,8 +35,8 @@ class RefinedRecordingWindowController: NSWindowController {
         panel.becomesKeyOnlyIfNeeded = true
         
         // Set size constraints
-        panel.minSize = NSSize(width: 380, height: 480)
-        panel.maxSize = NSSize(width: 520, height: 720)
+        panel.minSize = NSSize(width: 420, height: 540)
+        panel.maxSize = NSSize(width: 600, height: 900)
         
         super.init(window: panel)
         
@@ -52,12 +52,18 @@ class RefinedRecordingWindowController: NSWindowController {
         guard let window = window, let screen = NSScreen.main else { return }
         
         let screenFrame = screen.visibleFrame
-        let windowFrame = window.frame
+        let windowWidth: CGFloat = 480
+        let windowHeight: CGFloat = 640
         
-        let xPos = screenFrame.maxX - windowFrame.width - 20
-        let yPos = screenFrame.maxY - windowFrame.height - 40
+        // Position in the right side of the screen with proper margin
+        // Ensure window is fully visible on screen
+        let rightMargin: CGFloat = 40
+        let topMargin: CGFloat = 80
         
-        window.setFrameOrigin(NSPoint(x: xPos, y: yPos))
+        let xPos = max(screenFrame.minX + 20, min(screenFrame.maxX - windowWidth - rightMargin, screenFrame.maxX - windowWidth - rightMargin))
+        let yPos = max(screenFrame.minY + 20, min(screenFrame.maxY - windowHeight - topMargin, screenFrame.maxY - windowHeight - topMargin))
+        
+        window.setFrame(NSRect(x: xPos, y: yPos, width: windowWidth, height: windowHeight), display: true)
     }
 }
 
@@ -68,6 +74,9 @@ struct RefinedRecordingView: View {
     @State private var speakerColors: [String: Color] = [:]
     @State private var speakerNumbers: [String: Int] = [:]
     @State private var nextSpeakerNumber = 1
+    @State private var speakerNames: [String: String] = [:] // Maps speaker ID to custom names
+    @State private var editingSpeaker: String? = nil // Speaker ID being edited
+    @State private var editingName: String = "" // Temporary name during editing
     
     // Design constants
     private let spacing: CGFloat = 8
@@ -220,7 +229,9 @@ struct RefinedRecordingView: View {
     
     private var transcriptContent: some View {
         VStack(spacing: 0) {
-            ForEach(Array(meeting.transcript.suffix(15).enumerated()), id: \.element.id) { index, segment in
+            let recentSegments = Array(meeting.transcript.suffix(15))
+            
+            ForEach(Array(recentSegments.enumerated()), id: \.element.id) { index, segment in
                 let showTimestamp = shouldShowTimestamp(for: index, segment: segment)
                 let speakerInfo = getSpeakerInfo(for: segment)
                 
@@ -248,9 +259,33 @@ struct RefinedRecordingView: View {
                         
                         // Content
                         VStack(alignment: .leading, spacing: 2) {
-                            Text(speakerInfo.name)
-                                .font(.system(size: 11, weight: .medium))
-                                .foregroundColor(speakerInfo.color)
+                            // Editable speaker name
+                            if editingSpeaker == (segment.speakerID ?? segment.speakerName ?? "unknown") {
+                                HStack {
+                                    TextField("Speaker Name", text: $editingName)
+                                        .textFieldStyle(.plain)
+                                        .font(.system(size: 11, weight: .medium))
+                                        .foregroundColor(speakerInfo.color)
+                                        .onSubmit {
+                                            saveSpeakerName()
+                                        }
+                                    
+                                    Button("Save") {
+                                        saveSpeakerName()
+                                    }
+                                    .font(.system(size: 9))
+                                    .buttonStyle(.plain)
+                                    .foregroundColor(.accentColor)
+                                }
+                            } else {
+                                Text(speakerInfo.name)
+                                    .font(.system(size: 11, weight: .medium))
+                                    .foregroundColor(speakerInfo.color)
+                                    .onTapGesture {
+                                        startEditingSpeaker(segment)
+                                    }
+                                    .help("Click to rename speaker")
+                            }
                             
                             Text(segment.text)
                                 .font(.system(size: 14))
@@ -267,8 +302,8 @@ struct RefinedRecordingView: View {
                 }
                 
                 // Add separator between different speakers
-                if index < meeting.transcript.suffix(15).count - 1 {
-                    let nextSegment = meeting.transcript.suffix(15)[index + 1]
+                if index < recentSegments.count - 1 {
+                    let nextSegment = recentSegments[index + 1]
                     if segment.speakerID != nextSegment.speakerID {
                         Divider()
                             .padding(.vertical, 4)
@@ -353,7 +388,8 @@ struct RefinedRecordingView: View {
                     ForEach(meeting.identifiedParticipants.prefix(2)) { participant in
                         CompactSpeakerRow(
                             participant: participant,
-                            totalDuration: meeting.duration
+                            totalDuration: meeting.duration,
+                            speakerNames: $speakerNames
                         )
                     }
                     
@@ -452,7 +488,11 @@ struct RefinedRecordingView: View {
         // Show timestamp for first segment
         if index == 0 { return true }
         
-        let segments = meeting.transcript.suffix(15)
+        let segments = Array(meeting.transcript.suffix(15))
+        
+        // Safety check - ensure index is valid
+        if index >= segments.count || index <= 0 { return false }
+        
         let previousSegment = segments[index - 1]
         
         // Show if speaker changed
@@ -465,7 +505,19 @@ struct RefinedRecordingView: View {
     }
     
     private func getSpeakerInfo(for segment: TranscriptSegment) -> (name: String, label: String, color: Color) {
-        if let speakerName = segment.speakerName, !speakerName.isEmpty {
+        // Check for custom speaker name first
+        if let speakerID = segment.speakerID,
+           let customName = speakerNames[speakerID] {
+            let initials = customName.split(separator: " ")
+                .compactMap { $0.first }
+                .prefix(2)
+                .map { String($0) }
+                .joined()
+                .uppercased()
+            
+            let color = getColorForSpeaker(speakerID)
+            return (customName, initials.isEmpty ? "?" : initials, color)
+        } else if let speakerName = segment.speakerName, !speakerName.isEmpty {
             // Named speaker
             let initials = speakerName.split(separator: " ")
                 .compactMap { $0.first }
@@ -477,6 +529,19 @@ struct RefinedRecordingView: View {
             let color = getColorForSpeaker(speakerName)
             return (speakerName, initials.isEmpty ? "?" : initials, color)
         } else if let speakerID = segment.speakerID {
+            // Check if we have a saved name for this speaker ID first
+            if let savedName = speakerNames[speakerID] {
+                let initials = savedName.split(separator: " ")
+                    .compactMap { $0.first }
+                    .prefix(2)
+                    .map { String($0) }
+                    .joined()
+                    .uppercased()
+                
+                let color = getColorForSpeaker(speakerID)
+                return (savedName, initials.isEmpty ? "?" : initials, color)
+            }
+            
             // Unnamed speaker with ID
             if speakerNumbers[speakerID] == nil {
                 speakerNumbers[speakerID] = nextSpeakerNumber
@@ -518,6 +583,34 @@ struct RefinedRecordingView: View {
         }
     }
     
+    // MARK: - Speaker Editing Functions
+    
+    private func startEditingSpeaker(_ segment: TranscriptSegment) {
+        let speakerID = segment.speakerID ?? segment.speakerName ?? "unknown"
+        editingSpeaker = speakerID
+        editingName = speakerNames[speakerID] ?? getSpeakerInfo(for: segment).name
+    }
+    
+    private func saveSpeakerName() {
+        guard let speakerID = editingSpeaker else { return }
+        
+        if !editingName.isEmpty {
+            // Store the name in our local dictionary
+            speakerNames[speakerID] = editingName
+            
+            // Force UI refresh by triggering objectWillChange
+            meeting.objectWillChange.send()
+            
+            // Also update identified participants if needed
+            if let participant = meeting.identifiedParticipants.first(where: { "\($0.speakerID)" == speakerID }) {
+                participant.name = editingName
+            }
+        }
+        
+        editingSpeaker = nil
+        editingName = ""
+    }
+    
     private func formatTimestamp(_ seconds: TimeInterval) -> String {
         let minutes = Int(seconds) / 60
         let secs = Int(seconds) % 60
@@ -540,6 +633,9 @@ struct RefinedRecordingView: View {
 struct CompactSpeakerRow: View {
     let participant: IdentifiedParticipant
     let totalDuration: TimeInterval
+    @Binding var speakerNames: [String: String]
+    @State private var isEditing = false
+    @State private var editingName = ""
     
     private var percentage: Double {
         guard totalDuration > 0 else { return 0 }
@@ -557,10 +653,38 @@ struct CompactSpeakerRow: View {
                         .stroke(participant.isSpeaking ? Color.green : Color.secondary.opacity(0.3), lineWidth: 0.5)
                 )
             
-            // Name
-            Text(participant.name ?? "Unknown")
-                .font(.system(size: 11, weight: participant.isSpeaking ? .medium : .regular))
-                .lineLimit(1)
+            // Editable Name
+            if isEditing {
+                TextField("Name", text: $editingName)
+                    .textFieldStyle(.plain)
+                    .font(.system(size: 11, weight: participant.isSpeaking ? .medium : .regular))
+                    .onSubmit {
+                        saveEditedName()
+                    }
+                    .frame(maxWidth: 80)
+                
+                Button("✓") {
+                    saveEditedName()
+                }
+                .font(.system(size: 9))
+                .buttonStyle(.plain)
+                .foregroundColor(.accentColor)
+            } else {
+                Text(speakerNames["\(participant.speakerID)"] ?? participant.name ?? "Unknown")
+                    .font(.system(size: 11, weight: participant.isSpeaking ? .medium : .regular))
+                    .lineLimit(1)
+                    .onTapGesture {
+                        startEditing()
+                    }
+                    .help("Click to rename")
+                
+                Image(systemName: "pencil.circle")
+                    .font(.system(size: 9))
+                    .foregroundColor(.secondary.opacity(0.5))
+                    .onTapGesture {
+                        startEditing()
+                    }
+            }
             
             Spacer()
             
@@ -584,6 +708,20 @@ struct CompactSpeakerRow: View {
                 .foregroundColor(.secondary)
                 .frame(width: 30, alignment: .trailing)
         }
+    }
+    
+    // Helper methods for editing
+    private func startEditing() {
+        isEditing = true
+        editingName = speakerNames["\(participant.speakerID)"] ?? participant.name ?? "Unknown"
+    }
+    
+    private func saveEditedName() {
+        if !editingName.isEmpty {
+            speakerNames["\(participant.speakerID)"] = editingName
+            participant.name = editingName
+        }
+        isEditing = false
     }
 }
 

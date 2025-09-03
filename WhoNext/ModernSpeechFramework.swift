@@ -26,6 +26,12 @@ class ModernSpeechFramework {
     private let converter = BufferConverter()
     private var analyzerFormat: AVAudioFormat?
     
+    // Audio chunking for 30-second segments
+    private var audioChunkBuffer: [AVAudioPCMBuffer] = []
+    private var chunkStartTime: Date = Date()
+    private let chunkDuration: TimeInterval = 30.0 // 30 seconds
+    private var accumulatedFrameCount: AVAudioFrameCount = 0
+    
     // Transcription state
     private var isTranscribing = false
     
@@ -91,74 +97,111 @@ class ModernSpeechFramework {
             throw ModernSpeechError.languageNotSupported
         }
         
-        // Create recognition task FIRST (before starting analyzer) - this is the correct order
+        // Start the analyzer with input stream FIRST
+        try await analyzer?.start(inputSequence: inputStream)
+        print("[ModernSpeech] SpeechAnalyzer started successfully")
+        
+        // THEN create recognition task to listen for results
+        startRecognitionTask()
+        
+        isTranscribing = true
+    }
+    
+    /// Start the recognition task to listen for transcription results
+    private func startRecognitionTask() {
         recognizerTask = Task { [weak self] in
             guard let self = self else { return }
-            print("[ModernSpeech] Starting recognition task to listen for results...")
+            guard let transcriber = self.transcriber else { 
+                print("[ModernSpeech] No transcriber available for recognition task")
+                return 
+            }
+            
+            print("[ModernSpeech] Recognition task started, listening for results...")
             
             do {
                 var resultCount = 0
+                
+                // Keep the task alive and listening
                 for try await result in transcriber.results {
                     resultCount += 1
                     let text = result.text
                     
-                    // Extract advanced features
-                    let confidence: Float = 1.0 // Default confidence (API doesn't expose it yet)
-                    // Time range tracking would be done manually based on buffer timing
-                    let timeRange: (start: TimeInterval, end: TimeInterval)? = nil
-                    let speakerId: Int? = nil // Speaker attribution not yet available
-                    
-                    // Create transcription segment
-                    let segment = SpeechTranscriptionSegment(
-                        text: String(text.characters),
-                        startTime: timeRange?.start ?? 0,
-                        endTime: timeRange?.end ?? 0,
-                        confidence: confidence,
-                        isFinal: result.isFinal,
-                        speakerId: speakerId,
-                        alternatives: []  // Alternatives not available in current API
-                    )
-                    
-                    // Store segment
-                    self.transcriptionSegments.append(segment)
-                    
-                    // Handle speaker changes
-                    if let speakerId = speakerId, speakerId != self.currentSpeakerId {
-                        self.currentSpeakerId = speakerId
-                        self.handleSpeakerChange(speakerId: speakerId, at: timeRange?.start ?? 0)
-                    }
-                    
-                    if result.isFinal {
-                        // Final result - add to finalized transcript
-                        let textString = String(text.characters)
-                        if !textString.isEmpty {
-                            if !self.finalizedTranscript.isEmpty {
-                                self.finalizedTranscript += " "
-                            }
-                            self.finalizedTranscript += textString
-                            self.volatileTranscript = ""
-                            print("[ModernSpeech] Final segment #\(resultCount): '\(textString)' (confidence: \(confidence))")
+                    // Process the result on the main actor to update UI
+                    await MainActor.run {
+                        // Extract advanced features
+                        let confidence: Float = 1.0 // Default confidence (API doesn't expose it yet)
+                        // Time range tracking would be done manually based on buffer timing
+                        let timeRange: (start: TimeInterval, end: TimeInterval)? = nil
+                        let speakerId: Int? = nil // Speaker attribution not yet available
+                        
+                        // Create transcription segment
+                        let segment = SpeechTranscriptionSegment(
+                            text: String(text.characters),
+                            startTime: timeRange?.start ?? 0,
+                            endTime: timeRange?.end ?? 0,
+                            confidence: confidence,
+                            isFinal: result.isFinal,
+                            speakerId: speakerId,
+                            alternatives: []  // Alternatives not available in current API
+                        )
+                        
+                        // Store segment
+                        self.transcriptionSegments.append(segment)
+                        
+                        // Handle speaker changes
+                        if let speakerId = speakerId, speakerId != self.currentSpeakerId {
+                            self.currentSpeakerId = speakerId
+                            self.handleSpeakerChange(speakerId: speakerId, at: timeRange?.start ?? 0)
                         }
-                    } else {
-                        // Volatile result - store for display
-                        let textString = String(text.characters)
-                        self.volatileTranscript = textString
-                        if textString.count > 10 {
-                            print("[ModernSpeech] Partial #\(resultCount): '\(String(textString.suffix(50)))...' (confidence: \(confidence))")
+                        
+                        if result.isFinal {
+                            // Final result - add to finalized transcript
+                            let textString = String(text.characters)
+                            if !textString.isEmpty {
+                                // Format the 30-second chunk for readability
+                                let formattedText = self.formatTranscriptChunk(textString)
+                                
+                                if !self.finalizedTranscript.isEmpty {
+                                    // Add paragraph break between 30-second chunks
+                                    if !self.finalizedTranscript.hasSuffix("\n\n") {
+                                        self.finalizedTranscript += "\n\n"
+                                    }
+                                }
+                                self.finalizedTranscript += formattedText
+                                self.volatileTranscript = ""
+                                
+                                // Safe string preview for logging
+                                let preview = self.safeStringPreview(textString, maxLength: 50)
+                                let wordCount = textString.components(separatedBy: .whitespacesAndNewlines).filter { !$0.isEmpty }.count
+                                print("[ModernSpeech] Final segment #\(resultCount): '\(preview)' (\(wordCount) words)")
+                            }
+                        } else {
+                            // Volatile result - store for display
+                            let textString = String(text.characters)
+                            self.volatileTranscript = textString
+                            if !textString.isEmpty {
+                                // Safe string preview for logging
+                                let preview = self.safeStringPreview(textString, maxLength: 50)
+                                print("[ModernSpeech] Partial #\(resultCount): '\(preview)'")
+                            }
                         }
                     }
                 }
+                
                 print("[ModernSpeech] Recognition task completed after \(resultCount) results")
             } catch {
                 print("[ModernSpeech] Recognition error: \(error.localizedDescription)")
+                print("[ModernSpeech] Error details: \(error)")
+                
+                // Restart recognition task if it fails
+                if self.isTranscribing {
+                    print("[ModernSpeech] Restarting recognition task...")
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { [weak self] in
+                        self?.startRecognitionTask()
+                    }
+                }
             }
         }
-        
-        // THEN start the analyzer with input stream (after recognition task is listening)
-        try await analyzer?.start(inputSequence: inputStream)
-        print("[ModernSpeech] SpeechAnalyzer started successfully")
-        
-        isTranscribing = true
     }
     
     /// Ensure language model is available and reserved
@@ -208,26 +251,99 @@ class ModernSpeechFramework {
     
     // MARK: - Audio Processing
     
-    /// Process an audio buffer using AsyncStream
+    /// Process an audio buffer - accumulate for 30-second chunks
     func processAudioStream(_ buffer: AVAudioPCMBuffer) async throws -> String {
         // Ensure analyzer is initialized
         if analyzer == nil {
-            // Auto-initialize if needed
+            print("[ModernSpeech] Analyzer not initialized, initializing now...")
             try await initialize()
         }
         
         guard let analyzerFormat = analyzerFormat else {
+            print("[ModernSpeech] No analyzer format available")
             throw ModernSpeechError.transcriberNotInitialized
         }
         
-        // Convert buffer to optimal format and yield immediately (like swift-scribe)
+        // Convert buffer to optimal format
         let convertedBuffer = try converter.convertBuffer(buffer, to: analyzerFormat)
         
-        // Create AnalyzerInput and yield to stream immediately
-        let input = AnalyzerInput(buffer: convertedBuffer)
-        inputContinuation.yield(input)
+        // Add to chunk buffer
+        audioChunkBuffer.append(convertedBuffer)
+        accumulatedFrameCount += convertedBuffer.frameLength
+        
+        // Check if we've accumulated 30 seconds of audio
+        let elapsedTime = Date().timeIntervalSince(chunkStartTime)
+        
+        if elapsedTime >= chunkDuration {
+            print("[ModernSpeech] Processing 30-second chunk (\(audioChunkBuffer.count) buffers, \(accumulatedFrameCount) frames)")
+            
+            // Process the accumulated chunk
+            await processAccumulatedChunk()
+            
+            // Reset for next chunk
+            audioChunkBuffer.removeAll()
+            accumulatedFrameCount = 0
+            chunkStartTime = Date()
+        } else if Int(elapsedTime) % 5 == 0 && audioChunkBuffer.count == 1 {
+            // Log progress every 5 seconds (only on first buffer to avoid spam)
+            print("[ModernSpeech] Accumulating audio... \(Int(elapsedTime))/30s")
+        }
         
         return getCurrentTranscript()
+    }
+    
+    /// Process the accumulated 30-second chunk
+    private func processAccumulatedChunk() async {
+        guard !audioChunkBuffer.isEmpty else { return }
+        
+        // Combine all buffers into one
+        guard let format = analyzerFormat else { return }
+        
+        // Calculate total frame capacity
+        let totalFrames = audioChunkBuffer.reduce(0) { $0 + $1.frameLength }
+        
+        guard let combinedBuffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: totalFrames) else {
+            print("[ModernSpeech] Failed to create combined buffer")
+            return
+        }
+        
+        // Copy all buffers into the combined buffer
+        for buffer in audioChunkBuffer {
+            if let channelData = buffer.floatChannelData,
+               let combinedChannelData = combinedBuffer.floatChannelData {
+                let framesToCopy = buffer.frameLength
+                let startFrame = combinedBuffer.frameLength
+                
+                for channel in 0..<Int(format.channelCount) {
+                    let sourcePointer = channelData[channel]
+                    let destinationPointer = combinedChannelData[channel].advanced(by: Int(startFrame))
+                    destinationPointer.update(from: sourcePointer, count: Int(framesToCopy))
+                }
+                
+                combinedBuffer.frameLength += framesToCopy
+            } else if let channelData = buffer.int16ChannelData,
+                      let combinedChannelData = combinedBuffer.int16ChannelData {
+                let framesToCopy = buffer.frameLength
+                let startFrame = combinedBuffer.frameLength
+                
+                for channel in 0..<Int(format.channelCount) {
+                    let sourcePointer = channelData[channel]
+                    let destinationPointer = combinedChannelData[channel].advanced(by: Int(startFrame))
+                    destinationPointer.update(from: sourcePointer, count: Int(framesToCopy))
+                }
+                
+                combinedBuffer.frameLength += framesToCopy
+            }
+        }
+        
+        // Now send the combined buffer to the analyzer
+        let input = AnalyzerInput(buffer: combinedBuffer)
+        inputContinuation.yield(input)
+        
+        print("[ModernSpeech] Sent 30-second chunk to analyzer (\(combinedBuffer.frameLength) frames)")
+        
+        // Give time for processing
+        try? await Task.sleep(nanoseconds: 100_000_000) // 100ms
     }
     
     /// Process an entire audio file
@@ -266,18 +382,60 @@ class ModernSpeechFramework {
     
     /// Start transcription
     func startTranscription() async throws {
-        guard !isTranscribing else { return }
+        guard !isTranscribing else { 
+            print("[ModernSpeech] Already transcribing, ignoring start request")
+            return 
+        }
         
         print("[ModernSpeech] Starting transcription...")
         
-        // Initialize if not already done
-        if analyzer == nil {
-            try await initialize()
-        }
-        
-        isTranscribing = true
+        // Reset transcripts
         finalizedTranscript = ""
         volatileTranscript = ""
+        transcriptionSegments.removeAll()
+        
+        // Create new input stream for this session
+        let (stream, continuation) = AsyncStream<AnalyzerInput>.makeStream()
+        self.inputStream = stream
+        self.inputContinuation = continuation
+        
+        // Always recreate analyzer and transcriber for new session
+        // The analyzer can't be restarted once it's finished
+        print("[ModernSpeech] Creating new analyzer for session...")
+        
+        // Cancel any existing recognition task
+        recognizerTask?.cancel()
+        recognizerTask = nil
+        
+        // Clean up existing analyzer
+        if analyzer != nil {
+            try? await analyzer?.finalizeAndFinishThroughEndOfInput()
+            analyzer = nil
+            transcriber = nil
+        }
+        
+        // Create fresh transcriber and analyzer
+        transcriber = SpeechTranscriber(
+            locale: locale,
+            transcriptionOptions: [],
+            reportingOptions: [.volatileResults],
+            attributeOptions: [.audioTimeRange]
+        )
+        
+        guard let transcriber = transcriber else {
+            throw ModernSpeechError.transcriberNotInitialized
+        }
+        
+        analyzer = SpeechAnalyzer(modules: [transcriber])
+        
+        // Start analyzer with new stream
+        try await analyzer?.start(inputSequence: inputStream)
+        print("[ModernSpeech] New SpeechAnalyzer started successfully")
+        
+        // Start recognition task
+        startRecognitionTask()
+        
+        isTranscribing = true
     }
     
     /// Stop transcription and finalize
@@ -286,20 +444,42 @@ class ModernSpeechFramework {
         
         print("[ModernSpeech] Stopping transcription...")
         
+        isTranscribing = false
+        
+        // Process any remaining audio in the buffer
+        if !audioChunkBuffer.isEmpty {
+            print("[ModernSpeech] Processing final chunk (\(audioChunkBuffer.count) buffers)")
+            await processAccumulatedChunk()
+        }
+        
         // Finish the input stream
         inputContinuation.finish()
         
-        // Finalize the analyzer
-        try await analyzer?.finalizeAndFinishThroughEndOfInput()
+        // Give time for any pending results to process
+        try? await Task.sleep(nanoseconds: 1_000_000_000) // 1 second for final processing
+        
+        // Finalize the analyzer if it exists and isn't already finished
+        if analyzer != nil {
+            do {
+                try await analyzer?.finalizeAndFinishThroughEndOfInput()
+            } catch {
+                print("[ModernSpeech] Analyzer already finished or error: \(error)")
+            }
+        }
         
         // Cancel recognition task
         recognizerTask?.cancel()
         recognizerTask = nil
         
-        isTranscribing = false
+        // Clean up
+        analyzer = nil
+        transcriber = nil
+        audioChunkBuffer.removeAll()
+        accumulatedFrameCount = 0
         
         print("[ModernSpeech] Transcription stopped")
         print("[ModernSpeech] Final transcript: \(finalizedTranscript)")
+        print("[ModernSpeech] Total segments: \(transcriptionSegments.count)")
     }
     
     /// Reset the transcriber
@@ -317,6 +497,19 @@ class ModernSpeechFramework {
         speakerAttributions.removeAll()
         currentSpeakerId = 0
         isTranscribing = false
+        
+        // Clear audio buffers
+        audioChunkBuffer.removeAll()
+        accumulatedFrameCount = 0
+        chunkStartTime = Date()
+        
+        // Finish current stream
+        inputContinuation.finish()
+        
+        // Clean up analyzer and transcriber
+        // They will be recreated on next startTranscription
+        analyzer = nil
+        transcriber = nil
         
         // Create new input stream
         let (stream, continuation) = AsyncStream<AnalyzerInput>.makeStream()
@@ -368,6 +561,70 @@ class ModernSpeechFramework {
         // If the API provides alternatives, extract them
         // For now, return empty array as placeholder
         return []
+    }
+    
+    /// Format transcript chunk with proper paragraph breaks
+    private func formatTranscriptChunk(_ text: String) -> String {
+        // Clean up the text first
+        var formatted = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        
+        // Safely apply regex replacements with error handling
+        do {
+            // Add paragraph breaks after sentences for better readability
+            // Look for sentence endings followed by capital letters
+            let sentenceEndPattern1 = try NSRegularExpression(pattern: "\\. ([A-Z])", options: [])
+            formatted = sentenceEndPattern1.stringByReplacingMatches(
+                in: formatted, 
+                range: NSRange(formatted.startIndex..., in: formatted), 
+                withTemplate: ".\n\n$1"
+            )
+            
+            let sentenceEndPattern2 = try NSRegularExpression(pattern: "\\? ([A-Z])", options: [])
+            formatted = sentenceEndPattern2.stringByReplacingMatches(
+                in: formatted,
+                range: NSRange(formatted.startIndex..., in: formatted),
+                withTemplate: "?\n\n$1"
+            )
+            
+            let sentenceEndPattern3 = try NSRegularExpression(pattern: "\\! ([A-Z])", options: [])
+            formatted = sentenceEndPattern3.stringByReplacingMatches(
+                in: formatted,
+                range: NSRange(formatted.startIndex..., in: formatted),
+                withTemplate: "!\n\n$1"
+            )
+            
+            // Also break on common speech patterns that indicate topic changes
+            let topicChangePattern = try NSRegularExpression(
+                pattern: "(\\.) (So |And |But |Now |Well |Okay |Alright )",
+                options: [.caseInsensitive]
+            )
+            formatted = topicChangePattern.stringByReplacingMatches(
+                in: formatted,
+                range: NSRange(formatted.startIndex..., in: formatted),
+                withTemplate: "$1\n\n$2"
+            )
+        } catch {
+            // If regex fails, return the original formatted text
+            print("[ModernSpeech] Regex formatting failed: \(error), returning unformatted text")
+        }
+        
+        return formatted
+    }
+    
+    /// Safely create a preview of a string without index out of bounds issues
+    private func safeStringPreview(_ text: String, maxLength: Int) -> String {
+        guard !text.isEmpty else { return "" }
+        
+        // Use safe string slicing to avoid index out of bounds
+        if text.count <= maxLength {
+            return text
+        }
+        
+        // Convert to array to safely handle Unicode
+        let chars = Array(text)
+        let safeLength = min(maxLength, chars.count)
+        let preview = String(chars[0..<safeLength])
+        return preview + "..."
     }
     
     /// Handle speaker change event
