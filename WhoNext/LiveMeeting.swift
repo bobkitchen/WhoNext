@@ -164,8 +164,11 @@ class LiveMeeting: ObservableObject, Identifiable {
         // Auto-classify based on speaker count
         let previousType = meetingType
         switch speakerCount {
-        case 0...1:
+        case 0:
             meetingType = .unknown
+        case 1:
+            // Single speaker detected - could be note-taking or waiting for others
+            meetingType = .oneOnOne  // Assume 1:1 will start soon
         case 2:
             meetingType = .oneOnOne
         default:

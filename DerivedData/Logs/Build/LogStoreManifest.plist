@@ -6,7 +6,7 @@
 	<integer>11</integer>
 	<key>logs</key>
 	<dict>
-		<key>9F87086D-C96D-4DAF-BE2C-4F0AA4F4D7E3</key>
+		<key>2B1A62B5-4F8B-4C3D-BBB8-612CFFDACB16</key>
 		<dict>
 			<key>className</key>
 			<string>IDECommandLineBuildLog</string>
@@ -15,21 +15,21 @@
 			<key>domainType</key>
 			<string>Xcode.IDEActivityLogDomainType.BuildLog</string>
 			<key>fileName</key>
-			<string>9F87086D-C96D-4DAF-BE2C-4F0AA4F4D7E3.xcactivitylog</string>
+			<string>2B1A62B5-4F8B-4C3D-BBB8-612CFFDACB16.xcactivitylog</string>
 			<key>hasPrimaryLog</key>
 			<true/>
 			<key>primaryObservable</key>
 			<dict>
 				<key>highLevelStatus</key>
-				<string>S</string>
+				<string>E</string>
 				<key>totalNumberOfAnalyzerIssues</key>
 				<integer>0</integer>
 				<key>totalNumberOfErrors</key>
-				<integer>0</integer>
+				<integer>6</integer>
 				<key>totalNumberOfTestFailures</key>
 				<integer>0</integer>
 				<key>totalNumberOfWarnings</key>
-				<integer>0</integer>
+				<integer>2</integer>
 			</dict>
 			<key>schemeIdentifier-containerName</key>
 			<string>WhoNext project</string>
@@ -40,13 +40,55 @@
 			<key>signature</key>
 			<string>Building project WhoNext with scheme WhoNext and configuration Debug</string>
 			<key>timeStartedRecording</key>
-			<real>778439738.47408497</real>
+			<real>778579459.13088906</real>
 			<key>timeStoppedRecording</key>
-			<real>778439741.35997796</real>
+			<real>778579462.73956597</real>
 			<key>title</key>
 			<string>Building project WhoNext with scheme WhoNext and configuration Debug</string>
 			<key>uniqueIdentifier</key>
-			<string>9F87086D-C96D-4DAF-BE2C-4F0AA4F4D7E3</string>
+			<string>2B1A62B5-4F8B-4C3D-BBB8-612CFFDACB16</string>
+		</dict>
+		<key>38B40DE5-CE99-4AD6-BA52-C3DF5DD5F41A</key>
+		<dict>
+			<key>className</key>
+			<string>IDECommandLineBuildLog</string>
+			<key>documentTypeString</key>
+			<string>&lt;nil&gt;</string>
+			<key>domainType</key>
+			<string>Xcode.IDEActivityLogDomainType.BuildLog</string>
+			<key>fileName</key>
+			<string>38B40DE5-CE99-4AD6-BA52-C3DF5DD5F41A.xcactivitylog</string>
+			<key>hasPrimaryLog</key>
+			<true/>
+			<key>primaryObservable</key>
+			<dict>
+				<key>highLevelStatus</key>
+				<string>W</string>
+				<key>totalNumberOfAnalyzerIssues</key>
+				<integer>0</integer>
+				<key>totalNumberOfErrors</key>
+				<integer>0</integer>
+				<key>totalNumberOfTestFailures</key>
+				<integer>0</integer>
+				<key>totalNumberOfWarnings</key>
+				<integer>4</integer>
+			</dict>
+			<key>schemeIdentifier-containerName</key>
+			<string>WhoNext project</string>
+			<key>schemeIdentifier-schemeName</key>
+			<string>WhoNext</string>
+			<key>schemeIdentifier-sharedScheme</key>
+			<integer>1</integer>
+			<key>signature</key>
+			<string>Building project WhoNext with scheme WhoNext and configuration Debug</string>
+			<key>timeStartedRecording</key>
+			<real>778580302.53273499</real>
+			<key>timeStoppedRecording</key>
+			<real>778580308.27207696</real>
+			<key>title</key>
+			<string>Building project WhoNext with scheme WhoNext and configuration Debug</string>
+			<key>uniqueIdentifier</key>
+			<string>38B40DE5-CE99-4AD6-BA52-C3DF5DD5F41A</string>
 		</dict>
 	</dict>
 </dict>
