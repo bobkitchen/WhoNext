@@ -303,9 +303,11 @@ struct MeetingsView: View {
         let startOfDay = calendar.startOfDay(for: now)
         let endOfDay = calendar.date(byAdding: .day, value: 1, to: startOfDay) ?? now
         
-        return calendarService.upcomingMeetings.filter { meeting in
+        let meetings = calendarService.upcomingMeetings.filter { meeting in
             meeting.startDate >= startOfDay && meeting.startDate < endOfDay
         }
+        
+        return filterMeetings(meetings)
     }
     
     private var thisWeeksMeetings: [UpcomingMeeting] {
@@ -314,8 +316,30 @@ struct MeetingsView: View {
         let startOfTomorrow = calendar.date(byAdding: .day, value: 1, to: calendar.startOfDay(for: now)) ?? now
         let endDate = calendar.date(byAdding: .day, value: 7, to: now) ?? now
         
-        return calendarService.upcomingMeetings.filter { meeting in
+        let meetings = calendarService.upcomingMeetings.filter { meeting in
             meeting.startDate >= startOfTomorrow && meeting.startDate < endDate
+        }
+        
+        return filterMeetings(meetings)
+    }
+    
+    // Filter meetings based on selected filter type
+    private func filterMeetings(_ meetings: [UpcomingMeeting]) -> [UpcomingMeeting] {
+        switch selectedFilter {
+        case .all:
+            return meetings
+        case .oneOnOne:
+            // Filter for meetings with 2 or fewer attendees (likely 1:1s)
+            return meetings.filter { meeting in
+                let attendeeCount = meeting.attendees?.count ?? 0
+                return attendeeCount <= 2
+            }
+        case .group:
+            // Filter for meetings with more than 2 attendees (group meetings)
+            return meetings.filter { meeting in
+                let attendeeCount = meeting.attendees?.count ?? 0
+                return attendeeCount > 2
+            }
         }
     }
     
