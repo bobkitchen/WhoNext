@@ -69,8 +69,10 @@ class LiveMeeting: ObservableObject, Identifiable {
     
     // MARK: - Calendar Context (if available)
     var calendarTitle: String?
+    var calendarEventTitle: String?
     var scheduledDuration: TimeInterval?
     var expectedParticipants: [String] = []
+    var hasUnexpectedParticipants: Bool = false
     
     // MARK: - Audio Recording
     var audioFilePath: String?
@@ -175,6 +177,17 @@ class LiveMeeting: ObservableObject, Identifiable {
             typeDetectionTimestamp = Date()
         }
     }
+    
+    // MARK: - Participant Management
+    
+    /// Add or update an identified participant
+    func addIdentifiedParticipant(_ participant: IdentifiedParticipant) {
+        if let existingIndex = identifiedParticipants.firstIndex(where: { $0.id == participant.id }) {
+            identifiedParticipants[existingIndex] = participant
+        } else {
+            identifiedParticipants.append(participant)
+        }
+    }
 }
 
 // MARK: - Transcript Segment
@@ -204,6 +217,8 @@ class IdentifiedParticipant: ObservableObject, Identifiable {
     @Published var confidence: Float = 0.0
     @Published var voicePrint: VoicePrint?
     @Published var personRecord: Person?
+    @Published var person: Person?  // Alias for personRecord
+    @Published var speakerID: Int = 0
     @Published var isCurrentlySpeaking: Bool = false
     @Published var totalSpeakingTime: TimeInterval = 0
     @Published var lastSpokeAt: Date?

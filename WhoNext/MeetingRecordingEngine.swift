@@ -1256,6 +1256,18 @@ extension MeetingRecordingEngine {
                     // Set as current event
                     self.currentCalendarEvent = meeting
                     
+                    // Prepare for the meeting (Phase 3: Smart Calendar Integration)
+                    Task {
+                        // Convert UpcomingMeeting to CalendarEvent
+                        let calendarEvent = CalendarEvent(
+                            title: meeting.title,
+                            startDate: meeting.startDate,
+                            duration: 3600, // Default 1 hour duration
+                            attendees: meeting.attendees
+                        )
+                        await self.prepareForUpcomingMeeting(calendarEvent)
+                    }
+                    
                     // If auto-record is enabled and not already recording
                     if self.autoRecordPref && !self.isRecording {
                         // Schedule recording start
@@ -1319,6 +1331,128 @@ extension MeetingRecordingEngine {
         }
         
         return false
+    }
+    
+    // MARK: - Smart Calendar Integration (Phase 3) - Helper Methods
+    
+    /// Prepare for an upcoming calendar meeting
+    @MainActor
+    func prepareForUpcomingMeeting(_ event: CalendarEvent) async {
+        print("🎯 Preparing for upcoming meeting: \(event.title)")
+        
+        // Extract participant names from attendees
+        let participants = event.attendees ?? []
+        
+        // Pre-load voice embeddings for expected participants
+        if !participants.isEmpty {
+            print("👥 Pre-loading voice embeddings for \(participants.count) expected participants")
+            
+            // Get VoicePrintManager instance
+            let voicePrintManager = VoicePrintManager()
+            
+            // Pre-load embeddings for each participant
+            for participantName in participants {
+                if let person = findPerson(named: participantName) {
+                    // This loads the embedding into memory for faster matching
+                    if let _ = voicePrintManager.getStoredEmbedding(for: person) {
+                        print("✅ Pre-loaded voice embedding for \(participantName)")
+                    }
+                }
+            }
+        }
+        
+        // Update current meeting with expected participants if recording
+        if let meeting = currentMeeting {
+            meeting.expectedParticipants = participants
+            meeting.calendarEventTitle = event.title
+        }
+        
+        // Show notification to user
+        showMeetingReadyNotification(event)
+    }
+    
+    /// Find a Person entity by name
+    func findPerson(named name: String) -> Person? {
+        let context = PersistenceController.shared.container.viewContext
+        let request: NSFetchRequest<Person> = Person.fetchRequest()
+        request.predicate = NSPredicate(format: "name CONTAINS[cd] %@", name)
+        request.fetchLimit = 1
+        
+        do {
+            let people = try context.fetch(request)
+            return people.first
+        } catch {
+            print("❌ Failed to find person \(name): \(error)")
+            return nil
+        }
+    }
+    
+    /// Show notification that meeting is ready to record
+    private func showMeetingReadyNotification(_ event: CalendarEvent) {
+        #if os(macOS)
+        let notification = NSUserNotification()
+        notification.title = "Meeting Ready to Record"
+        notification.informativeText = "Ready to record: \(event.title)"
+        notification.soundName = nil // Deprecated API
+        notification.deliveryDate = Date()
+        
+        NSUserNotificationCenter.default.deliver(notification)
+        #endif
+    }
+    
+    /// Correlate detected speakers with expected attendees during recording
+    func correlateDetectedSpeakers() async {
+        guard let meeting = currentMeeting else { return }
+        
+        let expectedAttendees = meeting.expectedParticipants
+        
+        #if canImport(FluidAudio)
+        // Get current diarization results
+        if let manager = diarizationManager {
+            let diarizationResults = await manager.lastResult
+            if let diarizationResults = diarizationResults {
+            let detectedSpeakers = Set(diarizationResults.segments.map { $0.speakerId })
+            
+            print("📊 Correlating \(detectedSpeakers.count) detected speakers with \(expectedAttendees.count) expected attendees")
+            
+            // Use VoicePrintManager to match speakers
+            let voicePrintManager = VoicePrintManager()
+            
+            // Build embeddings dictionary from diarization results
+            var embeddings: [String: [Float]] = [:]
+            for segment in diarizationResults.segments {
+                if embeddings[segment.speakerId] == nil {
+                    embeddings[segment.speakerId] = segment.embedding
+                }
+            }
+            
+            // Match to expected attendees
+            let matches = voicePrintManager.matchToAttendees(embeddings, attendeeNames: expectedAttendees)
+            
+            // Update meeting with identified participants
+            await MainActor.run {
+                for (speakerId, person) in matches {
+                    let participant = IdentifiedParticipant()
+                    participant.name = person.name
+                    participant.person = person
+                    participant.speakerID = Int(speakerId) ?? 0
+                    participant.confidence = person.voiceConfidence
+                    
+                    meeting.addIdentifiedParticipant(participant)
+                    print("✅ Identified speaker \(speakerId) as \(person.name ?? "Unknown")")
+                }
+                
+                // Flag unexpected participants
+                for speakerId in detectedSpeakers {
+                    if matches[speakerId] == nil {
+                        print("⚠️ Unexpected participant detected: Speaker \(speakerId)")
+                        meeting.hasUnexpectedParticipants = true
+                    }
+                }
+            }
+            }
+        }
+        #endif
     }
     
 }

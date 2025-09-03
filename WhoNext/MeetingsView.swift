@@ -21,11 +21,31 @@ struct MeetingsView: View {
     
     @State private var showingRecordingSettings = false
     
+    // MARK: - Phase 4: UI Overhaul - Meeting Filters
+    enum MeetingFilter: String, CaseIterable {
+        case all = "All"
+        case oneOnOne = "1:1s"
+        case group = "Groups"
+        
+        var icon: String {
+            switch self {
+            case .all: return "person.3.fill"
+            case .oneOnOne: return "person.2"
+            case .group: return "person.3"
+            }
+        }
+    }
+    
+    @State private var selectedFilter: MeetingFilter = .all
+    
     var body: some View {
         ScrollView(.vertical, showsIndicators: false) {
             VStack(alignment: .leading, spacing: 24) {
                 // Recording Status Bar
                 recordingStatusBar
+                
+                // Meeting Type Filter (Phase 4)
+                meetingFilterTabs
                 
                 // Today's Meetings Section
                 todaysMeetingsSection
@@ -343,6 +363,109 @@ struct MeetingsView: View {
         } else {
             return String(format: "%02d:%02d", minutes, seconds)
         }
+    }
+    
+    // MARK: - Phase 4: Meeting Filter UI
+    
+    private var meetingFilterTabs: some View {
+        HStack(spacing: 12) {
+            ForEach(MeetingFilter.allCases, id: \.self) { filter in
+                Button(action: {
+                    withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+                        selectedFilter = filter
+                    }
+                }) {
+                    HStack(spacing: 6) {
+                        Image(systemName: filter.icon)
+                            .font(.system(size: 12))
+                        Text(filter.rawValue)
+                            .font(.system(size: 13, weight: selectedFilter == filter ? .semibold : .medium))
+                    }
+                    .foregroundColor(selectedFilter == filter ? .white : .secondary)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 6)
+                    .background(
+                        selectedFilter == filter ?
+                        Color.accentColor :
+                        Color(NSColor.controlBackgroundColor)
+                    )
+                    .cornerRadius(8)
+                }
+                .buttonStyle(.plain)
+            }
+            
+            Spacer()
+            
+            // Meeting count badge
+            if let currentMeeting = recordingEngine.currentMeeting {
+                HStack(spacing: 4) {
+                    Image(systemName: currentMeeting.meetingType.icon)
+                        .font(.system(size: 11))
+                    Text(currentMeeting.meetingType.displayName)
+                        .font(.system(size: 11, weight: .medium))
+                }
+                .foregroundColor(currentMeeting.meetingType.color)
+                .padding(.horizontal, 8)
+                .padding(.vertical, 4)
+                .background(currentMeeting.meetingType.color.opacity(0.1))
+                .cornerRadius(6)
+            }
+        }
+    }
+    
+    // MARK: - Enhanced Recording Status with Meeting Type
+    
+    private var enhancedRecordingStatus: some View {
+        HStack(spacing: 16) {
+            // Recording indicator
+            HStack(spacing: 8) {
+                Circle()
+                    .fill(recordingEngine.isRecording ? Color.red : Color.green.opacity(0.5))
+                    .frame(width: 10, height: 10)
+                    .overlay(
+                        Circle()
+                            .stroke(Color.white.opacity(0.8), lineWidth: 2)
+                    )
+                
+                Text(recordingEngine.isRecording ? "Recording" : "Ready")
+                    .font(.system(size: 13, weight: .medium))
+            }
+            
+            // Meeting type and speaker count
+            if let meeting = recordingEngine.currentMeeting {
+                Divider()
+                    .frame(height: 16)
+                
+                HStack(spacing: 12) {
+                    // Meeting type badge
+                    Label(meeting.meetingType.displayName, systemImage: meeting.meetingType.icon)
+                        .font(.system(size: 12))
+                        .foregroundColor(meeting.meetingType.color)
+                    
+                    // Speaker count
+                    if meeting.detectedSpeakerCount > 0 {
+                        Label("\(meeting.detectedSpeakerCount) speakers", systemImage: "person.wave.2")
+                            .font(.system(size: 12))
+                            .foregroundColor(.secondary)
+                    }
+                    
+                    // Confidence indicator
+                    if meeting.speakerDetectionConfidence > 0 {
+                        HStack(spacing: 2) {
+                            Image(systemName: "checkmark.circle.fill")
+                                .font(.system(size: 10))
+                            Text("\(Int(meeting.speakerDetectionConfidence * 100))%")
+                                .font(.system(size: 11))
+                        }
+                        .foregroundColor(meeting.speakerDetectionConfidence > 0.8 ? .green : .orange)
+                    }
+                }
+            }
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
+        .background(Color(NSColor.controlBackgroundColor))
+        .cornerRadius(10)
     }
 }
 

@@ -395,3 +395,36 @@ struct VoiceLearningRecommendation {
         case low = 2
     }
 }
+
+// MARK: - VoicePrintManager Extensions for Learning
+
+extension VoicePrintManager {
+    
+    /// Deserialize embeddings from Core Data binary data
+    func deserializeEmbeddings(from data: Data) -> [[Float]]? {
+        do {
+            let embeddings = try JSONDecoder().decode([[Float]].self, from: data)
+            return embeddings
+        } catch {
+            print("❌ Failed to deserialize embeddings: \(error)")
+            return nil
+        }
+    }
+    
+    /// Serialize embeddings for Core Data storage
+    func serializeEmbeddings(_ embeddings: [[Float]]) -> Data? {
+        do {
+            let data = try JSONEncoder().encode(embeddings)
+            return data
+        } catch {
+            print("❌ Failed to serialize embeddings: \(error)")
+            return nil
+        }
+    }
+    
+    /// Get stored embedding for a person (for pre-loading)
+    func getStoredEmbedding(for person: Person) -> [Float]? {
+        guard let data = person.voiceEmbeddings else { return nil }
+        return deserializeEmbedding(from: data)
+    }
+}
