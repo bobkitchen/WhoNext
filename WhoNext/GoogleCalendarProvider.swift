@@ -461,6 +461,14 @@ extension GoogleCalendarProvider {
             return nil
         }
         
+        // Parse end date for duration calculation
+        var duration: TimeInterval? = nil
+        if let end = eventData["end"] as? [String: Any],
+           let endDateString = end["dateTime"] as? String ?? end["date"] as? String,
+           let endDate = parseGoogleDate(endDateString) {
+            duration = endDate.timeIntervalSince(startDate)
+        }
+        
         let location = eventData["location"] as? String
         let description = eventData["description"] as? String
         
@@ -479,7 +487,8 @@ extension GoogleCalendarProvider {
             calendarID: activeCalendarID ?? "primary",
             notes: description,
             location: location,
-            attendees: attendeesList
+            attendees: attendeesList,
+            duration: duration
         )
     }
     

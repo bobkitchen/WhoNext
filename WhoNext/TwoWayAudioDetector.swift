@@ -27,7 +27,7 @@ class TwoWayAudioDetector: ObservableObject {
     
     // MARK: - State Tracking
     private var conversationStartTime: Date?
-    private var lastActivityTime: Date = Date()
+    var lastActivityTime: Date = Date()  // Made public for smart stop detection
     private var recentMicActivity: [Bool] = []
     private var recentSystemActivity: [Bool] = []
     private let activityWindowSize = 10 // Track last 10 samples

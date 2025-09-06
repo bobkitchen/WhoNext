@@ -7,7 +7,7 @@
         "key": "•",
         "location": {
           "startingColumn": 22,
-          "startingLine": 145
+          "startingLine": 154
         }
       },
       {
@@ -15,7 +15,7 @@
         "key": "Recording",
         "location": {
           "startingColumn": 22,
-          "startingLine": 148
+          "startingLine": 157
         }
       },
       {
@@ -23,7 +23,7 @@
         "key": "Listening...",
         "location": {
           "startingColumn": 18,
-          "startingLine": 209
+          "startingLine": 218
         }
       },
       {
@@ -31,7 +31,31 @@
         "key": "Transcript will appear here",
         "location": {
           "startingColumn": 18,
-          "startingLine": 213
+          "startingLine": 222
+        }
+      },
+      {
+        "comment": "",
+        "key": "Click to rename speaker",
+        "location": {
+          "startingColumn": 43,
+          "startingLine": 287
+        }
+      },
+      {
+        "comment": "",
+        "key": "Speaker Name",
+        "location": {
+          "startingColumn": 47,
+          "startingLine": 265
+        }
+      },
+      {
+        "comment": "",
+        "key": "Save",
+        "location": {
+          "startingColumn": 44,
+          "startingLine": 273
         }
       },
       {
@@ -39,7 +63,7 @@
         "key": "ACTIVE SPEAKERS",
         "location": {
           "startingColumn": 22,
-          "startingLine": 322
+          "startingLine": 357
         }
       },
       {
@@ -47,7 +71,7 @@
         "key": "%lld",
         "location": {
           "startingColumn": 30,
-          "startingLine": 332
+          "startingLine": 367
         }
       },
       {
@@ -55,7 +79,7 @@
         "key": "Awaiting first speaker...",
         "location": {
           "startingColumn": 26,
-          "startingLine": 346
+          "startingLine": 381
         }
       },
       {
@@ -63,7 +87,7 @@
         "key": "+%lld more speakers",
         "location": {
           "startingColumn": 30,
-          "startingLine": 361
+          "startingLine": 397
         }
       },
       {
@@ -71,7 +95,7 @@
         "key": "MEETING STATS",
         "location": {
           "startingColumn": 18,
-          "startingLine": 376
+          "startingLine": 412
         }
       },
       {
@@ -79,7 +103,7 @@
         "key": "No one speaking",
         "location": {
           "startingColumn": 22,
-          "startingLine": 442
+          "startingLine": 478
         }
       },
       {
@@ -87,7 +111,7 @@
         "key": "%@ speaking",
         "location": {
           "startingColumn": 26,
-          "startingLine": 437
+          "startingLine": 473
         }
       },
       {
@@ -95,7 +119,31 @@
         "key": "%lld%%",
         "location": {
           "startingColumn": 18,
-          "startingLine": 582
+          "startingLine": 723
+        }
+      },
+      {
+        "comment": "",
+        "key": "Name",
+        "location": {
+          "startingColumn": 27,
+          "startingLine": 675
+        }
+      },
+      {
+        "comment": "",
+        "key": "✓",
+        "location": {
+          "startingColumn": 24,
+          "startingLine": 683
+        }
+      },
+      {
+        "comment": "",
+        "key": "Click to rename",
+        "location": {
+          "startingColumn": 27,
+          "startingLine": 696
         }
       }
     ]

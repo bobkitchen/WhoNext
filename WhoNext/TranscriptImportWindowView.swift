@@ -196,11 +196,21 @@ struct TranscriptImportWindowView: View {
                 }
                 recordingDuration = UserDefaults.standard.double(forKey: "PendingRecordedDuration")
                 
+                // Load participant names from recording window
+                let participantNames = UserDefaults.standard.stringArray(forKey: "PendingRecordedParticipantNames") ?? []
+                if !participantNames.isEmpty {
+                    // Prepend participant names to transcript for AI processing
+                    let participantInfo = "Known Participants: \(participantNames.joined(separator: ", "))\n\n"
+                    transcriptText = participantInfo + transcriptText
+                    print("📝 Including participant names: \(participantNames.joined(separator: ", "))")
+                }
+                
                 // Clear the pending data
                 UserDefaults.standard.removeObject(forKey: "PendingRecordedTranscript")
                 UserDefaults.standard.removeObject(forKey: "PendingRecordedTitle")
                 UserDefaults.standard.removeObject(forKey: "PendingRecordedDate")
                 UserDefaults.standard.removeObject(forKey: "PendingRecordedDuration")
+                UserDefaults.standard.removeObject(forKey: "PendingRecordedParticipantNames")
                 
                 print("📝 Loaded recorded transcript: \(transcriptText.prefix(100))...")
             } else {

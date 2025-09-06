@@ -87,6 +87,7 @@ class VoicePrintManager: ObservableObject {
             return nil
         }
         
+        // Now re-enabled since Core Data model is updated
         let context = persistenceController.container.viewContext
         let request: NSFetchRequest<Person> = Person.fetchRequest()
         request.predicate = NSPredicate(format: "voiceEmbeddings != nil")

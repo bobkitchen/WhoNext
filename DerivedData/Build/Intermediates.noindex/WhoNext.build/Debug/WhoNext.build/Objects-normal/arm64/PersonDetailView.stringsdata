@@ -247,7 +247,7 @@
         "key": "%@ - Full Profile",
         "location": {
           "startingColumn": 22,
-          "startingLine": 1113
+          "startingLine": 1139
         }
       },
       {
@@ -255,7 +255,7 @@
         "key": "No profile information available",
         "location": {
           "startingColumn": 30,
-          "startingLine": 1140
+          "startingLine": 1166
         }
       },
       {
@@ -263,7 +263,7 @@
         "key": "To add profile information:",
         "location": {
           "startingColumn": 30,
-          "startingLine": 1144
+          "startingLine": 1170
         }
       },
       {
@@ -271,7 +271,7 @@
         "key": "1. Click 'Find on LinkedIn' to search for this person",
         "location": {
           "startingColumn": 35,
-          "startingLine": 1149
+          "startingLine": 1175
         }
       },
       {
@@ -279,7 +279,7 @@
         "key": "2. Copy relevant profile details",
         "location": {
           "startingColumn": 35,
-          "startingLine": 1150
+          "startingLine": 1176
         }
       },
       {
@@ -287,7 +287,7 @@
         "key": "3. Click 'Edit' and paste the information",
         "location": {
           "startingColumn": 35,
-          "startingLine": 1151
+          "startingLine": 1177
         }
       },
       {
@@ -295,7 +295,7 @@
         "key": "Copy to Clipboard",
         "location": {
           "startingColumn": 27,
-          "startingLine": 1171
+          "startingLine": 1197
         }
       }
     ]

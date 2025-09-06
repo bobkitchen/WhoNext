@@ -598,13 +598,30 @@ struct RefinedRecordingView: View {
             // Store the name in our local dictionary
             speakerNames[speakerID] = editingName
             
+            // Update or create identified participant
+            if let existingParticipant = meeting.identifiedParticipants.first(where: { "\($0.speakerID)" == speakerID }) {
+                // Update existing participant
+                existingParticipant.name = editingName
+            } else {
+                // Create new identified participant
+                let newParticipant = IdentifiedParticipant()
+                newParticipant.speakerID = Int(speakerID) ?? 0
+                newParticipant.name = editingName
+                newParticipant.confidence = 1.0 // High confidence since user manually entered
+                meeting.identifyParticipant(newParticipant)
+            }
+            
+            // Update all transcript segments with this speaker ID
+            for i in 0..<meeting.transcript.count {
+                if meeting.transcript[i].speakerID == speakerID {
+                    meeting.transcript[i].speakerName = editingName
+                }
+            }
+            
             // Force UI refresh by triggering objectWillChange
             meeting.objectWillChange.send()
             
-            // Also update identified participants if needed
-            if let participant = meeting.identifiedParticipants.first(where: { "\($0.speakerID)" == speakerID }) {
-                participant.name = editingName
-            }
+            print("💾 Saved speaker name: \(editingName) for speaker \(speakerID)")
         }
         
         editingSpeaker = nil

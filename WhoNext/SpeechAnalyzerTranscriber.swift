@@ -254,7 +254,8 @@ class NativeSpeechTranscriber {
                 if let result = result {
                     if result.isFinal {
                         let transcription = result.bestTranscription.formattedString
-                        print("✅ Transcription: \(transcription)")
+                        // Removed console logging to avoid cluttering Xcode console
+                        // print("✅ Transcription: \(transcription)")
                         continuation.resume(returning: transcription)
                     }
                 } else {

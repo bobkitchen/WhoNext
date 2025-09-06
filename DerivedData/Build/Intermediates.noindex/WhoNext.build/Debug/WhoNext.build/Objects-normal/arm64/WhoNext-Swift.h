@@ -361,6 +361,13 @@ SWIFT_CLASS("_TtC7WhoNext35EnhancedLiveMeetingWindowController")
 - (void)windowDidMove:(NSNotification * _Nonnull)notification;
 @end
 
+/// Window to host the floating indicator
+SWIFT_CLASS("_TtC7WhoNext20FloatingStatusWindow")
+@interface FloatingStatusWindow : NSWindow
+- (nonnull instancetype)init OBJC_DESIGNATED_INITIALIZER;
+- (nonnull instancetype)initWithContentRect:(NSRect)contentRect styleMask:(NSWindowStyleMask)style backing:(NSBackingStoreType)backingStoreType defer:(BOOL)flag SWIFT_UNAVAILABLE;
+@end
+
 /// Glanceable recording window that shows all information at once
 SWIFT_CLASS("_TtC7WhoNext35GlanceableRecordingWindowController")
 @interface GlanceableRecordingWindowController : NSWindowController

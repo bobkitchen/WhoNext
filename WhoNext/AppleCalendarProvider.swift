@@ -91,7 +91,8 @@ class AppleCalendarProvider: CalendarProvider {
                 calendarID: event.calendar.calendarIdentifier,
                 notes: event.notes,
                 location: event.location,
-                attendees: attendeeInfo
+                attendees: attendeeInfo,
+                duration: event.endDate.timeIntervalSince(event.startDate)
             )
         }
     }

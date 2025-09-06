@@ -10,6 +10,7 @@ struct UpcomingMeeting: Identifiable {
     let notes: String?
     let location: String?
     let attendees: [String]?
+    let duration: TimeInterval?  // Duration in seconds
 }
 
 class CalendarService: ObservableObject {

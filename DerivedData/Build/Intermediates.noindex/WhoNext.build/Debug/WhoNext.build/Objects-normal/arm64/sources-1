@@ -8,6 +8,7 @@
 /Users/bobkitchen/Documents/GitHub/WhoNext/WhoNext/AppleIntelligenceService.swift
 /Users/bobkitchen/Documents/GitHub/WhoNext/WhoNext/AppStateManager.swift
 /Users/bobkitchen/Documents/GitHub/WhoNext/WhoNext/AudioStorageManager.swift
+/Users/bobkitchen/Documents/GitHub/WhoNext/WhoNext/AutoRecordingStatusIndicator.swift
 /Users/bobkitchen/Documents/GitHub/WhoNext/WhoNext/CalendarProtocol.swift
 /Users/bobkitchen/Documents/GitHub/WhoNext/WhoNext/CalendarProviderSettings.swift
 /Users/bobkitchen/Documents/GitHub/WhoNext/WhoNext/CalendarService.swift
@@ -98,6 +99,7 @@
 /Users/bobkitchen/Documents/GitHub/WhoNext/WhoNext/RichTextEditor.swift
 /Users/bobkitchen/Documents/GitHub/WhoNext/WhoNext/RightToolbarActions.swift
 /Users/bobkitchen/Documents/GitHub/WhoNext/WhoNext/RobustSyncManager.swift
+/Users/bobkitchen/Documents/GitHub/WhoNext/WhoNext/SafeTranscriptProcessor.swift
 /Users/bobkitchen/Documents/GitHub/WhoNext/WhoNext/SearchBar.swift
 /Users/bobkitchen/Documents/GitHub/WhoNext/WhoNext/SectionHeaderView.swift
 /Users/bobkitchen/Documents/GitHub/WhoNext/WhoNext/SecureStorage.swift

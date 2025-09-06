@@ -42,7 +42,8 @@ class DiarizationManager: ObservableObject {
         self.config = DiarizerConfig(
             clusteringThreshold: 0.5,  // Lower threshold for better speaker separation
             minSpeechDuration: 1.0,     // Ignore very short utterances
-            minSilenceGap: 0.5          // Natural conversation gaps
+            minSilenceGap: 0.5,         // Natural conversation gaps
+            debugMode: true             // Enable to get speaker embeddings
         )
         self.isEnabled = isEnabled
         self.enableRealTimeProcessing = enableRealTimeProcessing

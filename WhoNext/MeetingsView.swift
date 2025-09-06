@@ -107,6 +107,29 @@ struct MeetingsView: View {
             
             Spacer()
             
+            // Monitoring Status Indicator
+            if recordingEngine.isMonitoring {
+                HStack(spacing: 4) {
+                    Circle()
+                        .fill(Color.green)
+                        .frame(width: 8, height: 8)
+                        .overlay(
+                            Circle()
+                                .stroke(Color.green.opacity(0.3), lineWidth: 8)
+                                .scaleEffect(1.5)
+                                .opacity(0.5)
+                                .animation(.easeInOut(duration: 1).repeatForever(autoreverses: true), value: recordingEngine.isMonitoring)
+                        )
+                    Text("Auto-Monitoring Active")
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundColor(.green)
+                }
+                .padding(.horizontal, 10)
+                .padding(.vertical, 4)
+                .background(Color.green.opacity(0.1))
+                .cornerRadius(12)
+            }
+            
             // Quick Controls
             HStack(spacing: 8) {
                 // Manual Record/Stop Button
@@ -144,22 +167,31 @@ struct MeetingsView: View {
                 }
                 .toggleStyle(.switch)
                 .controlSize(.small)
+                .onChange(of: config.autoRecordingEnabled) { newValue in
+                    if newValue && !recordingEngine.isMonitoring {
+                        recordingEngine.startMonitoring()
+                    } else if !newValue && recordingEngine.isMonitoring {
+                        recordingEngine.stopMonitoring()
+                    }
+                }
                 
-                // Monitor/Stop Button
+                // Monitor Status Button (shows current state)
                 if recordingEngine.isMonitoring {
                     Button(action: { recordingEngine.stopMonitoring() }) {
-                        Label("Stop Monitoring", systemImage: "stop.circle")
+                        Image(systemName: "eye.slash")
                             .font(.system(size: 12))
                     }
                     .buttonStyle(.bordered)
                     .controlSize(.small)
+                    .help("Stop monitoring for meetings")
                 } else {
                     Button(action: { recordingEngine.startMonitoring() }) {
-                        Label("Start Monitoring", systemImage: "play.circle")
+                        Image(systemName: "eye")
                             .font(.system(size: 12))
                     }
-                    .buttonStyle(.borderedProminent)
+                    .buttonStyle(.bordered)
                     .controlSize(.small)
+                    .help("Start monitoring for meetings")
                 }
                 
                 // Settings Button

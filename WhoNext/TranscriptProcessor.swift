@@ -309,6 +309,42 @@ class TranscriptProcessor: ObservableObject {
         print("🔍 Starting participant extraction for format: \(transcript.detectedFormat)")
         print("🔍 Transcript preview: \(String(transcript.rawText.prefix(200)))...")
         
+        // Check for voice analysis metadata
+        var voiceDetectedSpeakerCount = 0
+        if transcript.rawText.contains("[Voice Analysis:") {
+            // Extract speaker count from metadata
+            if let match = transcript.rawText.range(of: #"\[Voice Analysis: (\d+) speaker"#, options: .regularExpression) {
+                let numberPart = transcript.rawText[match]
+                if let number = numberPart.firstMatch(of: /\d+/) {
+                    voiceDetectedSpeakerCount = Int(number.output) ?? 0
+                }
+            }
+            print("🎤 Voice analysis metadata found: \(voiceDetectedSpeakerCount) speaker(s)")
+        }
+        
+        // If voice analysis detected only 1 speaker, short-circuit the extraction
+        if voiceDetectedSpeakerCount == 1 {
+            print("🎤 Single speaker detected by voice analysis, extracting single participant")
+            
+            // Try to find the speaker name from the transcript
+            var speakerName = "Speaker"
+            
+            // Look for pattern like "Bob: " at the beginning of actual content
+            let lines = transcript.rawText.components(separatedBy: .newlines)
+            for line in lines {
+                if !line.isEmpty && !line.starts(with: "[") {
+                    if let colonIndex = line.firstIndex(of: ":") {
+                        speakerName = String(line[..<colonIndex]).trimmingCharacters(in: .whitespaces)
+                        break
+                    }
+                }
+            }
+            
+            print("🎤 Single speaker identified as: \(speakerName)")
+            return await createParticipantInfoWithMatching(from: [speakerName])
+        }
+        
+        // Otherwise, proceed with normal AI extraction
         do {
             print("🔍 Attempting AI participant extraction...")
             let participantNames = try await hybridAI.extractParticipants(from: transcript.rawText)
