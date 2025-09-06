@@ -6,7 +6,7 @@
 	<integer>11</integer>
 	<key>logs</key>
 	<dict>
-		<key>F66B5D7E-D93B-4071-9982-515ABA35B95D</key>
+		<key>195EA3D2-609A-4DB2-B8B4-CDA88674699B</key>
 		<dict>
 			<key>className</key>
 			<string>IDECommandLineBuildLog</string>
@@ -15,13 +15,13 @@
 			<key>domainType</key>
 			<string>Xcode.IDEActivityLogDomainType.BuildLog</string>
 			<key>fileName</key>
-			<string>F66B5D7E-D93B-4071-9982-515ABA35B95D.xcactivitylog</string>
+			<string>195EA3D2-609A-4DB2-B8B4-CDA88674699B.xcactivitylog</string>
 			<key>hasPrimaryLog</key>
 			<true/>
 			<key>primaryObservable</key>
 			<dict>
 				<key>highLevelStatus</key>
-				<string>W</string>
+				<string>S</string>
 				<key>totalNumberOfAnalyzerIssues</key>
 				<integer>0</integer>
 				<key>totalNumberOfErrors</key>
@@ -29,7 +29,7 @@
 				<key>totalNumberOfTestFailures</key>
 				<integer>0</integer>
 				<key>totalNumberOfWarnings</key>
-				<integer>29</integer>
+				<integer>0</integer>
 			</dict>
 			<key>schemeIdentifier-containerName</key>
 			<string>WhoNext project</string>
@@ -38,15 +38,15 @@
 			<key>schemeIdentifier-sharedScheme</key>
 			<integer>1</integer>
 			<key>signature</key>
-			<string>Building project WhoNext with scheme WhoNext and configuration Debug</string>
+			<string>Cleaning project WhoNext with scheme WhoNext and configuration Debug</string>
 			<key>timeStartedRecording</key>
-			<real>778859116.47380495</real>
+			<real>778863519.17167199</real>
 			<key>timeStoppedRecording</key>
-			<real>778859146.19778502</real>
+			<real>778863520.76390803</real>
 			<key>title</key>
-			<string>Building project WhoNext with scheme WhoNext and configuration Debug</string>
+			<string>Cleaning project WhoNext with scheme WhoNext and configuration Debug</string>
 			<key>uniqueIdentifier</key>
-			<string>F66B5D7E-D93B-4071-9982-515ABA35B95D</string>
+			<string>195EA3D2-609A-4DB2-B8B4-CDA88674699B</string>
 		</dict>
 	</dict>
 </dict>

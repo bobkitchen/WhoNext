@@ -1,0 +1,16 @@
+{
+  "source": "/Users/bobkitchen/Documents/GitHub/WhoNext/WhoNext/DesignSystem.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "+%lld",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 154
+        }
+      }
+    ]
+  },
+  "version": 1
+}

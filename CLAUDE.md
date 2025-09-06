@@ -558,3 +558,263 @@ confirmedParticipants: Relationship to Person (many-to-many)
 5. Add Core Data migrations for voice embeddings
 
 This comprehensive plan ensures the app evolves from 1:1-focused to a smart, auto-detecting meeting recorder that handles all meeting types elegantly.
+
+## Phase 3: UI/UX Polish & Professional Refinement (September 2025)
+
+### Context
+Following successful implementation of robust auto-recording functionality, the UI evaluation revealed that core functionality IS working (monitoring status properly displays), but the interface needs polish and refinement to match modern professional standards.
+
+### UI/UX Evaluation Summary
+
+#### Current State Assessment
+✅ **Working Well:**
+- Auto-recording monitoring status displays correctly with green pulsing indicator
+- Auto-Record toggle syncs properly with engine state
+- Meeting list shows recordings with transcript status
+- Floating status window provides persistent visibility
+- Core navigation between Insights/People/Analytics functions
+
+⚠️ **Needs Polish:**
+- Visual hierarchy could be stronger (monitoring indicator competes with other elements)
+- Information density is low (too much whitespace, not enough at-a-glance info)
+- Micro-interactions missing (no hover states, transitions)
+- Professional polish lacking compared to apps like Quill, Krisp, Fireflies
+
+### Improvement Priorities
+
+#### Priority 1: Visual Polish & Micro-interactions
+**Goal**: Add subtle animations and feedback that make the UI feel responsive and polished
+
+1. **Enhanced Monitoring Indicator**
+   - Add subtle glow effect when actively monitoring
+   - Smooth scale animation on state changes
+   - Add mini waveform visualization when detecting audio
+   ```swift
+   // Add to monitoring indicator
+   if isDetectingAudio {
+       WaveformView()
+           .frame(height: 20)
+           .opacity(0.6)
+   }
+   ```
+
+2. **Card Hover States**
+   - Add elevation changes on hover (shadow depth)
+   - Subtle background color shifts
+   - Scale transform: 1.02 on hover
+
+3. **Smooth Transitions**
+   - Add crossfade between view states
+   - Spring animations for list items appearing
+   - Matched geometry effect for expanding cards
+
+#### Priority 2: Information Density
+**Goal**: Show more useful information without clutter
+
+1. **Meeting Cards Enhancement**
+   ```swift
+   struct EnhancedMeetingCard: View {
+       var body: some View {
+           VStack(alignment: .leading, spacing: 8) {
+               // Header with type badge
+               HStack {
+                   MeetingTypeBadge(type: meeting.type)
+                   Spacer()
+                   DurationChip(duration: meeting.duration)
+               }
+               
+               // Title and participants
+               Text(meeting.title)
+                   .font(.headline)
+               ParticipantAvatarStack(participants: meeting.participants)
+               
+               // Quick stats
+               HStack(spacing: 12) {
+                   StatPill(icon: "mic", value: "\(meeting.speakerCount)")
+                   StatPill(icon: "doc.text", value: meeting.wordCount.abbreviated)
+                   StatPill(icon: "lightbulb", value: "\(meeting.actionItems)")
+               }
+               
+               // Transcript preview on hover
+               if isHovered {
+                   Text(meeting.transcriptPreview)
+                       .lineLimit(2)
+                       .font(.caption)
+                       .foregroundColor(.secondary)
+                       .transition(.move(edge: .bottom).combined(with: .opacity))
+               }
+           }
+       }
+   }
+   ```
+
+2. **Status Bar Enhancement**
+   - Add mini stats (Today: 3 meetings, 2.5 hrs recorded)
+   - Quick access buttons (Start Manual Recording, View Today's Meetings)
+   - Time until next meeting countdown
+
+#### Priority 3: Enhanced Interactions
+**Goal**: Make common tasks faster and more intuitive
+
+1. **Quick Actions Menu**
+   - Right-click context menus on meeting cards
+   - Keyboard shortcuts for power users
+   - Drag & drop to assign meetings to people
+
+2. **Smart Search**
+   - Instant search with live preview
+   - Search across transcripts, not just titles
+   - Recent searches dropdown
+
+3. **Bulk Operations**
+   - Multi-select with checkboxes
+   - Batch export, delete, categorize
+   - Select all/none/inverse options
+
+#### Priority 4: Professional Polish
+**Goal**: Match the sophistication of leading apps
+
+1. **Refined Color Palette**
+   ```swift
+   extension Color {
+       static let primaryGreen = Color(hex: "10B981")  // Emerald for active
+       static let primaryBlue = Color(hex: "3B82F6")   // Blue for 1:1s
+       static let primaryPurple = Color(hex: "8B5CF6") // Purple for groups
+       static let surfaceElevated = Color(hex: "FAFAFA")
+       static let borderSubtle = Color(hex: "E5E7EB")
+   }
+   ```
+
+2. **Typography Hierarchy**
+   - Consistent font weights (Regular, Medium, Semibold only)
+   - Clear size hierarchy (12, 14, 16, 20, 24pt)
+   - Proper line heights for readability
+
+3. **Empty States**
+   - Beautiful illustrations for no meetings
+   - Helpful onboarding tips
+   - Quick action buttons to get started
+
+4. **Loading States**
+   - Skeleton screens instead of spinners
+   - Progressive data loading
+   - Optimistic UI updates
+
+#### Priority 5: Power User Features
+**Goal**: Advanced features for frequent users
+
+1. **Customizable Dashboard**
+   - Draggable widget panels
+   - Collapsible sections
+   - Saved view presets
+
+2. **Advanced Filters**
+   - Filter by date range, person, duration, keywords
+   - Saved filter combinations
+   - Quick filter chips
+
+3. **Keyboard Navigation**
+   - Full keyboard support
+   - Vim-style navigation option
+   - Command palette (Cmd+K)
+
+### Implementation Approach
+
+#### Phase 1: Quick Wins (1-2 days)
+- Add hover states to all interactive elements
+- Implement smooth transitions
+- Enhance meeting cards with more info
+- Add loading skeletons
+
+#### Phase 2: Core Enhancements (3-4 days)
+- Implement quick actions menu
+- Add smart search with preview
+- Create beautiful empty states
+- Refine color palette and typography
+
+#### Phase 3: Advanced Features (5-7 days)
+- Build customizable dashboard
+- Add keyboard navigation
+- Implement command palette
+- Create bulk operations
+
+### Design System Components
+
+```swift
+// Reusable components following the new design system
+
+struct StatPill: View {
+    let icon: String
+    let value: String
+    
+    var body: some View {
+        HStack(spacing: 4) {
+            Image(systemName: icon)
+                .font(.caption)
+            Text(value)
+                .font(.caption)
+                .fontWeight(.medium)
+        }
+        .padding(.horizontal, 8)
+        .padding(.vertical, 4)
+        .background(Color.surfaceElevated)
+        .cornerRadius(12)
+    }
+}
+
+struct ParticipantAvatarStack: View {
+    let participants: [Person]
+    let maxVisible = 3
+    
+    var body: some View {
+        HStack(spacing: -8) {
+            ForEach(participants.prefix(maxVisible)) { person in
+                PersonAvatar(person: person)
+                    .frame(width: 24, height: 24)
+                    .overlay(
+                        Circle()
+                            .stroke(Color.white, lineWidth: 2)
+                    )
+            }
+            
+            if participants.count > maxVisible {
+                MoreAvatar(count: participants.count - maxVisible)
+            }
+        }
+    }
+}
+
+struct GlowingPulse: ViewModifier {
+    @State private var isAnimating = false
+    let color: Color
+    
+    func body(content: Content) -> some View {
+        content
+            .background(
+                Circle()
+                    .fill(color.opacity(0.3))
+                    .scaleEffect(isAnimating ? 1.5 : 1.0)
+                    .opacity(isAnimating ? 0 : 0.5)
+                    .animation(
+                        .easeInOut(duration: 2)
+                        .repeatForever(autoreverses: false),
+                        value: isAnimating
+                    )
+            )
+            .onAppear { isAnimating = true }
+    }
+}
+```
+
+### Success Metrics
+- Time to find specific meeting reduced by 50%
+- User engagement with transcript previews > 80%
+- Keyboard shortcut adoption > 30% of power users
+- Visual polish rated 4.5+ stars in user feedback
+
+### Next Steps
+1. Create Figma mockups for each enhancement
+2. Implement Priority 1 items first (quick visual wins)
+3. A/B test information density changes
+4. Gather user feedback on power features
+5. Iterate based on usage analytics

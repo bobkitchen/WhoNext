@@ -46,21 +46,28 @@ struct MeetingsView: View {
                 
                 // Meeting Type Filter (Phase 4)
                 meetingFilterTabs
+                    .smoothTransition()
                 
                 // Today's Meetings Section
                 todaysMeetingsSection
+                    .smoothTransition()
                 
                 // This Week's Meetings Section
                 thisWeeksMeetingsSection
+                    .smoothTransition()
                 
                 // Statistics and Chat Section
                 HStack(alignment: .top, spacing: 24) {
                     StatisticsCardsView()
+                        .hoverEffect(scale: 1.01)
                     ChatSectionView()
+                        .hoverEffect(scale: 1.01)
                 }
+                .smoothTransition()
                 
                 // Follow-up Needed Section
                 FollowUpNeededView()
+                    .smoothTransition()
                 
                 Spacer().frame(height: 24)
             }
@@ -236,6 +243,11 @@ struct MeetingsView: View {
                             selectedTab: $selectedTab,
                             isCurrentlyRecording: recordingEngine.currentMeeting?.calendarTitle == meeting.title
                         )
+                        .hoverEffect()
+                        .transition(.asymmetric(
+                            insertion: .scale.combined(with: .opacity),
+                            removal: .opacity
+                        ))
                     }
                 }
             }
@@ -271,6 +283,11 @@ struct MeetingsView: View {
                             selectedTab: $selectedTab,
                             isCurrentlyRecording: false
                         )
+                        .hoverEffect()
+                        .transition(.asymmetric(
+                            insertion: .scale.combined(with: .opacity),
+                            removal: .opacity
+                        ))
                     }
                 }
             }

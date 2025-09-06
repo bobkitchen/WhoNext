@@ -7,7 +7,7 @@
         "key": "•",
         "location": {
           "startingColumn": 26,
-          "startingLine": 96
+          "startingLine": 103
         }
       },
       {
@@ -15,7 +15,7 @@
         "key": "Auto-Monitoring Active",
         "location": {
           "startingColumn": 26,
-          "startingLine": 123
+          "startingLine": 130
         }
       },
       {
@@ -23,7 +23,7 @@
         "key": "Stop monitoring for meetings",
         "location": {
           "startingColumn": 27,
-          "startingLine": 186
+          "startingLine": 193
         }
       },
       {
@@ -31,7 +31,7 @@
         "key": "Start monitoring for meetings",
         "location": {
           "startingColumn": 27,
-          "startingLine": 194
+          "startingLine": 201
         }
       },
       {
@@ -39,7 +39,7 @@
         "key": "Stop Recording",
         "location": {
           "startingColumn": 31,
-          "startingLine": 140
+          "startingLine": 147
         }
       },
       {
@@ -47,7 +47,7 @@
         "key": "Record",
         "location": {
           "startingColumn": 31,
-          "startingLine": 152
+          "startingLine": 159
         }
       },
       {
@@ -55,7 +55,7 @@
         "key": "Auto-Record",
         "location": {
           "startingColumn": 27,
-          "startingLine": 165
+          "startingLine": 172
         }
       },
       {
@@ -63,7 +63,7 @@
         "key": "Recording Settings",
         "location": {
           "startingColumn": 18,
-          "startingLine": 283
+          "startingLine": 300
         }
       },
       {
@@ -71,7 +71,7 @@
         "key": "Open Full Settings",
         "location": {
           "startingColumn": 20,
-          "startingLine": 320
+          "startingLine": 337
         }
       },
       {
@@ -79,7 +79,7 @@
         "key": "High Quality Audio",
         "location": {
           "startingColumn": 24,
-          "startingLine": 314
+          "startingLine": 331
         }
       },
       {
@@ -87,7 +87,7 @@
         "key": "Confidence Threshold",
         "location": {
           "startingColumn": 26,
-          "startingLine": 291
+          "startingLine": 308
         }
       },
       {
@@ -95,7 +95,7 @@
         "key": "70%",
         "location": {
           "startingColumn": 30,
-          "startingLine": 295
+          "startingLine": 312
         }
       },
       {
@@ -103,7 +103,7 @@
         "key": "Minimum Duration",
         "location": {
           "startingColumn": 26,
-          "startingLine": 303
+          "startingLine": 320
         }
       },
       {
@@ -111,7 +111,7 @@
         "key": "30s",
         "location": {
           "startingColumn": 30,
-          "startingLine": 307
+          "startingLine": 324
         }
       },
       {
@@ -119,7 +119,7 @@
         "key": "Recording",
         "location": {
           "startingColumn": 52,
-          "startingLine": 486
+          "startingLine": 503
         }
       },
       {
@@ -127,7 +127,7 @@
         "key": "Ready",
         "location": {
           "startingColumn": 66,
-          "startingLine": 486
+          "startingLine": 503
         }
       },
       {
@@ -135,7 +135,7 @@
         "key": "%lld speakers",
         "location": {
           "startingColumn": 31,
-          "startingLine": 503
+          "startingLine": 520
         }
       },
       {
@@ -143,7 +143,7 @@
         "key": "%lld%%",
         "location": {
           "startingColumn": 34,
-          "startingLine": 513
+          "startingLine": 530
         }
       },
       {
@@ -151,7 +151,7 @@
         "key": "Recording",
         "location": {
           "startingColumn": 34,
-          "startingLine": 592
+          "startingLine": 609
         }
       },
       {
@@ -159,7 +159,7 @@
         "key": "+%lld",
         "location": {
           "startingColumn": 42,
-          "startingLine": 615
+          "startingLine": 632
         }
       },
       {
@@ -167,7 +167,7 @@
         "key": "Brief",
         "location": {
           "startingColumn": 31,
-          "startingLine": 628
+          "startingLine": 645
         }
       },
       {
@@ -175,7 +175,7 @@
         "key": "Join",
         "location": {
           "startingColumn": 35,
-          "startingLine": 646
+          "startingLine": 663
         }
       },
       {
@@ -183,7 +183,7 @@
         "key": "Stop",
         "location": {
           "startingColumn": 35,
-          "startingLine": 658
+          "startingLine": 675
         }
       },
       {
@@ -191,7 +191,7 @@
         "key": "Record",
         "location": {
           "startingColumn": 35,
-          "startingLine": 666
+          "startingLine": 683
         }
       },
       {
@@ -199,7 +199,7 @@
         "key": "Pre-Meeting Brief",
         "location": {
           "startingColumn": 26,
-          "startingLine": 761
+          "startingLine": 778
         }
       },
       {
@@ -207,7 +207,7 @@
         "key": "1:1",
         "location": {
           "startingColumn": 53,
-          "startingLine": 765
+          "startingLine": 782
         }
       },
       {
@@ -215,7 +215,7 @@
         "key": "Group",
         "location": {
           "startingColumn": 61,
-          "startingLine": 765
+          "startingLine": 782
         }
       },
       {
@@ -223,7 +223,7 @@
         "key": "AI",
         "location": {
           "startingColumn": 34,
-          "startingLine": 779
+          "startingLine": 796
         }
       },
       {
@@ -231,7 +231,7 @@
         "key": "Refresh",
         "location": {
           "startingColumn": 58,
-          "startingLine": 800
+          "startingLine": 817
         }
       },
       {
@@ -239,7 +239,7 @@
         "key": "Generate AI Brief",
         "location": {
           "startingColumn": 70,
-          "startingLine": 800
+          "startingLine": 817
         }
       },
       {
@@ -247,7 +247,7 @@
         "key": "Show AI Brief",
         "location": {
           "startingColumn": 50,
-          "startingLine": 818
+          "startingLine": 835
         }
       },
       {
@@ -255,7 +255,7 @@
         "key": "Show Raw Notes",
         "location": {
           "startingColumn": 68,
-          "startingLine": 818
+          "startingLine": 835
         }
       },
       {
@@ -263,7 +263,7 @@
         "key": "Open in separate window",
         "location": {
           "startingColumn": 31,
-          "startingLine": 828
+          "startingLine": 845
         }
       },
       {
@@ -271,7 +271,7 @@
         "key": "Retry",
         "location": {
           "startingColumn": 28,
-          "startingLine": 923
+          "startingLine": 940
         }
       },
       {
@@ -279,7 +279,7 @@
         "key": "Meeting Agenda",
         "location": {
           "startingColumn": 26,
-          "startingLine": 935
+          "startingLine": 952
         }
       },
       {
@@ -287,7 +287,7 @@
         "key": "•",
         "location": {
           "startingColumn": 42,
-          "startingLine": 943
+          "startingLine": 960
         }
       },
       {
@@ -295,7 +295,7 @@
         "key": "Recent Notes",
         "location": {
           "startingColumn": 38,
-          "startingLine": 972
+          "startingLine": 989
         }
       },
       {
@@ -303,7 +303,7 @@
         "key": "No recent notes available",
         "location": {
           "startingColumn": 54,
-          "startingLine": 1080
+          "startingLine": 1097
         }
       },
       {
@@ -311,7 +311,7 @@
         "key": "No profile created yet",
         "location": {
           "startingColumn": 50,
-          "startingLine": 1126
+          "startingLine": 1143
         }
       },
       {
@@ -319,7 +319,7 @@
         "key": "Participants (%lld)",
         "location": {
           "startingColumn": 30,
-          "startingLine": 1154
+          "startingLine": 1171
         }
       },
       {
@@ -327,7 +327,7 @@
         "key": "Previous Group Meetings",
         "location": {
           "startingColumn": 34,
-          "startingLine": 1178
+          "startingLine": 1195
         }
       },
       {
@@ -335,7 +335,7 @@
         "key": "+%lld",
         "location": {
           "startingColumn": 38,
-          "startingLine": 1168
+          "startingLine": 1185
         }
       },
       {
@@ -343,7 +343,7 @@
         "key": "No attendees listed",
         "location": {
           "startingColumn": 26,
-          "startingLine": 1204
+          "startingLine": 1221
         }
       },
       {
@@ -351,7 +351,7 @@
         "key": "Pre-Meeting Brief",
         "location": {
           "startingColumn": 18,
-          "startingLine": 1598
+          "startingLine": 1615
         }
       },
       {
@@ -359,7 +359,7 @@
         "key": "Attendees",
         "location": {
           "startingColumn": 34,
-          "startingLine": 1667
+          "startingLine": 1684
         }
       },
       {
@@ -367,7 +367,7 @@
         "key": "No recent notes",
         "location": {
           "startingColumn": 54,
-          "startingLine": 1705
+          "startingLine": 1722
         }
       },
       {
@@ -375,7 +375,7 @@
         "key": "No profile found",
         "location": {
           "startingColumn": 50,
-          "startingLine": 1738
+          "startingLine": 1755
         }
       },
       {
@@ -383,7 +383,7 @@
         "key": "No attendees listed",
         "location": {
           "startingColumn": 30,
-          "startingLine": 1757
+          "startingLine": 1774
         }
       }
     ]
