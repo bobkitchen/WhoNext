@@ -185,17 +185,17 @@ struct PersonCardView: View {
     
     // Generate email draft
     func openEmailDraft() {
-        // Get email templates from settings
-        @AppStorage("emailSubjectTemplate") var subjectTemplate = "1:1 - {name} + BK"
-        @AppStorage("emailBodyTemplate") var bodyTemplate = """
-Hi {firstName},
-
-I wanted to follow up on our conversation and see how things are going.
-
-Would you have time for a quick chat this week?
-
-Best regards
-"""
+        // Get email templates from UserDefaults (AppStorage)
+        let subjectTemplate = UserDefaults.standard.string(forKey: "emailSubjectTemplate") ?? "1:1 - {name} + BK"
+        let bodyTemplate = UserDefaults.standard.string(forKey: "emailBodyTemplate") ?? """
+        Hi {firstName},
+        
+        I wanted to follow up on our conversation and see how things are going.
+        
+        Would you have time for a quick chat this week?
+        
+        Best regards
+        """
         
         let firstName = person.name?.components(separatedBy: " ").first ?? "there"
         let fullName = person.name ?? "Meeting"
@@ -209,117 +209,40 @@ Best regards
             .replacingOccurrences(of: "{name}", with: fullName)
             .replacingOccurrences(of: "{firstName}", with: firstName)
         
-        print("Email button clicked - trying to open Outlook")
+        // Get email address
+        let email = inferEmailFromName(person)
         
-        // Launch Outlook and use keyboard automation
-        launchOutlookAndAutomate(subject: subject, body: body)
+        // Open email using mailto (works with new Outlook)
+        openEmailWithMailto(to: email, subject: subject, body: body)
     }
     
-    private func launchOutlookAndAutomate(subject: String, body: String) {
-        let outlookBundleID = "com.microsoft.Outlook"
-        let workspace = NSWorkspace.shared
-        
-        guard let outlookURL = workspace.urlForApplication(withBundleIdentifier: outlookBundleID) else {
-            print("Outlook not found")
-            return
-        }
-        
-        workspace.openApplication(at: outlookURL, configuration: NSWorkspace.OpenConfiguration()) { app, error in
-            if let error = error {
-                print("Error opening Outlook: \(error)")
-                return
-            }
-            
-            print("Successfully opened Outlook, waiting for it to be ready...")
-            
-            // Wait for Outlook to be ready, then automate
-            DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
-                self.waitForOutlookAndExecute(subject: subject, body: body)
-            }
-        }
-    }
-    
-    private func waitForOutlookAndExecute(subject: String, body: String, attempt: Int = 1) {
-        print("🔍 Checking if Outlook is ready (attempt \(attempt)/5)...")
-        
-        // Check if Outlook is running using NSWorkspace
-        let runningApps = NSWorkspace.shared.runningApplications
-        let outlookRunning = runningApps.contains { app in
-            app.bundleIdentifier == "com.microsoft.Outlook" && app.isActive
-        }
-        
-        if outlookRunning {
-            print("✅ Outlook is running and active - proceeding with AppleScript")
-            executeAppleScript(emailAddress: "\(person.name?.components(separatedBy: " ").first?.lowercased() ?? "").\(person.name?.components(separatedBy: " ").last?.lowercased() ?? "")@rescue.org", subject: subject, body: body)
-        } else if attempt < 5 {
-            print("⏳ Outlook not ready yet, waiting 2 seconds... (attempt \(attempt)/5)")
-            DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
-                self.waitForOutlookAndExecute(subject: subject, body: body, attempt: attempt + 1)
-            }
-        } else {
-            print("❌ Outlook failed to become ready after 5 attempts - falling back to clipboard")
-            fallbackToClipboard(subject: subject, body: body)
-        }
-    }
-    
-    private func executeAppleScript(emailAddress: String, subject: String, body: String) {
-        print("🍎 Using AppleScript automation for Outlook")
-        
-        // Check if we have accessibility permissions for System Events
-        let trusted = AXIsProcessTrusted()
-        if !trusted {
-            print("❌ Accessibility permissions required for System Events - falling back to clipboard")
+    private func openEmailWithMailto(to: String, subject: String, body: String) {
+        // URL encode the components
+        guard let encodedSubject = subject.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed),
+              let encodedBody = body.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed),
+              let encodedTo = to.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) else {
+            print("Failed to encode email parameters")
             fallbackToClipboard(subject: subject, body: body)
             return
         }
         
-        let appleScript = """
-        tell application "System Events"
-            tell process "Microsoft Outlook"
-                -- Bring Outlook to front
-                set frontmost to true
-                delay 2
-                
-                -- Send Cmd+N to create new email
-                key code 45 using command down
-                delay 3
-                
-                -- Type email address (cursor should be in To field)
-                keystroke "\(emailAddress)"
-                delay 1
-                
-                -- Tab to subject field
-                key code 48
-                delay 0.5
-                
-                -- Type subject
-                keystroke "\(subject)"
-                delay 0.5
-                
-                -- Tab to body field
-                key code 48
-                delay 0.5
-                
-                -- Type body
-                keystroke "\(body)"
-            end tell
-        end tell
-        """
+        let mailtoString = "mailto:\(encodedTo)?subject=\(encodedSubject)&body=\(encodedBody)"
         
-        var error: NSDictionary?
-        if let scriptObject = NSAppleScript(source: appleScript) {
-            scriptObject.executeAndReturnError(&error)
-            if let error = error {
-                print("❌ AppleScript error: \(error)")
-                print("🔄 Falling back to clipboard method")
-                fallbackToClipboard(subject: subject, body: body)
-            } else {
-                print("✅ AppleScript email creation successful")
-            }
+        if let url = URL(string: mailtoString) {
+            NSWorkspace.shared.open(url)
+            print("✅ Email opened in default mail client for \(person.name ?? "person")")
         } else {
-            print("❌ Failed to create AppleScript")
             fallbackToClipboard(subject: subject, body: body)
         }
+    }
+    
+    private func inferEmailFromName(_ person: Person) -> String {
+        // Simple email inference if not stored
+        let nameParts = person.name?.components(separatedBy: " ") ?? []
+        let firstName = nameParts.first?.lowercased() ?? "unknown"
+        let lastName = nameParts.count > 1 ? nameParts[1].lowercased() : ""
+        // Note: User should update this domain to match their organization
+        return "\(firstName).\(lastName)@example.com"
     }
     
     private func fallbackToClipboard(subject: String, body: String) {
@@ -328,16 +251,8 @@ Best regards
         pasteboard.clearContents()
         pasteboard.setString(emailContent, forType: .string)
         
-        // Open Outlook
-        let outlookBundleID = "com.microsoft.Outlook"
-        let workspace = NSWorkspace.shared
-        
-        if let outlookURL = workspace.urlForApplication(withBundleIdentifier: outlookBundleID) {
-            workspace.openApplication(at: outlookURL, configuration: NSWorkspace.OpenConfiguration()) { _, _ in
-                DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
-                    self.showEmailInstructions = true
-                }
-            }
+        DispatchQueue.main.async {
+            self.showEmailInstructions = true
         }
     }
     
@@ -469,33 +384,8 @@ Best regards
         .alert(isPresented: $showEmailInstructions) {
             Alert(
                 title: Text("Email Ready"),
-                message: Text("Press Cmd+N to create a new email, then paste (Cmd+V) the pre-filled content."),
-                dismissButton: .default(Text("Got it"))
-            )
-        }
-        .alert(isPresented: $showPermissionAlert) {
-            Alert(
-                title: Text("Permission Required"),
-                message: Text("To automatically create emails, grant accessibility access in System Settings > Privacy & Security > Accessibility. Or continue with manual email creation."),
-                primaryButton: .default(Text("Open Settings")) {
-                    if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility") {
-                        NSWorkspace.shared.open(url)
-                    }
-                },
-                secondaryButton: .default(Text("Use Manual Method")) {
-                    let firstName = person.name?.components(separatedBy: " ").first ?? "there"
-                    let subject = "Follow up - \(person.name ?? "Meeting")"
-                    let body = """
-                    Hi \(firstName),
-                    
-                    I wanted to follow up on our conversation and see how things are going.
-                    
-                    Would you have time for a quick chat this week?
-                    
-                    Best regards
-                    """
-                    fallbackToClipboard(subject: subject, body: body)
-                }
+                message: Text("The email content has been copied to your clipboard. Press Cmd+N in Outlook to create a new email, then paste (Cmd+V) the content."),
+                dismissButton: .default(Text("OK"))
             )
         }
     }

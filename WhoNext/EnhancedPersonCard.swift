@@ -1,5 +1,6 @@
 import SwiftUI
 import CoreData
+import AppKit
 
 // MARK: - Enhanced Person Card
 struct EnhancedPersonCard: View {
@@ -28,7 +29,7 @@ struct EnhancedPersonCard: View {
         if recentCount >= 4 { return .healthy }
         else if recentCount >= 2 { return .moderate }
         else if recentCount >= 1 { return .needsAttention }
-        else { return .inactive }
+        else { return .unknown }  // Changed from .inactive to .unknown
     }
     
     private var lastInteraction: String {
@@ -48,82 +49,84 @@ struct EnhancedPersonCard: View {
     }
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            HStack(spacing: 12) {
-                // Avatar
-                avatarView
-                
-                // Person Info
-                VStack(alignment: .leading, spacing: 4) {
-                    // Name and badges
-                    HStack(spacing: 6) {
-                        Text(person.name ?? "Unnamed")
-                            .font(.system(size: 14, weight: .semibold))
-                            .foregroundColor(.primary)
-                            .lineLimit(1)
-                        
-                        if person.isDirectReport {
-                            Image(systemName: "star.fill")
-                                .font(.system(size: 10))
-                                .foregroundColor(.yellow)
-                        }
-                        
-                        // Online status indicator
-                        Circle()
-                            .fill(onlineStatusColor)
-                            .frame(width: 6, height: 6)
+        HStack(spacing: 14) {
+            // Avatar
+            avatarView
+                .frame(width: 44, height: 44)
+            
+            // Person Info
+            VStack(alignment: .leading, spacing: 6) {
+                // Name and badges row
+                HStack(spacing: 8) {
+                    Text(person.name ?? "Unnamed")
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundColor(.primary)
+                        .lineLimit(1)
+                    
+                    if person.isDirectReport {
+                        Image(systemName: "star.fill")
+                            .font(.system(size: 10))
+                            .foregroundColor(.yellow)
+                            .symbolRenderingMode(.multicolor)
                     }
                     
-                    // Role and department
-                    if let role = person.role, !role.isEmpty {
-                        Text(role)
-                            .font(.system(size: 12))
-                            .foregroundColor(.secondary)
-                            .lineLimit(1)
-                    }
-                    
-                    // Stats row
-                    HStack(spacing: 12) {
-                        // Meeting count
-                        HStack(spacing: 4) {
-                            Image(systemName: "calendar")
-                                .font(.system(size: 10))
-                            Text("\(meetingCount)")
-                                .font(.system(size: 11, weight: .medium))
-                        }
-                        .foregroundColor(.secondary)
-                        
-                        // Last interaction
-                        HStack(spacing: 4) {
-                            Image(systemName: "clock")
-                                .font(.system(size: 10))
-                            Text(lastInteraction)
-                                .font(.system(size: 11))
-                        }
-                        .foregroundColor(.secondary)
-                        
-                        Spacer()
-                        
-                        // Health indicator
-                        healthIndicator
-                    }
+                    Spacer()
                 }
                 
-                Spacer()
+                // Role
+                if let role = person.role, !role.isEmpty {
+                    Text(role)
+                        .font(.system(size: 12))
+                        .foregroundColor(.secondary)
+                        .lineLimit(1)
+                }
+                
+                // Stats row
+                HStack(spacing: 16) {
+                    // Meeting count
+                    HStack(spacing: 4) {
+                        Image(systemName: "calendar")
+                            .font(.system(size: 11))
+                        Text("\(meetingCount)")
+                            .font(.system(size: 11, weight: .medium))
+                    }
+                    .foregroundColor(.secondary)
+                    
+                    // Last interaction
+                    HStack(spacing: 4) {
+                        Image(systemName: "clock")
+                            .font(.system(size: 11))
+                        Text(lastInteraction)
+                            .font(.system(size: 11))
+                            .lineLimit(1)
+                    }
+                    .foregroundColor(.secondary)
+                    
+                    Spacer()
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            
+            // Right side items
+            HStack(spacing: 12) {
+                // Health indicator
+                healthIndicator
                 
                 // Action buttons (visible on hover)
                 if isHovered || isSelected {
                     actionButtons
                         .transition(.asymmetric(
-                            insertion: .move(edge: .trailing).combined(with: .opacity),
+                            insertion: .scale.combined(with: .opacity),
                             removal: .opacity
                         ))
                 }
             }
-            .padding(12)
-            .background(cardBackground)
-            .overlay(cardBorder)
         }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 12)
+        .background(cardBackground)
+        .overlay(cardBorder)
+        .clipShape(RoundedRectangle(cornerRadius: 10))
         .hoverEffect(scale: 1.01)
         .onHover { hovering in
             withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
@@ -142,57 +145,64 @@ struct EnhancedPersonCard: View {
     
     // MARK: - Subviews
     
+    @ViewBuilder
     private var avatarView: some View {
-        Group {
-            if let photoData = person.photo, let nsImage = NSImage(data: photoData) {
-                Image(nsImage: nsImage)
-                    .resizable()
-                    .aspectRatio(contentMode: .fill)
-                    .frame(width: 40, height: 40)
-                    .clipShape(Circle())
-            } else {
-                ZStack {
+        if let photoData = person.photo, let nsImage = NSImage(data: photoData) {
+            Image(nsImage: nsImage)
+                .resizable()
+                .aspectRatio(contentMode: .fill)
+                .frame(width: 40, height: 40)
+                .clipShape(Circle())
+                .overlay(
                     Circle()
-                        .fill(avatarBackgroundColor)
-                        .frame(width: 40, height: 40)
-                    
-                    Text(person.initials)
-                        .font(.system(size: 16, weight: .semibold))
-                        .foregroundColor(.white)
-                }
+                        .stroke(isSelected ? Color.accentColor : Color.clear, lineWidth: 2)
+                )
+        } else {
+            ZStack {
+                Circle()
+                    .fill(avatarBackgroundColor)
+                    .frame(width: 40, height: 40)
+                
+                Text(person.initials)
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundColor(.white)
             }
+            .overlay(
+                Circle()
+                    .stroke(isSelected ? Color.accentColor : Color.clear, lineWidth: 2)
+            )
         }
-        .overlay(
-            Circle()
-                .stroke(isSelected ? Color.accentColor : Color.clear, lineWidth: 2)
-        )
     }
     
     private var healthIndicator: some View {
         HStack(spacing: 4) {
             Circle()
                 .fill(relationshipHealth.color)
-                .frame(width: 8, height: 8)
+                .frame(width: 7, height: 7)
             Text(relationshipHealth.label)
                 .font(.system(size: 10, weight: .medium))
                 .foregroundColor(relationshipHealth.color)
         }
         .padding(.horizontal, 8)
-        .padding(.vertical, 3)
-        .background(relationshipHealth.color.opacity(0.1))
-        .cornerRadius(10)
+        .padding(.vertical, 4)
+        .background(
+            Capsule()
+                .fill(relationshipHealth.color.opacity(0.15))
+        )
     }
     
     private var actionButtons: some View {
-        HStack(spacing: 8) {
+        HStack(spacing: 6) {
             // Schedule meeting
             Button(action: scheduleMeeting) {
                 Image(systemName: "calendar.badge.plus")
-                    .font(.system(size: 12))
+                    .font(.system(size: 13))
                     .foregroundColor(.secondary)
-                    .frame(width: 24, height: 24)
-                    .background(Color(NSColor.controlBackgroundColor))
-                    .cornerRadius(6)
+                    .frame(width: 28, height: 28)
+                    .background(
+                        RoundedRectangle(cornerRadius: 6)
+                            .fill(Color(NSColor.controlBackgroundColor))
+                    )
             }
             .buttonStyle(.plain)
             .help("Schedule meeting")
@@ -200,11 +210,13 @@ struct EnhancedPersonCard: View {
             // View details
             Button(action: viewDetails) {
                 Image(systemName: "arrow.right.circle")
-                    .font(.system(size: 12))
+                    .font(.system(size: 13))
                     .foregroundColor(.secondary)
-                    .frame(width: 24, height: 24)
-                    .background(Color(NSColor.controlBackgroundColor))
-                    .cornerRadius(6)
+                    .frame(width: 28, height: 28)
+                    .background(
+                        RoundedRectangle(cornerRadius: 6)
+                            .fill(Color(NSColor.controlBackgroundColor))
+                    )
             }
             .buttonStyle(.plain)
             .help("View details")
@@ -243,16 +255,20 @@ struct EnhancedPersonCard: View {
     // MARK: - Computed Properties
     
     private var cardBackground: some View {
-        RoundedRectangle(cornerRadius: 8)
-            .fill(isSelected ? Color.accentColor.opacity(0.1) : Color(NSColor.controlBackgroundColor))
+        RoundedRectangle(cornerRadius: 10)
+            .fill(
+                isSelected ? 
+                Color.accentColor.opacity(0.08) : 
+                (isHovered ? Color(NSColor.controlBackgroundColor) : Color(NSColor.controlBackgroundColor).opacity(0.5))
+            )
     }
     
     private var cardBorder: some View {
-        RoundedRectangle(cornerRadius: 8)
+        RoundedRectangle(cornerRadius: 10)
             .stroke(
-                isSelected ? Color.accentColor.opacity(0.3) : 
-                (isHovered ? Color.borderSubtle : Color.clear),
-                lineWidth: 1
+                isSelected ? Color.accentColor.opacity(0.4) : 
+                (isHovered ? Color(NSColor.separatorColor).opacity(0.3) : Color.clear),
+                lineWidth: isSelected ? 1.5 : 1
             )
     }
     
@@ -270,8 +286,63 @@ struct EnhancedPersonCard: View {
     // MARK: - Actions
     
     private func scheduleMeeting() {
-        // TODO: Implement meeting scheduling
-        print("Schedule meeting with \(person.name ?? "person")")
+        let person = self.person
+        
+        // Get templates from UserDefaults (AppStorage)
+        let subjectTemplate = UserDefaults.standard.string(forKey: "emailSubjectTemplate") ?? "1:1 - {name} + BK"
+        let bodyTemplate = UserDefaults.standard.string(forKey: "emailBodyTemplate") ?? """
+        Hi {firstName},
+        
+        I wanted to follow up on our conversation and see how things are going.
+        
+        Would you have time for a quick chat this week?
+        
+        Best regards
+        """
+        
+        // Replace placeholders
+        let firstName = person.name?.components(separatedBy: " ").first ?? "there"
+        let fullName = person.name ?? "Meeting"
+        
+        let subject = subjectTemplate
+            .replacingOccurrences(of: "{name}", with: fullName)
+            .replacingOccurrences(of: "{firstName}", with: firstName)
+        
+        let body = bodyTemplate
+            .replacingOccurrences(of: "{name}", with: fullName)
+            .replacingOccurrences(of: "{firstName}", with: firstName)
+        
+        // Get email address
+        let email = inferEmailFromName(person)
+        
+        // Create email using mailto (only reliable method for new Outlook)
+        openEmailInOutlook(to: email, subject: subject, body: body)
+    }
+    
+    private func openEmailInOutlook(to: String, subject: String, body: String) {
+        // URL encode the components
+        guard let encodedSubject = subject.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed),
+              let encodedBody = body.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed),
+              let encodedTo = to.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) else {
+            print("Failed to encode email parameters")
+            return
+        }
+        
+        let mailtoString = "mailto:\(encodedTo)?subject=\(encodedSubject)&body=\(encodedBody)"
+        
+        if let url = URL(string: mailtoString) {
+            NSWorkspace.shared.open(url)
+            print("✅ Email opened in default mail client for scheduling with \(person.name ?? "person")")
+        }
+    }
+    
+    private func inferEmailFromName(_ person: Person) -> String {
+        // Simple email inference if not stored
+        let nameParts = person.name?.components(separatedBy: " ") ?? []
+        let firstName = nameParts.first?.lowercased() ?? "unknown"
+        let lastName = nameParts.count > 1 ? nameParts[1].lowercased() : ""
+        // Note: User should update this domain to match their organization
+        return "\(firstName).\(lastName)@example.com"
     }
     
     private func viewDetails() {
@@ -306,7 +377,6 @@ enum RelationshipHealth {
     case healthy
     case moderate
     case needsAttention
-    case inactive
     case unknown
     
     var color: Color {
@@ -314,7 +384,6 @@ enum RelationshipHealth {
         case .healthy: return .green
         case .moderate: return .orange
         case .needsAttention: return .yellow
-        case .inactive: return .red
         case .unknown: return .gray
         }
     }
@@ -324,7 +393,6 @@ enum RelationshipHealth {
         case .healthy: return "Healthy"
         case .moderate: return "Moderate"
         case .needsAttention: return "Check-in"
-        case .inactive: return "Inactive"
         case .unknown: return "New"
         }
     }
@@ -337,22 +405,26 @@ struct PersonSectionHeader: View {
     let icon: String
     
     var body: some View {
-        HStack(spacing: 8) {
+        HStack(spacing: 10) {
             Image(systemName: icon)
-                .font(.system(size: 12))
-                .foregroundColor(.secondary)
+                .font(.system(size: 13, weight: .medium))
+                .foregroundColor(.accentColor.opacity(0.8))
             
             Text(title)
-                .font(.system(size: 13, weight: .semibold))
+                .font(.system(size: 14, weight: .semibold))
                 .foregroundColor(.primary)
             
             Text("(\(count))")
-                .font(.system(size: 12))
+                .font(.system(size: 12, weight: .medium))
                 .foregroundColor(.secondary)
             
             Spacer()
+            
+            Rectangle()
+                .fill(Color(NSColor.separatorColor).opacity(0.2))
+                .frame(height: 1)
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 8)
+        .padding(.horizontal, 20)
+        .padding(.vertical, 10)
     }
 }

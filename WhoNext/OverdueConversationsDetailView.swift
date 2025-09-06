@@ -60,328 +60,6 @@ struct OverdueRelationshipRow: View {
         return Calendar.current.dateComponents([.day], from: lastDate, to: Date()).day ?? 999
     }
     
-    private func openNewConversationWindow() {
-        DispatchQueue.main.async {
-            let window = NSWindow(
-                contentRect: NSRect(x: 0, y: 0, width: 600, height: 700),
-                styleMask: [.titled, .closable, .miniaturizable, .resizable],
-                backing: .buffered,
-                defer: false
-            )
-            window.title = "New Conversation"
-            window.center()
-            
-            let hostingView = NSHostingView(
-                rootView: NewConversationWindowView(preselectedPerson: personMetrics.person)
-                    .environment(\.managedObjectContext, viewContext)
-            )
-            window.contentView = hostingView
-            
-            // Create window controller to manage lifecycle
-            let controller = NSWindowController(window: window)
-            controller.showWindow(nil)
-            
-            // Store reference to keep window alive
-            self.windowController = controller
-            
-            // Activate app to ensure window focus
-            NSApp.activate(ignoringOtherApps: true)
-        }
-    }
-    
-    private func openPersonDetailWindow(for personMetrics: PersonMetrics) {
-        DispatchQueue.main.async {
-            // Get the person's objectID to ensure we can fetch it in the new context
-            let personObjectID = personMetrics.person.objectID
-            
-            let window = NSWindow(
-                contentRect: NSRect(x: 0, y: 0, width: 800, height: 600),
-                styleMask: [.titled, .closable, .resizable, .miniaturizable],
-                backing: .buffered,
-                defer: false
-            )
-            window.title = personMetrics.person.name ?? "Person Detail"
-            window.center()
-            
-            // Use the shared view context
-            let sharedContext = PersistenceController.shared.container.viewContext
-            
-            // Fetch the person in the shared context
-            if let person = try? sharedContext.existingObject(with: personObjectID) as? Person {
-                let hostingView = NSHostingView(
-                    rootView: PersonDetailView(person: person)
-                        .environment(\.managedObjectContext, sharedContext)
-                )
-                window.contentView = hostingView
-                
-                // Create window controller to manage lifecycle
-                let controller = NSWindowController(window: window)
-                controller.showWindow(nil)
-                
-                // Store reference to keep window alive
-                self.windowController = controller
-                
-                // Activate app to ensure window focus
-                NSApp.activate(ignoringOtherApps: true)
-            }
-        }
-    }
-    
-    // Email functionality
-    func openEmailDraft(for person: Person) {
-        // Get email templates from settings
-        @AppStorage("emailSubjectTemplate") var subjectTemplate = "1:1 - {name} + BK"
-        @AppStorage("emailBodyTemplate") var bodyTemplate = """
-Hi {firstName},
-
-I wanted to follow up on our conversation and see how things are going.
-
-Would you have time for a quick chat this week?
-
-Best regards
-"""
-        
-        let firstName = person.name?.components(separatedBy: " ").first ?? "there"
-        let fullName = person.name ?? "Meeting"
-        
-        // Replace placeholders in templates
-        let subject = subjectTemplate
-            .replacingOccurrences(of: "{name}", with: fullName)
-            .replacingOccurrences(of: "{firstName}", with: firstName)
-        
-        let body = bodyTemplate
-            .replacingOccurrences(of: "{name}", with: fullName)
-            .replacingOccurrences(of: "{firstName}", with: firstName)
-        
-        print("Email button clicked - trying to open Outlook")
-        
-        // Launch Outlook and use keyboard automation
-        launchOutlookAndAutomate(person: person, subject: subject, body: body)
-    }
-    
-    private func launchOutlookAndAutomate(person: Person, subject: String, body: String) {
-        let outlookBundleID = "com.microsoft.Outlook"
-        let workspace = NSWorkspace.shared
-        
-        guard let outlookURL = workspace.urlForApplication(withBundleIdentifier: outlookBundleID) else {
-            print("Outlook not found")
-            return
-        }
-        
-        workspace.openApplication(at: outlookURL, configuration: NSWorkspace.OpenConfiguration()) { app, error in
-            if let error = error {
-                print("Error opening Outlook: \(error)")
-                return
-            }
-            
-            print("Successfully opened Outlook, waiting for it to be ready...")
-            
-            // Wait for Outlook to be ready, then automate
-            DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
-                self.automateEmailCreation(person: person, subject: subject, body: body)
-            }
-        }
-    }
-    
-    private func automateEmailCreation(person: Person, subject: String, body: String) {
-        print("Starting keyboard automation")
-        
-        // Check if we have accessibility permissions
-        let trusted = AXIsProcessTrusted()
-        if !trusted {
-            print("❌ Accessibility permissions not granted - falling back to AppleScript")
-            print("⏳ Waiting additional time for Outlook to be fully ready...")
-            DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
-                self.automateWithAppleScript(person: person, subject: subject, body: body)
-            }
-            return
-        }
-        
-        // Create CGEventSource
-        guard let eventSource = CGEventSource(stateID: .hidSystemState) else {
-            print("Failed to create event source")
-            print("⏳ Waiting additional time for Outlook to be fully ready...")
-            DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
-                self.automateWithAppleScript(person: person, subject: subject, body: body)
-            }
-            return
-        }
-        
-        // Helper function to type text
-        func typeText(_ text: String) {
-            for char in text {
-                let keyCode = keyCodeForCharacter(char)
-                if keyCode != 0 {
-                    let keyDownEvent = CGEvent(keyboardEventSource: eventSource, virtualKey: keyCode, keyDown: true)
-                    let keyUpEvent = CGEvent(keyboardEventSource: eventSource, virtualKey: keyCode, keyDown: false)
-                    keyDownEvent?.post(tap: .cghidEventTap)
-                    keyUpEvent?.post(tap: .cghidEventTap)
-                    usleep(10000) // Small delay between keystrokes
-                }
-            }
-        }
-        
-        // Send Cmd+N to create new email
-        print("Sending Cmd+N to create new email")
-        sendKeyCombo(keyCode: 45, modifiers: .maskCommand) // Cmd+N
-        
-        // Wait for new email window
-        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
-            // Generate email address from person's name
-            let nameParts = person.name?.components(separatedBy: " ") ?? []
-            let firstName = nameParts.first?.lowercased() ?? "unknown"
-            let lastName = nameParts.count > 1 ? nameParts[1].lowercased() : "user"
-            let emailAddress = "\(firstName).\(lastName)@rescue.org"
-            
-            // Type email address in To: field (cursor starts there)
-            print("Typing email address: \(emailAddress)")
-            typeText(emailAddress)
-            
-            // Tab to subject field
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                self.sendKeyCombo(keyCode: 48, modifiers: []) // Tab
-                
-                // Type subject
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                    print("Typing subject: \(subject)")
-                    typeText(subject)
-                    
-                    // Tab to body field
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                        self.sendKeyCombo(keyCode: 48, modifiers: []) // Tab
-                        
-                        // Type body
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                            print("Typing body: \(body)")
-                            typeText(body)
-                            print("Email automation completed")
-                        }
-                    }
-                }
-            }
-        }
-    }
-    
-    private func automateWithAppleScript(person: Person, subject: String, body: String) {
-        print("🍎 Using AppleScript automation for Outlook")
-        
-        // Generate email address from person's name
-        let nameParts = (person.name ?? "").components(separatedBy: " ")
-        let firstName = nameParts.first?.lowercased() ?? ""
-        let lastName = nameParts.count > 1 ? nameParts.last?.lowercased() ?? "" : ""
-        let emailAddress = "\(firstName).\(lastName)@rescue.org"
-        
-        executeAppleScript(person: person, emailAddress: emailAddress, subject: subject, body: body)
-    }
-    
-    private func executeAppleScript(person: Person, emailAddress: String, subject: String, body: String) {
-        // Create AppleScript to automate email creation
-        let script = """
-        tell application "Microsoft Outlook"
-            activate
-            delay 5
-            try
-                set newMessage to make new outgoing message with properties {subject:"\(subject)"}
-                tell newMessage
-                    make new recipient at end of to recipients with properties {email address:{address:"\(emailAddress)"}}
-                    set content to "\(body)"
-                end tell
-                open newMessage
-            on error errMsg
-                -- If direct approach fails, try using System Events
-                tell application "System Events"
-                    tell process "Microsoft Outlook"
-                        key code 45 using command down -- Cmd+N for new email
-                    end tell
-                end tell
-            end try
-        end tell
-        """
-        
-        // Run AppleScript
-        var error: NSDictionary?
-        let scriptObject = NSAppleScript(source: script)
-        scriptObject?.executeAndReturnError(&error)
-        
-        if let error = error {
-            print("❌ AppleScript error: \(error)")
-            print("🔄 Falling back to clipboard method")
-            fallbackToCopyPaste(subject: subject, body: body)
-        } else {
-            print("✅ AppleScript email creation successful")
-        }
-    }
-    
-    private func fallbackToCopyPaste(subject: String, body: String) {
-        let emailContent = "Subject: \(subject)\n\n\(body)"
-        let pasteboard = NSPasteboard.general
-        pasteboard.clearContents()
-        pasteboard.setString(emailContent, forType: .string)
-        
-        DispatchQueue.main.async {
-            self.showEmailInstructions = true
-        }
-    }
-    
-    private func sendKeyCombo(keyCode: CGKeyCode, modifiers: CGEventFlags) {
-        guard let eventSource = CGEventSource(stateID: .hidSystemState) else { return }
-        
-        let keyDownEvent = CGEvent(keyboardEventSource: eventSource, virtualKey: keyCode, keyDown: true)
-        let keyUpEvent = CGEvent(keyboardEventSource: eventSource, virtualKey: keyCode, keyDown: false)
-        
-        keyDownEvent?.flags = modifiers
-        keyUpEvent?.flags = modifiers
-        
-        keyDownEvent?.post(tap: .cghidEventTap)
-        keyUpEvent?.post(tap: .cghidEventTap)
-    }
-    
-    private func keyCodeForCharacter(_ character: Character) -> CGKeyCode {
-        // Basic character to key code mapping
-        switch character.lowercased().first {
-        case "a": return 0
-        case "b": return 11
-        case "c": return 8
-        case "d": return 2
-        case "e": return 14
-        case "f": return 3
-        case "g": return 5
-        case "h": return 4
-        case "i": return 34
-        case "j": return 38
-        case "k": return 40
-        case "l": return 37
-        case "m": return 46
-        case "n": return 45
-        case "o": return 31
-        case "p": return 35
-        case "q": return 12
-        case "r": return 15
-        case "s": return 1
-        case "t": return 17
-        case "u": return 32
-        case "v": return 9
-        case "w": return 13
-        case "x": return 7
-        case "y": return 16
-        case "z": return 6
-        case " ": return 49
-        case ".": return 47
-        case "@": return 22 // This is actually "2" with shift
-        case "0": return 29
-        case "1": return 18
-        case "2": return 19
-        case "3": return 20
-        case "4": return 21
-        case "5": return 23
-        case "6": return 22
-        case "7": return 26
-        case "8": return 28
-        case "9": return 25
-        default: return 0
-        }
-    }
-    
     var body: some View {
         HStack(spacing: 16) {
             // Avatar
@@ -480,9 +158,150 @@ Best regards
         .alert(isPresented: $showEmailInstructions) {
             Alert(
                 title: Text("Email Ready"),
-                message: Text("Press Cmd+N to create a new email, then paste (Cmd+V) the pre-filled content."),
+                message: Text("The email content has been copied to your clipboard. Press Cmd+N in Outlook to create a new email, then paste (Cmd+V) the content."),
                 dismissButton: .default(Text("OK"))
             )
+        }
+    }
+    
+    // MARK: - Helper Functions
+    
+    private func openEmailDraft(for person: Person) {
+        // Get email templates from UserDefaults (AppStorage)
+        let subjectTemplate = UserDefaults.standard.string(forKey: "emailSubjectTemplate") ?? "1:1 - {name} + BK"
+        let bodyTemplate = UserDefaults.standard.string(forKey: "emailBodyTemplate") ?? """
+        Hi {firstName},
+        
+        I wanted to follow up on our conversation and see how things are going.
+        
+        Would you have time for a quick chat this week?
+        
+        Best regards
+        """
+        
+        let firstName = person.name?.components(separatedBy: " ").first ?? "there"
+        let fullName = person.name ?? "Meeting"
+        
+        // Replace placeholders in templates
+        let subject = subjectTemplate
+            .replacingOccurrences(of: "{name}", with: fullName)
+            .replacingOccurrences(of: "{firstName}", with: firstName)
+        
+        let body = bodyTemplate
+            .replacingOccurrences(of: "{name}", with: fullName)
+            .replacingOccurrences(of: "{firstName}", with: firstName)
+        
+        // Get email address
+        let email = inferEmailFromName(person)
+        
+        // Open email using mailto (works with new Outlook)
+        openEmailWithMailto(to: email, subject: subject, body: body)
+    }
+    
+    private func openEmailWithMailto(to: String, subject: String, body: String) {
+        // URL encode the components
+        guard let encodedSubject = subject.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed),
+              let encodedBody = body.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed),
+              let encodedTo = to.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) else {
+            print("Failed to encode email parameters")
+            fallbackToCopyPaste(subject: subject, body: body)
+            return
+        }
+        
+        let mailtoString = "mailto:\(encodedTo)?subject=\(encodedSubject)&body=\(encodedBody)"
+        
+        if let url = URL(string: mailtoString) {
+            NSWorkspace.shared.open(url)
+            print("✅ Email opened in default mail client for \(personMetrics.person.name ?? "person")")
+        } else {
+            fallbackToCopyPaste(subject: subject, body: body)
+        }
+    }
+    
+    private func inferEmailFromName(_ person: Person) -> String {
+        // Simple email inference if not stored
+        let nameParts = person.name?.components(separatedBy: " ") ?? []
+        let firstName = nameParts.first?.lowercased() ?? "unknown"
+        let lastName = nameParts.count > 1 ? nameParts[1].lowercased() : ""
+        // Note: User should update this domain to match their organization
+        return "\(firstName).\(lastName)@example.com"
+    }
+    
+    private func fallbackToCopyPaste(subject: String, body: String) {
+        let emailContent = "Subject: \(subject)\n\n\(body)"
+        let pasteboard = NSPasteboard.general
+        pasteboard.clearContents()
+        pasteboard.setString(emailContent, forType: .string)
+        
+        DispatchQueue.main.async {
+            self.showEmailInstructions = true
+        }
+    }
+    
+    private func openNewConversationWindow() {
+        DispatchQueue.main.async {
+            let window = NSWindow(
+                contentRect: NSRect(x: 0, y: 0, width: 600, height: 700),
+                styleMask: [.titled, .closable, .miniaturizable, .resizable],
+                backing: .buffered,
+                defer: false
+            )
+            window.title = "New Conversation"
+            window.center()
+            
+            let hostingView = NSHostingView(
+                rootView: NewConversationWindowView(preselectedPerson: personMetrics.person)
+                    .environment(\.managedObjectContext, viewContext)
+            )
+            window.contentView = hostingView
+            
+            // Create window controller to manage lifecycle
+            let controller = NSWindowController(window: window)
+            controller.showWindow(nil)
+            
+            // Store reference to keep window alive
+            self.windowController = controller
+            
+            // Activate app to ensure window focus
+            NSApp.activate(ignoringOtherApps: true)
+        }
+    }
+    
+    private func openPersonDetailWindow(for personMetrics: PersonMetrics) {
+        DispatchQueue.main.async {
+            // Get the person's objectID to ensure we can fetch it in the new context
+            let personObjectID = personMetrics.person.objectID
+            
+            let window = NSWindow(
+                contentRect: NSRect(x: 0, y: 0, width: 800, height: 600),
+                styleMask: [.titled, .closable, .resizable, .miniaturizable],
+                backing: .buffered,
+                defer: false
+            )
+            window.title = personMetrics.person.name ?? "Person Detail"
+            window.center()
+            
+            // Use the shared view context
+            let sharedContext = PersistenceController.shared.container.viewContext
+            
+            // Fetch the person in the shared context
+            if let person = try? sharedContext.existingObject(with: personObjectID) as? Person {
+                let hostingView = NSHostingView(
+                    rootView: PersonDetailView(person: person)
+                        .environment(\.managedObjectContext, sharedContext)
+                )
+                window.contentView = hostingView
+                
+                // Create window controller to manage lifecycle
+                let controller = NSWindowController(window: window)
+                controller.showWindow(nil)
+                
+                // Store reference to keep window alive
+                self.windowController = controller
+                
+                // Activate app to ensure window focus
+                NSApp.activate(ignoringOtherApps: true)
+            }
         }
     }
 }
