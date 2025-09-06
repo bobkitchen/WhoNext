@@ -6,246 +6,287 @@
     "dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/BashCompletionsGenerator.d",
     "object": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/BashCompletionsGenerator.swift.o",
     "swiftmodule": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/BashCompletionsGenerator~partial.swiftmodule",
-    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/BashCompletionsGenerator.swiftdeps"
+    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/BashCompletionsGenerator.swiftdeps",
+    "diagnostics": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/BashCompletionsGenerator.dia"
   },
   "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/checkouts/swift-argument-parser/Sources/ArgumentParser/Completions/CompletionsGenerator.swift": {
     "dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/CompletionsGenerator.d",
     "object": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/CompletionsGenerator.swift.o",
     "swiftmodule": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/CompletionsGenerator~partial.swiftmodule",
-    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/CompletionsGenerator.swiftdeps"
+    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/CompletionsGenerator.swiftdeps",
+    "diagnostics": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/CompletionsGenerator.dia"
   },
   "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/checkouts/swift-argument-parser/Sources/ArgumentParser/Completions/FishCompletionsGenerator.swift": {
     "dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/FishCompletionsGenerator.d",
     "object": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/FishCompletionsGenerator.swift.o",
     "swiftmodule": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/FishCompletionsGenerator~partial.swiftmodule",
-    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/FishCompletionsGenerator.swiftdeps"
+    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/FishCompletionsGenerator.swiftdeps",
+    "diagnostics": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/FishCompletionsGenerator.dia"
   },
   "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/checkouts/swift-argument-parser/Sources/ArgumentParser/Completions/ZshCompletionsGenerator.swift": {
     "dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/ZshCompletionsGenerator.d",
     "object": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/ZshCompletionsGenerator.swift.o",
     "swiftmodule": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/ZshCompletionsGenerator~partial.swiftmodule",
-    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/ZshCompletionsGenerator.swiftdeps"
+    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/ZshCompletionsGenerator.swiftdeps",
+    "diagnostics": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/ZshCompletionsGenerator.dia"
   },
   "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/checkouts/swift-argument-parser/Sources/ArgumentParser/Parsable Properties/Argument.swift": {
     "dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/Argument.d",
     "object": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/Argument.swift.o",
     "swiftmodule": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/Argument~partial.swiftmodule",
-    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/Argument.swiftdeps"
+    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/Argument.swiftdeps",
+    "diagnostics": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/Argument.dia"
   },
   "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/checkouts/swift-argument-parser/Sources/ArgumentParser/Parsable Properties/ArgumentHelp.swift": {
     "dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/ArgumentHelp.d",
     "object": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/ArgumentHelp.swift.o",
     "swiftmodule": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/ArgumentHelp~partial.swiftmodule",
-    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/ArgumentHelp.swiftdeps"
+    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/ArgumentHelp.swiftdeps",
+    "diagnostics": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/ArgumentHelp.dia"
   },
   "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/checkouts/swift-argument-parser/Sources/ArgumentParser/Parsable Properties/ArgumentVisibility.swift": {
     "dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/ArgumentVisibility.d",
     "object": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/ArgumentVisibility.swift.o",
     "swiftmodule": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/ArgumentVisibility~partial.swiftmodule",
-    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/ArgumentVisibility.swiftdeps"
+    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/ArgumentVisibility.swiftdeps",
+    "diagnostics": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/ArgumentVisibility.dia"
   },
   "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/checkouts/swift-argument-parser/Sources/ArgumentParser/Parsable Properties/CompletionKind.swift": {
     "dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/CompletionKind.d",
     "object": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/CompletionKind.swift.o",
     "swiftmodule": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/CompletionKind~partial.swiftmodule",
-    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/CompletionKind.swiftdeps"
+    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/CompletionKind.swiftdeps",
+    "diagnostics": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/CompletionKind.dia"
   },
   "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/checkouts/swift-argument-parser/Sources/ArgumentParser/Parsable Properties/Errors.swift": {
     "dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/Errors.d",
     "object": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/Errors.swift.o",
     "swiftmodule": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/Errors~partial.swiftmodule",
-    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/Errors.swiftdeps"
+    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/Errors.swiftdeps",
+    "diagnostics": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/Errors.dia"
   },
   "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/checkouts/swift-argument-parser/Sources/ArgumentParser/Parsable Properties/Flag.swift": {
     "dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/Flag.d",
     "object": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/Flag.swift.o",
     "swiftmodule": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/Flag~partial.swiftmodule",
-    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/Flag.swiftdeps"
+    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/Flag.swiftdeps",
+    "diagnostics": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/Flag.dia"
   },
   "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/checkouts/swift-argument-parser/Sources/ArgumentParser/Parsable Properties/NameSpecification.swift": {
     "dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/NameSpecification.d",
     "object": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/NameSpecification.swift.o",
     "swiftmodule": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/NameSpecification~partial.swiftmodule",
-    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/NameSpecification.swiftdeps"
+    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/NameSpecification.swiftdeps",
+    "diagnostics": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/NameSpecification.dia"
   },
   "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/checkouts/swift-argument-parser/Sources/ArgumentParser/Parsable Properties/Option.swift": {
     "dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/Option.d",
     "object": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/Option.swift.o",
     "swiftmodule": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/Option~partial.swiftmodule",
-    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/Option.swiftdeps"
+    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/Option.swiftdeps",
+    "diagnostics": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/Option.dia"
   },
   "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/checkouts/swift-argument-parser/Sources/ArgumentParser/Parsable Properties/OptionGroup.swift": {
     "dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/OptionGroup.d",
     "object": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/OptionGroup.swift.o",
     "swiftmodule": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/OptionGroup~partial.swiftmodule",
-    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/OptionGroup.swiftdeps"
+    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/OptionGroup.swiftdeps",
+    "diagnostics": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/OptionGroup.dia"
   },
   "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/checkouts/swift-argument-parser/Sources/ArgumentParser/Parsable Types/AsyncParsableCommand.swift": {
     "dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/AsyncParsableCommand.d",
     "object": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/AsyncParsableCommand.swift.o",
     "swiftmodule": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/AsyncParsableCommand~partial.swiftmodule",
-    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/AsyncParsableCommand.swiftdeps"
+    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/AsyncParsableCommand.swiftdeps",
+    "diagnostics": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/AsyncParsableCommand.dia"
   },
   "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/checkouts/swift-argument-parser/Sources/ArgumentParser/Parsable Types/CommandConfiguration.swift": {
     "dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/CommandConfiguration.d",
     "object": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/CommandConfiguration.swift.o",
     "swiftmodule": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/CommandConfiguration~partial.swiftmodule",
-    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/CommandConfiguration.swiftdeps"
+    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/CommandConfiguration.swiftdeps",
+    "diagnostics": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/CommandConfiguration.dia"
   },
   "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/checkouts/swift-argument-parser/Sources/ArgumentParser/Parsable Types/EnumerableFlag.swift": {
     "dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/EnumerableFlag.d",
     "object": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/EnumerableFlag.swift.o",
     "swiftmodule": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/EnumerableFlag~partial.swiftmodule",
-    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/EnumerableFlag.swiftdeps"
+    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/EnumerableFlag.swiftdeps",
+    "diagnostics": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/EnumerableFlag.dia"
   },
   "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/checkouts/swift-argument-parser/Sources/ArgumentParser/Parsable Types/ExpressibleByArgument.swift": {
     "dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/ExpressibleByArgument.d",
     "object": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/ExpressibleByArgument.swift.o",
     "swiftmodule": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/ExpressibleByArgument~partial.swiftmodule",
-    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/ExpressibleByArgument.swiftdeps"
+    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/ExpressibleByArgument.swiftdeps",
+    "diagnostics": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/ExpressibleByArgument.dia"
   },
   "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/checkouts/swift-argument-parser/Sources/ArgumentParser/Parsable Types/ParsableArguments.swift": {
     "dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/ParsableArguments.d",
     "object": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/ParsableArguments.swift.o",
     "swiftmodule": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/ParsableArguments~partial.swiftmodule",
-    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/ParsableArguments.swiftdeps"
+    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/ParsableArguments.swiftdeps",
+    "diagnostics": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/ParsableArguments.dia"
   },
   "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/checkouts/swift-argument-parser/Sources/ArgumentParser/Parsable Types/ParsableArgumentsValidation.swift": {
     "dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/ParsableArgumentsValidation.d",
     "object": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/ParsableArgumentsValidation.swift.o",
     "swiftmodule": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/ParsableArgumentsValidation~partial.swiftmodule",
-    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/ParsableArgumentsValidation.swiftdeps"
+    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/ParsableArgumentsValidation.swiftdeps",
+    "diagnostics": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/ParsableArgumentsValidation.dia"
   },
   "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/checkouts/swift-argument-parser/Sources/ArgumentParser/Parsable Types/ParsableCommand.swift": {
     "dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/ParsableCommand.d",
     "object": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/ParsableCommand.swift.o",
     "swiftmodule": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/ParsableCommand~partial.swiftmodule",
-    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/ParsableCommand.swiftdeps"
+    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/ParsableCommand.swiftdeps",
+    "diagnostics": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/ParsableCommand.dia"
   },
   "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/checkouts/swift-argument-parser/Sources/ArgumentParser/Parsing/ArgumentDecoder.swift": {
     "dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/ArgumentDecoder.d",
     "object": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/ArgumentDecoder.swift.o",
     "swiftmodule": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/ArgumentDecoder~partial.swiftmodule",
-    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/ArgumentDecoder.swiftdeps"
+    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/ArgumentDecoder.swiftdeps",
+    "diagnostics": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/ArgumentDecoder.dia"
   },
   "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/checkouts/swift-argument-parser/Sources/ArgumentParser/Parsing/ArgumentDefinition.swift": {
     "dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/ArgumentDefinition.d",
     "object": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/ArgumentDefinition.swift.o",
     "swiftmodule": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/ArgumentDefinition~partial.swiftmodule",
-    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/ArgumentDefinition.swiftdeps"
+    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/ArgumentDefinition.swiftdeps",
+    "diagnostics": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/ArgumentDefinition.dia"
   },
   "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/checkouts/swift-argument-parser/Sources/ArgumentParser/Parsing/ArgumentSet.swift": {
     "dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/ArgumentSet.d",
     "object": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/ArgumentSet.swift.o",
     "swiftmodule": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/ArgumentSet~partial.swiftmodule",
-    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/ArgumentSet.swiftdeps"
+    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/ArgumentSet.swiftdeps",
+    "diagnostics": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/ArgumentSet.dia"
   },
   "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/checkouts/swift-argument-parser/Sources/ArgumentParser/Parsing/CommandParser.swift": {
     "dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/CommandParser.d",
     "object": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/CommandParser.swift.o",
     "swiftmodule": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/CommandParser~partial.swiftmodule",
-    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/CommandParser.swiftdeps"
+    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/CommandParser.swiftdeps",
+    "diagnostics": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/CommandParser.dia"
   },
   "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/checkouts/swift-argument-parser/Sources/ArgumentParser/Parsing/InputKey.swift": {
     "dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/InputKey.d",
     "object": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/InputKey.swift.o",
     "swiftmodule": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/InputKey~partial.swiftmodule",
-    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/InputKey.swiftdeps"
+    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/InputKey.swiftdeps",
+    "diagnostics": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/InputKey.dia"
   },
   "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/checkouts/swift-argument-parser/Sources/ArgumentParser/Parsing/InputOrigin.swift": {
     "dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/InputOrigin.d",
     "object": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/InputOrigin.swift.o",
     "swiftmodule": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/InputOrigin~partial.swiftmodule",
-    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/InputOrigin.swiftdeps"
+    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/InputOrigin.swiftdeps",
+    "diagnostics": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/InputOrigin.dia"
   },
   "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/checkouts/swift-argument-parser/Sources/ArgumentParser/Parsing/Name.swift": {
     "dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/Name.d",
     "object": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/Name.swift.o",
     "swiftmodule": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/Name~partial.swiftmodule",
-    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/Name.swiftdeps"
+    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/Name.swiftdeps",
+    "diagnostics": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/Name.dia"
   },
   "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/checkouts/swift-argument-parser/Sources/ArgumentParser/Parsing/Parsed.swift": {
     "dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/Parsed.d",
     "object": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/Parsed.swift.o",
     "swiftmodule": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/Parsed~partial.swiftmodule",
-    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/Parsed.swiftdeps"
+    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/Parsed.swiftdeps",
+    "diagnostics": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/Parsed.dia"
   },
   "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/checkouts/swift-argument-parser/Sources/ArgumentParser/Parsing/ParsedValues.swift": {
     "dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/ParsedValues.d",
     "object": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/ParsedValues.swift.o",
     "swiftmodule": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/ParsedValues~partial.swiftmodule",
-    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/ParsedValues.swiftdeps"
+    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/ParsedValues.swiftdeps",
+    "diagnostics": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/ParsedValues.dia"
   },
   "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/checkouts/swift-argument-parser/Sources/ArgumentParser/Parsing/ParserError.swift": {
     "dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/ParserError.d",
     "object": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/ParserError.swift.o",
     "swiftmodule": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/ParserError~partial.swiftmodule",
-    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/ParserError.swiftdeps"
+    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/ParserError.swiftdeps",
+    "diagnostics": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/ParserError.dia"
   },
   "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/checkouts/swift-argument-parser/Sources/ArgumentParser/Parsing/SplitArguments.swift": {
     "dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/SplitArguments.d",
     "object": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/SplitArguments.swift.o",
     "swiftmodule": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/SplitArguments~partial.swiftmodule",
-    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/SplitArguments.swiftdeps"
+    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/SplitArguments.swiftdeps",
+    "diagnostics": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/SplitArguments.dia"
   },
   "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/checkouts/swift-argument-parser/Sources/ArgumentParser/Usage/DumpHelpGenerator.swift": {
     "dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/DumpHelpGenerator.d",
     "object": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/DumpHelpGenerator.swift.o",
     "swiftmodule": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/DumpHelpGenerator~partial.swiftmodule",
-    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/DumpHelpGenerator.swiftdeps"
+    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/DumpHelpGenerator.swiftdeps",
+    "diagnostics": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/DumpHelpGenerator.dia"
   },
   "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/checkouts/swift-argument-parser/Sources/ArgumentParser/Usage/HelpCommand.swift": {
     "dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/HelpCommand.d",
     "object": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/HelpCommand.swift.o",
     "swiftmodule": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/HelpCommand~partial.swiftmodule",
-    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/HelpCommand.swiftdeps"
+    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/HelpCommand.swiftdeps",
+    "diagnostics": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/HelpCommand.dia"
   },
   "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/checkouts/swift-argument-parser/Sources/ArgumentParser/Usage/HelpGenerator.swift": {
     "dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/HelpGenerator.d",
     "object": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/HelpGenerator.swift.o",
     "swiftmodule": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/HelpGenerator~partial.swiftmodule",
-    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/HelpGenerator.swiftdeps"
+    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/HelpGenerator.swiftdeps",
+    "diagnostics": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/HelpGenerator.dia"
   },
   "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/checkouts/swift-argument-parser/Sources/ArgumentParser/Usage/MessageInfo.swift": {
     "dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/MessageInfo.d",
     "object": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/MessageInfo.swift.o",
     "swiftmodule": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/MessageInfo~partial.swiftmodule",
-    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/MessageInfo.swiftdeps"
+    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/MessageInfo.swiftdeps",
+    "diagnostics": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/MessageInfo.dia"
   },
   "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/checkouts/swift-argument-parser/Sources/ArgumentParser/Usage/UsageGenerator.swift": {
     "dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/UsageGenerator.d",
     "object": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/UsageGenerator.swift.o",
     "swiftmodule": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/UsageGenerator~partial.swiftmodule",
-    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/UsageGenerator.swiftdeps"
+    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/UsageGenerator.swiftdeps",
+    "diagnostics": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/UsageGenerator.dia"
   },
   "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/checkouts/swift-argument-parser/Sources/ArgumentParser/Utilities/CollectionExtensions.swift": {
     "dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/CollectionExtensions.d",
     "object": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/CollectionExtensions.swift.o",
     "swiftmodule": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/CollectionExtensions~partial.swiftmodule",
-    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/CollectionExtensions.swiftdeps"
+    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/CollectionExtensions.swiftdeps",
+    "diagnostics": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/CollectionExtensions.dia"
   },
   "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/checkouts/swift-argument-parser/Sources/ArgumentParser/Utilities/Platform.swift": {
     "dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/Platform.d",
     "object": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/Platform.swift.o",
     "swiftmodule": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/Platform~partial.swiftmodule",
-    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/Platform.swiftdeps"
+    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/Platform.swiftdeps",
+    "diagnostics": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/Platform.dia"
   },
   "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/checkouts/swift-argument-parser/Sources/ArgumentParser/Utilities/SequenceExtensions.swift": {
     "dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/SequenceExtensions.d",
     "object": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/SequenceExtensions.swift.o",
     "swiftmodule": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/SequenceExtensions~partial.swiftmodule",
-    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/SequenceExtensions.swiftdeps"
+    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/SequenceExtensions.swiftdeps",
+    "diagnostics": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/SequenceExtensions.dia"
   },
   "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/checkouts/swift-argument-parser/Sources/ArgumentParser/Utilities/StringExtensions.swift": {
     "dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/StringExtensions.d",
     "object": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/StringExtensions.swift.o",
     "swiftmodule": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/StringExtensions~partial.swiftmodule",
-    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/StringExtensions.swiftdeps"
+    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/StringExtensions.swiftdeps",
+    "diagnostics": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/StringExtensions.dia"
   },
   "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/checkouts/swift-argument-parser/Sources/ArgumentParser/Utilities/Tree.swift": {
     "dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/Tree.d",
     "object": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/Tree.swift.o",
     "swiftmodule": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/Tree~partial.swiftmodule",
-    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/Tree.swiftdeps"
+    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/Tree.swiftdeps",
+    "diagnostics": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/ArgumentParser-tool.build/Tree.dia"
   }
 }

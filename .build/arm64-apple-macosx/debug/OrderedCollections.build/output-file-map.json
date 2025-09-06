@@ -6,366 +6,427 @@
     "dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/_HashTable+Bucket.d",
     "object": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/_HashTable+Bucket.swift.o",
     "swiftmodule": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/_HashTable+Bucket~partial.swiftmodule",
-    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/_HashTable+Bucket.swiftdeps"
+    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/_HashTable+Bucket.swiftdeps",
+    "diagnostics": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/_HashTable+Bucket.dia"
   },
   "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/checkouts/swift-collections/Sources/OrderedCollections/HashTable/_HashTable+BucketIterator.swift": {
     "dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/_HashTable+BucketIterator.d",
     "object": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/_HashTable+BucketIterator.swift.o",
     "swiftmodule": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/_HashTable+BucketIterator~partial.swiftmodule",
-    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/_HashTable+BucketIterator.swiftdeps"
+    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/_HashTable+BucketIterator.swiftdeps",
+    "diagnostics": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/_HashTable+BucketIterator.dia"
   },
   "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/checkouts/swift-collections/Sources/OrderedCollections/HashTable/_HashTable+Constants.swift": {
     "dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/_HashTable+Constants.d",
     "object": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/_HashTable+Constants.swift.o",
     "swiftmodule": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/_HashTable+Constants~partial.swiftmodule",
-    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/_HashTable+Constants.swiftdeps"
+    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/_HashTable+Constants.swiftdeps",
+    "diagnostics": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/_HashTable+Constants.dia"
   },
   "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/checkouts/swift-collections/Sources/OrderedCollections/HashTable/_HashTable+CustomStringConvertible.swift": {
     "dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/_HashTable+CustomStringConvertible.d",
     "object": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/_HashTable+CustomStringConvertible.swift.o",
     "swiftmodule": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/_HashTable+CustomStringConvertible~partial.swiftmodule",
-    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/_HashTable+CustomStringConvertible.swiftdeps"
+    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/_HashTable+CustomStringConvertible.swiftdeps",
+    "diagnostics": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/_HashTable+CustomStringConvertible.dia"
   },
   "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/checkouts/swift-collections/Sources/OrderedCollections/HashTable/_HashTable+Testing.swift": {
     "dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/_HashTable+Testing.d",
     "object": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/_HashTable+Testing.swift.o",
     "swiftmodule": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/_HashTable+Testing~partial.swiftmodule",
-    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/_HashTable+Testing.swiftdeps"
+    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/_HashTable+Testing.swiftdeps",
+    "diagnostics": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/_HashTable+Testing.dia"
   },
   "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/checkouts/swift-collections/Sources/OrderedCollections/HashTable/_HashTable+UnsafeHandle.swift": {
     "dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/_HashTable+UnsafeHandle.d",
     "object": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/_HashTable+UnsafeHandle.swift.o",
     "swiftmodule": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/_HashTable+UnsafeHandle~partial.swiftmodule",
-    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/_HashTable+UnsafeHandle.swiftdeps"
+    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/_HashTable+UnsafeHandle.swiftdeps",
+    "diagnostics": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/_HashTable+UnsafeHandle.dia"
   },
   "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/checkouts/swift-collections/Sources/OrderedCollections/HashTable/_HashTable.swift": {
     "dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/_HashTable.d",
     "object": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/_HashTable.swift.o",
     "swiftmodule": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/_HashTable~partial.swiftmodule",
-    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/_HashTable.swiftdeps"
+    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/_HashTable.swiftdeps",
+    "diagnostics": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/_HashTable.dia"
   },
   "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/checkouts/swift-collections/Sources/OrderedCollections/HashTable/_Hashtable+Header.swift": {
     "dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/_Hashtable+Header.d",
     "object": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/_Hashtable+Header.swift.o",
     "swiftmodule": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/_Hashtable+Header~partial.swiftmodule",
-    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/_Hashtable+Header.swiftdeps"
+    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/_Hashtable+Header.swiftdeps",
+    "diagnostics": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/_Hashtable+Header.dia"
   },
   "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/checkouts/swift-collections/Sources/OrderedCollections/OrderedDictionary/OrderedDictionary+Codable.swift": {
     "dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedDictionary+Codable.d",
     "object": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedDictionary+Codable.swift.o",
     "swiftmodule": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedDictionary+Codable~partial.swiftmodule",
-    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedDictionary+Codable.swiftdeps"
+    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedDictionary+Codable.swiftdeps",
+    "diagnostics": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedDictionary+Codable.dia"
   },
   "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/checkouts/swift-collections/Sources/OrderedCollections/OrderedDictionary/OrderedDictionary+CustomReflectable.swift": {
     "dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedDictionary+CustomReflectable.d",
     "object": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedDictionary+CustomReflectable.swift.o",
     "swiftmodule": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedDictionary+CustomReflectable~partial.swiftmodule",
-    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedDictionary+CustomReflectable.swiftdeps"
+    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedDictionary+CustomReflectable.swiftdeps",
+    "diagnostics": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedDictionary+CustomReflectable.dia"
   },
   "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/checkouts/swift-collections/Sources/OrderedCollections/OrderedDictionary/OrderedDictionary+Deprecations.swift": {
     "dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedDictionary+Deprecations.d",
     "object": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedDictionary+Deprecations.swift.o",
     "swiftmodule": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedDictionary+Deprecations~partial.swiftmodule",
-    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedDictionary+Deprecations.swiftdeps"
+    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedDictionary+Deprecations.swiftdeps",
+    "diagnostics": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedDictionary+Deprecations.dia"
   },
   "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/checkouts/swift-collections/Sources/OrderedCollections/OrderedDictionary/OrderedDictionary+Descriptions.swift": {
     "dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedDictionary+Descriptions.d",
     "object": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedDictionary+Descriptions.swift.o",
     "swiftmodule": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedDictionary+Descriptions~partial.swiftmodule",
-    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedDictionary+Descriptions.swiftdeps"
+    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedDictionary+Descriptions.swiftdeps",
+    "diagnostics": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedDictionary+Descriptions.dia"
   },
   "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/checkouts/swift-collections/Sources/OrderedCollections/OrderedDictionary/OrderedDictionary+Elements.SubSequence.swift": {
     "dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedDictionary+Elements.SubSequence.d",
     "object": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedDictionary+Elements.SubSequence.swift.o",
     "swiftmodule": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedDictionary+Elements.SubSequence~partial.swiftmodule",
-    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedDictionary+Elements.SubSequence.swiftdeps"
+    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedDictionary+Elements.SubSequence.swiftdeps",
+    "diagnostics": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedDictionary+Elements.SubSequence.dia"
   },
   "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/checkouts/swift-collections/Sources/OrderedCollections/OrderedDictionary/OrderedDictionary+Elements.swift": {
     "dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedDictionary+Elements.d",
     "object": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedDictionary+Elements.swift.o",
     "swiftmodule": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedDictionary+Elements~partial.swiftmodule",
-    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedDictionary+Elements.swiftdeps"
+    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedDictionary+Elements.swiftdeps",
+    "diagnostics": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedDictionary+Elements.dia"
   },
   "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/checkouts/swift-collections/Sources/OrderedCollections/OrderedDictionary/OrderedDictionary+Equatable.swift": {
     "dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedDictionary+Equatable.d",
     "object": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedDictionary+Equatable.swift.o",
     "swiftmodule": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedDictionary+Equatable~partial.swiftmodule",
-    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedDictionary+Equatable.swiftdeps"
+    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedDictionary+Equatable.swiftdeps",
+    "diagnostics": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedDictionary+Equatable.dia"
   },
   "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/checkouts/swift-collections/Sources/OrderedCollections/OrderedDictionary/OrderedDictionary+ExpressibleByDictionaryLiteral.swift": {
     "dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedDictionary+ExpressibleByDictionaryLiteral.d",
     "object": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedDictionary+ExpressibleByDictionaryLiteral.swift.o",
     "swiftmodule": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedDictionary+ExpressibleByDictionaryLiteral~partial.swiftmodule",
-    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedDictionary+ExpressibleByDictionaryLiteral.swiftdeps"
+    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedDictionary+ExpressibleByDictionaryLiteral.swiftdeps",
+    "diagnostics": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedDictionary+ExpressibleByDictionaryLiteral.dia"
   },
   "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/checkouts/swift-collections/Sources/OrderedCollections/OrderedDictionary/OrderedDictionary+Hashable.swift": {
     "dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedDictionary+Hashable.d",
     "object": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedDictionary+Hashable.swift.o",
     "swiftmodule": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedDictionary+Hashable~partial.swiftmodule",
-    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedDictionary+Hashable.swiftdeps"
+    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedDictionary+Hashable.swiftdeps",
+    "diagnostics": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedDictionary+Hashable.dia"
   },
   "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/checkouts/swift-collections/Sources/OrderedCollections/OrderedDictionary/OrderedDictionary+Initializers.swift": {
     "dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedDictionary+Initializers.d",
     "object": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedDictionary+Initializers.swift.o",
     "swiftmodule": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedDictionary+Initializers~partial.swiftmodule",
-    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedDictionary+Initializers.swiftdeps"
+    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedDictionary+Initializers.swiftdeps",
+    "diagnostics": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedDictionary+Initializers.dia"
   },
   "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/checkouts/swift-collections/Sources/OrderedCollections/OrderedDictionary/OrderedDictionary+Invariants.swift": {
     "dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedDictionary+Invariants.d",
     "object": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedDictionary+Invariants.swift.o",
     "swiftmodule": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedDictionary+Invariants~partial.swiftmodule",
-    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedDictionary+Invariants.swiftdeps"
+    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedDictionary+Invariants.swiftdeps",
+    "diagnostics": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedDictionary+Invariants.dia"
   },
   "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/checkouts/swift-collections/Sources/OrderedCollections/OrderedDictionary/OrderedDictionary+Partial MutableCollection.swift": {
     "dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedDictionary+Partial MutableCollection.d",
     "object": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedDictionary+Partial MutableCollection.swift.o",
     "swiftmodule": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedDictionary+Partial MutableCollection~partial.swiftmodule",
-    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedDictionary+Partial MutableCollection.swiftdeps"
+    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedDictionary+Partial MutableCollection.swiftdeps",
+    "diagnostics": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedDictionary+Partial MutableCollection.dia"
   },
   "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/checkouts/swift-collections/Sources/OrderedCollections/OrderedDictionary/OrderedDictionary+Partial RangeReplaceableCollection.swift": {
     "dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedDictionary+Partial RangeReplaceableCollection.d",
     "object": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedDictionary+Partial RangeReplaceableCollection.swift.o",
     "swiftmodule": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedDictionary+Partial RangeReplaceableCollection~partial.swiftmodule",
-    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedDictionary+Partial RangeReplaceableCollection.swiftdeps"
+    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedDictionary+Partial RangeReplaceableCollection.swiftdeps",
+    "diagnostics": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedDictionary+Partial RangeReplaceableCollection.dia"
   },
   "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/checkouts/swift-collections/Sources/OrderedCollections/OrderedDictionary/OrderedDictionary+Sendable.swift": {
     "dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedDictionary+Sendable.d",
     "object": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedDictionary+Sendable.swift.o",
     "swiftmodule": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedDictionary+Sendable~partial.swiftmodule",
-    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedDictionary+Sendable.swiftdeps"
+    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedDictionary+Sendable.swiftdeps",
+    "diagnostics": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedDictionary+Sendable.dia"
   },
   "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/checkouts/swift-collections/Sources/OrderedCollections/OrderedDictionary/OrderedDictionary+Sequence.swift": {
     "dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedDictionary+Sequence.d",
     "object": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedDictionary+Sequence.swift.o",
     "swiftmodule": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedDictionary+Sequence~partial.swiftmodule",
-    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedDictionary+Sequence.swiftdeps"
+    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedDictionary+Sequence.swiftdeps",
+    "diagnostics": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedDictionary+Sequence.dia"
   },
   "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/checkouts/swift-collections/Sources/OrderedCollections/OrderedDictionary/OrderedDictionary+Values.swift": {
     "dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedDictionary+Values.d",
     "object": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedDictionary+Values.swift.o",
     "swiftmodule": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedDictionary+Values~partial.swiftmodule",
-    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedDictionary+Values.swiftdeps"
+    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedDictionary+Values.swiftdeps",
+    "diagnostics": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedDictionary+Values.dia"
   },
   "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/checkouts/swift-collections/Sources/OrderedCollections/OrderedDictionary/OrderedDictionary.swift": {
     "dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedDictionary.d",
     "object": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedDictionary.swift.o",
     "swiftmodule": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedDictionary~partial.swiftmodule",
-    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedDictionary.swiftdeps"
+    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedDictionary.swiftdeps",
+    "diagnostics": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedDictionary.dia"
   },
   "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/checkouts/swift-collections/Sources/OrderedCollections/OrderedSet/OrderedSet+Codable.swift": {
     "dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet+Codable.d",
     "object": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet+Codable.swift.o",
     "swiftmodule": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet+Codable~partial.swiftmodule",
-    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet+Codable.swiftdeps"
+    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet+Codable.swiftdeps",
+    "diagnostics": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet+Codable.dia"
   },
   "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/checkouts/swift-collections/Sources/OrderedCollections/OrderedSet/OrderedSet+CustomReflectable.swift": {
     "dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet+CustomReflectable.d",
     "object": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet+CustomReflectable.swift.o",
     "swiftmodule": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet+CustomReflectable~partial.swiftmodule",
-    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet+CustomReflectable.swiftdeps"
+    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet+CustomReflectable.swiftdeps",
+    "diagnostics": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet+CustomReflectable.dia"
   },
   "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/checkouts/swift-collections/Sources/OrderedCollections/OrderedSet/OrderedSet+Descriptions.swift": {
     "dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet+Descriptions.d",
     "object": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet+Descriptions.swift.o",
     "swiftmodule": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet+Descriptions~partial.swiftmodule",
-    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet+Descriptions.swiftdeps"
+    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet+Descriptions.swiftdeps",
+    "diagnostics": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet+Descriptions.dia"
   },
   "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/checkouts/swift-collections/Sources/OrderedCollections/OrderedSet/OrderedSet+Diffing.swift": {
     "dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet+Diffing.d",
     "object": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet+Diffing.swift.o",
     "swiftmodule": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet+Diffing~partial.swiftmodule",
-    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet+Diffing.swiftdeps"
+    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet+Diffing.swiftdeps",
+    "diagnostics": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet+Diffing.dia"
   },
   "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/checkouts/swift-collections/Sources/OrderedCollections/OrderedSet/OrderedSet+Equatable.swift": {
     "dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet+Equatable.d",
     "object": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet+Equatable.swift.o",
     "swiftmodule": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet+Equatable~partial.swiftmodule",
-    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet+Equatable.swiftdeps"
+    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet+Equatable.swiftdeps",
+    "diagnostics": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet+Equatable.dia"
   },
   "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/checkouts/swift-collections/Sources/OrderedCollections/OrderedSet/OrderedSet+ExpressibleByArrayLiteral.swift": {
     "dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet+ExpressibleByArrayLiteral.d",
     "object": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet+ExpressibleByArrayLiteral.swift.o",
     "swiftmodule": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet+ExpressibleByArrayLiteral~partial.swiftmodule",
-    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet+ExpressibleByArrayLiteral.swiftdeps"
+    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet+ExpressibleByArrayLiteral.swiftdeps",
+    "diagnostics": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet+ExpressibleByArrayLiteral.dia"
   },
   "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/checkouts/swift-collections/Sources/OrderedCollections/OrderedSet/OrderedSet+Hashable.swift": {
     "dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet+Hashable.d",
     "object": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet+Hashable.swift.o",
     "swiftmodule": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet+Hashable~partial.swiftmodule",
-    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet+Hashable.swiftdeps"
+    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet+Hashable.swiftdeps",
+    "diagnostics": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet+Hashable.dia"
   },
   "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/checkouts/swift-collections/Sources/OrderedCollections/OrderedSet/OrderedSet+Initializers.swift": {
     "dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet+Initializers.d",
     "object": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet+Initializers.swift.o",
     "swiftmodule": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet+Initializers~partial.swiftmodule",
-    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet+Initializers.swiftdeps"
+    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet+Initializers.swiftdeps",
+    "diagnostics": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet+Initializers.dia"
   },
   "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/checkouts/swift-collections/Sources/OrderedCollections/OrderedSet/OrderedSet+Insertions.swift": {
     "dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet+Insertions.d",
     "object": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet+Insertions.swift.o",
     "swiftmodule": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet+Insertions~partial.swiftmodule",
-    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet+Insertions.swiftdeps"
+    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet+Insertions.swiftdeps",
+    "diagnostics": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet+Insertions.dia"
   },
   "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/checkouts/swift-collections/Sources/OrderedCollections/OrderedSet/OrderedSet+Invariants.swift": {
     "dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet+Invariants.d",
     "object": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet+Invariants.swift.o",
     "swiftmodule": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet+Invariants~partial.swiftmodule",
-    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet+Invariants.swiftdeps"
+    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet+Invariants.swiftdeps",
+    "diagnostics": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet+Invariants.dia"
   },
   "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/checkouts/swift-collections/Sources/OrderedCollections/OrderedSet/OrderedSet+Partial MutableCollection.swift": {
     "dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet+Partial MutableCollection.d",
     "object": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet+Partial MutableCollection.swift.o",
     "swiftmodule": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet+Partial MutableCollection~partial.swiftmodule",
-    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet+Partial MutableCollection.swiftdeps"
+    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet+Partial MutableCollection.swiftdeps",
+    "diagnostics": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet+Partial MutableCollection.dia"
   },
   "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/checkouts/swift-collections/Sources/OrderedCollections/OrderedSet/OrderedSet+Partial RangeReplaceableCollection.swift": {
     "dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet+Partial RangeReplaceableCollection.d",
     "object": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet+Partial RangeReplaceableCollection.swift.o",
     "swiftmodule": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet+Partial RangeReplaceableCollection~partial.swiftmodule",
-    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet+Partial RangeReplaceableCollection.swiftdeps"
+    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet+Partial RangeReplaceableCollection.swiftdeps",
+    "diagnostics": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet+Partial RangeReplaceableCollection.dia"
   },
   "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/checkouts/swift-collections/Sources/OrderedCollections/OrderedSet/OrderedSet+Partial SetAlgebra formIntersection.swift": {
     "dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet+Partial SetAlgebra formIntersection.d",
     "object": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet+Partial SetAlgebra formIntersection.swift.o",
     "swiftmodule": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet+Partial SetAlgebra formIntersection~partial.swiftmodule",
-    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet+Partial SetAlgebra formIntersection.swiftdeps"
+    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet+Partial SetAlgebra formIntersection.swiftdeps",
+    "diagnostics": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet+Partial SetAlgebra formIntersection.dia"
   },
   "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/checkouts/swift-collections/Sources/OrderedCollections/OrderedSet/OrderedSet+Partial SetAlgebra formSymmetricDifference.swift": {
     "dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet+Partial SetAlgebra formSymmetricDifference.d",
     "object": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet+Partial SetAlgebra formSymmetricDifference.swift.o",
     "swiftmodule": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet+Partial SetAlgebra formSymmetricDifference~partial.swiftmodule",
-    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet+Partial SetAlgebra formSymmetricDifference.swiftdeps"
+    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet+Partial SetAlgebra formSymmetricDifference.swiftdeps",
+    "diagnostics": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet+Partial SetAlgebra formSymmetricDifference.dia"
   },
   "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/checkouts/swift-collections/Sources/OrderedCollections/OrderedSet/OrderedSet+Partial SetAlgebra formUnion.swift": {
     "dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet+Partial SetAlgebra formUnion.d",
     "object": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet+Partial SetAlgebra formUnion.swift.o",
     "swiftmodule": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet+Partial SetAlgebra formUnion~partial.swiftmodule",
-    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet+Partial SetAlgebra formUnion.swiftdeps"
+    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet+Partial SetAlgebra formUnion.swiftdeps",
+    "diagnostics": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet+Partial SetAlgebra formUnion.dia"
   },
   "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/checkouts/swift-collections/Sources/OrderedCollections/OrderedSet/OrderedSet+Partial SetAlgebra intersection.swift": {
     "dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet+Partial SetAlgebra intersection.d",
     "object": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet+Partial SetAlgebra intersection.swift.o",
     "swiftmodule": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet+Partial SetAlgebra intersection~partial.swiftmodule",
-    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet+Partial SetAlgebra intersection.swiftdeps"
+    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet+Partial SetAlgebra intersection.swiftdeps",
+    "diagnostics": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet+Partial SetAlgebra intersection.dia"
   },
   "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/checkouts/swift-collections/Sources/OrderedCollections/OrderedSet/OrderedSet+Partial SetAlgebra isDisjoint.swift": {
     "dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet+Partial SetAlgebra isDisjoint.d",
     "object": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet+Partial SetAlgebra isDisjoint.swift.o",
     "swiftmodule": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet+Partial SetAlgebra isDisjoint~partial.swiftmodule",
-    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet+Partial SetAlgebra isDisjoint.swiftdeps"
+    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet+Partial SetAlgebra isDisjoint.swiftdeps",
+    "diagnostics": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet+Partial SetAlgebra isDisjoint.dia"
   },
   "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/checkouts/swift-collections/Sources/OrderedCollections/OrderedSet/OrderedSet+Partial SetAlgebra isEqualSet.swift": {
     "dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet+Partial SetAlgebra isEqualSet.d",
     "object": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet+Partial SetAlgebra isEqualSet.swift.o",
     "swiftmodule": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet+Partial SetAlgebra isEqualSet~partial.swiftmodule",
-    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet+Partial SetAlgebra isEqualSet.swiftdeps"
+    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet+Partial SetAlgebra isEqualSet.swiftdeps",
+    "diagnostics": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet+Partial SetAlgebra isEqualSet.dia"
   },
   "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/checkouts/swift-collections/Sources/OrderedCollections/OrderedSet/OrderedSet+Partial SetAlgebra isStrictSubset.swift": {
     "dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet+Partial SetAlgebra isStrictSubset.d",
     "object": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet+Partial SetAlgebra isStrictSubset.swift.o",
     "swiftmodule": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet+Partial SetAlgebra isStrictSubset~partial.swiftmodule",
-    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet+Partial SetAlgebra isStrictSubset.swiftdeps"
+    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet+Partial SetAlgebra isStrictSubset.swiftdeps",
+    "diagnostics": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet+Partial SetAlgebra isStrictSubset.dia"
   },
   "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/checkouts/swift-collections/Sources/OrderedCollections/OrderedSet/OrderedSet+Partial SetAlgebra isStrictSuperset.swift": {
     "dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet+Partial SetAlgebra isStrictSuperset.d",
     "object": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet+Partial SetAlgebra isStrictSuperset.swift.o",
     "swiftmodule": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet+Partial SetAlgebra isStrictSuperset~partial.swiftmodule",
-    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet+Partial SetAlgebra isStrictSuperset.swiftdeps"
+    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet+Partial SetAlgebra isStrictSuperset.swiftdeps",
+    "diagnostics": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet+Partial SetAlgebra isStrictSuperset.dia"
   },
   "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/checkouts/swift-collections/Sources/OrderedCollections/OrderedSet/OrderedSet+Partial SetAlgebra isSubset.swift": {
     "dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet+Partial SetAlgebra isSubset.d",
     "object": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet+Partial SetAlgebra isSubset.swift.o",
     "swiftmodule": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet+Partial SetAlgebra isSubset~partial.swiftmodule",
-    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet+Partial SetAlgebra isSubset.swiftdeps"
+    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet+Partial SetAlgebra isSubset.swiftdeps",
+    "diagnostics": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet+Partial SetAlgebra isSubset.dia"
   },
   "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/checkouts/swift-collections/Sources/OrderedCollections/OrderedSet/OrderedSet+Partial SetAlgebra isSuperset.swift": {
     "dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet+Partial SetAlgebra isSuperset.d",
     "object": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet+Partial SetAlgebra isSuperset.swift.o",
     "swiftmodule": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet+Partial SetAlgebra isSuperset~partial.swiftmodule",
-    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet+Partial SetAlgebra isSuperset.swiftdeps"
+    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet+Partial SetAlgebra isSuperset.swiftdeps",
+    "diagnostics": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet+Partial SetAlgebra isSuperset.dia"
   },
   "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/checkouts/swift-collections/Sources/OrderedCollections/OrderedSet/OrderedSet+Partial SetAlgebra subtract.swift": {
     "dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet+Partial SetAlgebra subtract.d",
     "object": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet+Partial SetAlgebra subtract.swift.o",
     "swiftmodule": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet+Partial SetAlgebra subtract~partial.swiftmodule",
-    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet+Partial SetAlgebra subtract.swiftdeps"
+    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet+Partial SetAlgebra subtract.swiftdeps",
+    "diagnostics": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet+Partial SetAlgebra subtract.dia"
   },
   "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/checkouts/swift-collections/Sources/OrderedCollections/OrderedSet/OrderedSet+Partial SetAlgebra subtracting.swift": {
     "dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet+Partial SetAlgebra subtracting.d",
     "object": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet+Partial SetAlgebra subtracting.swift.o",
     "swiftmodule": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet+Partial SetAlgebra subtracting~partial.swiftmodule",
-    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet+Partial SetAlgebra subtracting.swiftdeps"
+    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet+Partial SetAlgebra subtracting.swiftdeps",
+    "diagnostics": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet+Partial SetAlgebra subtracting.dia"
   },
   "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/checkouts/swift-collections/Sources/OrderedCollections/OrderedSet/OrderedSet+Partial SetAlgebra symmetricDifference.swift": {
     "dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet+Partial SetAlgebra symmetricDifference.d",
     "object": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet+Partial SetAlgebra symmetricDifference.swift.o",
     "swiftmodule": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet+Partial SetAlgebra symmetricDifference~partial.swiftmodule",
-    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet+Partial SetAlgebra symmetricDifference.swiftdeps"
+    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet+Partial SetAlgebra symmetricDifference.swiftdeps",
+    "diagnostics": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet+Partial SetAlgebra symmetricDifference.dia"
   },
   "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/checkouts/swift-collections/Sources/OrderedCollections/OrderedSet/OrderedSet+Partial SetAlgebra union.swift": {
     "dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet+Partial SetAlgebra union.d",
     "object": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet+Partial SetAlgebra union.swift.o",
     "swiftmodule": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet+Partial SetAlgebra union~partial.swiftmodule",
-    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet+Partial SetAlgebra union.swiftdeps"
+    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet+Partial SetAlgebra union.swiftdeps",
+    "diagnostics": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet+Partial SetAlgebra union.dia"
   },
   "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/checkouts/swift-collections/Sources/OrderedCollections/OrderedSet/OrderedSet+Partial SetAlgebra+Basics.swift": {
     "dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet+Partial SetAlgebra+Basics.d",
     "object": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet+Partial SetAlgebra+Basics.swift.o",
     "swiftmodule": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet+Partial SetAlgebra+Basics~partial.swiftmodule",
-    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet+Partial SetAlgebra+Basics.swiftdeps"
+    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet+Partial SetAlgebra+Basics.swiftdeps",
+    "diagnostics": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet+Partial SetAlgebra+Basics.dia"
   },
   "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/checkouts/swift-collections/Sources/OrderedCollections/OrderedSet/OrderedSet+RandomAccessCollection.swift": {
     "dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet+RandomAccessCollection.d",
     "object": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet+RandomAccessCollection.swift.o",
     "swiftmodule": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet+RandomAccessCollection~partial.swiftmodule",
-    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet+RandomAccessCollection.swiftdeps"
+    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet+RandomAccessCollection.swiftdeps",
+    "diagnostics": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet+RandomAccessCollection.dia"
   },
   "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/checkouts/swift-collections/Sources/OrderedCollections/OrderedSet/OrderedSet+ReserveCapacity.swift": {
     "dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet+ReserveCapacity.d",
     "object": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet+ReserveCapacity.swift.o",
     "swiftmodule": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet+ReserveCapacity~partial.swiftmodule",
-    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet+ReserveCapacity.swiftdeps"
+    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet+ReserveCapacity.swiftdeps",
+    "diagnostics": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet+ReserveCapacity.dia"
   },
   "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/checkouts/swift-collections/Sources/OrderedCollections/OrderedSet/OrderedSet+Sendable.swift": {
     "dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet+Sendable.d",
     "object": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet+Sendable.swift.o",
     "swiftmodule": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet+Sendable~partial.swiftmodule",
-    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet+Sendable.swiftdeps"
+    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet+Sendable.swiftdeps",
+    "diagnostics": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet+Sendable.dia"
   },
   "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/checkouts/swift-collections/Sources/OrderedCollections/OrderedSet/OrderedSet+SubSequence.swift": {
     "dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet+SubSequence.d",
     "object": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet+SubSequence.swift.o",
     "swiftmodule": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet+SubSequence~partial.swiftmodule",
-    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet+SubSequence.swiftdeps"
+    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet+SubSequence.swiftdeps",
+    "diagnostics": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet+SubSequence.dia"
   },
   "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/checkouts/swift-collections/Sources/OrderedCollections/OrderedSet/OrderedSet+Testing.swift": {
     "dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet+Testing.d",
     "object": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet+Testing.swift.o",
     "swiftmodule": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet+Testing~partial.swiftmodule",
-    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet+Testing.swiftdeps"
+    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet+Testing.swiftdeps",
+    "diagnostics": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet+Testing.dia"
   },
   "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/checkouts/swift-collections/Sources/OrderedCollections/OrderedSet/OrderedSet+UnorderedView.swift": {
     "dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet+UnorderedView.d",
     "object": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet+UnorderedView.swift.o",
     "swiftmodule": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet+UnorderedView~partial.swiftmodule",
-    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet+UnorderedView.swiftdeps"
+    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet+UnorderedView.swiftdeps",
+    "diagnostics": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet+UnorderedView.dia"
   },
   "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/checkouts/swift-collections/Sources/OrderedCollections/OrderedSet/OrderedSet+UnstableInternals.swift": {
     "dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet+UnstableInternals.d",
     "object": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet+UnstableInternals.swift.o",
     "swiftmodule": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet+UnstableInternals~partial.swiftmodule",
-    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet+UnstableInternals.swiftdeps"
+    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet+UnstableInternals.swiftdeps",
+    "diagnostics": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet+UnstableInternals.dia"
   },
   "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/checkouts/swift-collections/Sources/OrderedCollections/OrderedSet/OrderedSet.swift": {
     "dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet.d",
     "object": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet.swift.o",
     "swiftmodule": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet~partial.swiftmodule",
-    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet.swiftdeps"
+    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet.swiftdeps",
+    "diagnostics": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedSet.dia"
   },
   "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/checkouts/swift-collections/Sources/OrderedCollections/Utilities/_UnsafeBitset.swift": {
     "dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/_UnsafeBitset.d",
     "object": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/_UnsafeBitset.swift.o",
     "swiftmodule": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/_UnsafeBitset~partial.swiftmodule",
-    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/_UnsafeBitset.swiftdeps"
+    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/_UnsafeBitset.swiftdeps",
+    "diagnostics": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/OrderedCollections.build/_UnsafeBitset.dia"
   }
 }

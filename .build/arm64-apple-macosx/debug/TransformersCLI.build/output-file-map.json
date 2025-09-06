@@ -6,6 +6,7 @@
     "dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/TransformersCLI.build/main.d",
     "object": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/TransformersCLI.build/main.swift.o",
     "swiftmodule": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/TransformersCLI.build/main~partial.swiftmodule",
-    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/TransformersCLI.build/main.swiftdeps"
+    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/TransformersCLI.build/main.swiftdeps",
+    "diagnostics": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/TransformersCLI.build/main.dia"
   }
 }

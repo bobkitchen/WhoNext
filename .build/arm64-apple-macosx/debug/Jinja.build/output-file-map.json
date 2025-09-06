@@ -6,54 +6,63 @@
     "dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/Jinja.build/Ast.d",
     "object": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/Jinja.build/Ast.swift.o",
     "swiftmodule": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/Jinja.build/Ast~partial.swiftmodule",
-    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/Jinja.build/Ast.swiftdeps"
+    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/Jinja.build/Ast.swiftdeps",
+    "diagnostics": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/Jinja.build/Ast.dia"
   },
   "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/checkouts/Jinja/Sources/Environment.swift": {
     "dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/Jinja.build/Environment.d",
     "object": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/Jinja.build/Environment.swift.o",
     "swiftmodule": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/Jinja.build/Environment~partial.swiftmodule",
-    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/Jinja.build/Environment.swiftdeps"
+    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/Jinja.build/Environment.swiftdeps",
+    "diagnostics": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/Jinja.build/Environment.dia"
   },
   "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/checkouts/Jinja/Sources/Error.swift": {
     "dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/Jinja.build/Error.d",
     "object": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/Jinja.build/Error.swift.o",
     "swiftmodule": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/Jinja.build/Error~partial.swiftmodule",
-    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/Jinja.build/Error.swiftdeps"
+    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/Jinja.build/Error.swiftdeps",
+    "diagnostics": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/Jinja.build/Error.dia"
   },
   "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/checkouts/Jinja/Sources/Extensions/StringExtension.swift": {
     "dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/Jinja.build/StringExtension.d",
     "object": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/Jinja.build/StringExtension.swift.o",
     "swiftmodule": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/Jinja.build/StringExtension~partial.swiftmodule",
-    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/Jinja.build/StringExtension.swiftdeps"
+    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/Jinja.build/StringExtension.swiftdeps",
+    "diagnostics": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/Jinja.build/StringExtension.dia"
   },
   "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/checkouts/Jinja/Sources/Lexer.swift": {
     "dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/Jinja.build/Lexer.d",
     "object": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/Jinja.build/Lexer.swift.o",
     "swiftmodule": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/Jinja.build/Lexer~partial.swiftmodule",
-    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/Jinja.build/Lexer.swiftdeps"
+    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/Jinja.build/Lexer.swiftdeps",
+    "diagnostics": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/Jinja.build/Lexer.dia"
   },
   "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/checkouts/Jinja/Sources/Parser.swift": {
     "dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/Jinja.build/Parser.d",
     "object": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/Jinja.build/Parser.swift.o",
     "swiftmodule": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/Jinja.build/Parser~partial.swiftmodule",
-    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/Jinja.build/Parser.swiftdeps"
+    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/Jinja.build/Parser.swiftdeps",
+    "diagnostics": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/Jinja.build/Parser.dia"
   },
   "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/checkouts/Jinja/Sources/Runtime.swift": {
     "dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/Jinja.build/Runtime.d",
     "object": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/Jinja.build/Runtime.swift.o",
     "swiftmodule": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/Jinja.build/Runtime~partial.swiftmodule",
-    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/Jinja.build/Runtime.swiftdeps"
+    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/Jinja.build/Runtime.swiftdeps",
+    "diagnostics": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/Jinja.build/Runtime.dia"
   },
   "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/checkouts/Jinja/Sources/Template.swift": {
     "dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/Jinja.build/Template.d",
     "object": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/Jinja.build/Template.swift.o",
     "swiftmodule": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/Jinja.build/Template~partial.swiftmodule",
-    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/Jinja.build/Template.swiftdeps"
+    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/Jinja.build/Template.swiftdeps",
+    "diagnostics": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/Jinja.build/Template.dia"
   },
   "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/checkouts/Jinja/Sources/Utilities.swift": {
     "dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/Jinja.build/Utilities.d",
     "object": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/Jinja.build/Utilities.swift.o",
     "swiftmodule": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/Jinja.build/Utilities~partial.swiftmodule",
-    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/Jinja.build/Utilities.swiftdeps"
+    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/Jinja.build/Utilities.swiftdeps",
+    "diagnostics": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/Jinja.build/Utilities.dia"
   }
 }

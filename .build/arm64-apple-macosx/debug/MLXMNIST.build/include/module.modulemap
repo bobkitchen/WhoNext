@@ -1,0 +1,3 @@
+module MLXMNIST {
+    header "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXMNIST.build/include/MLXMNIST-Swift.h"
+}

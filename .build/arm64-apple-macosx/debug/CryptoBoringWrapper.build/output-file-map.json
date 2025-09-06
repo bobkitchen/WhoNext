@@ -6,48 +6,56 @@
     "dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/CryptoBoringWrapper.build/BoringSSLAEAD.d",
     "object": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/CryptoBoringWrapper.build/BoringSSLAEAD.swift.o",
     "swiftmodule": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/CryptoBoringWrapper.build/BoringSSLAEAD~partial.swiftmodule",
-    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/CryptoBoringWrapper.build/BoringSSLAEAD.swiftdeps"
+    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/CryptoBoringWrapper.build/BoringSSLAEAD.swiftdeps",
+    "diagnostics": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/CryptoBoringWrapper.build/BoringSSLAEAD.dia"
   },
   "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/checkouts/swift-crypto/Sources/CryptoBoringWrapper/CryptoKitErrors_boring.swift": {
     "dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/CryptoBoringWrapper.build/CryptoKitErrors_boring.d",
     "object": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/CryptoBoringWrapper.build/CryptoKitErrors_boring.swift.o",
     "swiftmodule": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/CryptoBoringWrapper.build/CryptoKitErrors_boring~partial.swiftmodule",
-    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/CryptoBoringWrapper.build/CryptoKitErrors_boring.swiftdeps"
+    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/CryptoBoringWrapper.build/CryptoKitErrors_boring.swiftdeps",
+    "diagnostics": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/CryptoBoringWrapper.build/CryptoKitErrors_boring.dia"
   },
   "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/checkouts/swift-crypto/Sources/CryptoBoringWrapper/EC/EllipticCurve.swift": {
     "dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/CryptoBoringWrapper.build/EllipticCurve.d",
     "object": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/CryptoBoringWrapper.build/EllipticCurve.swift.o",
     "swiftmodule": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/CryptoBoringWrapper.build/EllipticCurve~partial.swiftmodule",
-    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/CryptoBoringWrapper.build/EllipticCurve.swiftdeps"
+    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/CryptoBoringWrapper.build/EllipticCurve.swiftdeps",
+    "diagnostics": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/CryptoBoringWrapper.build/EllipticCurve.dia"
   },
   "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/checkouts/swift-crypto/Sources/CryptoBoringWrapper/EC/EllipticCurvePoint.swift": {
     "dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/CryptoBoringWrapper.build/EllipticCurvePoint.d",
     "object": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/CryptoBoringWrapper.build/EllipticCurvePoint.swift.o",
     "swiftmodule": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/CryptoBoringWrapper.build/EllipticCurvePoint~partial.swiftmodule",
-    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/CryptoBoringWrapper.build/EllipticCurvePoint.swiftdeps"
+    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/CryptoBoringWrapper.build/EllipticCurvePoint.swiftdeps",
+    "diagnostics": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/CryptoBoringWrapper.build/EllipticCurvePoint.dia"
   },
   "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/checkouts/swift-crypto/Sources/CryptoBoringWrapper/Util/ArbitraryPrecisionInteger.swift": {
     "dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/CryptoBoringWrapper.build/ArbitraryPrecisionInteger.d",
     "object": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/CryptoBoringWrapper.build/ArbitraryPrecisionInteger.swift.o",
     "swiftmodule": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/CryptoBoringWrapper.build/ArbitraryPrecisionInteger~partial.swiftmodule",
-    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/CryptoBoringWrapper.build/ArbitraryPrecisionInteger.swiftdeps"
+    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/CryptoBoringWrapper.build/ArbitraryPrecisionInteger.swiftdeps",
+    "diagnostics": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/CryptoBoringWrapper.build/ArbitraryPrecisionInteger.dia"
   },
   "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/checkouts/swift-crypto/Sources/CryptoBoringWrapper/Util/FiniteFieldArithmeticContext.swift": {
     "dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/CryptoBoringWrapper.build/FiniteFieldArithmeticContext.d",
     "object": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/CryptoBoringWrapper.build/FiniteFieldArithmeticContext.swift.o",
     "swiftmodule": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/CryptoBoringWrapper.build/FiniteFieldArithmeticContext~partial.swiftmodule",
-    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/CryptoBoringWrapper.build/FiniteFieldArithmeticContext.swiftdeps"
+    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/CryptoBoringWrapper.build/FiniteFieldArithmeticContext.swiftdeps",
+    "diagnostics": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/CryptoBoringWrapper.build/FiniteFieldArithmeticContext.dia"
   },
   "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/checkouts/swift-crypto/Sources/CryptoBoringWrapper/Util/RandomBytes.swift": {
     "dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/CryptoBoringWrapper.build/RandomBytes.d",
     "object": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/CryptoBoringWrapper.build/RandomBytes.swift.o",
     "swiftmodule": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/CryptoBoringWrapper.build/RandomBytes~partial.swiftmodule",
-    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/CryptoBoringWrapper.build/RandomBytes.swiftdeps"
+    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/CryptoBoringWrapper.build/RandomBytes.swiftdeps",
+    "diagnostics": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/CryptoBoringWrapper.build/RandomBytes.dia"
   },
   "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/CryptoBoringWrapper.build/DerivedSources/resource_bundle_accessor.swift": {
     "dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/CryptoBoringWrapper.build/resource_bundle_accessor.d",
     "object": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/CryptoBoringWrapper.build/resource_bundle_accessor.swift.o",
     "swiftmodule": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/CryptoBoringWrapper.build/resource_bundle_accessor~partial.swiftmodule",
-    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/CryptoBoringWrapper.build/resource_bundle_accessor.swiftdeps"
+    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/CryptoBoringWrapper.build/resource_bundle_accessor.swiftdeps",
+    "diagnostics": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/CryptoBoringWrapper.build/resource_bundle_accessor.dia"
   }
 }

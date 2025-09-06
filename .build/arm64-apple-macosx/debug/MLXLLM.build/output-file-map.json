@@ -6,198 +6,231 @@
     "dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXLLM.build/LLMModel.d",
     "object": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXLLM.build/LLMModel.swift.o",
     "swiftmodule": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXLLM.build/LLMModel~partial.swiftmodule",
-    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXLLM.build/LLMModel.swiftdeps"
+    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXLLM.build/LLMModel.swiftdeps",
+    "diagnostics": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXLLM.build/LLMModel.dia"
   },
   "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/checkouts/mlx-swift-examples/Libraries/MLXLLM/LLMModelFactory.swift": {
     "dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXLLM.build/LLMModelFactory.d",
     "object": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXLLM.build/LLMModelFactory.swift.o",
     "swiftmodule": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXLLM.build/LLMModelFactory~partial.swiftmodule",
-    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXLLM.build/LLMModelFactory.swiftdeps"
+    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXLLM.build/LLMModelFactory.swiftdeps",
+    "diagnostics": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXLLM.build/LLMModelFactory.dia"
   },
   "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/checkouts/mlx-swift-examples/Libraries/MLXLLM/Lora+Data.swift": {
     "dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXLLM.build/Lora+Data.d",
     "object": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXLLM.build/Lora+Data.swift.o",
     "swiftmodule": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXLLM.build/Lora+Data~partial.swiftmodule",
-    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXLLM.build/Lora+Data.swiftdeps"
+    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXLLM.build/Lora+Data.swiftdeps",
+    "diagnostics": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXLLM.build/Lora+Data.dia"
   },
   "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/checkouts/mlx-swift-examples/Libraries/MLXLLM/LoraTrain.swift": {
     "dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXLLM.build/LoraTrain.d",
     "object": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXLLM.build/LoraTrain.swift.o",
     "swiftmodule": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXLLM.build/LoraTrain~partial.swiftmodule",
-    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXLLM.build/LoraTrain.swiftdeps"
+    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXLLM.build/LoraTrain.swiftdeps",
+    "diagnostics": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXLLM.build/LoraTrain.dia"
   },
   "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/checkouts/mlx-swift-examples/Libraries/MLXLLM/Models/BaichuanM1.swift": {
     "dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXLLM.build/BaichuanM1.d",
     "object": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXLLM.build/BaichuanM1.swift.o",
     "swiftmodule": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXLLM.build/BaichuanM1~partial.swiftmodule",
-    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXLLM.build/BaichuanM1.swiftdeps"
+    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXLLM.build/BaichuanM1.swiftdeps",
+    "diagnostics": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXLLM.build/BaichuanM1.dia"
   },
   "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/checkouts/mlx-swift-examples/Libraries/MLXLLM/Models/Bitnet.swift": {
     "dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXLLM.build/Bitnet.d",
     "object": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXLLM.build/Bitnet.swift.o",
     "swiftmodule": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXLLM.build/Bitnet~partial.swiftmodule",
-    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXLLM.build/Bitnet.swiftdeps"
+    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXLLM.build/Bitnet.swiftdeps",
+    "diagnostics": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXLLM.build/Bitnet.dia"
   },
   "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/checkouts/mlx-swift-examples/Libraries/MLXLLM/Models/Cohere.swift": {
     "dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXLLM.build/Cohere.d",
     "object": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXLLM.build/Cohere.swift.o",
     "swiftmodule": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXLLM.build/Cohere~partial.swiftmodule",
-    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXLLM.build/Cohere.swiftdeps"
+    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXLLM.build/Cohere.swiftdeps",
+    "diagnostics": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXLLM.build/Cohere.dia"
   },
   "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/checkouts/mlx-swift-examples/Libraries/MLXLLM/Models/DeepseekV3.swift": {
     "dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXLLM.build/DeepseekV3.d",
     "object": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXLLM.build/DeepseekV3.swift.o",
     "swiftmodule": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXLLM.build/DeepseekV3~partial.swiftmodule",
-    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXLLM.build/DeepseekV3.swiftdeps"
+    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXLLM.build/DeepseekV3.swiftdeps",
+    "diagnostics": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXLLM.build/DeepseekV3.dia"
   },
   "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/checkouts/mlx-swift-examples/Libraries/MLXLLM/Models/Ernie4_5.swift": {
     "dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXLLM.build/Ernie4_5.d",
     "object": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXLLM.build/Ernie4_5.swift.o",
     "swiftmodule": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXLLM.build/Ernie4_5~partial.swiftmodule",
-    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXLLM.build/Ernie4_5.swiftdeps"
+    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXLLM.build/Ernie4_5.swiftdeps",
+    "diagnostics": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXLLM.build/Ernie4_5.dia"
   },
   "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/checkouts/mlx-swift-examples/Libraries/MLXLLM/Models/Exaone4.swift": {
     "dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXLLM.build/Exaone4.d",
     "object": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXLLM.build/Exaone4.swift.o",
     "swiftmodule": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXLLM.build/Exaone4~partial.swiftmodule",
-    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXLLM.build/Exaone4.swiftdeps"
+    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXLLM.build/Exaone4.swiftdeps",
+    "diagnostics": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXLLM.build/Exaone4.dia"
   },
   "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/checkouts/mlx-swift-examples/Libraries/MLXLLM/Models/GLM4.swift": {
     "dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXLLM.build/GLM4.d",
     "object": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXLLM.build/GLM4.swift.o",
     "swiftmodule": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXLLM.build/GLM4~partial.swiftmodule",
-    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXLLM.build/GLM4.swiftdeps"
+    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXLLM.build/GLM4.swiftdeps",
+    "diagnostics": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXLLM.build/GLM4.dia"
   },
   "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/checkouts/mlx-swift-examples/Libraries/MLXLLM/Models/GPTOSS.swift": {
     "dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXLLM.build/GPTOSS.d",
     "object": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXLLM.build/GPTOSS.swift.o",
     "swiftmodule": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXLLM.build/GPTOSS~partial.swiftmodule",
-    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXLLM.build/GPTOSS.swiftdeps"
+    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXLLM.build/GPTOSS.swiftdeps",
+    "diagnostics": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXLLM.build/GPTOSS.dia"
   },
   "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/checkouts/mlx-swift-examples/Libraries/MLXLLM/Models/Gemma.swift": {
     "dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXLLM.build/Gemma.d",
     "object": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXLLM.build/Gemma.swift.o",
     "swiftmodule": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXLLM.build/Gemma~partial.swiftmodule",
-    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXLLM.build/Gemma.swiftdeps"
+    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXLLM.build/Gemma.swiftdeps",
+    "diagnostics": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXLLM.build/Gemma.dia"
   },
   "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/checkouts/mlx-swift-examples/Libraries/MLXLLM/Models/Gemma2.swift": {
     "dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXLLM.build/Gemma2.d",
     "object": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXLLM.build/Gemma2.swift.o",
     "swiftmodule": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXLLM.build/Gemma2~partial.swiftmodule",
-    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXLLM.build/Gemma2.swiftdeps"
+    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXLLM.build/Gemma2.swiftdeps",
+    "diagnostics": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXLLM.build/Gemma2.dia"
   },
   "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/checkouts/mlx-swift-examples/Libraries/MLXLLM/Models/Gemma3Text.swift": {
     "dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXLLM.build/Gemma3Text.d",
     "object": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXLLM.build/Gemma3Text.swift.o",
     "swiftmodule": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXLLM.build/Gemma3Text~partial.swiftmodule",
-    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXLLM.build/Gemma3Text.swiftdeps"
+    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXLLM.build/Gemma3Text.swiftdeps",
+    "diagnostics": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXLLM.build/Gemma3Text.dia"
   },
   "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/checkouts/mlx-swift-examples/Libraries/MLXLLM/Models/Gemma3nText.swift": {
     "dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXLLM.build/Gemma3nText.d",
     "object": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXLLM.build/Gemma3nText.swift.o",
     "swiftmodule": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXLLM.build/Gemma3nText~partial.swiftmodule",
-    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXLLM.build/Gemma3nText.swiftdeps"
+    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXLLM.build/Gemma3nText.swiftdeps",
+    "diagnostics": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXLLM.build/Gemma3nText.dia"
   },
   "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/checkouts/mlx-swift-examples/Libraries/MLXLLM/Models/Granite.swift": {
     "dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXLLM.build/Granite.d",
     "object": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXLLM.build/Granite.swift.o",
     "swiftmodule": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXLLM.build/Granite~partial.swiftmodule",
-    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXLLM.build/Granite.swiftdeps"
+    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXLLM.build/Granite.swiftdeps",
+    "diagnostics": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXLLM.build/Granite.dia"
   },
   "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/checkouts/mlx-swift-examples/Libraries/MLXLLM/Models/Internlm2.swift": {
     "dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXLLM.build/Internlm2.d",
     "object": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXLLM.build/Internlm2.swift.o",
     "swiftmodule": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXLLM.build/Internlm2~partial.swiftmodule",
-    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXLLM.build/Internlm2.swiftdeps"
+    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXLLM.build/Internlm2.swiftdeps",
+    "diagnostics": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXLLM.build/Internlm2.dia"
   },
   "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/checkouts/mlx-swift-examples/Libraries/MLXLLM/Models/LFM2.swift": {
     "dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXLLM.build/LFM2.d",
     "object": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXLLM.build/LFM2.swift.o",
     "swiftmodule": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXLLM.build/LFM2~partial.swiftmodule",
-    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXLLM.build/LFM2.swiftdeps"
+    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXLLM.build/LFM2.swiftdeps",
+    "diagnostics": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXLLM.build/LFM2.dia"
   },
   "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/checkouts/mlx-swift-examples/Libraries/MLXLLM/Models/Llama.swift": {
     "dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXLLM.build/Llama.d",
     "object": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXLLM.build/Llama.swift.o",
     "swiftmodule": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXLLM.build/Llama~partial.swiftmodule",
-    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXLLM.build/Llama.swiftdeps"
+    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXLLM.build/Llama.swiftdeps",
+    "diagnostics": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXLLM.build/Llama.dia"
   },
   "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/checkouts/mlx-swift-examples/Libraries/MLXLLM/Models/MiMo.swift": {
     "dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXLLM.build/MiMo.d",
     "object": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXLLM.build/MiMo.swift.o",
     "swiftmodule": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXLLM.build/MiMo~partial.swiftmodule",
-    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXLLM.build/MiMo.swiftdeps"
+    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXLLM.build/MiMo.swiftdeps",
+    "diagnostics": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXLLM.build/MiMo.dia"
   },
   "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/checkouts/mlx-swift-examples/Libraries/MLXLLM/Models/OpenELM.swift": {
     "dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXLLM.build/OpenELM.d",
     "object": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXLLM.build/OpenELM.swift.o",
     "swiftmodule": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXLLM.build/OpenELM~partial.swiftmodule",
-    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXLLM.build/OpenELM.swiftdeps"
+    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXLLM.build/OpenELM.swiftdeps",
+    "diagnostics": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXLLM.build/OpenELM.dia"
   },
   "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/checkouts/mlx-swift-examples/Libraries/MLXLLM/Models/Phi.swift": {
     "dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXLLM.build/Phi.d",
     "object": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXLLM.build/Phi.swift.o",
     "swiftmodule": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXLLM.build/Phi~partial.swiftmodule",
-    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXLLM.build/Phi.swiftdeps"
+    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXLLM.build/Phi.swiftdeps",
+    "diagnostics": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXLLM.build/Phi.dia"
   },
   "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/checkouts/mlx-swift-examples/Libraries/MLXLLM/Models/Phi3.swift": {
     "dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXLLM.build/Phi3.d",
     "object": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXLLM.build/Phi3.swift.o",
     "swiftmodule": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXLLM.build/Phi3~partial.swiftmodule",
-    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXLLM.build/Phi3.swiftdeps"
+    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXLLM.build/Phi3.swiftdeps",
+    "diagnostics": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXLLM.build/Phi3.dia"
   },
   "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/checkouts/mlx-swift-examples/Libraries/MLXLLM/Models/PhiMoE.swift": {
     "dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXLLM.build/PhiMoE.d",
     "object": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXLLM.build/PhiMoE.swift.o",
     "swiftmodule": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXLLM.build/PhiMoE~partial.swiftmodule",
-    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXLLM.build/PhiMoE.swiftdeps"
+    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXLLM.build/PhiMoE.swiftdeps",
+    "diagnostics": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXLLM.build/PhiMoE.dia"
   },
   "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/checkouts/mlx-swift-examples/Libraries/MLXLLM/Models/Qwen2.swift": {
     "dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXLLM.build/Qwen2.d",
     "object": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXLLM.build/Qwen2.swift.o",
     "swiftmodule": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXLLM.build/Qwen2~partial.swiftmodule",
-    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXLLM.build/Qwen2.swiftdeps"
+    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXLLM.build/Qwen2.swiftdeps",
+    "diagnostics": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXLLM.build/Qwen2.dia"
   },
   "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/checkouts/mlx-swift-examples/Libraries/MLXLLM/Models/Qwen3.swift": {
     "dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXLLM.build/Qwen3.d",
     "object": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXLLM.build/Qwen3.swift.o",
     "swiftmodule": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXLLM.build/Qwen3~partial.swiftmodule",
-    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXLLM.build/Qwen3.swiftdeps"
+    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXLLM.build/Qwen3.swiftdeps",
+    "diagnostics": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXLLM.build/Qwen3.dia"
   },
   "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/checkouts/mlx-swift-examples/Libraries/MLXLLM/Models/Qwen3MoE.swift": {
     "dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXLLM.build/Qwen3MoE.d",
     "object": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXLLM.build/Qwen3MoE.swift.o",
     "swiftmodule": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXLLM.build/Qwen3MoE~partial.swiftmodule",
-    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXLLM.build/Qwen3MoE.swiftdeps"
+    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXLLM.build/Qwen3MoE.swiftdeps",
+    "diagnostics": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXLLM.build/Qwen3MoE.dia"
   },
   "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/checkouts/mlx-swift-examples/Libraries/MLXLLM/Models/RoPEUtils.swift": {
     "dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXLLM.build/RoPEUtils.d",
     "object": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXLLM.build/RoPEUtils.swift.o",
     "swiftmodule": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXLLM.build/RoPEUtils~partial.swiftmodule",
-    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXLLM.build/RoPEUtils.swiftdeps"
+    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXLLM.build/RoPEUtils.swiftdeps",
+    "diagnostics": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXLLM.build/RoPEUtils.dia"
   },
   "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/checkouts/mlx-swift-examples/Libraries/MLXLLM/Models/SmolLM3.swift": {
     "dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXLLM.build/SmolLM3.d",
     "object": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXLLM.build/SmolLM3.swift.o",
     "swiftmodule": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXLLM.build/SmolLM3~partial.swiftmodule",
-    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXLLM.build/SmolLM3.swiftdeps"
+    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXLLM.build/SmolLM3.swiftdeps",
+    "diagnostics": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXLLM.build/SmolLM3.dia"
   },
   "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/checkouts/mlx-swift-examples/Libraries/MLXLLM/Models/Starcoder2.swift": {
     "dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXLLM.build/Starcoder2.d",
     "object": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXLLM.build/Starcoder2.swift.o",
     "swiftmodule": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXLLM.build/Starcoder2~partial.swiftmodule",
-    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXLLM.build/Starcoder2.swiftdeps"
+    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXLLM.build/Starcoder2.swiftdeps",
+    "diagnostics": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXLLM.build/Starcoder2.dia"
   },
   "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/checkouts/mlx-swift-examples/Libraries/MLXLLM/SuScaledRotaryEmbedding.swift": {
     "dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXLLM.build/SuScaledRotaryEmbedding.d",
     "object": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXLLM.build/SuScaledRotaryEmbedding.swift.o",
     "swiftmodule": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXLLM.build/SuScaledRotaryEmbedding~partial.swiftmodule",
-    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXLLM.build/SuScaledRotaryEmbedding.swiftdeps"
+    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXLLM.build/SuScaledRotaryEmbedding.swiftdeps",
+    "diagnostics": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXLLM.build/SuScaledRotaryEmbedding.dia"
   },
   "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/checkouts/mlx-swift-examples/Libraries/MLXLLM/SwitchLayers.swift": {
     "dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXLLM.build/SwitchLayers.d",
     "object": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXLLM.build/SwitchLayers.swift.o",
     "swiftmodule": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXLLM.build/SwitchLayers~partial.swiftmodule",
-    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXLLM.build/SwitchLayers.swiftdeps"
+    "swift-dependencies": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXLLM.build/SwitchLayers.swiftdeps",
+    "diagnostics": "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXLLM.build/SwitchLayers.dia"
   }
 }

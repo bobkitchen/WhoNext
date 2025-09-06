@@ -1,0 +1,3 @@
+module MLXVLM {
+    header "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXVLM.build/include/MLXVLM-Swift.h"
+}

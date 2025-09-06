@@ -1,0 +1,3 @@
+module Hub {
+    header "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/Hub.build/include/Hub-Swift.h"
+}

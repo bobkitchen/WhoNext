@@ -1,0 +1,3 @@
+module MLX {
+    header "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLX.build/include/MLX-Swift.h"
+}

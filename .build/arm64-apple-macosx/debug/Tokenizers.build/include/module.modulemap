@@ -1,0 +1,3 @@
+module Tokenizers {
+    header "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/Tokenizers.build/include/Tokenizers-Swift.h"
+}

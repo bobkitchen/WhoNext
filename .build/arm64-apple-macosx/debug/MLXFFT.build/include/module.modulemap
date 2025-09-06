@@ -1,0 +1,3 @@
+module MLXFFT {
+    header "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXFFT.build/include/MLXFFT-Swift.h"
+}

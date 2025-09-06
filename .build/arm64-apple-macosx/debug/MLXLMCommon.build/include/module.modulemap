@@ -1,0 +1,3 @@
+module MLXLMCommon {
+    header "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXLMCommon.build/include/MLXLMCommon-Swift.h"
+}
