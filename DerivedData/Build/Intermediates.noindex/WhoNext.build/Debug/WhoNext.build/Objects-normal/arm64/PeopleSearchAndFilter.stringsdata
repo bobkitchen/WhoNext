@@ -1,0 +1,48 @@
+{
+  "source": "/Users/bobkitchen/Documents/GitHub/WhoNext/WhoNext/PeopleSearchAndFilter.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "Search people by name, role, or department...",
+        "location": {
+          "startingColumn": 23,
+          "startingLine": 17
+        }
+      },
+      {
+        "comment": "",
+        "key": "More",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 80
+        }
+      },
+      {
+        "comment": "",
+        "key": "Clear all",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 103
+        }
+      },
+      {
+        "comment": "",
+        "key": "Filters",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 181
+        }
+      },
+      {
+        "comment": "",
+        "key": "Done",
+        "location": {
+          "startingColumn": 24,
+          "startingLine": 187
+        }
+      }
+    ]
+  },
+  "version": 1
+}

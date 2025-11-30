@@ -118,6 +118,13 @@
     "object" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/WhoNext.build/Debug/WhoNext.build/Objects-normal/arm64/ChatSessionHolder.o",
     "swift-dependencies" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/WhoNext.build/Debug/WhoNext.build/Objects-normal/arm64/ChatSessionHolder.swiftdeps"
   },
+  "/Users/bobkitchen/Documents/GitHub/WhoNext/WhoNext/ChatView.swift" : {
+    "const-values" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/WhoNext.build/Debug/WhoNext.build/Objects-normal/arm64/ChatView.swiftconstvalues",
+    "dependencies" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/WhoNext.build/Debug/WhoNext.build/Objects-normal/arm64/ChatView.d",
+    "diagnostics" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/WhoNext.build/Debug/WhoNext.build/Objects-normal/arm64/ChatView.dia",
+    "object" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/WhoNext.build/Debug/WhoNext.build/Objects-normal/arm64/ChatView.o",
+    "swift-dependencies" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/WhoNext.build/Debug/WhoNext.build/Objects-normal/arm64/ChatView.swiftdeps"
+  },
   "/Users/bobkitchen/Documents/GitHub/WhoNext/WhoNext/Helpers/BufferConverter.swift" : {
     "const-values" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/WhoNext.build/Debug/WhoNext.build/Objects-normal/arm64/BufferConverter.swiftconstvalues",
     "dependencies" : "/Users/bobkitchen/Documents/GitHub/WhoNext/DerivedData/Build/Intermediates.noindex/WhoNext.build/Debug/WhoNext.build/Objects-normal/arm64/BufferConverter.d",

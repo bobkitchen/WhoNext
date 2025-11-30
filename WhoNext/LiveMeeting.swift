@@ -214,6 +214,14 @@ struct TranscriptSegment: Identifiable, Codable {
     }
 }
 
+// MARK: - Naming Mode
+
+enum NamingMode: String, Codable {
+    case linkedToPerson = "linked"    // Has Person record, learning voice
+    case transcriptOnly = "transcript" // Named but no Person record
+    case unnamed = "unnamed"          // Not yet named
+}
+
 // MARK: - Identified Participant
 
 class IdentifiedParticipant: ObservableObject, Identifiable {
@@ -228,6 +236,7 @@ class IdentifiedParticipant: ObservableObject, Identifiable {
     @Published var isCurrentlySpeaking: Bool = false
     @Published var totalSpeakingTime: TimeInterval = 0
     @Published var lastSpokeAt: Date?
+    @Published var namingMode: NamingMode = .unnamed  // Track how this speaker was named
     
     var displayName: String {
         if let name = name {

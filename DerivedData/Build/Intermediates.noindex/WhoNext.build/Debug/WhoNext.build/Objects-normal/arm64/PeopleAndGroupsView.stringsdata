@@ -4,26 +4,10 @@
     "Localizable": [
       {
         "comment": "",
-        "key": "People & Groups",
+        "key": "Select a person to view details",
         "location": {
-          "startingColumn": 18,
-          "startingLine": 45
-        }
-      },
-      {
-        "comment": "",
-        "key": "View Mode",
-        "location": {
-          "startingColumn": 20,
-          "startingLine": 52
-        }
-      },
-      {
-        "comment": "",
-        "key": "Search %@...",
-        "location": {
-          "startingColumn": 23,
-          "startingLine": 70
+          "startingColumn": 26,
+          "startingLine": 28
         }
       }
     ]

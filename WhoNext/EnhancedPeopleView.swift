@@ -77,23 +77,27 @@ struct EnhancedPeopleView: View {
             // Modern header with integrated controls
             headerView
             
-            // Search and filters
-            VStack(spacing: 12) {
-                EnhancedPeopleSearchBar(searchText: $searchText)
-                    .padding(.horizontal, 20)
+            // Main content area
+            VStack(spacing: 0) {
+                // Search and filters
+                VStack(spacing: 12) {
+                    EnhancedPeopleSearchBar(searchText: $searchText)
+                        .padding(.horizontal, 20)
+                    
+                    PeopleFilterChips(selectedFilters: $selectedFilters)
+                }
+                .padding(.vertical, 16)
+                .background(Color(NSColor.windowBackgroundColor))
                 
-                PeopleFilterChips(selectedFilters: $selectedFilters)
-            }
-            .padding(.vertical, 12)
-            .background(Color(NSColor.windowBackgroundColor))
-            
-            // Main content
-            if viewMode == .individuals {
-                peopleListContent
-            } else {
-                GroupsListView()
+                // Content based on view mode
+                if viewMode == .individuals {
+                    peopleListContent
+                } else {
+                    GroupsListView()
+                }
             }
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
         .sheet(isPresented: $showingAddPerson) {
             AddPersonView { name, role, _, isDirectReport, timezone, photo in
                 let newPerson = Person(context: viewContext)
@@ -118,62 +122,89 @@ struct EnhancedPeopleView: View {
     
     // MARK: - Header View
     private var headerView: some View {
-        HStack(spacing: 16) {
-            // Title
-            VStack(alignment: .leading, spacing: 4) {
+        VStack(spacing: 0) {
+            // Top row with title and actions
+            HStack(alignment: .center, spacing: 16) {
+                // Title
                 Text("People & Groups")
-                    .font(.system(size: 24, weight: .bold))
+                    .font(.system(size: 18, weight: .semibold))
                     .foregroundColor(.primary)
                 
-                Text("\(allPeople.count) contacts • \(favorites.count) favorites")
-                    .font(.system(size: 12))
-                    .foregroundColor(.secondary)
-            }
-            
-            Spacer()
-            
-            // View mode toggle
-            Picker("View Mode", selection: $viewMode) {
-                ForEach(ViewMode.allCases, id: \.self) { mode in
-                    Label(mode.rawValue, systemImage: mode.icon)
-                        .tag(mode)
+                // Stats badge
+                HStack(spacing: 8) {
+                    Text("\(allPeople.count)")
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundColor(.primary)
+                    Text("contacts")
+                        .font(.system(size: 11))
+                        .foregroundColor(.secondary)
+                    
+                    Divider()
+                        .frame(height: 12)
+                    
+                    Text("\(favorites.count)")
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundColor(.primary)
+                    Text("favorites")
+                        .font(.system(size: 11))
+                        .foregroundColor(.secondary)
                 }
-            }
-            .pickerStyle(.segmented)
-            .frame(width: 200)
-            
-            // Sort options
-            PeopleSortOptions(sortOption: $sortOption)
-            
-            // Action buttons
-            HStack(spacing: 8) {
-                Button(action: { showingImport = true }) {
-                    Image(systemName: "square.and.arrow.down")
-                        .font(.system(size: 13))
-                }
-                .buttonStyle(.bordered)
-                .help("Import from CSV")
+                .padding(.horizontal, 10)
+                .padding(.vertical, 4)
+                .background(Color(NSColor.separatorColor).opacity(0.1))
+                .cornerRadius(6)
                 
+                Spacer()
+                
+                // Add button
                 Button(action: { showingAddPerson = true }) {
-                    HStack(spacing: 4) {
-                        Image(systemName: "plus")
-                            .font(.system(size: 12))
-                        Text("Add Person")
-                            .font(.system(size: 13, weight: .medium))
-                    }
+                    Image(systemName: "plus")
+                        .font(.system(size: 12, weight: .medium))
                 }
                 .buttonStyle(.borderedProminent)
-                .controlSize(.regular)
+                .controlSize(.small)
             }
-        }
-        .padding(.horizontal, 20)
-        .padding(.vertical, 16)
-        .background(Color(NSColor.windowBackgroundColor))
-        .overlay(
+            .padding(.horizontal, 20)
+            .padding(.vertical, 12)
+            
             Divider()
-                .offset(y: 1),
-            alignment: .bottom
-        )
+            
+            // Bottom row with view toggle and sort
+            HStack(spacing: 16) {
+                // View mode toggle
+                Picker("", selection: $viewMode) {
+                    ForEach(ViewMode.allCases, id: \.self) { mode in
+                        Text(mode.rawValue)
+                            .tag(mode)
+                    }
+                }
+                .pickerStyle(.segmented)
+                .labelsHidden()
+                .frame(width: 180)
+                
+                Text("Groups")
+                    .font(.system(size: 12))
+                    .foregroundColor(.secondary)
+                    .opacity(viewMode == .groups ? 1 : 0)
+                
+                Spacer()
+                
+                // Sort options
+                PeopleSortOptions(sortOption: $sortOption)
+                
+                // Import button
+                Button(action: { showingImport = true }) {
+                    Image(systemName: "square.and.arrow.down")
+                        .font(.system(size: 12))
+                }
+                .buttonStyle(.bordered)
+                .controlSize(.small)
+                .help("Import from CSV")
+            }
+            .padding(.horizontal, 20)
+            .padding(.vertical, 8)
+            .background(Color(NSColor.controlBackgroundColor).opacity(0.3))
+        }
     }
     
     // MARK: - People List Content
@@ -181,8 +212,9 @@ struct EnhancedPeopleView: View {
         ScrollView(.vertical, showsIndicators: true) {
             if filteredPeople.isEmpty {
                 emptyStateView
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
-                VStack(alignment: .leading, spacing: 20) {
+                VStack(alignment: .leading, spacing: 24) {
                     // Favorites section
                     if !favorites.isEmpty {
                         VStack(alignment: .leading, spacing: 8) {
@@ -192,13 +224,13 @@ struct EnhancedPeopleView: View {
                                 icon: "star.fill"
                             )
                             
-                            LazyVStack(spacing: 8) {
+                            LazyVStack(spacing: 6) {
                                 ForEach(favorites, id: \.identifier) { person in
                                     EnhancedPersonCard(
                                         person: person,
                                         selectedPerson: $selectedPerson
                                     )
-                                    .padding(.horizontal, 16)
+                                    .padding(.horizontal, 20)
                                 }
                             }
                         }
@@ -256,7 +288,7 @@ struct EnhancedPeopleView: View {
                 .padding(.top, 12)
             }
         }
-        .background(Color(NSColor.controlBackgroundColor).opacity(0.3))
+        .background(Color(NSColor.windowBackgroundColor))
     }
     
     // MARK: - Empty State
@@ -337,20 +369,34 @@ struct EnhancedPeopleView: View {
                 }
                 return date < Date().addingTimeInterval(-14 * 24 * 60 * 60)
             }
-        case .inactive:
-            return people.filter { person in
-                guard let conversations = person.conversations as? Set<Conversation>,
-                      let lastConversation = conversations.max(by: { ($0.date ?? Date.distantPast) < ($1.date ?? Date.distantPast) }),
-                      let date = lastConversation.date else {
-                    return true
-                }
-                return date < Date().addingTimeInterval(-30 * 24 * 60 * 60)
-            }
         case .noMeetings:
             return people.filter { person in
                 (person.conversations as? Set<Conversation>)?.isEmpty ?? true
             }
-        default:
+        case .healthy:
+            return people.filter { person in
+                guard let conversations = person.conversations as? Set<Conversation> else {
+                    return false
+                }
+                let recentCount = conversations.filter { conversation in
+                    guard let date = conversation.date else { return false }
+                    return date > Date().addingTimeInterval(-30 * 24 * 60 * 60)
+                }.count
+                return recentCount >= 4
+            }
+        case .hasNotes:
+            return people.filter { person in
+                !(person.notes?.isEmpty ?? true)
+            }
+        case .frequentMeetings:
+            return people.filter { person in
+                guard let conversations = person.conversations as? Set<Conversation> else {
+                    return false
+                }
+                return conversations.count >= 10
+            }
+        case .role, .department:
+            // These would require additional filtering logic
             return people
         }
     }

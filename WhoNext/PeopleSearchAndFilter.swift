@@ -3,7 +3,7 @@ import SwiftUI
 // MARK: - Enhanced Search Bar
 struct EnhancedPeopleSearchBar: View {
     @Binding var searchText: String
-    @State private var isFocused = false
+    @FocusState private var isFocused: Bool
     
     var body: some View {
         HStack(spacing: 12) {
@@ -17,11 +17,7 @@ struct EnhancedPeopleSearchBar: View {
             TextField("Search people by name, role, or department...", text: $searchText)
                 .textFieldStyle(.plain)
                 .font(.system(size: 13))
-                .onEditingChanged { editing in
-                    withAnimation(.spring(response: 0.3)) {
-                        isFocused = editing
-                    }
-                }
+                .focused($isFocused)
             
             // Clear button
             if !searchText.isEmpty {
@@ -38,17 +34,20 @@ struct EnhancedPeopleSearchBar: View {
                 .transition(.scale.combined(with: .opacity))
             }
         }
-        .padding(.horizontal, 12)
+        .padding(.horizontal, 14)
         .padding(.vertical, 10)
         .background(
             RoundedRectangle(cornerRadius: 10)
-                .fill(Color(NSColor.controlBackgroundColor))
+                .fill(Color(NSColor.textBackgroundColor))
                 .overlay(
                     RoundedRectangle(cornerRadius: 10)
-                        .stroke(isFocused ? Color.accentColor.opacity(0.3) : Color.clear, lineWidth: 1)
+                        .stroke(
+                            isFocused ? Color.accentColor.opacity(0.4) : Color(NSColor.separatorColor).opacity(0.2), 
+                            lineWidth: 1
+                        )
                 )
         )
-        .shadow(color: isFocused ? .black.opacity(0.05) : .clear, radius: 5, y: 2)
+        .shadow(color: isFocused ? Color.accentColor.opacity(0.1) : .clear, radius: 5, y: 2)
     }
 }
 
@@ -81,11 +80,17 @@ struct PeopleFilterChips: View {
                         Text("More")
                             .font(.system(size: 12, weight: .medium))
                     }
-                    .foregroundColor(.secondary)
+                    .foregroundColor(.primary.opacity(0.7))
                     .padding(.horizontal, 10)
                     .padding(.vertical, 6)
-                    .background(Color(NSColor.controlBackgroundColor))
-                    .cornerRadius(8)
+                    .background(
+                        RoundedRectangle(cornerRadius: 8)
+                            .fill(Color(NSColor.controlBackgroundColor))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 8)
+                                    .stroke(Color(NSColor.separatorColor).opacity(0.2), lineWidth: 1)
+                            )
+                    )
                 }
                 .buttonStyle(.plain)
                 
@@ -147,13 +152,17 @@ struct FilterChip: View {
                 Text(filter.label)
                     .font(.system(size: 12, weight: .medium))
             }
-            .foregroundColor(isSelected ? .white : .secondary)
+            .foregroundColor(isSelected ? .white : .primary.opacity(0.8))
             .padding(.horizontal, 12)
             .padding(.vertical, 6)
             .background(
-                isSelected ? Color.accentColor : Color(NSColor.controlBackgroundColor)
+                RoundedRectangle(cornerRadius: 8)
+                    .fill(isSelected ? Color.accentColor : Color(NSColor.controlBackgroundColor))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 8)
+                            .stroke(Color(NSColor.separatorColor).opacity(0.2), lineWidth: isSelected ? 0 : 1)
+                    )
             )
-            .cornerRadius(8)
         }
         .buttonStyle(.plain)
         .hoverEffect(scale: 1.05)
@@ -231,7 +240,6 @@ enum PersonFilter: Hashable {
     case recentlyContacted
     case needsCheckIn
     case healthy
-    case inactive
     case hasNotes
     case noMeetings
     case frequentMeetings
@@ -244,7 +252,6 @@ enum PersonFilter: Hashable {
         case .recentlyContacted: return "Recently Met"
         case .needsCheckIn: return "Needs Check-in"
         case .healthy: return "Healthy"
-        case .inactive: return "Inactive"
         case .hasNotes: return "Has Notes"
         case .noMeetings: return "No Meetings"
         case .frequentMeetings: return "Frequent"
@@ -259,7 +266,6 @@ enum PersonFilter: Hashable {
         case .recentlyContacted: return "clock.fill"
         case .needsCheckIn: return "exclamationmark.circle.fill"
         case .healthy: return "checkmark.circle.fill"
-        case .inactive: return "moon.zzz.fill"
         case .hasNotes: return "note.text"
         case .noMeetings: return "calendar.badge.minus"
         case .frequentMeetings: return "calendar.badge.plus"
@@ -269,7 +275,7 @@ enum PersonFilter: Hashable {
     }
     
     static var quickFilters: [PersonFilter] {
-        [.directReport, .recentlyContacted, .needsCheckIn, .inactive]
+        [.directReport, .recentlyContacted, .needsCheckIn, .healthy]
     }
     
     enum Category: CaseIterable {
@@ -289,7 +295,7 @@ enum PersonFilter: Hashable {
     static func filters(for category: Category) -> [PersonFilter] {
         switch category {
         case .relationship:
-            return [.directReport, .healthy, .needsCheckIn, .inactive]
+            return [.directReport, .healthy, .needsCheckIn]
         case .activity:
             return [.recentlyContacted, .frequentMeetings, .noMeetings]
         case .metadata:

@@ -10,7 +10,7 @@ struct StatisticsCardsView: View {
     ) private var people: FetchedResults<Person>
     
     var body: some View {
-        VStack(spacing: 20) {
+        HStack(spacing: 16) {
             EnhancedStatCardView(
                 icon: "flag.fill",
                 title: "Cycle Progress",
@@ -19,6 +19,7 @@ struct StatisticsCardsView: View {
                 color: .blue,
                 progress: Double(spokenToThisCycle.count) / Double(max(nonDirectReports.count, 1))
             )
+            
             EnhancedStatCardView(
                 icon: "heart.fill",
                 title: "Health Alerts",
@@ -27,6 +28,7 @@ struct StatisticsCardsView: View {
                 color: lowHealthRelationships.count > 0 ? .red : .green,
                 progress: nil
             )
+            
             EnhancedStatCardView(
                 icon: "calendar.badge.clock",
                 title: "This Week",
@@ -36,7 +38,7 @@ struct StatisticsCardsView: View {
                 progress: nil
             )
         }
-        .frame(width: 200)
+        .frame(maxWidth: .infinity)
     }
 }
 

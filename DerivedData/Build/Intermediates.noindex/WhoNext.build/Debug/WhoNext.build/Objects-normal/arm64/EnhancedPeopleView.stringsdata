@@ -1,0 +1,128 @@
+{
+  "source": "/Users/bobkitchen/Documents/GitHub/WhoNext/WhoNext/EnhancedPeopleView.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "People & Groups",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 129
+        }
+      },
+      {
+        "comment": "",
+        "key": "%lld",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 135
+        }
+      },
+      {
+        "comment": "",
+        "key": "contacts",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 138
+        }
+      },
+      {
+        "comment": "",
+        "key": "%lld",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 145
+        }
+      },
+      {
+        "comment": "",
+        "key": "favorites",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 148
+        }
+      },
+      {
+        "comment": "",
+        "key": "Groups",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 185
+        }
+      },
+      {
+        "comment": "",
+        "key": "",
+        "location": {
+          "startingColumn": 24,
+          "startingLine": 175
+        }
+      },
+      {
+        "comment": "",
+        "key": "Import from CSV",
+        "location": {
+          "startingColumn": 23,
+          "startingLine": 202
+        }
+      },
+      {
+        "comment": "",
+        "key": "No People Yet",
+        "location": {
+          "startingColumn": 43,
+          "startingLine": 305
+        }
+      },
+      {
+        "comment": "",
+        "key": "No Results Found",
+        "location": {
+          "startingColumn": 61,
+          "startingLine": 305
+        }
+      },
+      {
+        "comment": "",
+        "key": "Add people to start tracking conversations and building relationships.",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 310
+        }
+      },
+      {
+        "comment": "",
+        "key": "Try adjusting your search or filters",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 311
+        }
+      },
+      {
+        "comment": "",
+        "key": "Import CSV",
+        "location": {
+          "startingColumn": 31,
+          "startingLine": 321
+        }
+      },
+      {
+        "comment": "",
+        "key": "Add Person",
+        "location": {
+          "startingColumn": 31,
+          "startingLine": 327
+        }
+      },
+      {
+        "comment": "",
+        "key": "Clear Search",
+        "location": {
+          "startingColumn": 27,
+          "startingLine": 337
+        }
+      }
+    ]
+  },
+  "version": 1
+}

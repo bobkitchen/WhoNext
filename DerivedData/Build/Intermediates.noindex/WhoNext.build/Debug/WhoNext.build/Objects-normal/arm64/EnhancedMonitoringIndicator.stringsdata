@@ -1,0 +1,88 @@
+{
+  "source": "/Users/bobkitchen/Documents/GitHub/WhoNext/WhoNext/EnhancedMonitoringIndicator.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "Current Meeting",
+        "location": {
+          "startingColumn": 27,
+          "startingLine": 151
+        }
+      },
+      {
+        "comment": "",
+        "key": "Microphone",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 186
+        }
+      },
+      {
+        "comment": "",
+        "key": "Monitoring",
+        "location": {
+          "startingColumn": 57,
+          "startingLine": 189
+        }
+      },
+      {
+        "comment": "",
+        "key": "Inactive",
+        "location": {
+          "startingColumn": 72,
+          "startingLine": 189
+        }
+      },
+      {
+        "comment": "",
+        "key": "System Audio",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 198
+        }
+      },
+      {
+        "comment": "",
+        "key": "Capturing",
+        "location": {
+          "startingColumn": 56,
+          "startingLine": 201
+        }
+      },
+      {
+        "comment": "",
+        "key": "Ready",
+        "location": {
+          "startingColumn": 70,
+          "startingLine": 201
+        }
+      },
+      {
+        "comment": "",
+        "key": "Start Recording",
+        "location": {
+          "startingColumn": 31,
+          "startingLine": 215
+        }
+      },
+      {
+        "comment": "",
+        "key": "Stop Monitoring",
+        "location": {
+          "startingColumn": 31,
+          "startingLine": 222
+        }
+      },
+      {
+        "comment": "",
+        "key": "Stop Recording",
+        "location": {
+          "startingColumn": 27,
+          "startingLine": 232
+        }
+      }
+    ]
+  },
+  "version": 1
+}

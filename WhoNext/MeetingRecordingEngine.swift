@@ -39,20 +39,28 @@ class MeetingRecordingEngine: ObservableObject {
     private var transcriptProcessor: TranscriptProcessor?
     private let calendarService = CalendarService.shared
     
-    // MARK: - Diarization (Speaker Detection)
-    #if canImport(FluidAudio)
-    private var diarizationManager: DiarizationManager?
-    #endif
+    // MARK: - Properties
     
-    // MARK: - Recording Properties
-    private var audioWriter: AVAudioFile?
+    // Recording State
     private var recordingStartTime: Date?
     private var recordingTimer: Timer?
+    
+    // Pre-warming State
+    private var isPrewarming = false
+    
+    // Audio Capture
+
+    private var audioWriter: AVAudioFile?
     private var audioBuffers: [AVAudioPCMBuffer] = []
-    private let maxBufferCount = 100 // Keep last 100 buffers (~10 seconds at 100ms intervals)
+    private let maxBufferCount = 500 // Keep ~5-10 seconds of audioffers (~10 seconds at 100ms intervals)
     private var calendarMonitorTimer: Timer?
     private var currentCalendarEvent: UpcomingMeeting?
     private var lastTranscriptionText: String = "" // Track the last full transcript to detect new content
+    
+    // MARK: - Diarization (Speaker Detection)
+    #if canImport(FluidAudio)
+    internal var diarizationManager: DiarizationManager?  // Made internal for voice embedding access
+    #endif
     
     // MARK: - User Preferences
     @AppStorage("autoRecordEnabled") private var autoRecordPref: Bool = true
@@ -98,10 +106,21 @@ class MeetingRecordingEngine: ObservableObject {
     private func setupDiarization() {
         #if canImport(FluidAudio)
         Task { @MainActor in
-            diarizationManager = DiarizationManager(isEnabled: true, enableRealTimeProcessing: true)
+            // Get user-configured sensitivity, but enforce a higher minimum to prevent over-segmentation
+            let config = MeetingRecordingConfiguration.shared
+            let configSensitivity = Float(config.transcriptionSettings.speakerSensitivity)
+            let sensitivity = configSensitivity
+            
+            // Create diarization manager with custom threshold
+            diarizationManager = DiarizationManager(
+                isEnabled: true, 
+                enableRealTimeProcessing: true,
+                clusteringThreshold: sensitivity
+            )
+            
             do {
                 try await diarizationManager?.initialize()
-                print("✅ DiarizationManager initialized for speaker detection")
+                print("✅ DiarizationManager initialized with sensitivity: \(sensitivity)")
             } catch {
                 print("⚠️ Failed to initialize DiarizationManager: \(error)")
             }
@@ -434,31 +453,62 @@ class MeetingRecordingEngine: ObservableObject {
     // MARK: - Private Methods - Audio Processing
     
     private func processAudioBuffers(mic: AVAudioPCMBuffer?, system: AVAudioPCMBuffer?) {
+        // Update calendar status in detector
+        twoWayDetector.isMeetingScheduled = (currentCalendarEvent != nil)
+        
         // Pass to two-way detector for conversation analysis
         twoWayDetector.analyzeAudioStreams(micBuffer: mic, systemBuffer: system)
         
-        // If recording, save the mixed audio
-        if isRecording {
+        // If recording or pre-warming, process mixed audio
+        if isRecording || isPrewarming {
             // Mix the audio buffers for complete conversation
             if let mixedBuffer = audioCapture.mixAudioBuffers(mic: mic, system: system) {
-                saveAudioBuffer(mixedBuffer)
+                // Only save to disk if actually recording
+                if isRecording {
+                    saveAudioBuffer(mixedBuffer)
+                }
                 
                 // Process for diarization (speaker detection)
                 #if canImport(FluidAudio)
-                if let diarizationManager = diarizationManager {
+                if isRecording, let diarizationManager = diarizationManager {
                     Task {
                         await diarizationManager.processAudioBuffer(mixedBuffer)
                         
                         // Update meeting type and identify speakers
                         await MainActor.run {
                             if let result = diarizationManager.lastResult {
-                                let speakerCount = result.speakerCount
+                                // Use the historical speaker count, not just current buffer
+                                let speakerCount = diarizationManager.totalSpeakerCount > 0 ? 
+                                    diarizationManager.totalSpeakerCount : result.speakerCount
                                 let progressValue = diarizationManager.processingProgress
                                 
                                 self.currentMeeting?.updateMeetingType(
                                     speakerCount: speakerCount,
                                     confidence: progressValue > 0 ? Float(progressValue) : 0.5
                                 )
+                                
+                                // Update or create participants for each detected speaker
+                                let uniqueSpeakers = Set(result.segments.map { $0.speakerId })
+                                for speakerId in uniqueSpeakers {
+                                    // Parse speaker ID - could be "1", "2" or "speaker_1", "speaker_2"
+                                    let speakerNumber: Int
+                                    if let directNumber = Int(speakerId) {
+                                        speakerNumber = directNumber
+                                    } else if speakerId.hasPrefix("speaker_") {
+                                        speakerNumber = Int(speakerId.replacingOccurrences(of: "speaker_", with: "")) ?? 1
+                                    } else {
+                                        speakerNumber = 1 // Default to speaker 1
+                                    }
+                                    
+                                    // Check if we already have this participant with this speaker ID
+                                    if !self.currentMeeting!.identifiedParticipants.contains(where: { $0.speakerID == speakerNumber }) {
+                                        let participant = IdentifiedParticipant()
+                                        participant.speakerID = speakerNumber
+                                        participant.name = nil // Will be named later by user
+                                        self.currentMeeting?.addIdentifiedParticipant(participant)
+                                        print("🎤 Added new participant: Speaker \(speakerNumber)")
+                                    }
+                                }
                                 
                                 // Try to identify speakers from embeddings in real-time
                                 if let speakerDatabase = result.speakerDatabase, !speakerDatabase.isEmpty {
@@ -507,9 +557,10 @@ class MeetingRecordingEngine: ObservableObject {
                                     let wordCount = words.count
                                     
                                     // More aggressive buffering: aim for 150-200 words with at least 2-3 sentences
-                                    let minWords = 150
-                                    let targetWords = 200
-                                    let minSentences = 2
+                                    // CHANGED: Reduced drastically for real-time feedback
+                                    let minWords = 5 
+                                    let targetWords = 20
+                                    let minSentences = 1
                                     
                                     // Find the optimal cutoff point
                                     if !sentenceEndings.isEmpty {
@@ -564,10 +615,59 @@ class MeetingRecordingEngine: ObservableObject {
                                     
                                     // Add the segment if we have complete content
                                     if !completeContent.isEmpty {
+                                        // Get the current speaker from diarization if available
+                                        var currentSpeakerID = "speaker_1" // Default speaker
+                                        
+                                        #if canImport(FluidAudio)
+                                        if let diarizationManager = self.diarizationManager,
+                                           let lastResult = diarizationManager.lastResult,
+                                           !lastResult.segments.isEmpty {
+                                            // Find the speaker segment that contains the current timestamp
+                                            let timestamp = Date().timeIntervalSince(self.recordingStartTime ?? Date())
+                                            
+                                            // Find the segment that contains this timestamp
+                                            let activeSegment = lastResult.segments.first { segment in
+                                                let segmentStart = Double(segment.startTimeSeconds)
+                                                let segmentEnd = Double(segment.endTimeSeconds)
+                                                return timestamp >= segmentStart && timestamp <= segmentEnd
+                                            }
+                                            
+                                            // If no exact match, find the most recent segment before this timestamp
+                                            if let speakerId = activeSegment?.speakerId {
+                                                // Convert diarization speaker ID (e.g., "1", "2") to transcript format ("speaker_1", "speaker_2")
+                                                if let speakerNum = Int(speakerId) {
+                                                    currentSpeakerID = "speaker_\(speakerNum)"
+                                                } else if speakerId.hasPrefix("speaker_") {
+                                                    currentSpeakerID = speakerId
+                                                } else {
+                                                    currentSpeakerID = "speaker_1"
+                                                }
+                                            } else {
+                                                // Fallback: find the most recent segment that ended before this timestamp
+                                                let recentSegments = lastResult.segments.filter { segment in
+                                                    Double(segment.endTimeSeconds) <= timestamp
+                                                }
+                                                if let mostRecent = recentSegments.max(by: { $0.endTimeSeconds < $1.endTimeSeconds }) {
+                                                    let speakerId = mostRecent.speakerId
+                                                    if let speakerNum = Int(speakerId) {
+                                                        currentSpeakerID = "speaker_\(speakerNum)"
+                                                    } else if speakerId.hasPrefix("speaker_") {
+                                                        currentSpeakerID = speakerId
+                                                    } else {
+                                                        currentSpeakerID = "speaker_1"
+                                                    }
+                                                }
+                                            }
+                                            
+                                            // Debug logging
+                                            print("🎙️ [Transcript] Time: \(String(format: "%.1f", timestamp))s, Speaker: \(currentSpeakerID)")
+                                        }
+                                        #endif
+                                        
                                         let segment = TranscriptSegment(
                                             text: completeContent,
                                             timestamp: Date().timeIntervalSince(self.recordingStartTime ?? Date()),
-                                            speakerID: "speaker_1",  // Default speaker ID
+                                            speakerID: currentSpeakerID,  // Use detected speaker or default
                                             speakerName: nil,
                                             confidence: 0.95,
                                             isFinalized: true
@@ -577,7 +677,10 @@ class MeetingRecordingEngine: ObservableObject {
                                         // Update tracking to the position after the complete content
                                         let processedLength = self.lastTranscriptionText.count + completeContent.count
                                         if processedLength <= fullTranscript.count {
-                                            self.lastTranscriptionText = String(fullTranscript.prefix(processedLength))
+                                            // Only update tracking if we have a meeting to store the segments
+                                            if self.currentMeeting != nil {
+                                                self.lastTranscriptionText = String(fullTranscript.prefix(processedLength))
+                                            }
                                         }
                                         
                                         let segmentWords = completeContent.components(separatedBy: .whitespacesAndNewlines).filter { !$0.isEmpty }.count
@@ -603,7 +706,11 @@ class MeetingRecordingEngine: ObservableObject {
                                         isFinalized: true
                                     )
                                     self.currentMeeting?.addTranscriptSegment(segment)
-                                    self.lastTranscriptionText = fullTranscript
+                                    
+                                    // Only update tracking if we have a meeting
+                                    if self.currentMeeting != nil {
+                                        self.lastTranscriptionText = fullTranscript
+                                    }
                                     
                                     // print("📝 First segment: \(fullTranscript.split(separator: " ").count) words")
                                 } else {
@@ -652,14 +759,13 @@ class MeetingRecordingEngine: ObservableObject {
             self.recordingState = .conversationDetected
         }
         
-        // Check if auto-record is enabled
-        if autoRecordEnabled {
-            print("🎙️ Auto-starting recording for detected conversation")
-            startRecording(isManual: false)
-        } else {
-            // Show notification to user
-            showRecordingPrompt()
-        }
+        // Always auto-record now (Default behavior)
+        // We skip the prompt and start immediately
+        let appName = twoWayDetector.detectedApp ?? "Unknown App"
+        print("🎙️ Auto-starting recording for detected conversation (Source: \(appName))")
+        
+        // If we were pre-warming, this will seamlessly transition
+        startRecording(isManual: false)
     }
     
     private func handleConversationEnd() {
@@ -681,33 +787,54 @@ class MeetingRecordingEngine: ObservableObject {
             if #available(macOS 26.0, *) {
                 Task { @MainActor in
                     if let framework = modernSpeechFramework as? ModernSpeechFramework {
-                        framework.reset()
-                        print("✅ Reset transcription framework for auto-recording")
-                        
-                        // Start transcription
-                        do {
-                            try await framework.startTranscription()
-                            print("✅ Started transcription for auto-recording")
-                        } catch {
-                            print("❌ Failed to start transcription: \(error)")
+                        // If we were pre-warming, we don't need to reset/start again
+                        if self.isPrewarming {
+                            print("🔥 Using pre-warmed speech engine - skipping initialization")
+                            self.isPrewarming = false
+                        } else {
+                            framework.reset()
+                            print("✅ Reset transcription framework for auto-recording")
+                            
+                            // Start transcription
+                            do {
+                                try await framework.startTranscription()
+                                print("✅ Started transcription for auto-recording")
+                            } catch {
+                                print("❌ Failed to start transcription: \(error)")
+                            }
                         }
                     }
                 }
             }
-            lastTranscriptionText = "" // Reset transcript tracking
+            // Don't reset lastTranscriptionText if we were pre-warming (it should be empty anyway, 
+            // but we want to capture what was buffered)
+            if !isPrewarming {
+                lastTranscriptionText = "" 
+            }
         } else {
             // For manual recording, also start transcription
             if #available(macOS 26.0, *) {
                 Task { @MainActor in
                     if let framework = modernSpeechFramework as? ModernSpeechFramework {
-                        do {
-                            try await framework.startTranscription()
-                            print("✅ Started transcription for manual recording")
-                        } catch {
-                            print("❌ Failed to start transcription: \(error)")
+                        // Check pre-warming here too
+                        if self.isPrewarming {
+                             print("🔥 Using pre-warmed speech engine for manual start")
+                             self.isPrewarming = false
+                        } else {
+                            do {
+                                try await framework.startTranscription()
+                                print("✅ Started transcription for manual recording")
+                            } catch {
+                                print("❌ Failed to start transcription: \(error)")
+                            }
                         }
                     }
                 }
+            }
+            
+            // Reset tracking if not pre-warming
+            if !isPrewarming {
+                lastTranscriptionText = ""
             }
         }
         
@@ -873,8 +1000,9 @@ class MeetingRecordingEngine: ObservableObject {
                         
                         if !speakerSegments.isEmpty {
                             // Add speaker-attributed segments
+                            let segments = speakerSegments // Shadow for Swift 6 concurrency safety
                             await MainActor.run {
-                                for (index, segment) in speakerSegments.enumerated() {
+                                for (index, segment) in segments.enumerated() {
                                     let transcriptSegment = TranscriptSegment(
                                         text: segment.text,
                                         timestamp: segment.startTime,
@@ -1208,6 +1336,9 @@ class MeetingRecordingEngine: ObservableObject {
     private func showRecordingPrompt() {
         // Show user notification about detected conversation
         DispatchQueue.main.async {
+            // Start pre-warming the engine while user decides
+            self.prewarmRecording()
+            
             let alert = NSAlert()
             alert.messageText = "Meeting Detected"
             alert.informativeText = "Would you like to start recording?"
@@ -1215,8 +1346,52 @@ class MeetingRecordingEngine: ObservableObject {
             alert.addButton(withTitle: "Dismiss")
             alert.alertStyle = .informational
             
-            if alert.runModal() == .alertFirstButtonReturn {
+            let response = alert.runModal()
+            
+            if response == .alertFirstButtonReturn {
                 self.manualStartRecording()
+            } else {
+                // User dismissed - cancel pre-warming
+                self.cancelPrewarming()
+            }
+        }
+    }
+    
+    private func prewarmRecording() {
+        guard !isRecording && !isPrewarming else { return }
+        
+        print("🔥 Pre-warming speech engine...")
+        isPrewarming = true
+        lastTranscriptionText = ""
+        
+        if #available(macOS 26.0, *) {
+            Task { @MainActor in
+                if let framework = modernSpeechFramework as? ModernSpeechFramework {
+                    framework.reset()
+                    do {
+                        try await framework.startTranscription()
+                        print("🔥 Pre-warming started successfully")
+                    } catch {
+                        print("❌ Pre-warming failed: \(error)")
+                        self.isPrewarming = false
+                    }
+                }
+            }
+        }
+    }
+    
+    private func cancelPrewarming() {
+        guard isPrewarming else { return }
+        
+        print("❄️ Canceling pre-warming...")
+        isPrewarming = false
+        
+        if #available(macOS 26.0, *) {
+            Task { @MainActor in
+                if let framework = modernSpeechFramework as? ModernSpeechFramework {
+                    try? await framework.stopTranscription()
+                    framework.reset()
+                }
             }
         }
     }
@@ -1299,29 +1474,41 @@ class MeetingRecordingEngine: ObservableObject {
             }
             
             // Try to match with known voices
+            // Try to match with known voices
             if let (person, confidence) = voicePrintManager.findMatchingPerson(for: embedding) {
                 if confidence > 0.8 { // Only apply high-confidence matches in real-time
+                    // Extract Sendable data to pass to MainActor
+                    let personID = person?.objectID
+                    let personName = person?.name
+                    
                     await MainActor.run {
+                        // Re-fetch person on main context if we have an ID
+                        var mainPerson: Person? = nil
+                        if let objectID = personID {
+                            let context = PersistenceController.shared.container.viewContext
+                            mainPerson = try? context.existingObject(with: objectID) as? Person
+                        }
+                        
                         // Update or create participant
                         if let participant = currentMeeting?.identifiedParticipants.first(where: { "\($0.speakerID)" == speakerId }) {
-                            participant.name = person?.name
+                            participant.name = personName
                             participant.confidence = confidence
-                            participant.personRecord = person
-                    participant.person = person  // Also set the alias
+                            participant.personRecord = mainPerson
+                            participant.person = mainPerson  // Also set the alias
                         } else {
                             let participant = IdentifiedParticipant()
                             participant.speakerID = Int(speakerId) ?? 0
-                            participant.name = person?.name
+                            participant.name = personName
                             participant.confidence = confidence
-                            participant.personRecord = person
-                    participant.person = person  // Also set the alias
+                            participant.personRecord = mainPerson
+                            participant.person = mainPerson  // Also set the alias
                             currentMeeting?.identifyParticipant(participant)
                         }
                         
                         // Note: Transcript segments are immutable once added
                         // Future segments will use the identified speaker name
                         
-                        print("🎯 Real-time identification: Speaker \(speakerId) is \(person?.wrappedName ?? "Unknown") (confidence: \(String(format: "%.2f", confidence)))")
+                        print("🎯 Real-time identification: Speaker \(speakerId) is \(personName ?? "Unknown") (confidence: \(String(format: "%.2f", confidence)))")
                     }
                 }
             }
@@ -1344,16 +1531,27 @@ class MeetingRecordingEngine: ObservableObject {
         
         for (speakerId, embedding) in speakerDatabase {
             if let (person, confidence) = voicePrintManager.findMatchingPerson(for: embedding) {
-                print("🎯 Identified speaker \(speakerId) as \(person?.wrappedName ?? "Unknown") with confidence \(confidence)")
+                // Extract Sendable data
+                let personID = person?.objectID
+                let personName = person?.name
+                
+                print("🎯 Identified speaker \(speakerId) as \(personName ?? "Unknown") with confidence \(confidence)")
                 
                 // Update current meeting with identified participant
                 await MainActor.run {
+                    // Re-fetch person on main context
+                    var mainPerson: Person? = nil
+                    if let objectID = personID {
+                        let context = PersistenceController.shared.container.viewContext
+                        mainPerson = try? context.existingObject(with: objectID) as? Person
+                    }
+                    
                     let participant = IdentifiedParticipant()
                     participant.speakerID = Int(speakerId) ?? 0
-                    participant.name = person?.name
+                    participant.name = personName
                     participant.confidence = confidence
-                    participant.personRecord = person
-                    participant.person = person  // Also set the alias
+                    participant.personRecord = mainPerson
+                    participant.person = mainPerson  // Also set the alias
                     currentMeeting?.identifyParticipant(participant)
                 }
             }
@@ -1429,16 +1627,65 @@ class MeetingRecordingEngine: ObservableObject {
                 meeting.averageConfidence = totalConfidence / Float(meeting.transcript.count)
             }
             
-            // Update speaker turn count (simplified - counts speaker changes)
+            // Update speaker turn count and calculate durations
             var lastSpeaker: String? = nil
             var turnCount = 0
+            var speakerDurations: [Int: TimeInterval] = [:]
+            var lastSpeakerID: Int? = nil
+            
             for segment in meeting.transcript {
                 if let speaker = segment.speakerName, speaker != lastSpeaker {
                     turnCount += 1
                     lastSpeaker = speaker
                 }
+                
+                // Calculate duration for this segment (estimate: 0.4s per word)
+                let words = segment.text.split(separator: " ").count
+                let estimatedDuration = Double(words) * 0.4
+                
+                if let speakerIDString = segment.speakerID {
+                    // Parse speaker ID to Int for matching with IdentifiedParticipant
+                    let speakerID: Int
+                    if let id = Int(speakerIDString) {
+                        speakerID = id
+                    } else if speakerIDString.hasPrefix("speaker_") {
+                        speakerID = Int(speakerIDString.replacingOccurrences(of: "speaker_", with: "")) ?? 0
+                    } else {
+                        speakerID = 0
+                    }
+                    
+                    speakerDurations[speakerID, default: 0] += estimatedDuration
+                    lastSpeakerID = speakerID
+                }
             }
             meeting.speakerTurnCount = turnCount
+            
+            // Update participants with calculated stats
+            let currentMeetingDuration = Date().timeIntervalSince(meeting.startTime)
+            
+            for participant in meeting.identifiedParticipants {
+                // Update total speaking time
+                if let duration = speakerDurations[participant.speakerID] {
+                    participant.totalSpeakingTime = duration
+                }
+                
+                // Update currently speaking status
+                // They are speaking if they were the speaker of the last segment
+                // AND that segment happened recently (within last 5 seconds)
+                var isSpeaking = false
+                if let lastID = lastSpeakerID, lastID == participant.speakerID {
+                    if let lastSegment = meeting.transcript.last {
+                        // Check if segment is recent
+                        // segment.timestamp is offset from start
+                        let timeSinceSegment = currentMeetingDuration - lastSegment.timestamp
+                        if timeSinceSegment < 5.0 {
+                            isSpeaking = true
+                            participant.lastSpokeAt = Date()
+                        }
+                    }
+                }
+                participant.isCurrentlySpeaking = isSpeaking
+            }
             
             // Update system metrics
             self.updateSystemMetrics()
@@ -1898,22 +2145,31 @@ extension MeetingRecordingEngine {
             // Match to expected attendees
             let matches = voicePrintManager.matchToAttendees(embeddings, attendeeNames: expectedAttendees)
             
+            // Map to Sendable structure for concurrency safety
+            let sendableMatches = matches.mapValues { person in
+                (objectID: person.objectID, name: person.name, confidence: person.voiceConfidence)
+            }
+            
             // Update meeting with identified participants
             await MainActor.run {
-                for (speakerId, person) in matches {
+                for (speakerId, matchData) in sendableMatches {
+                    // Re-fetch person on main context
+                    let context = PersistenceController.shared.container.viewContext
+                    let person = try? context.existingObject(with: matchData.objectID) as? Person
+                    
                     let participant = IdentifiedParticipant()
-                    participant.name = person.name
+                    participant.name = matchData.name
                     participant.person = person
                     participant.speakerID = Int(speakerId) ?? 0
-                    participant.confidence = person.voiceConfidence
+                    participant.confidence = matchData.confidence
                     
                     meeting.addIdentifiedParticipant(participant)
-                    print("✅ Identified speaker \(speakerId) as \(person.name ?? "Unknown")")
+                    print("✅ Identified speaker \(speakerId) as \(matchData.name ?? "Unknown")")
                 }
                 
                 // Flag unexpected participants
                 for speakerId in detectedSpeakers {
-                    if matches[speakerId] == nil {
+                    if sendableMatches[speakerId] == nil {
                         print("⚠️ Unexpected participant detected: Speaker \(speakerId)")
                         meeting.hasUnexpectedParticipants = true
                     }

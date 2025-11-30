@@ -53,7 +53,7 @@ struct SectionHeaderView: View {
             
             Spacer()
         }
-        .liquidGlassSectionHeader()
+        // Removed liquidGlassSectionHeader() for cleaner look
     }
 }
 

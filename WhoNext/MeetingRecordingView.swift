@@ -87,16 +87,7 @@ struct MeetingRecordingView: View {
                 Divider()
                 
                 HStack(spacing: 20) {
-                    VStack(alignment: .leading) {
-                        Text("Auto-Record")
-                        Text(config.autoRecordingEnabled ? "Enabled" : "Disabled")
-                            .font(.title2)
-                            .fontWeight(.semibold)
-                            .foregroundColor(config.autoRecordingEnabled ? .green : .gray)
-                    }
-                    
-                    Divider()
-                        .frame(height: 40)
+                    // Auto-Record status removed (Default behavior)
                     
                     VStack(alignment: .leading) {
                         Text("Confidence Threshold")
@@ -287,13 +278,7 @@ struct MeetingRecordingView: View {
                 Divider()
                 
                 VStack(alignment: .leading, spacing: 8) {
-                    HStack {
-                        Text("Auto-Recording:")
-                        Text(config.autoRecordingEnabled ? "Enabled" : "Disabled")
-                            .foregroundColor(config.autoRecordingEnabled ? .green : .gray)
-                            .fontWeight(.medium)
-                        Spacer()
-                    }
+                    // Auto-Recording status removed
                     
                     HStack {
                         Text("Confidence:")

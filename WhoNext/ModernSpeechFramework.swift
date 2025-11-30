@@ -26,11 +26,11 @@ class ModernSpeechFramework {
     private let converter = BufferConverter()
     private var analyzerFormat: AVAudioFormat?
     
-    // Audio chunking for 30-second segments
-    private var audioChunkBuffer: [AVAudioPCMBuffer] = []
-    private var chunkStartTime: Date = Date()
-    private let chunkDuration: TimeInterval = 30.0 // 30 seconds
-    private var accumulatedFrameCount: AVAudioFrameCount = 0
+    // Audio chunking (Removed for real-time processing)
+    // private var audioChunkBuffer: [AVAudioPCMBuffer] = []
+    // private var chunkStartTime: Date = Date()
+    // private let chunkDuration: TimeInterval = 30.0 
+    // private var accumulatedFrameCount: AVAudioFrameCount = 0
     
     // Transcription state
     private var isTranscribing = false
@@ -251,7 +251,7 @@ class ModernSpeechFramework {
     
     // MARK: - Audio Processing
     
-    /// Process an audio buffer - accumulate for 30-second chunks
+    /// Process an audio buffer - stream immediately to analyzer
     func processAudioStream(_ buffer: AVAudioPCMBuffer) async throws -> String {
         // Ensure analyzer is initialized
         if analyzer == nil {
@@ -267,84 +267,14 @@ class ModernSpeechFramework {
         // Convert buffer to optimal format
         let convertedBuffer = try converter.convertBuffer(buffer, to: analyzerFormat)
         
-        // Add to chunk buffer
-        audioChunkBuffer.append(convertedBuffer)
-        accumulatedFrameCount += convertedBuffer.frameLength
-        
-        // Check if we've accumulated 30 seconds of audio
-        let elapsedTime = Date().timeIntervalSince(chunkStartTime)
-        
-        if elapsedTime >= chunkDuration {
-            print("[ModernSpeech] Processing 30-second chunk (\(audioChunkBuffer.count) buffers, \(accumulatedFrameCount) frames)")
-            
-            // Process the accumulated chunk
-            await processAccumulatedChunk()
-            
-            // Reset for next chunk
-            audioChunkBuffer.removeAll()
-            accumulatedFrameCount = 0
-            chunkStartTime = Date()
-        } else if Int(elapsedTime) % 5 == 0 && audioChunkBuffer.count == 1 {
-            // Log progress every 5 seconds (only on first buffer to avoid spam)
-            print("[ModernSpeech] Accumulating audio... \(Int(elapsedTime))/30s")
-        }
+        // Stream immediately to analyzer
+        let input = AnalyzerInput(buffer: convertedBuffer)
+        inputContinuation.yield(input)
         
         return getCurrentTranscript()
     }
     
-    /// Process the accumulated 30-second chunk
-    private func processAccumulatedChunk() async {
-        guard !audioChunkBuffer.isEmpty else { return }
-        
-        // Combine all buffers into one
-        guard let format = analyzerFormat else { return }
-        
-        // Calculate total frame capacity
-        let totalFrames = audioChunkBuffer.reduce(0) { $0 + $1.frameLength }
-        
-        guard let combinedBuffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: totalFrames) else {
-            print("[ModernSpeech] Failed to create combined buffer")
-            return
-        }
-        
-        // Copy all buffers into the combined buffer
-        for buffer in audioChunkBuffer {
-            if let channelData = buffer.floatChannelData,
-               let combinedChannelData = combinedBuffer.floatChannelData {
-                let framesToCopy = buffer.frameLength
-                let startFrame = combinedBuffer.frameLength
-                
-                for channel in 0..<Int(format.channelCount) {
-                    let sourcePointer = channelData[channel]
-                    let destinationPointer = combinedChannelData[channel].advanced(by: Int(startFrame))
-                    destinationPointer.update(from: sourcePointer, count: Int(framesToCopy))
-                }
-                
-                combinedBuffer.frameLength += framesToCopy
-            } else if let channelData = buffer.int16ChannelData,
-                      let combinedChannelData = combinedBuffer.int16ChannelData {
-                let framesToCopy = buffer.frameLength
-                let startFrame = combinedBuffer.frameLength
-                
-                for channel in 0..<Int(format.channelCount) {
-                    let sourcePointer = channelData[channel]
-                    let destinationPointer = combinedChannelData[channel].advanced(by: Int(startFrame))
-                    destinationPointer.update(from: sourcePointer, count: Int(framesToCopy))
-                }
-                
-                combinedBuffer.frameLength += framesToCopy
-            }
-        }
-        
-        // Now send the combined buffer to the analyzer
-        let input = AnalyzerInput(buffer: combinedBuffer)
-        inputContinuation.yield(input)
-        
-        print("[ModernSpeech] Sent 30-second chunk to analyzer (\(combinedBuffer.frameLength) frames)")
-        
-        // Give time for processing
-        try? await Task.sleep(nanoseconds: 100_000_000) // 100ms
-    }
+    // processAccumulatedChunk removed - streaming immediately now
     
     /// Process an entire audio file
     func transcribeFile(at url: URL) async throws -> String {
@@ -446,11 +376,11 @@ class ModernSpeechFramework {
         
         isTranscribing = false
         
-        // Process any remaining audio in the buffer
-        if !audioChunkBuffer.isEmpty {
-            print("[ModernSpeech] Processing final chunk (\(audioChunkBuffer.count) buffers)")
-            await processAccumulatedChunk()
-        }
+        // Process any remaining audio in the buffer - REMOVED (streaming immediately)
+        // if !audioChunkBuffer.isEmpty {
+        //     print("[ModernSpeech] Processing final chunk (\(audioChunkBuffer.count) buffers)")
+        //     await processAccumulatedChunk()
+        // }
         
         // Finish the input stream
         inputContinuation.finish()
@@ -474,8 +404,8 @@ class ModernSpeechFramework {
         // Clean up
         analyzer = nil
         transcriber = nil
-        audioChunkBuffer.removeAll()
-        accumulatedFrameCount = 0
+        // audioChunkBuffer.removeAll()
+        // accumulatedFrameCount = 0
         
         print("[ModernSpeech] Transcription stopped")
         print("[ModernSpeech] Final transcript: \(finalizedTranscript)")
@@ -499,9 +429,9 @@ class ModernSpeechFramework {
         isTranscribing = false
         
         // Clear audio buffers
-        audioChunkBuffer.removeAll()
-        accumulatedFrameCount = 0
-        chunkStartTime = Date()
+        // audioChunkBuffer.removeAll()
+        // accumulatedFrameCount = 0
+        // chunkStartTime = Date()
         
         // Finish current stream
         inputContinuation.finish()

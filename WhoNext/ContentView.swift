@@ -50,31 +50,18 @@ struct ContentView: View {
                         )
                     )
                 } else if appStateManager.selectedTab == .people {
-                    HStack(spacing: 0) {
-                        PeopleAndGroupsView(
-                            selectedPerson: Binding(
-                                get: { appStateManager.selectedPerson },
-                                set: { appStateManager.selectedPerson = $0 }
-                            )
+                    PeopleAndGroupsView(
+                        selectedPerson: Binding(
+                            get: { appStateManager.selectedPerson },
+                            set: { appStateManager.selectedPerson = $0 }
                         )
-                        .frame(width: 300)
-                        .frame(maxHeight: .infinity)
-                        .loadingOverlay(
-                            isLoading: appStateManager.isLoadingPeople,
-                            text: "Loading people..."
-                        )
-                        
-                        if let person = appStateManager.selectedPerson {
-                            PersonDetailView(person: person)
-                                .id(person.identifier) // Force re-init on person change
-                                .frame(maxWidth: .infinity)
-                                .environmentObject(appStateManager)
-                        } else {
-                            Text("Select a person or group")
-                                .foregroundStyle(.secondary)
-                                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                        }
-                    }
+                    )
+                    .environmentObject(appStateManager)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .loadingOverlay(
+                        isLoading: appStateManager.isLoadingPeople,
+                        text: "Loading people..."
+                    )
                 } else if appStateManager.selectedTab == .analytics {
                     AnalyticsView()
                         .environmentObject(appStateManager)
@@ -104,12 +91,9 @@ struct ContentView: View {
                 CenterNavigationView(appState: appStateManager)
             }
             
-            // Far right: Search bar and settings with better spacing
+            // Far right: Empty for now (search is in People tab)
             ToolbarItem(placement: .automatic) {
-                RightToolbarActions(
-                    appState: appStateManager,
-                    searchText: $searchText
-                )
+                EmptyView()
             }
         }
         .errorAlert(appStateManager.errorManager)

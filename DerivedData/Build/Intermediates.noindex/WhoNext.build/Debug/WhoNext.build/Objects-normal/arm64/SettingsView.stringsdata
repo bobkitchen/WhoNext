@@ -887,7 +887,7 @@
         "key": "Include Punctuation",
         "location": {
           "startingColumn": 28,
-          "startingLine": 932
+          "startingLine": 956
         }
       },
       {
@@ -895,7 +895,31 @@
         "key": "Add punctuation to transcripts",
         "location": {
           "startingColumn": 31,
-          "startingLine": 933
+          "startingLine": 957
+        }
+      },
+      {
+        "comment": "",
+        "key": "Adjust if speakers aren't being properly separated",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 949
+        }
+      },
+      {
+        "comment": "",
+        "key": "Higher values = more permissive (separates similar voices). Lower = requires very different voices.",
+        "location": {
+          "startingColumn": 39,
+          "startingLine": 947
+        }
+      },
+      {
+        "comment": "",
+        "key": "Speaker Sensitivity",
+        "location": {
+          "startingColumn": 38,
+          "startingLine": 936
         }
       },
       {
@@ -903,7 +927,7 @@
         "key": "Privacy & Storage",
         "location": {
           "startingColumn": 22,
-          "startingLine": 942
+          "startingLine": 966
         }
       },
       {
@@ -911,7 +935,7 @@
         "key": "Control privacy and data retention",
         "location": {
           "startingColumn": 22,
-          "startingLine": 944
+          "startingLine": 968
         }
       },
       {
@@ -919,7 +943,7 @@
         "key": "Notify on Recording Start",
         "location": {
           "startingColumn": 28,
-          "startingLine": 949
+          "startingLine": 973
         }
       },
       {
@@ -927,7 +951,7 @@
         "key": "Show notification when recording begins",
         "location": {
           "startingColumn": 31,
-          "startingLine": 950
+          "startingLine": 974
         }
       },
       {
@@ -935,7 +959,7 @@
         "key": "Show Recording Indicator",
         "location": {
           "startingColumn": 28,
-          "startingLine": 951
+          "startingLine": 975
         }
       },
       {
@@ -943,7 +967,7 @@
         "key": "Display visual indicator during recording",
         "location": {
           "startingColumn": 31,
-          "startingLine": 952
+          "startingLine": 976
         }
       },
       {
@@ -951,7 +975,7 @@
         "key": "Pause in Private Browsing",
         "location": {
           "startingColumn": 28,
-          "startingLine": 953
+          "startingLine": 977
         }
       },
       {
@@ -959,7 +983,7 @@
         "key": "Disable recording when private browsing is detected",
         "location": {
           "startingColumn": 31,
-          "startingLine": 954
+          "startingLine": 978
         }
       },
       {
@@ -967,7 +991,7 @@
         "key": "Automatically delete recordings after this period",
         "location": {
           "startingColumn": 27,
-          "startingLine": 969
+          "startingLine": 993
         }
       },
       {
@@ -975,7 +999,7 @@
         "key": "Storage Retention",
         "location": {
           "startingColumn": 30,
-          "startingLine": 957
+          "startingLine": 981
         }
       },
       {
@@ -983,7 +1007,7 @@
         "key": "",
         "location": {
           "startingColumn": 32,
-          "startingLine": 959
+          "startingLine": 983
         }
       },
       {
@@ -991,7 +1015,7 @@
         "key": "7 days",
         "location": {
           "startingColumn": 34,
-          "startingLine": 960
+          "startingLine": 984
         }
       },
       {
@@ -999,7 +1023,7 @@
         "key": "14 days",
         "location": {
           "startingColumn": 34,
-          "startingLine": 961
+          "startingLine": 985
         }
       },
       {
@@ -1007,7 +1031,7 @@
         "key": "30 days",
         "location": {
           "startingColumn": 34,
-          "startingLine": 962
+          "startingLine": 986
         }
       },
       {
@@ -1015,7 +1039,7 @@
         "key": "60 days",
         "location": {
           "startingColumn": 34,
-          "startingLine": 963
+          "startingLine": 987
         }
       },
       {
@@ -1023,7 +1047,7 @@
         "key": "90 days",
         "location": {
           "startingColumn": 34,
-          "startingLine": 964
+          "startingLine": 988
         }
       },
       {
@@ -1031,7 +1055,7 @@
         "key": "Cloud Sync",
         "location": {
           "startingColumn": 22,
-          "startingLine": 983
+          "startingLine": 1007
         }
       },
       {
@@ -1039,7 +1063,7 @@
         "key": "Keep your data synchronized across all devices",
         "location": {
           "startingColumn": 22,
-          "startingLine": 985
+          "startingLine": 1009
         }
       },
       {
@@ -1047,7 +1071,7 @@
         "key": "Syncing...",
         "location": {
           "startingColumn": 55,
-          "startingLine": 1048
+          "startingLine": 1072
         }
       },
       {
@@ -1055,7 +1079,7 @@
         "key": "Sync Now",
         "location": {
           "startingColumn": 70,
-          "startingLine": 1048
+          "startingLine": 1072
         }
       },
       {
@@ -1063,7 +1087,7 @@
         "key": "Syncing...",
         "location": {
           "startingColumn": 42,
-          "startingLine": 1000
+          "startingLine": 1024
         }
       },
       {
@@ -1071,7 +1095,7 @@
         "key": "Ready to sync",
         "location": {
           "startingColumn": 42,
-          "startingLine": 1032
+          "startingLine": 1056
         }
       },
       {
@@ -1079,7 +1103,7 @@
         "key": "Sync completed successfully",
         "location": {
           "startingColumn": 46,
-          "startingLine": 1010
+          "startingLine": 1034
         }
       },
       {
@@ -1087,7 +1111,7 @@
         "key": "Last sync: %lld operations in %@s",
         "location": {
           "startingColumn": 46,
-          "startingLine": 1013
+          "startingLine": 1037
         }
       },
       {
@@ -1095,7 +1119,7 @@
         "key": "Sync failed",
         "location": {
           "startingColumn": 46,
-          "startingLine": 1017
+          "startingLine": 1041
         }
       },
       {
@@ -1103,7 +1127,7 @@
         "key": "Partial sync completed",
         "location": {
           "startingColumn": 46,
-          "startingLine": 1024
+          "startingLine": 1048
         }
       },
       {
@@ -1111,7 +1135,7 @@
         "key": "%lld operations, %lld errors",
         "location": {
           "startingColumn": 46,
-          "startingLine": 1027
+          "startingLine": 1051
         }
       },
       {
@@ -1119,7 +1143,7 @@
         "key": "Last successful: %@",
         "location": {
           "startingColumn": 42,
-          "startingLine": 1038
+          "startingLine": 1062
         }
       },
       {
@@ -1127,7 +1151,7 @@
         "key": "Smart conflict resolution and data deduplication",
         "location": {
           "startingColumn": 30,
-          "startingLine": 1062
+          "startingLine": 1086
         }
       },
       {
@@ -1135,7 +1159,7 @@
         "key": "Local Data",
         "location": {
           "startingColumn": 22,
-          "startingLine": 1075
+          "startingLine": 1099
         }
       },
       {
@@ -1143,7 +1167,7 @@
         "key": "Current data in your local database",
         "location": {
           "startingColumn": 22,
-          "startingLine": 1077
+          "startingLine": 1101
         }
       },
       {
@@ -1151,7 +1175,7 @@
         "key": "People:",
         "location": {
           "startingColumn": 30,
-          "startingLine": 1083
+          "startingLine": 1107
         }
       },
       {
@@ -1159,7 +1183,7 @@
         "key": "%lld",
         "location": {
           "startingColumn": 30,
-          "startingLine": 1085
+          "startingLine": 1109
         }
       },
       {
@@ -1167,7 +1191,7 @@
         "key": "Conversations:",
         "location": {
           "startingColumn": 30,
-          "startingLine": 1090
+          "startingLine": 1114
         }
       },
       {
@@ -1175,7 +1199,7 @@
         "key": "%lld",
         "location": {
           "startingColumn": 30,
-          "startingLine": 1092
+          "startingLine": 1116
         }
       },
       {
@@ -1183,7 +1207,7 @@
         "key": "Sync Health",
         "location": {
           "startingColumn": 22,
-          "startingLine": 1106
+          "startingLine": 1130
         }
       },
       {
@@ -1191,7 +1215,7 @@
         "key": "Monitor and maintain data synchronization across your devices",
         "location": {
           "startingColumn": 22,
-          "startingLine": 1108
+          "startingLine": 1132
         }
       },
       {
@@ -1199,7 +1223,7 @@
         "key": "Hide Advanced Options",
         "location": {
           "startingColumn": 50,
-          "startingLine": 1181
+          "startingLine": 1205
         }
       },
       {
@@ -1207,7 +1231,7 @@
         "key": "Show Advanced Options",
         "location": {
           "startingColumn": 76,
-          "startingLine": 1181
+          "startingLine": 1205
         }
       },
       {
@@ -1215,7 +1239,7 @@
         "key": "Complete Reset",
         "location": {
           "startingColumn": 24,
-          "startingLine": 1190
+          "startingLine": 1214
         }
       },
       {
@@ -1223,7 +1247,7 @@
         "key": "Clean Orphaned Data",
         "location": {
           "startingColumn": 24,
-          "startingLine": 1198
+          "startingLine": 1222
         }
       },
       {
@@ -1231,7 +1255,7 @@
         "key": "Checking...",
         "location": {
           "startingColumn": 51,
-          "startingLine": 1114
+          "startingLine": 1138
         }
       },
       {
@@ -1239,7 +1263,7 @@
         "key": "Check Status",
         "location": {
           "startingColumn": 67,
-          "startingLine": 1114
+          "startingLine": 1138
         }
       },
       {
@@ -1247,7 +1271,7 @@
         "key": "Run diagnostics to check for sync issues",
         "location": {
           "startingColumn": 27,
-          "startingLine": 1119
+          "startingLine": 1143
         }
       },
       {
@@ -1255,7 +1279,7 @@
         "key": "Auto-Fix Issues",
         "location": {
           "startingColumn": 28,
-          "startingLine": 1121
+          "startingLine": 1145
         }
       },
       {
@@ -1263,7 +1287,7 @@
         "key": "Automatically detect and resolve common sync problems",
         "location": {
           "startingColumn": 27,
-          "startingLine": 1127
+          "startingLine": 1151
         }
       },
       {
@@ -1271,7 +1295,7 @@
         "key": "Advanced Recovery Options",
         "location": {
           "startingColumn": 30,
-          "startingLine": 1136
+          "startingLine": 1160
         }
       },
       {
@@ -1279,7 +1303,7 @@
         "key": "⚠️ These options should only be used when guided by support",
         "location": {
           "startingColumn": 30,
-          "startingLine": 1140
+          "startingLine": 1164
         }
       },
       {
@@ -1287,7 +1311,7 @@
         "key": "Clean Orphaned Data",
         "location": {
           "startingColumn": 36,
-          "startingLine": 1162
+          "startingLine": 1186
         }
       },
       {
@@ -1295,7 +1319,7 @@
         "key": "Remove conversations that aren't linked to people",
         "location": {
           "startingColumn": 35,
-          "startingLine": 1166
+          "startingLine": 1190
         }
       },
       {
@@ -1303,7 +1327,7 @@
         "key": "Test Direct Report Sync",
         "location": {
           "startingColumn": 32,
-          "startingLine": 1170
+          "startingLine": 1194
         }
       },
       {
@@ -1311,7 +1335,7 @@
         "key": "Check if direct report status is syncing correctly",
         "location": {
           "startingColumn": 31,
-          "startingLine": 1176
+          "startingLine": 1200
         }
       },
       {
@@ -1319,7 +1343,7 @@
         "key": "Reset from Cloud",
         "location": {
           "startingColumn": 36,
-          "startingLine": 1146
+          "startingLine": 1170
         }
       },
       {
@@ -1327,7 +1351,7 @@
         "key": "Delete all local data and rebuild from cloud",
         "location": {
           "startingColumn": 35,
-          "startingLine": 1150
+          "startingLine": 1174
         }
       },
       {
@@ -1335,7 +1359,7 @@
         "key": "Reset Sync State",
         "location": {
           "startingColumn": 36,
-          "startingLine": 1152
+          "startingLine": 1176
         }
       },
       {
@@ -1343,7 +1367,7 @@
         "key": "Force a complete sync on next operation",
         "location": {
           "startingColumn": 35,
-          "startingLine": 1157
+          "startingLine": 1181
         }
       },
       {
@@ -1351,7 +1375,7 @@
         "key": "Reset",
         "location": {
           "startingColumn": 28,
-          "startingLine": 1191
+          "startingLine": 1215
         }
       },
       {
@@ -1359,7 +1383,7 @@
         "key": "Cancel",
         "location": {
           "startingColumn": 28,
-          "startingLine": 1194
+          "startingLine": 1218
         }
       },
       {
@@ -1367,7 +1391,7 @@
         "key": "This will delete all local data and rebuild from the cloud. Only use if guided by support.",
         "location": {
           "startingColumn": 26,
-          "startingLine": 1196
+          "startingLine": 1220
         }
       },
       {
@@ -1375,7 +1399,7 @@
         "key": "Clean",
         "location": {
           "startingColumn": 28,
-          "startingLine": 1199
+          "startingLine": 1223
         }
       },
       {
@@ -1383,7 +1407,7 @@
         "key": "Cancel",
         "location": {
           "startingColumn": 28,
-          "startingLine": 1206
+          "startingLine": 1230
         }
       },
       {
@@ -1391,7 +1415,7 @@
         "key": "This will remove conversations that aren't properly linked to people. This action cannot be undone.",
         "location": {
           "startingColumn": 26,
-          "startingLine": 1208
+          "startingLine": 1232
         }
       },
       {
@@ -1399,7 +1423,7 @@
         "key": "Drop a file to import org chart",
         "location": {
           "startingColumn": 34,
-          "startingLine": 2603
+          "startingLine": 2627
         }
       },
       {
@@ -1407,7 +1431,7 @@
         "key": "Supports: PDF, PowerPoint (.ppt/.pptx), Images (.jpg/.png)",
         "location": {
           "startingColumn": 34,
-          "startingLine": 2605
+          "startingLine": 2629
         }
       }
     ]

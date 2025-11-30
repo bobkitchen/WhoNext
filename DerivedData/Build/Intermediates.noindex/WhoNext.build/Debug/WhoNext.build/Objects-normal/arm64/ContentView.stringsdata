@@ -7,15 +7,7 @@
         "key": "",
         "location": {
           "startingColumn": 30,
-          "startingLine": 83
-        }
-      },
-      {
-        "comment": "",
-        "key": "Select a person or group",
-        "location": {
-          "startingColumn": 34,
-          "startingLine": 73
+          "startingLine": 70
         }
       }
     ]

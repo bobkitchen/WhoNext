@@ -303,7 +303,7 @@ class SystemAudioCapture: NSObject, ObservableObject {
     
     /// Mix microphone and system audio buffers into a single buffer
     func mixAudioBuffers(mic: AVAudioPCMBuffer?, system: AVAudioPCMBuffer?) -> AVAudioPCMBuffer? {
-        // If we only have one buffer, return it
+        // If we only have one buffer, return it directly (no mixing needed)
         if mic == nil && system == nil {
             return nil
         } else if mic == nil {
@@ -340,15 +340,24 @@ class SystemAudioCapture: NSObject, ObservableObject {
             for channel in 0..<channelCount {
                 for frame in 0..<Int(frameLength) {
                     var mixedSample: Float = 0.0
+                    var sourceCount: Float = 0.0
                     
                     // Add microphone sample if available
                     if frame < Int(micBuffer.frameLength) {
-                        mixedSample += micData[channel][frame] * 0.5 // Scale to prevent clipping
+                        mixedSample += micData[channel][frame]
+                        sourceCount += 1.0
                     }
                     
                     // Add system audio sample if available
                     if frame < Int(systemBuffer.frameLength) {
-                        mixedSample += systemData[channel][frame] * 0.5 // Scale to prevent clipping
+                        mixedSample += systemData[channel][frame]
+                        sourceCount += 1.0
+                    }
+                    
+                    // Normalize if we have multiple sources to prevent clipping
+                    // But don't reduce volume if only one source is active at this frame
+                    if sourceCount > 1.0 {
+                        mixedSample /= sourceCount
                     }
                     
                     // Clip to valid range

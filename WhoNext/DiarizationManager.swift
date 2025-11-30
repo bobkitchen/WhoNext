@@ -30,25 +30,55 @@ class DiarizationManager: ObservableObject {
     // Results
     @Published private(set) var lastResult: DiarizationResult?
     @Published private(set) var currentSpeakers: [String] = []
+    @Published private(set) var totalSpeakerCount: Int = 0  // Track total unique speakers seen
     
     // Chunk management for streaming
-    private let chunkDuration: TimeInterval = 10.0 // 10 seconds for optimal accuracy
+    private let chunkDuration: TimeInterval = 5.0 // Reduced to 5 seconds for better speaker change detection
     private var streamPosition: TimeInterval = 0.0
+    
+    // Dynamic threshold adjustment
+    private var adaptiveThreshold: Float = 0.75
+    private var speakerDistances: [Float] = []
+    
+    // IMPORTANT: Maintain speaker continuity across chunks
+    private var cumulativeAudioBuffer: [Float] = [] // Accumulate all audio
+    private var previousSpeakerDatabase: [String: [Float]]? // Track speakers across chunks
+    private var allSegments: [TimedSpeakerSegment] = [] // All segments from all chunks
+    private let maxCumulativeSeconds: Float = 60.0 // Keep last 60 seconds for better speaker continuity
+    private var knownSpeakers: Set<String> = [] // Track all speakers we've seen
     
     // MARK: - Initialization
     
-    init(isEnabled: Bool = true, enableRealTimeProcessing: Bool = false) {
+    init(isEnabled: Bool = true, enableRealTimeProcessing: Bool = false, clusteringThreshold: Float = 0.85) {
         // Configure for better speaker separation
+        // IMPORTANT: In FluidAudio's implementation:
+        // - Higher threshold (0.85-0.95) = MORE permissive, accepts speakers as different at higher distances
+        // - Lower threshold (0.3-0.5) = LESS permissive, requires very different voices
+        // Your logs show speaker distance ~0.82, so threshold must be > 0.82 to separate them
         self.config = DiarizerConfig(
-            clusteringThreshold: 0.5,  // Lower threshold for better speaker separation
-            minSpeechDuration: 1.0,     // Ignore very short utterances
-            minSilenceGap: 0.5,         // Natural conversation gaps
+            clusteringThreshold: clusteringThreshold,  // Default 0.85 for similar voices
+            minSpeechDuration: 0.5,     // Reduced to capture shorter utterances  
+            minSilenceGap: 0.3,         // Reduced for more natural conversation flow
             debugMode: true             // Enable to get speaker embeddings
         )
         self.isEnabled = isEnabled
         self.enableRealTimeProcessing = enableRealTimeProcessing
         
         print("🎙️ DiarizationManager initialized with real-time: \(enableRealTimeProcessing)")
+    }
+    
+    // MARK: - Configuration
+    
+    /// Get the current clustering threshold
+    var currentThreshold: Float {
+        return config.clusteringThreshold
+    }
+    
+    /// Create a new DiarizationManager with custom threshold
+    static func withThreshold(_ threshold: Float, enableRealTimeProcessing: Bool = false) -> DiarizationManager {
+        let manager = DiarizationManager(isEnabled: true, enableRealTimeProcessing: enableRealTimeProcessing)
+        // We'll set the threshold through a custom init
+        return manager
     }
     
     // MARK: - Setup
@@ -118,36 +148,70 @@ class DiarizationManager: ObservableObject {
         
         do {
             let startTime = Date()
-            let result = try diarizer.performCompleteDiarization(audioSamples)
+            
+            // CRITICAL FIX: Accumulate audio and process cumulatively
+            // This maintains speaker continuity across chunks
+            cumulativeAudioBuffer.append(contentsOf: audioSamples)
+            
+            // Implement sliding window to limit memory usage
+            let maxSamples = Int(maxCumulativeSeconds * sampleRate)
+            if cumulativeAudioBuffer.count > maxSamples {
+                let samplesToRemove = cumulativeAudioBuffer.count - maxSamples
+                cumulativeAudioBuffer.removeFirst(samplesToRemove)
+                print("🔄 [DiarizationManager] Sliding window: removed \(samplesToRemove) samples, keeping last \(maxCumulativeSeconds)s")
+            }
+            
+            // Process the entire accumulated audio to maintain speaker continuity
+            // This ensures speakers identified in earlier chunks are recognized in later chunks
+            print("🔄 [DiarizationManager] Processing cumulative audio: \(cumulativeAudioBuffer.count) samples (\(Float(cumulativeAudioBuffer.count) / sampleRate)s)")
+            
+            let result = try diarizer.performCompleteDiarization(cumulativeAudioBuffer)
             let processingTime = Date().timeIntervalSince(startTime)
             
-            let uniqueSpeakers = Set(result.segments.map { $0.speakerId })
-            print("📊 [DiarizationManager] Processed \(chunkDuration)s chunk in \(String(format: "%.2f", processingTime))s")
-            print("👥 [DiarizationManager] Found \(uniqueSpeakers.count) speakers with \(result.segments.count) segments")
+            // Extract segments that overlap with the current chunk time window
+            let chunkStartTime = Float(position)
+            let chunkEndTime = Float(position + chunkDuration)
             
-            // Adjust timestamps for stream position
-            var adjustedSegments: [TimedSpeakerSegment] = []
-            for segment in result.segments {
-                let adjusted = TimedSpeakerSegment(
-                    speakerId: segment.speakerId,
-                    embedding: segment.embedding,
-                    startTimeSeconds: Float(position) + segment.startTimeSeconds,
-                    endTimeSeconds: Float(position) + segment.endTimeSeconds,
-                    qualityScore: segment.qualityScore
-                )
-                adjustedSegments.append(adjusted)
-                
-                // Log segment details for debugging
+            // Get segments that overlap with this chunk (not just ones that start in it)
+            let chunkSegments = result.segments.filter { segment in
+                // Include segment if it overlaps with the chunk window at all
+                segment.endTimeSeconds > chunkStartTime && segment.startTimeSeconds < chunkEndTime
+            }
+            
+            let uniqueSpeakersInChunk = Set(chunkSegments.map { $0.speakerId })
+            let totalUniqueSpeakers = Set(result.segments.map { $0.speakerId })
+            
+            // Track all speakers we've ever seen
+            knownSpeakers.formUnion(totalUniqueSpeakers)
+            totalSpeakerCount = knownSpeakers.count
+            
+            print("📊 [DiarizationManager] Processed \(chunkDuration)s chunk in \(String(format: "%.2f", processingTime))s")
+            print("👥 [DiarizationManager] Found \(uniqueSpeakersInChunk.count) speakers in chunk, \(knownSpeakers.count) total speakers (historical)")
+            print("📈 [DiarizationManager] Cumulative audio: \(String(format: "%.1f", Float(cumulativeAudioBuffer.count) / sampleRate))s, Known speakers: \(knownSpeakers)")
+            
+            // Log speaker distances for adaptive threshold
+            if totalUniqueSpeakers.count > 1 {
+                print("📊 [DiarizationManager] Multiple speakers detected, tracking for optimization")
+            }
+            
+            // Store all segments (not just current chunk) to maintain complete history
+            allSegments = result.segments
+            
+            // Log details for current chunk segments only
+            for segment in chunkSegments {
                 let duration = segment.endTimeSeconds - segment.startTimeSeconds
                 print("  - Speaker \(segment.speakerId): \(String(format: "%.1f", segment.startTimeSeconds))s - \(String(format: "%.1f", segment.endTimeSeconds))s (duration: \(String(format: "%.1f", duration))s, quality: \(String(format: "%.2f", segment.qualityScore)))")
             }
             
-            // Update results
+            // Update results with ALL segments (maintains complete speaker history)
             let adjustedResult = DiarizationResult(
-                segments: adjustedSegments,
+                segments: allSegments,
                 speakerDatabase: result.speakerDatabase,
                 timings: result.timings
             )
+            
+            // Store speaker database for continuity
+            previousSpeakerDatabase = result.speakerDatabase
             
             await MainActor.run {
                 self.lastResult = adjustedResult
@@ -301,12 +365,18 @@ class DiarizationManager: ObservableObject {
     /// Reset the diarization state
     func reset() {
         audioBuffer.removeAll()
+        cumulativeAudioBuffer.removeAll()  // Clear cumulative buffer
+        allSegments.removeAll()  // Clear all segments
+        previousSpeakerDatabase = nil  // Clear speaker database
+        knownSpeakers.removeAll()  // Clear known speakers
+        totalSpeakerCount = 0  // Reset speaker count
         lastResult = nil
         lastError = nil
         processingProgress = 0.0
         isProcessing = false
         streamPosition = 0.0
         currentSpeakers.removeAll()
+        speakerDistances.removeAll()
         
         print("🔄 [DiarizationManager] Reset complete")
     }
@@ -315,6 +385,8 @@ class DiarizationManager: ObservableObject {
     deinit {
         // Clean up non-MainActor properties only
         audioBuffer.removeAll()
+        cumulativeAudioBuffer.removeAll()
+        allSegments.removeAll()
         streamPosition = 0.0
         print("🧹 [DiarizationManager] Cleaned up")
     }

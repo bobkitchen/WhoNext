@@ -241,8 +241,8 @@ struct PersonCardView: View {
         let nameParts = person.name?.components(separatedBy: " ") ?? []
         let firstName = nameParts.first?.lowercased() ?? "unknown"
         let lastName = nameParts.count > 1 ? nameParts[1].lowercased() : ""
-        // Note: User should update this domain to match their organization
-        return "\(firstName).\(lastName)@example.com"
+        // Using organization domain
+        return "\(firstName).\(lastName)@rescue.org"
     }
     
     private func fallbackToClipboard(subject: String, body: String) {

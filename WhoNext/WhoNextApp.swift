@@ -121,36 +121,29 @@ struct WhoNextApp: App {
     
     /// Auto-start meeting monitoring for seamless recording
     private func startAutoRecordingMonitoring() {
-        // Check if auto-recording is enabled in preferences
-        // Default to true for seamless experience
-        let autoRecordEnabled = UserDefaults.standard.object(forKey: "autoRecordEnabled") as? Bool ?? true
+        // Always start monitoring (Default behavior)
+        print("🎯 Auto-Recording: Starting monitoring on app launch...")
         
-        if autoRecordEnabled {
-            print("🎯 Auto-Recording: Starting monitoring on app launch...")
-            
-            // Start the recording engine monitoring
-            MeetingRecordingEngine.shared.startMonitoring()
-            
-            // Log the status and show floating indicator
-            DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
-                if MeetingRecordingEngine.shared.isMonitoring {
-                    print("✅ Auto-Recording: Monitoring active - ready to detect meetings")
-                    
-                    // Show floating status indicator
-                    FloatingStatusWindowController.shared.showIfNeeded()
-                    
-                    // Post notification for UI updates
-                    NotificationCenter.default.post(
-                        name: Notification.Name("MonitoringStatusChanged"),
-                        object: nil,
-                        userInfo: ["isMonitoring": true]
-                    )
-                } else {
-                    print("⚠️ Auto-Recording: Failed to start monitoring")
-                }
+        // Start the recording engine monitoring
+        MeetingRecordingEngine.shared.startMonitoring()
+        
+        // Log the status and show floating indicator
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+            if MeetingRecordingEngine.shared.isMonitoring {
+                print("✅ Auto-Recording: Monitoring active - ready to detect meetings")
+                
+                // Show floating status indicator
+                FloatingStatusWindowController.shared.showIfNeeded()
+                
+                // Post notification for UI updates
+                NotificationCenter.default.post(
+                    name: Notification.Name("MonitoringStatusChanged"),
+                    object: nil,
+                    userInfo: ["isMonitoring": true]
+                )
+            } else {
+                print("⚠️ Auto-Recording: Failed to start monitoring")
             }
-        } else {
-            print("ℹ️ Auto-Recording: Disabled in preferences - manual start required")
         }
     }
     

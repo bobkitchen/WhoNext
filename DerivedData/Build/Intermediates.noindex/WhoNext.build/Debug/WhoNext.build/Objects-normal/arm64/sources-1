@@ -32,6 +32,10 @@
 /Users/bobkitchen/Documents/GitHub/WhoNext/WhoNext/DiarizationManager.swift
 /Users/bobkitchen/Documents/GitHub/WhoNext/WhoNext/EmptyStateCard.swift
 /Users/bobkitchen/Documents/GitHub/WhoNext/WhoNext/EnhancedLiveMeetingWindow.swift
+/Users/bobkitchen/Documents/GitHub/WhoNext/WhoNext/EnhancedMeetingCard.swift
+/Users/bobkitchen/Documents/GitHub/WhoNext/WhoNext/EnhancedMonitoringIndicator.swift
+/Users/bobkitchen/Documents/GitHub/WhoNext/WhoNext/EnhancedPeopleView.swift
+/Users/bobkitchen/Documents/GitHub/WhoNext/WhoNext/EnhancedPersonCard.swift
 /Users/bobkitchen/Documents/GitHub/WhoNext/WhoNext/EnhancedStatCardView.swift
 /Users/bobkitchen/Documents/GitHub/WhoNext/WhoNext/ErrorManager.swift
 /Users/bobkitchen/Documents/GitHub/WhoNext/WhoNext/ExportManager.swift
@@ -86,12 +90,14 @@
 /Users/bobkitchen/Documents/GitHub/WhoNext/WhoNext/PDFOrgChartProcessor.swift
 /Users/bobkitchen/Documents/GitHub/WhoNext/WhoNext/PeopleAndGroupsView.swift
 /Users/bobkitchen/Documents/GitHub/WhoNext/WhoNext/PeopleListView.swift
+/Users/bobkitchen/Documents/GitHub/WhoNext/WhoNext/PeopleSearchAndFilter.swift
 /Users/bobkitchen/Documents/GitHub/WhoNext/WhoNext/PermissionsSettingsView.swift
 /Users/bobkitchen/Documents/GitHub/WhoNext/WhoNext/Persistence.swift
 /Users/bobkitchen/Documents/GitHub/WhoNext/WhoNext/Person.swift
 /Users/bobkitchen/Documents/GitHub/WhoNext/WhoNext/PersonCard.swift
 /Users/bobkitchen/Documents/GitHub/WhoNext/WhoNext/PersonDetailView.swift
 /Users/bobkitchen/Documents/GitHub/WhoNext/WhoNext/PersonEditView.swift
+/Users/bobkitchen/Documents/GitHub/WhoNext/WhoNext/PersonSearchField.swift
 /Users/bobkitchen/Documents/GitHub/WhoNext/WhoNext/PopoutChatWindow.swift
 /Users/bobkitchen/Documents/GitHub/WhoNext/WhoNext/PreMeetingBriefContextHelper.swift
 /Users/bobkitchen/Documents/GitHub/WhoNext/WhoNext/PreMeetingBriefService.swift

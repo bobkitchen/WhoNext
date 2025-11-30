@@ -1,0 +1,64 @@
+{
+  "source": "/Users/bobkitchen/Documents/GitHub/WhoNext/WhoNext/PersonSearchField.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "Linked to person record",
+        "location": {
+          "startingColumn": 23,
+          "startingLine": 82
+        }
+      },
+      {
+        "comment": "",
+        "key": "Transcript only - not saved to contacts",
+        "location": {
+          "startingColumn": 23,
+          "startingLine": 87
+        }
+      },
+      {
+        "comment": "",
+        "key": "Unnamed speaker",
+        "location": {
+          "startingColumn": 23,
+          "startingLine": 92
+        }
+      },
+      {
+        "comment": "",
+        "key": "%lld%%",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 125
+        }
+      },
+      {
+        "comment": "",
+        "key": "Link to %@",
+        "location": {
+          "startingColumn": 31,
+          "startingLine": 154
+        }
+      },
+      {
+        "comment": "",
+        "key": "This transcript only",
+        "location": {
+          "startingColumn": 23,
+          "startingLine": 168
+        }
+      },
+      {
+        "comment": "",
+        "key": "Create new person",
+        "location": {
+          "startingColumn": 27,
+          "startingLine": 179
+        }
+      }
+    ]
+  },
+  "version": 1
+}

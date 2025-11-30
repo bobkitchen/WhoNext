@@ -160,13 +160,49 @@ class TwoWayAudioDetector: ObservableObject {
             print("🗣️ Speech characteristics detected (+0.2)")
         }
         
-        // 4. Meeting app bonus (10% weight)
-        if isMeetingAppActive() {
-            confidence += 0.1
-            print("💻 Meeting app active (+0.1)")
+        // 4. Meeting app bonus (50% weight - Increased from 30%)
+        // 4. Meeting app bonus (50% weight - Increased from 30%)
+        // Check if we have a specific detected app OR just know a meeting app is running
+        let appDetected = detectedApp != nil || isMeetingAppActive()
+        
+        if appDetected {
+            confidence += 0.5
+            let appName = detectedApp ?? "Generic Meeting App"
+            print("💻 Meeting app detected: \(appName) (+0.5)")
+            
+            // If a meeting app is open, ANY speech should trigger recording immediately
+            // This fixes the issue where we waited for "sustained" activity
+            if micActivityRate > 0.0 || systemActivityRate > 0.0 {
+                confidence += 0.2
+                print("🗣️ Speech detected while meeting app active (+0.2)")
+            }
         }
         
-        return min(confidence, 1.0)
+        // 5. Sustained Microphone Activity (Fallback for in-person/no-system-audio)
+        // If we have significant speech but no system audio, we should still record
+        // Relaxed thresholds: >30% mic activity, allow some system noise (<20%)
+        if micActivityRate > 0.3 && systemActivityRate < 0.2 {
+            // If we have speech characteristics OR just high sustained activity
+            if conversationAnalyzer.hasSpeechCharacteristics() || micActivityRate > 0.5 {
+                confidence += 0.4
+                print("🎤 Sustained microphone speech detected (+0.4)")
+            }
+        }
+        
+        // 6. Calendar Context (The "Radiant" feature)
+        // If a meeting is scheduled NOW, we are much more aggressive
+        if isMeetingScheduled {
+            if micActivityRate > 0.1 || systemActivityRate > 0.1 {
+                confidence += 0.5 // Massive boost if audio is present during a scheduled meeting
+                print("dV Calendar event active + audio detected (+0.5)")
+            }
+        }
+        
+        let finalConfidence = min(confidence, 1.0)
+        if finalConfidence > 0.3 {
+            print("📊 Total Confidence: \(String(format: "%.2f", finalConfidence)) (Threshold: \(confidenceThreshold))")
+        }
+        return finalConfidence
     }
     
     private func startConversation() {
@@ -200,17 +236,85 @@ class TwoWayAudioDetector: ObservableObject {
         recentSystemActivity.removeAll()
     }
     
+    // MARK: - Context Awareness
+    var isMeetingScheduled: Bool = false
+    @Published var detectedApp: String?
+    
     private func isMeetingAppActive() -> Bool {
-        // Check if common meeting apps are running
+        // 1. Check running apps first
         let runningApps = NSWorkspace.shared.runningApplications
-        let meetingApps = ["zoom.us", "Microsoft Teams", "Google Chrome", "Safari", "Slack"]
         
-        return runningApps.contains { app in
-            guard let bundleID = app.bundleIdentifier else { return false }
-            return meetingApps.contains { meetingApp in
-                bundleID.lowercased().contains(meetingApp.lowercased())
+        // Native apps - we trust these are for meetings if they are running (fallback)
+        let nativeMeetingApps = [
+            "zoom.us": "Zoom",
+            "Microsoft Teams": "Teams",
+            "Slack": "Slack",
+            "Webex": "Webex"
+        ]
+        
+        // Browser apps - we ONLY trust these if we see a specific window title
+        let browserApps = [
+            "Google Chrome": "Google Meet",
+            "Safari": "Google Meet"
+        ]
+        
+        var potentialNativeApp: String?
+        
+        for app in runningApps {
+            guard let bundleID = app.bundleIdentifier else { continue }
+            
+            // Check native apps
+            for (key, name) in nativeMeetingApps {
+                if bundleID.lowercased().contains(key.lowercased()) {
+                    potentialNativeApp = name
+                    break
+                }
+            }
+            if potentialNativeApp != nil { break }
+        }
+        
+        // 2. Check window titles for "active meeting" indicators (requires Screen Recording permission)
+        if let windowList = CGWindowListCopyWindowInfo([.optionOnScreenOnly, .excludeDesktopElements], kCGNullWindowID) as? [[String: Any]] {
+            for window in windowList {
+                guard let ownerName = window[kCGWindowOwnerName as String] as? String,
+                      let title = window[kCGWindowName as String] as? String else { continue }
+                
+                // Check for specific active meeting indicators
+                if ownerName.contains("Zoom") && (title.contains("Meeting") || title.contains("Webinar")) {
+                    DispatchQueue.main.async { self.detectedApp = "Zoom Meeting" }
+                    return true
+                }
+                
+                if ownerName.contains("Teams") && (title.contains("Call") || title.contains("Meeting") || title.contains("|")) {
+                    DispatchQueue.main.async { self.detectedApp = "Microsoft Teams" }
+                    return true
+                }
+                
+                // For browsers, we strictly require the title to match
+                if (ownerName.contains("Google Chrome") || ownerName.contains("Safari")) && 
+                   (title.contains("Meet") || title.contains("Meeting")) {
+                    DispatchQueue.main.async { self.detectedApp = "Google Meet" }
+                    return true
+                }
+                
+                if ownerName.contains("Slack") && title.contains("Huddle") {
+                    DispatchQueue.main.async { self.detectedApp = "Slack Huddle" }
+                    return true
+                }
             }
         }
+        
+        // 3. Fallback: If we didn't find a specific window title...
+        // If a NATIVE app is running, we assume it might be a meeting (fallback behavior)
+        if let appName = potentialNativeApp {
+            DispatchQueue.main.async { self.detectedApp = appName }
+            return true
+        }
+        
+        // If only a browser was running (or nothing), and we didn't see a window title,
+        // we do NOT consider it a meeting.
+        DispatchQueue.main.async { self.detectedApp = nil }
+        return false
     }
 }
 
@@ -234,9 +338,9 @@ class VoiceActivityDetector {
         // Different thresholds for different channels
         switch channel {
         case .microphone:
-            self.energyThreshold = 0.01 // More sensitive for microphone
+            self.energyThreshold = 0.001 // Extremely sensitive (was 0.002)
         case .systemAudio:
-            self.energyThreshold = 0.008 // Slightly less sensitive for system audio
+            self.energyThreshold = 0.002 // Much more sensitive (was 0.008)
         }
     }
     
@@ -283,14 +387,9 @@ class VoiceActivityDetector {
     }
     
     private func calculateAdaptiveThreshold() -> Float {
-        guard !recentEnergies.isEmpty else { return energyThreshold }
-        
-        // Use median of recent energies as baseline
-        let sortedEnergies = recentEnergies.sorted()
-        let median = sortedEnergies[sortedEnergies.count / 2]
-        
-        // Adaptive threshold is 2x median or minimum threshold, whichever is higher
-        return max(median * 2, energyThreshold)
+        // FIXED: Adaptive threshold was using median (including speech), causing self-silencing.
+        // Now using a fixed sensitive threshold to ensure we catch all speech.
+        return energyThreshold
     }
 }
 

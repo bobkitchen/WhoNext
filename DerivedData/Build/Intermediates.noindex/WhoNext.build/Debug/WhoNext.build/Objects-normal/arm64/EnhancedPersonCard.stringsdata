@@ -1,0 +1,80 @@
+{
+  "source": "/Users/bobkitchen/Documents/GitHub/WhoNext/WhoNext/EnhancedPersonCard.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "%lld",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 90
+        }
+      },
+      {
+        "comment": "",
+        "key": "Schedule meeting",
+        "location": {
+          "startingColumn": 19,
+          "startingLine": 208
+        }
+      },
+      {
+        "comment": "",
+        "key": "View details",
+        "location": {
+          "startingColumn": 19,
+          "startingLine": 222
+        }
+      },
+      {
+        "comment": "",
+        "key": "Schedule Meeting",
+        "location": {
+          "startingColumn": 19,
+          "startingLine": 229
+        }
+      },
+      {
+        "comment": "",
+        "key": "View Details",
+        "location": {
+          "startingColumn": 19,
+          "startingLine": 233
+        }
+      },
+      {
+        "comment": "",
+        "key": "Remove from Direct Reports",
+        "location": {
+          "startingColumn": 23,
+          "startingLine": 240
+        }
+      },
+      {
+        "comment": "",
+        "key": "Add to Direct Reports",
+        "location": {
+          "startingColumn": 23,
+          "startingLine": 244
+        }
+      },
+      {
+        "comment": "",
+        "key": "Delete",
+        "location": {
+          "startingColumn": 19,
+          "startingLine": 251
+        }
+      },
+      {
+        "comment": "",
+        "key": "(%lld)",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 417
+        }
+      }
+    ]
+  },
+  "version": 1
+}

@@ -929,6 +929,30 @@ Best regards
                         .help("Use OpenAI Whisper for higher accuracy")
                     Toggle("Speaker Diarization", isOn: $recordingConfig.transcriptionSettings.speakerDiarizationEnabled)
                         .help("Identify different speakers in the conversation")
+                    
+                    if recordingConfig.transcriptionSettings.speakerDiarizationEnabled {
+                        VStack(alignment: .leading, spacing: 4) {
+                            HStack {
+                                Text("Speaker Sensitivity")
+                                    .font(.caption)
+                                Spacer()
+                                Text(String(format: "%.0f%%", recordingConfig.transcriptionSettings.speakerSensitivity * 100))
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                            }
+                            
+                            Slider(value: $recordingConfig.transcriptionSettings.speakerSensitivity, 
+                                   in: 0.7...0.95,
+                                   step: 0.05)
+                                .help("Higher values = more permissive (separates similar voices). Lower = requires very different voices.")
+                            
+                            Text("Adjust if speakers aren't being properly separated")
+                                .font(.caption2)
+                                .foregroundColor(.secondary)
+                        }
+                        .padding(.leading, 20)
+                    }
+                    
                     Toggle("Include Punctuation", isOn: $recordingConfig.transcriptionSettings.punctuationEnabled)
                         .help("Add punctuation to transcripts")
                 }

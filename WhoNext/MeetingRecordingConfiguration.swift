@@ -244,6 +244,7 @@ struct TranscriptionSettings: Codable {
     var useLocalTranscription: Bool = true
     var whisperRefinementEnabled: Bool = true
     var speakerDiarizationEnabled: Bool = true
+    var speakerSensitivity: Double = 0.85  // Higher = more permissive speaker separation (default for similar voices)
     var languageCode: String = "en-US"
     var punctuationEnabled: Bool = true
     var profanityFilterEnabled: Bool = false

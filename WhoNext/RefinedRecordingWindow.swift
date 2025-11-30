@@ -18,7 +18,7 @@ class RefinedRecordingWindowController: NSWindowController {
         // Create a floating panel with better default size
         let panel = NSPanel(
             contentRect: NSRect(x: 0, y: 0, width: 480, height: 640),
-            styleMask: [.titled, .closable, .miniaturizable, .resizable, .fullSizeContentView, .nonactivatingPanel],
+            styleMask: [.titled, .closable, .miniaturizable, .resizable, .fullSizeContentView],
             backing: .buffered,
             defer: false
         )
@@ -71,12 +71,18 @@ class RefinedRecordingWindowController: NSWindowController {
 struct RefinedRecordingView: View {
     @ObservedObject var meeting: LiveMeeting
     @ObservedObject private var recordingEngine = MeetingRecordingEngine.shared
-    @State private var speakerColors: [String: Color] = [:]
-    @State private var speakerNumbers: [String: Int] = [:]
-    @State private var nextSpeakerNumber = 1
+    // speakerColors, speakerNumbers and nextSpeakerNumber removed as they are no longer used
+    // speakerNumbers and nextSpeakerNumber removed as they are no longer used
     @State private var speakerNames: [String: String] = [:] // Maps speaker ID to custom names
+    @State private var speakerNamingModes: [String: NamingMode] = [:] // Track naming mode per speaker
+    @State private var speakerPersonLinks: [String: Person] = [:] // Maps speaker ID to Person record
     @State private var editingSpeaker: String? = nil // Speaker ID being edited
     @State private var editingName: String = "" // Temporary name during editing
+    @State private var editingPerson: Person? = nil // Selected person during editing
+    @State private var editingNamingMode: NamingMode = .unnamed // Naming mode during editing
+    @State private var unnamedSpeakers: Set<String> = [] // Track speakers that need naming
+    @State private var showSpeakerAlert = false
+    @State private var newSpeakerDetected: String? = nil
     
     // Design constants
     private let spacing: CGFloat = 8
@@ -85,6 +91,12 @@ struct RefinedRecordingView: View {
     
     var body: some View {
         VStack(spacing: 0) {
+            // New speaker notification banner
+            if !unnamedSpeakers.isEmpty {
+                speakerNotificationBanner
+                    .transition(.move(edge: .top).combined(with: .opacity))
+            }
+            
             // Refined header
             refinedHeader
                 .padding(spacing * 2)
@@ -109,6 +121,81 @@ struct RefinedRecordingView: View {
                 .background(Color(NSColor.controlBackgroundColor).opacity(0.3))
         }
         .background(Color(NSColor.windowBackgroundColor))
+        .onAppear {
+            checkForUnnamedSpeakers()
+        }
+        .onChange(of: meeting.transcript.count) { _, _ in
+            checkForUnnamedSpeakers()
+        }
+    }
+    
+    // MARK: - Speaker Detection
+    private func checkForUnnamedSpeakers() {
+        var detectedSpeakers = Set<String>()
+        var namedSpeakers = Set<String>()
+        
+        // Go through all transcript segments
+        for segment in meeting.transcript {
+            if let speakerID = segment.speakerID {
+                detectedSpeakers.insert(speakerID)
+                
+                // Check if this speaker has been named
+                if speakerNames[speakerID] != nil || segment.speakerName != nil {
+                    namedSpeakers.insert(speakerID)
+                }
+            }
+        }
+        
+        // Update unnamed speakers
+        let previousUnnamed = unnamedSpeakers
+        unnamedSpeakers = detectedSpeakers.subtracting(namedSpeakers)
+        
+        // Check if new speakers were detected
+        let newSpeakers = unnamedSpeakers.subtracting(previousUnnamed)
+        if !newSpeakers.isEmpty {
+            // Animate the appearance of the notification
+            withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
+                showSpeakerAlert = true
+            }
+            
+            // Play a subtle sound or haptic feedback if desired
+            NSSound.beep()
+        }
+    }
+    
+    // MARK: - Speaker Notification Banner
+    private var speakerNotificationBanner: some View {
+        VStack(spacing: 8) {
+            HStack {
+                Image(systemName: "person.2.fill")
+                    .foregroundColor(.orange)
+                
+                Text("\(unnamedSpeakers.count) new speaker\(unnamedSpeakers.count > 1 ? "s" : "") detected")
+                    .font(.system(size: 12, weight: .medium))
+                
+                Spacer()
+                
+                Button("Name Speakers") {
+                    if let firstUnnamed = unnamedSpeakers.first {
+                        // Find the first segment with this speaker
+                        if let segment = meeting.transcript.first(where: { 
+                            ($0.speakerID == firstUnnamed || $0.speakerName == "Speaker \(firstUnnamed)")
+                        }) {
+                            startEditingSpeaker(segment)
+                        }
+                    }
+                }
+                .buttonStyle(.plain)
+                .foregroundColor(.accentColor)
+                .font(.system(size: 11, weight: .medium))
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 8)
+            .background(Color.orange.opacity(0.1))
+            .cornerRadius(6)
+        }
+        .padding(.horizontal, spacing)
+        .padding(.top, spacing)
     }
     
     // MARK: - Refined Header
@@ -196,7 +283,7 @@ struct RefinedRecordingView: View {
                         }
                     }
                 }
-                .onChange(of: meeting.transcript.count) { _ in
+                .onChange(of: meeting.transcript.count) { _, _ in
                     if let last = meeting.transcript.last {
                         withAnimation(.easeOut(duration: 0.3)) {
                             proxy.scrollTo(last.id, anchor: .bottom)
@@ -246,8 +333,8 @@ struct RefinedRecordingView: View {
                     
                     // Segment with speaker
                     HStack(alignment: .top, spacing: 10) {
-                        // Speaker avatar
-                        ZStack {
+                        // Speaker avatar with naming mode indicator
+                        ZStack(alignment: .topTrailing) {
                             Circle()
                                 .fill(speakerInfo.color.opacity(0.15))
                                 .frame(width: 24, height: 24)
@@ -255,28 +342,32 @@ struct RefinedRecordingView: View {
                             Text(speakerInfo.label)
                                 .font(.system(size: 10, weight: .medium))
                                 .foregroundColor(speakerInfo.color)
+                            
+                            // Naming mode indicator
+                            if let speakerID = segment.speakerID,
+                               let namingMode = speakerNamingModes[speakerID] {
+                                Image(systemName: namingModeIcon(namingMode))
+                                    .font(.system(size: 8))
+                                    .foregroundColor(namingModeColor(namingMode))
+                                    .background(Circle().fill(Color(NSColor.windowBackgroundColor)))
+                                    .offset(x: 5, y: -5)
+                            }
                         }
                         
                         // Content
                         VStack(alignment: .leading, spacing: 2) {
-                            // Editable speaker name
+                            // Editable speaker name with autocomplete
                             if editingSpeaker == (segment.speakerID ?? segment.speakerName ?? "unknown") {
-                                HStack {
-                                    TextField("Speaker Name", text: $editingName)
-                                        .textFieldStyle(.plain)
-                                        .font(.system(size: 11, weight: .medium))
-                                        .foregroundColor(speakerInfo.color)
-                                        .onSubmit {
-                                            saveSpeakerName()
-                                        }
-                                    
-                                    Button("Save") {
-                                        saveSpeakerName()
+                                PersonSearchField(
+                                    text: $editingName,
+                                    selectedPerson: $editingPerson,
+                                    namingMode: $editingNamingMode,
+                                    placeholder: "Speaker Name",
+                                    onCommit: {
+                                        saveSpeakerNameWithMode()
                                     }
-                                    .font(.system(size: 9))
-                                    .buttonStyle(.plain)
-                                    .foregroundColor(.accentColor)
-                                }
+                                )
+                                .font(.system(size: 11))
                             } else {
                                 Text(speakerInfo.name)
                                     .font(.system(size: 11, weight: .medium))
@@ -515,7 +606,11 @@ struct RefinedRecordingView: View {
                 .joined()
                 .uppercased()
             
-            let color = getColorForSpeaker(speakerID)
+            // Use color based on naming mode
+            let namingMode = speakerNamingModes[speakerID] ?? .unnamed
+            let baseColor = getColorForSpeaker(speakerID)
+            let color = namingMode == .linkedToPerson ? baseColor : 
+                       namingMode == .transcriptOnly ? baseColor.opacity(0.8) : baseColor
             return (customName, initials.isEmpty ? "?" : initials, color)
         } else if let speakerName = segment.speakerName, !speakerName.isEmpty {
             // Named speaker
@@ -543,12 +638,11 @@ struct RefinedRecordingView: View {
             }
             
             // Unnamed speaker with ID
-            if speakerNumbers[speakerID] == nil {
-                speakerNumbers[speakerID] = nextSpeakerNumber
-                nextSpeakerNumber += 1
-            }
+            // Calculate number deterministically based on appearance order in transcript
+            // This avoids modifying state during view update
+            let allSpeakerIDs = Set(meeting.transcript.compactMap { $0.speakerID }).sorted()
+            let number = (allSpeakerIDs.firstIndex(of: speakerID) ?? 0) + 1
             
-            let number = speakerNumbers[speakerID] ?? 1
             let color = getColorForSpeaker(speakerID)
             return ("Speaker \(number)", "\(number)", color)
         } else {
@@ -558,16 +652,16 @@ struct RefinedRecordingView: View {
     }
     
     private func getColorForSpeaker(_ identifier: String) -> Color {
-        if let color = speakerColors[identifier] {
-            return color
-        }
-        
         let colors: [Color] = [
             .blue, .green, .orange, .purple, 
             .pink, .cyan, .indigo, .mint
         ]
-        let color = colors[speakerColors.count % colors.count]
-        speakerColors[identifier] = color
+        
+        // Deterministic color based on identifier hash
+        // This avoids modifying state during view update
+        let hash = abs(identifier.hashValue)
+        let color = colors[hash % colors.count]
+        
         return color
     }
     
@@ -591,47 +685,229 @@ struct RefinedRecordingView: View {
         editingName = speakerNames[speakerID] ?? getSpeakerInfo(for: segment).name
     }
     
-    private func saveSpeakerName() {
+    // MARK: - Three-Path Speaker Naming
+    
+    private func saveSpeakerNameWithMode() {
         guard let speakerID = editingSpeaker else { return }
         
-        if !editingName.isEmpty {
-            // Store the name in our local dictionary
-            speakerNames[speakerID] = editingName
-            
-            // Update or create identified participant
-            if let existingParticipant = meeting.identifiedParticipants.first(where: { "\($0.speakerID)" == speakerID }) {
-                // Update existing participant
-                existingParticipant.name = editingName
-            } else {
-                // Create new identified participant
-                let newParticipant = IdentifiedParticipant()
-                newParticipant.speakerID = Int(speakerID) ?? 0
-                newParticipant.name = editingName
-                newParticipant.confidence = 1.0 // High confidence since user manually entered
-                meeting.identifyParticipant(newParticipant)
+        switch editingNamingMode {
+        case .linkedToPerson:
+            if let person = editingPerson {
+                linkSpeakerToPerson(speakerID: speakerID, person: person)
+            } else if !editingName.isEmpty {
+                // Create new person and link
+                createNewPersonAndLink(speakerID: speakerID, name: editingName)
             }
-            
-            // Update all transcript segments with this speaker ID
-            for i in 0..<meeting.transcript.count {
-                if meeting.transcript[i].speakerID == speakerID {
-                    meeting.transcript[i].speakerName = editingName
-                }
-            }
-            
-            // Force UI refresh by triggering objectWillChange
-            meeting.objectWillChange.send()
-            
-            print("💾 Saved speaker name: \(editingName) for speaker \(speakerID)")
+        case .transcriptOnly:
+            saveTranscriptOnlyName(speakerID: speakerID, name: editingName)
+        case .unnamed:
+            // Should not happen in normal flow
+            break
         }
         
+        // Clean up editing state
         editingSpeaker = nil
         editingName = ""
+        editingPerson = nil
+        editingNamingMode = .unnamed
+    }
+    
+    private func linkSpeakerToPerson(speakerID: String, person: Person) {
+        // Store the name and link
+        speakerNames[speakerID] = person.wrappedName
+        speakerNamingModes[speakerID] = .linkedToPerson
+        speakerPersonLinks[speakerID] = person
+        
+        // Remove from unnamed speakers
+        unnamedSpeakers.remove(speakerID)
+        hideAlertIfNeeded()
+        
+        // Update or create identified participant with Person link
+        // Update or create identified participant with Person link
+        let parsedID = parseSpeakerID(speakerID)
+        if let existingParticipant = meeting.identifiedParticipants.first(where: { $0.speakerID == parsedID }) {
+            existingParticipant.name = person.wrappedName
+            existingParticipant.person = person
+            existingParticipant.namingMode = .linkedToPerson
+            existingParticipant.confidence = person.voiceConfidence
+        } else {
+            let newParticipant = IdentifiedParticipant()
+            newParticipant.speakerID = parsedID
+            newParticipant.name = person.wrappedName
+            newParticipant.person = person
+            newParticipant.namingMode = .linkedToPerson
+            newParticipant.confidence = person.voiceConfidence
+            meeting.identifyParticipant(newParticipant)
+        }
+        
+        // Save voice embedding to Person if available
+        saveVoiceEmbeddingToPerson(speakerID: speakerID, person: person)
+        
+        // Update transcript segments
+        updateTranscriptSegments(speakerID: speakerID, name: person.wrappedName)
+        
+        print("🔗 Linked speaker \(speakerID) to person: \(person.wrappedName)")
+        promptNextUnnamedSpeaker()
+    }
+    
+    private func createNewPersonAndLink(speakerID: String, name: String) {
+        let context = PersistenceController.shared.container.viewContext
+        let person = Person(context: context)
+        person.name = name
+        person.identifier = UUID()
+        person.createdAt = Date()
+        person.modifiedAt = Date()
+        
+        do {
+            try context.save()
+            linkSpeakerToPerson(speakerID: speakerID, person: person)
+            print("➕ Created new person and linked: \(name)")
+        } catch {
+            print("❌ Error creating new person: \(error)")
+        }
+    }
+    
+    private func saveTranscriptOnlyName(speakerID: String, name: String) {
+        guard !name.isEmpty else { return }
+        
+        // Store the name without Person link
+        speakerNames[speakerID] = name
+        speakerNamingModes[speakerID] = .transcriptOnly
+        
+        // Remove from unnamed speakers
+        unnamedSpeakers.remove(speakerID)
+        hideAlertIfNeeded()
+        
+        // Update or create identified participant without Person link
+        // Update or create identified participant without Person link
+        let parsedID = parseSpeakerID(speakerID)
+        if let existingParticipant = meeting.identifiedParticipants.first(where: { $0.speakerID == parsedID }) {
+            existingParticipant.name = name
+            existingParticipant.namingMode = .transcriptOnly
+            existingParticipant.confidence = 1.0 // High confidence since user manually entered
+        } else {
+            let newParticipant = IdentifiedParticipant()
+            newParticipant.speakerID = parsedID
+            newParticipant.name = name
+            newParticipant.namingMode = .transcriptOnly
+            newParticipant.confidence = 1.0
+            meeting.identifyParticipant(newParticipant)
+        }
+        
+        // Update transcript segments
+        updateTranscriptSegments(speakerID: speakerID, name: name)
+        
+        print("📝 Saved transcript-only name: \(name) for speaker \(speakerID)")
+        promptNextUnnamedSpeaker()
+    }
+    
+    // Helper functions
+    private func updateTranscriptSegments(speakerID: String, name: String) {
+        for i in 0..<meeting.transcript.count {
+            if meeting.transcript[i].speakerID == speakerID {
+                meeting.transcript[i].speakerName = name
+            }
+        }
+        meeting.objectWillChange.send()
+    }
+    
+    private func hideAlertIfNeeded() {
+        if unnamedSpeakers.isEmpty {
+            withAnimation {
+                showSpeakerAlert = false
+            }
+        }
+    }
+    
+    private func promptNextUnnamedSpeaker() {
+        if !unnamedSpeakers.isEmpty {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                if let nextUnnamed = unnamedSpeakers.first,
+                   let segment = meeting.transcript.first(where: { 
+                       $0.speakerID == nextUnnamed
+                   }) {
+                    startEditingSpeaker(segment)
+                }
+            }
+        }
+    }
+    
+    private func saveVoiceEmbeddingToPerson(speakerID: String, person: Person) {
+        // Get embeddings from diarization if available
+        #if canImport(FluidAudio)
+        Task { @MainActor in
+            if let diarizationManager = MeetingRecordingEngine.shared.diarizationManager,
+               let lastResult = diarizationManager.lastResult {
+                
+                // Find segments for this speaker
+                let speakerSegments = lastResult.segments.filter { segment in
+                    segment.speakerId == speakerID
+                }
+                
+                if !speakerSegments.isEmpty {
+                    // Collect embeddings if available
+                    var embeddings: [[Float]] = []
+                    for segment in speakerSegments {
+                        // Check if embedding exists and is not empty
+                        if !segment.embedding.isEmpty {
+                            embeddings.append(segment.embedding)
+                        }
+                    }
+                    
+                    if !embeddings.isEmpty {
+                        // Use VoicePrintManager to save embeddings
+                        let voicePrintManager = VoicePrintManager()
+                        voicePrintManager.addEmbeddings(embeddings, for: person)
+                        print("🎤 Saved \(embeddings.count) voice embeddings for \(person.wrappedName)")
+                    } else {
+                        print("⚠️ No embeddings available for speaker \(speakerID)")
+                    }
+                } else {
+                    print("⚠️ No segments found for speaker \(speakerID)")
+                }
+            }
+        }
+        #else
+        print("🎤 Voice embedding saving not available (FluidAudio not imported)")
+        #endif
+    }
+    
+    private func namingModeIcon(_ mode: NamingMode) -> String {
+        switch mode {
+        case .linkedToPerson:
+            return "link.circle.fill"
+        case .transcriptOnly:
+            return "doc.text.fill"
+        case .unnamed:
+            return "questionmark.circle"
+        }
+    }
+    
+    private func namingModeColor(_ mode: NamingMode) -> Color {
+        switch mode {
+        case .linkedToPerson:
+            return .green
+        case .transcriptOnly:
+            return .gray
+        case .unnamed:
+            return .yellow
+        }
     }
     
     private func formatTimestamp(_ seconds: TimeInterval) -> String {
         let minutes = Int(seconds) / 60
         let secs = Int(seconds) % 60
         return String(format: "%d:%02d", minutes, secs)
+    }
+    
+    private func parseSpeakerID(_ idString: String) -> Int {
+        if let id = Int(idString) {
+            return id
+        }
+        if idString.hasPrefix("speaker_") {
+            return Int(idString.replacingOccurrences(of: "speaker_", with: "")) ?? 0
+        }
+        return 0
     }
     
     private func formatFileSize(_ bytes: Int64) -> String {

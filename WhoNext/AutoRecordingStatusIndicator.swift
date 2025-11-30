@@ -95,7 +95,7 @@ struct AutoRecordingStatusIndicator: View {
 }
 
 /// Window to host the floating indicator
-class FloatingStatusWindow: NSWindow {
+class FloatingStatusWindow: NSPanel {
     
     init() {
         super.init(
@@ -113,9 +113,17 @@ class FloatingStatusWindow: NSWindow {
         self.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
         self.titleVisibility = .hidden
         self.titlebarAppearsTransparent = true
+        self.isFloatingPanel = true
         
         // Set content view
-        self.contentView = NSHostingView(rootView: AutoRecordingStatusIndicator())
+        // Wrap NSHostingView in a container to avoid Auto Layout constraint loops
+        let containerView = NSView(frame: NSRect(x: 0, y: 0, width: 120, height: 30))
+        let hostingView = NSHostingView(rootView: AutoRecordingStatusIndicator())
+        hostingView.frame = containerView.bounds
+        hostingView.autoresizingMask = [.width, .height]
+        containerView.addSubview(hostingView)
+        
+        self.contentView = containerView
         
         // Position in top-right corner
         positionWindow()
@@ -143,6 +151,15 @@ class FloatingStatusWindow: NSWindow {
         
         // Store reference to keep window alive
         FloatingStatusWindowController.shared.window = window
+    }
+    
+    // Ensure the panel doesn't become key, allowing it to float without stealing focus
+    override var canBecomeKey: Bool {
+        return false
+    }
+    
+    override var canBecomeMain: Bool {
+        return false
     }
 }
 

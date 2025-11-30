@@ -1,0 +1,80 @@
+{
+  "source": "/Users/bobkitchen/Documents/GitHub/WhoNext/WhoNext/EnhancedMeetingCard.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "Recording",
+        "location": {
+          "startingColumn": 38,
+          "startingLine": 71
+        }
+      },
+      {
+        "comment": "",
+        "key": "Notes:",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 150
+        }
+      },
+      {
+        "comment": "",
+        "key": "No additional details available",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 158
+        }
+      },
+      {
+        "comment": "",
+        "key": "Record",
+        "location": {
+          "startingColumn": 35,
+          "startingLine": 177
+        }
+      },
+      {
+        "comment": "",
+        "key": "Brief",
+        "location": {
+          "startingColumn": 31,
+          "startingLine": 184
+        }
+      },
+      {
+        "comment": "",
+        "key": "View Person",
+        "location": {
+          "startingColumn": 35,
+          "startingLine": 191
+        }
+      },
+      {
+        "comment": "",
+        "key": "Copy Details",
+        "location": {
+          "startingColumn": 23,
+          "startingLine": 228
+        }
+      },
+      {
+        "comment": "",
+        "key": "Export Transcript",
+        "location": {
+          "startingColumn": 27,
+          "startingLine": 233
+        }
+      },
+      {
+        "comment": "",
+        "key": "Delete",
+        "location": {
+          "startingColumn": 23,
+          "startingLine": 240
+        }
+      }
+    ]
+  },
+  "version": 1
+}
