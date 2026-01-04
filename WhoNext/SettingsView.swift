@@ -7,6 +7,7 @@ import Supabase
 struct SettingsView: View {
     @Environment(\.managedObjectContext) private var viewContext
     @ObservedObject private var userProfile = UserProfile.shared
+    @State private var showingVoiceTraining = false
     // Secure API key storage with @State bindings
     @State private var apiKey: String = ""
     @State private var claudeApiKey: String = ""
@@ -14,6 +15,7 @@ struct SettingsView: View {
     @State private var hasLoadedKeys = false
     @AppStorage("openrouterModel") private var openrouterModel: String = "meta-llama/llama-3.1-8b-instruct:free"
     @AppStorage("aiProvider") private var aiProvider: String = "apple"
+    @AppStorage("fallbackProvider") private var fallbackProvider: String = "openrouter"
     @AppStorage("dismissedPeople") private var dismissedPeopleData: Data = Data()
     @AppStorage("customPreMeetingPrompt") private var customPreMeetingPrompt: String = """
 You are an executive assistant preparing a comprehensive pre-meeting intelligence brief. Analyze the conversation history and generate actionable insights to help the user engage confidently and build stronger relationships.
@@ -147,6 +149,12 @@ Best regards
     @State private var showForceUploadOption = false
     @State private var showForceDownloadOption = false
 
+    // API Balance checking
+    @State private var isCheckingBalance = false
+    @State private var openaiBalance: APIBalanceService.Balance?
+    @State private var claudeBalance: APIBalanceService.Balance?
+    @State private var openrouterBalance: APIBalanceService.Balance?
+
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
@@ -244,6 +252,9 @@ Best regards
                     SecureStorage.setAPIKey(newValue, for: .openrouter)
                 }
             }
+        }
+        .sheet(isPresented: $showingVoiceTraining) {
+            VoiceTrainingView()
         }
     }
     
@@ -349,9 +360,127 @@ Best regards
             .padding()
             .background(Color(NSColor.controlBackgroundColor))
             .cornerRadius(8)
-            
+
             Divider()
-            
+
+            // Voice Training Section
+            VStack(alignment: .leading, spacing: 12) {
+                Text("Voice Recognition")
+                    .font(.headline)
+
+                Text("Train the app to recognize your voice for automatic speaker identification in meetings.")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+
+                // Voice Profile Status
+                HStack {
+                    Text("Profile Status:")
+                        .frame(width: 120, alignment: .trailing)
+
+                    if userProfile.hasVoiceProfile {
+                        HStack(spacing: 8) {
+                            Image(systemName: "checkmark.circle.fill")
+                                .foregroundColor(.green)
+                            Text(userProfile.voiceProfileStatus)
+                                .foregroundColor(.secondary)
+                        }
+                    } else {
+                        HStack(spacing: 8) {
+                            Image(systemName: "exclamationmark.circle")
+                                .foregroundColor(.orange)
+                            Text("Not trained")
+                                .foregroundColor(.secondary)
+                        }
+                    }
+                }
+
+                // Training Instructions
+                if !userProfile.hasVoiceProfile || userProfile.voiceConfidence < 0.9 {
+                    HStack {
+                        Spacer()
+                            .frame(width: 120)
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("How to train your voice:")
+                                .font(.caption)
+                                .fontWeight(.semibold)
+                            Text("• Record 3-5 voice samples (at least 5 seconds each)")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                            Text("• Speak naturally as you would in a meeting")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                            Text("• Use different sentences each time for better accuracy")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        }
+                        .frame(maxWidth: 400, alignment: .leading)
+                    }
+                }
+
+                // Voice Sample Collection
+                VStack(alignment: .leading, spacing: 8) {
+                    HStack {
+                        Text("Training Samples:")
+                            .frame(width: 120, alignment: .trailing)
+
+                        VStack(alignment: .leading, spacing: 4) {
+                            if userProfile.voiceSampleCount > 0 {
+                                Text("\(userProfile.voiceSampleCount) sample\(userProfile.voiceSampleCount == 1 ? "" : "s") collected")
+                                    .font(.caption)
+
+                                if let lastUpdate = userProfile.lastVoiceUpdate {
+                                    Text("Last updated: \(lastUpdate.formatted(date: .abbreviated, time: .shortened))")
+                                        .font(.caption2)
+                                        .foregroundColor(.secondary)
+                                }
+                            } else {
+                                Text("No samples yet")
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                            }
+
+                            // Progress bar
+                            if userProfile.voiceSampleCount < 5 {
+                                ProgressView(value: Double(userProfile.voiceSampleCount), total: 5.0)
+                                    .frame(width: 200)
+                                Text("\(max(0, 5 - userProfile.voiceSampleCount)) more sample\(max(0, 5 - userProfile.voiceSampleCount) == 1 ? "" : "s") recommended")
+                                    .font(.caption2)
+                                    .foregroundColor(.secondary)
+                            }
+                        }
+                    }
+                }
+
+                // Action Buttons
+                HStack {
+                    Spacer()
+                        .frame(width: 120)
+
+                    HStack(spacing: 12) {
+                        Button {
+                            showingVoiceTraining = true
+                        } label: {
+                            Label(userProfile.hasVoiceProfile ? "Retrain Voice" : "Train Voice",
+                                  systemImage: "waveform.circle.fill")
+                        }
+                        .buttonStyle(.borderedProminent)
+
+                        if userProfile.hasVoiceProfile {
+                            Button(role: .destructive) {
+                                userProfile.clearVoiceProfile()
+                            } label: {
+                                Label("Clear Voice Profile", systemImage: "trash")
+                            }
+                        }
+                    }
+                }
+            }
+            .padding()
+            .background(Color(NSColor.controlBackgroundColor))
+            .cornerRadius(8)
+
+            Divider()
+
             // Reset App Section
             VStack(alignment: .leading, spacing: 8) {
                 Text("Warning + Danger")
@@ -497,7 +626,166 @@ Best regards
                     }
                 }
             }
-            
+
+            // API Balance/Credits Display
+            if aiProvider != "apple" {
+                VStack(alignment: .leading, spacing: 8) {
+                    HStack {
+                        Text("API Credits / Balance")
+                            .font(.headline)
+
+                        Spacer()
+
+                        Button(action: {
+                            Task {
+                                await checkAPIBalance()
+                            }
+                        }) {
+                            HStack(spacing: 4) {
+                                if isCheckingBalance {
+                                    ProgressView()
+                                        .scaleEffect(0.7)
+                                        .frame(width: 14, height: 14)
+                                } else {
+                                    Image(systemName: "arrow.clockwise")
+                                }
+                                Text(isCheckingBalance ? "Checking..." : "Check Balance")
+                            }
+                        }
+                        .buttonStyle(.link)
+                        .disabled(isCheckingBalance)
+                    }
+
+                    // Display balance for current provider
+                    if aiProvider == "openai", let balance = openaiBalance {
+                        BalanceDisplayRow(balance: balance)
+                    } else if aiProvider == "claude", let balance = claudeBalance {
+                        BalanceDisplayRow(balance: balance)
+                    } else if aiProvider == "openrouter", let balance = openrouterBalance {
+                        BalanceDisplayRow(balance: balance)
+                    } else {
+                        Text("Click 'Check Balance' to view your API credits")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+
+                    // Links to add credits
+                    if aiProvider == "openai" {
+                        Button("Add Credits at platform.openai.com") {
+                            if let url = URL(string: "https://platform.openai.com/account/billing/overview") {
+                                NSWorkspace.shared.open(url)
+                            }
+                        }
+                        .buttonStyle(.link)
+                        .font(.caption)
+                    } else if aiProvider == "claude" {
+                        Button("Add Credits at console.anthropic.com") {
+                            if let url = URL(string: "https://console.anthropic.com/settings/billing") {
+                                NSWorkspace.shared.open(url)
+                            }
+                        }
+                        .buttonStyle(.link)
+                        .font(.caption)
+                    } else if aiProvider == "openrouter" {
+                        Button("Add Credits at openrouter.ai") {
+                            if let url = URL(string: "https://openrouter.ai/credits") {
+                                NSWorkspace.shared.open(url)
+                            }
+                        }
+                        .buttonStyle(.link)
+                        .font(.caption)
+                    }
+                }
+            }
+
+            // Fallback Provider Section (only show when primary is Apple Intelligence)
+            if aiProvider == "apple" {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Fallback AI Provider")
+                        .font(.headline)
+                    Text("When Apple Intelligence refuses sensitive content, automatically use:")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+
+                    Picker("Fallback Provider", selection: $fallbackProvider) {
+                        Text("OpenRouter (Free)").tag("openrouter")
+                        Text("OpenAI").tag("openai")
+                        Text("Claude").tag("claude")
+                    }
+                    .pickerStyle(.menu)
+
+                    // Show warning if fallback provider isn't configured
+                    if fallbackProvider == "openrouter" && openrouterApiKey.isEmpty {
+                        HStack(spacing: 8) {
+                            Image(systemName: "exclamationmark.triangle.fill")
+                                .foregroundColor(.orange)
+                            Text("Configure OpenRouter API key below to enable fallback")
+                                .font(.caption)
+                                .foregroundColor(.orange)
+                        }
+                        .padding(.vertical, 4)
+                    } else if fallbackProvider == "openai" && apiKey.isEmpty {
+                        HStack(spacing: 8) {
+                            Image(systemName: "exclamationmark.triangle.fill")
+                                .foregroundColor(.orange)
+                            Text("Configure OpenAI API key below to enable fallback")
+                                .font(.caption)
+                                .foregroundColor(.orange)
+                        }
+                        .padding(.vertical, 4)
+                    } else if fallbackProvider == "claude" && claudeApiKey.isEmpty {
+                        HStack(spacing: 8) {
+                            Image(systemName: "exclamationmark.triangle.fill")
+                                .foregroundColor(.orange)
+                            Text("Configure Claude API key below to enable fallback")
+                                .font(.caption)
+                                .foregroundColor(.orange)
+                        }
+                        .padding(.vertical, 4)
+                    } else {
+                        HStack(spacing: 8) {
+                            Image(systemName: "checkmark.circle.fill")
+                                .foregroundColor(.green)
+                            Text("Fallback configured - will automatically switch if needed")
+                                .font(.caption)
+                                .foregroundColor(.green)
+                        }
+                        .padding(.vertical, 4)
+                    }
+                }
+
+                // Show API key field for fallback provider if not configured
+                if (fallbackProvider == "openrouter" && openrouterApiKey.isEmpty) ||
+                   (fallbackProvider == "openai" && apiKey.isEmpty) ||
+                   (fallbackProvider == "claude" && claudeApiKey.isEmpty) {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("\(fallbackProvider == "openrouter" ? "OpenRouter" : fallbackProvider == "openai" ? "OpenAI" : "Claude") API Key (for fallback)")
+                            .font(.headline)
+
+                        if fallbackProvider == "openrouter" {
+                            HStack {
+                                SecureField("or-...", text: $openrouterApiKey)
+                                    .textFieldStyle(.roundedBorder)
+                                Button("Get Free Key") {
+                                    if let url = URL(string: "https://openrouter.ai/keys") {
+                                        NSWorkspace.shared.open(url)
+                                    }
+                                }
+                            }
+                            Text("Free tier includes Llama, Gemini Flash, Mistral and more")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        } else if fallbackProvider == "openai" {
+                            SecureField("sk-...", text: $apiKey)
+                                .textFieldStyle(.roundedBorder)
+                        } else {
+                            SecureField("sk-ant-...", text: $claudeApiKey)
+                                .textFieldStyle(.roundedBorder)
+                        }
+                    }
+                }
+            }
+
             Divider()
             
             // Pre-Meeting Prompt Section
@@ -1444,7 +1732,24 @@ Best regards
             }
         }.resume()
     }
-    
+
+    private func checkAPIBalance() async {
+        isCheckingBalance = true
+
+        switch aiProvider {
+        case "openai":
+            openaiBalance = await APIBalanceService.checkOpenAIBalance(apiKey: apiKey)
+        case "claude":
+            claudeBalance = await APIBalanceService.checkClaudeBalance(apiKey: claudeApiKey)
+        case "openrouter":
+            openrouterBalance = await APIBalanceService.checkOpenRouterBalance(apiKey: openrouterApiKey)
+        default:
+            break
+        }
+
+        isCheckingBalance = false
+    }
+
     private func importCSV() {
         let panel = NSOpenPanel()
         panel.allowedContentTypes = [UTType.commaSeparatedText]
@@ -2659,6 +2964,30 @@ struct OrgChartDropZone: View {
                 }
                 return true
             }
+    }
+}
+
+// MARK: - Balance Display Component
+struct BalanceDisplayRow: View {
+    let balance: APIBalanceService.Balance
+
+    var body: some View {
+        HStack(spacing: 8) {
+            Image(systemName: balance.color == "green" ? "checkmark.circle.fill" :
+                             balance.color == "orange" ? "exclamationmark.triangle.fill" :
+                             balance.color == "red" ? "exclamationmark.circle.fill" :
+                             "info.circle")
+                .foregroundColor(balance.color == "green" ? .green :
+                               balance.color == "orange" ? .orange :
+                               balance.color == "red" ? .red : .secondary)
+
+            Text(balance.displayText)
+                .font(.body)
+                .foregroundColor(balance.color == "green" ? .green :
+                               balance.color == "orange" ? .orange :
+                               balance.color == "red" ? .red : .secondary)
+        }
+        .padding(.vertical, 4)
     }
 }
 

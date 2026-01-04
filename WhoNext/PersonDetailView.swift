@@ -152,6 +152,37 @@ struct PersonDetailView: View {
                                 }
                         }
                     }
+
+                    // Voice Recognition Status
+                    if person.voiceSampleCount > 0 {
+                        let confidence = Int(person.voiceConfidence * 100)
+                        let badgeColor: Color = person.voiceConfidence >= 0.8 ? .green : (person.voiceConfidence >= 0.5 ? .orange : .red)
+                        let icon = person.voiceConfidence >= 0.8 ? "waveform.circle.fill" : "waveform.circle"
+
+                        HStack(spacing: 8) {
+                            Image(systemName: icon)
+                                .font(.system(size: 12, weight: .medium))
+                                .foregroundStyle(badgeColor)
+                                .symbolRenderingMode(.hierarchical)
+                            Text("Voice: \(confidence)%")
+                                .font(.system(size: 13, weight: .semibold))
+                                .foregroundStyle(badgeColor)
+                            Text("(\(person.voiceSampleCount) samples)")
+                                .font(.system(size: 11, weight: .medium))
+                                .foregroundStyle(.secondary)
+                        }
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background {
+                            Capsule()
+                                .fill(badgeColor.opacity(0.1))
+                                .overlay {
+                                    Capsule()
+                                        .stroke(badgeColor.opacity(0.2), lineWidth: 0.5)
+                                }
+                        }
+                        .help(person.voiceConfidence >= 0.8 ? "High confidence voice recognition" : "Needs more voice samples for reliable recognition")
+                    }
                 }
             }
             
@@ -650,35 +681,152 @@ struct PersonDetailView: View {
     }
     
     private func searchLinkedIn() {
-        // Open LinkedIn capture window
+        print("🔍 [PersonDetailView] Opening LinkedIn Search Window")
+        print("🔍 [PersonDetailView] Current person: \(person.name ?? "Unknown"), role: \(person.role ?? "none")")
+
+        // Open LinkedIn search window with robust extraction
         let window = NSWindow(
             contentRect: NSRect(x: 0, y: 0, width: 900, height: 700),
             styleMask: [.titled, .closable, .resizable],
             backing: .buffered,
             defer: false
         )
-        window.title = "LinkedIn Profile Capture - \(person.name ?? "Unknown")"
+        window.title = "LinkedIn Profile Search - \(person.name ?? "Unknown")"
         window.center()
         window.isReleasedWhenClosed = false
         window.contentView = NSHostingView(
-            rootView: LinkedInCaptureWindow(
-                person: person,
+            rootView: LinkedInSearchWindow(
+                onDataExtracted: { profileData in
+                    print("✅ [PersonDetailView] LinkedIn data extracted!")
+                    print("   LinkedIn headline: '\(profileData.headline)'")
+                    print("   Current person role: '\(self.person.role ?? "none")'")
+                    print("   Will update role? NO - preserving app data")
+
+                    // Convert structured data to formatted notes
+                    let formattedNotes = self.formatLinkedInData(profileData)
+
+                    // Update person's notes with the formatted profile data
+                    self.person.notes = formattedNotes
+                    self.person.modifiedAt = Date()
+
+                    // Only populate empty fields - never overwrite existing data
+                    // (Your app data is likely more up-to-date than LinkedIn)
+
+                    if !profileData.name.isEmpty && (self.person.name?.isEmpty ?? true) {
+                        self.person.name = profileData.name
+                        print("📝 Updated name: \(profileData.name)")
+                    } else {
+                        print("ℹ️  Skipped name update (already set)")
+                    }
+
+                    if !profileData.location.isEmpty && (self.person.timezone?.isEmpty ?? true) {
+                        self.person.timezone = profileData.location
+                        print("📝 Updated location: \(profileData.location)")
+                    } else {
+                        print("ℹ️  Skipped location update (already set)")
+                    }
+
+                    // Note: Role/headline NOT auto-populated as app data is often more current
+                    // LinkedIn job title is in the notes if you want to manually copy it
+                    print("ℹ️  LinkedIn headline '\(profileData.headline)' saved to notes only (not applied to role field)")
+
+                    // Always download and save profile photo (safe to overwrite)
+                    if !profileData.photo.isEmpty, let photoURL = URL(string: profileData.photo) {
+                        Task {
+                            do {
+                                let (data, _) = try await URLSession.shared.data(from: photoURL)
+                                await MainActor.run {
+                                    self.person.photo = data
+                                    try? self.viewContext.save()
+                                    print("✅ Profile photo saved successfully")
+                                }
+                            } catch {
+                                print("❌ Failed to download profile photo: \(error)")
+                            }
+                        }
+                    }
+
+                    // Save changes
+                    try? self.viewContext.save()
+
+                    // Trigger immediate sync for person updates
+                    RobustSyncManager.shared.triggerSync()
+
+                    print("✅ LinkedIn profile data saved for \(profileData.name)")
+                    if !profileData.headline.isEmpty {
+                        print("ℹ️  LinkedIn job title '\(profileData.headline)' saved in notes (not auto-populated)")
+                    }
+                },
                 onClose: {
                     window.close()
-                },
-                onSave: { summary in
-                    // Update person's notes with the captured summary
-                    self.person.notes = summary
-                    self.person.modifiedAt = Date()
-                    try? self.viewContext.save()
-                    
-                    // Trigger immediate sync for person notes update
-                    RobustSyncManager.shared.triggerSync()
                 }
             )
-            .environment(\.managedObjectContext, viewContext)
         )
         window.makeKeyAndOrderFront(nil)
+    }
+
+    /// Format LinkedIn profile data into readable notes
+    private func formatLinkedInData(_ data: LinkedInProfileData) -> String {
+        var formatted = ""
+
+        // Header
+        if !data.name.isEmpty {
+            formatted += "**\(data.name)**\n"
+        }
+        if !data.headline.isEmpty {
+            formatted += "\(data.headline)\n"
+        }
+        if !data.location.isEmpty {
+            formatted += "📍 \(data.location)\n"
+        }
+        formatted += "\n"
+
+        // About section
+        if !data.about.isEmpty {
+            formatted += "## About\n"
+            formatted += "\(data.about)\n\n"
+        }
+
+        // Experience section
+        if !data.experience.isEmpty {
+            formatted += "## Experience\n"
+            for exp in data.experience {
+                formatted += "• **\(exp.title)**"
+                if !exp.company.isEmpty {
+                    formatted += " at \(exp.company)"
+                }
+                if !exp.duration.isEmpty {
+                    formatted += " — \(exp.duration)"
+                }
+                formatted += "\n"
+            }
+            formatted += "\n"
+        }
+
+        // Education section
+        if !data.education.isEmpty {
+            formatted += "## Education\n"
+            for edu in data.education {
+                formatted += "• \(edu.school)"
+                if !edu.degree.isEmpty {
+                    formatted += " — \(edu.degree)"
+                }
+                if !edu.field.isEmpty {
+                    formatted += " in \(edu.field)"
+                }
+                formatted += "\n"
+            }
+            formatted += "\n"
+        }
+
+        // Skills section
+        if !data.skills.isEmpty {
+            formatted += "## Skills\n"
+            formatted += data.skills.prefix(15).map { "• \($0)" }.joined(separator: "\n")
+            formatted += "\n"
+        }
+
+        return formatted.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 }
 
@@ -1026,33 +1174,37 @@ struct ProfileContentView: View {
     @ViewBuilder
     private func processSection(_ section: String) -> some View {
         let lines = section.components(separatedBy: "\n")
-        
+
         VStack(alignment: .leading, spacing: 6) {
             ForEach(lines, id: \.self) { line in
                 if line.hasPrefix("###") {
-                    // Subheading
-                    Text(line.replacingOccurrences(of: "### ", with: ""))
+                    // Subheading - process inline formatting
+                    let cleanedText = line.replacingOccurrences(of: "### ", with: "")
+                    Text(processInlineFormatting(cleanedText))
                         .font(.system(size: 14, weight: .semibold))
                         .foregroundColor(.primary)
                         .padding(.top, 4)
                 } else if line.hasPrefix("##") {
-                    // Main heading
-                    Text(line.replacingOccurrences(of: "## ", with: ""))
+                    // Main heading - process inline formatting
+                    let cleanedText = line.replacingOccurrences(of: "## ", with: "")
+                    Text(processInlineFormatting(cleanedText))
                         .font(.system(size: 16, weight: .bold))
                         .foregroundColor(.primary)
                         .padding(.top, 8)
-                } else if line.trimmingCharacters(in: .whitespaces).hasPrefix("•") || 
+                } else if line.trimmingCharacters(in: .whitespaces).hasPrefix("•") ||
                          line.trimmingCharacters(in: .whitespaces).hasPrefix("-") {
-                    // Bullet point
+                    // Bullet point - process inline formatting
                     HStack(alignment: .top, spacing: 8) {
                         Text("•")
                             .font(.system(size: 14))
                             .foregroundColor(.secondary)
                             .frame(width: 12)
-                        
-                        Text(line.replacingOccurrences(of: "•", with: "")
+
+                        let bulletText = line.replacingOccurrences(of: "•", with: "")
                                 .replacingOccurrences(of: "-", with: "")
-                                .trimmingCharacters(in: .whitespaces))
+                                .trimmingCharacters(in: .whitespaces)
+
+                        Text(processInlineFormatting(bulletText))
                             .font(.system(size: 14))
                             .foregroundColor(.primary)
                             .fixedSize(horizontal: false, vertical: true)

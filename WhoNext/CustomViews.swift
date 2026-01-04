@@ -40,22 +40,44 @@ struct PersonAvatar: View {
     let initials: String
     let size: CGFloat
     let showOnlineIndicator: Bool
-    
+    let photoData: Data?
+
+    init(initials: String, size: CGFloat, showOnlineIndicator: Bool = false, photoData: Data? = nil) {
+        self.initials = initials
+        self.size = size
+        self.showOnlineIndicator = showOnlineIndicator
+        self.photoData = photoData
+    }
+
     var body: some View {
         ZStack(alignment: .bottomTrailing) {
-            Circle()
-                .fill(LinearGradient(
-                    colors: [.blue, .blue.opacity(0.8)],
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                ))
-                .frame(width: size, height: size)
-                .overlay(
-                    Text(initials)
-                        .foregroundColor(.white)
-                        .font(.system(size: size * 0.4, weight: .medium))
-                )
-            
+            if let photoData = photoData, let nsImage = NSImage(data: photoData) {
+                // Show photo if available
+                Image(nsImage: nsImage)
+                    .resizable()
+                    .aspectRatio(contentMode: .fill)
+                    .frame(width: size, height: size)
+                    .clipShape(Circle())
+                    .overlay(
+                        Circle()
+                            .stroke(Color.primary.opacity(0.1), lineWidth: 1)
+                    )
+            } else {
+                // Fallback to initials
+                Circle()
+                    .fill(LinearGradient(
+                        colors: [.blue, .blue.opacity(0.8)],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    ))
+                    .frame(width: size, height: size)
+                    .overlay(
+                        Text(initials)
+                            .foregroundColor(.white)
+                            .font(.system(size: size * 0.4, weight: .medium))
+                    )
+            }
+
             if showOnlineIndicator {
                 Circle()
                     .fill(Color.green)

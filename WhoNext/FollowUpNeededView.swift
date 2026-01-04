@@ -8,20 +8,23 @@ struct FollowUpNeededView: View {
         predicate: nil,
         animation: .default
     ) private var people: FetchedResults<Person>
-    
+
     // Track dismissed people for current session only
     @State private var dismissedPeopleIDs: Set<UUID> = []
-    
+
+    // Store the selected people to prevent constant reshuffling
+    @State private var selectedPeople: [Person] = []
+
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             SectionHeaderView(
                 icon: "icon_bell",
                 title: "Follow-up Needed",
-                count: !suggestedPeople.isEmpty ? min(suggestedPeople.count, 2) : nil,
+                count: !selectedPeople.isEmpty ? min(selectedPeople.count, 2) : nil,
                 useSystemIcon: false
             )
-            
-            if suggestedPeople.isEmpty {
+
+            if selectedPeople.isEmpty {
                 EmptyStateCard(
                     icon: "checkmark.circle.fill",
                     title: "No follow-ups needed",
@@ -33,8 +36,8 @@ struct FollowUpNeededView: View {
                     GridItem(.flexible(), spacing: 16),
                     GridItem(.flexible(), spacing: 16)
                 ], spacing: 16) {
-                    ForEach(Array(suggestedPeople.prefix(2))) { person in
-                        PersonCardView(
+                    ForEach(selectedPeople.prefix(2)) { person in
+                        PersonCard(
                             person: person,
                             isFollowUp: true,
                             onDismiss: {
@@ -42,6 +45,8 @@ struct FollowUpNeededView: View {
                                 // Do NOT create a conversation or update lastContactDate
                                 if let personID = person.identifier {
                                     dismissedPeopleIDs.insert(personID)
+                                    // Remove from selected people and refresh with new suggestion
+                                    refreshSuggestions()
                                 }
                             }
                         )
@@ -49,30 +54,41 @@ struct FollowUpNeededView: View {
                 }
             }
         }
+        .onAppear {
+            // Initialize selected people only once when view appears
+            if selectedPeople.isEmpty {
+                refreshSuggestions()
+            }
+        }
     }
 }
 
-// MARK: - Computed Properties
+// MARK: - Methods
 extension FollowUpNeededView {
-    private var suggestedPeople: [Person] {
+    /// Refresh suggestions by selecting new people from the eligible pool
+    /// This is only called explicitly when needed, not on every view redraw
+    private func refreshSuggestions() {
         let filtered = people.filter { person in
-            // Exclude people without names, direct reports, and dismissed people
+            // Exclude people without names, direct reports, dismissed people, and current user
             guard person.name != nil,
                   !person.isDirectReport,
+                  !person.isCurrentUser,
                   let personID = person.identifier,
                   !dismissedPeopleIDs.contains(personID) else {
                 return false
             }
             return true
         }
-        // Sort by least recently contacted, then shuffle for randomness among those with the same lastContactDate
+
+        // Sort by least recently contacted
         let sorted = filtered.sorted {
             ($0.lastContactDate ?? .distantPast) < ($1.lastContactDate ?? .distantPast)
         }
-        // Take a larger pool (e.g., top 6 least-recently-contacted), then shuffle and pick 2
+
+        // Take a larger pool (e.g., top 6 least-recently-contacted), then shuffle ONCE and pick 2
+        // This shuffling only happens when this method is called, not on every view redraw
         let pool = Array(sorted.prefix(6)).shuffled()
-        let result = Array(pool.prefix(2))
-        return result
+        selectedPeople = Array(pool.prefix(2))
     }
 }
 

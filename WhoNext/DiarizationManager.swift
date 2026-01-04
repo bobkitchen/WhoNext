@@ -212,7 +212,10 @@ class DiarizationManager: ObservableObject {
             
             // Store speaker database for continuity
             previousSpeakerDatabase = result.speakerDatabase
-            
+
+            // Check if any detected speakers match the current user's voice
+            identifyUserSpeaker(in: adjustedResult)
+
             await MainActor.run {
                 self.lastResult = adjustedResult
                 self.updateCurrentSpeakers(from: adjustedResult)
@@ -305,7 +308,34 @@ class DiarizationManager: ObservableObject {
         let uniqueSpeakers = Set(result.segments.map { $0.speakerId })
         currentSpeakers = Array(uniqueSpeakers).sorted()
     }
-    
+
+    /// Identify if any detected speakers match the current user's voice profile
+    private func identifyUserSpeaker(in result: DiarizationResult) {
+        // Check if user has a trained voice profile
+        guard UserProfile.shared.hasVoiceProfile,
+              UserProfile.shared.voiceEmbedding != nil else {
+            return
+        }
+
+        // Check each speaker's embedding against the user's voice profile
+        for segment in result.segments {
+            let (matches, confidence) = UserProfile.shared.matchesUserVoice(segment.embedding)
+
+            if matches {
+                print("🎤 [DiarizationManager] ✅ IDENTIFIED USER SPEAKING!")
+                print("   Speaker ID: \(segment.speakerId)")
+                print("   Confidence: \(String(format: "%.1f%%", confidence * 100))")
+                print("   Time: \(String(format: "%.1f", segment.startTimeSeconds))s - \(String(format: "%.1f", segment.endTimeSeconds))s")
+
+                // TODO: Mark this segment as belonging to the user
+                // This could be used to:
+                // 1. Automatically exclude user from participant list
+                // 2. Show "You" instead of speaker number in transcript
+                // 3. Filter out user's speaking time from meeting analytics
+            }
+        }
+    }
+
     /// Compare two audio segments to determine if they're the same speaker
     /// Note: This functionality requires implementation once FluidAudio provides speaker comparison
     func compareSpeakers(audio1: [Float], audio2: [Float]) async throws -> Float {
@@ -380,7 +410,70 @@ class DiarizationManager: ObservableObject {
         
         print("🔄 [DiarizationManager] Reset complete")
     }
-    
+
+    /// Process an audio file and return diarization result
+    /// Used for voice training: processes short audio samples to extract voice embeddings
+    /// - Parameter fileURL: URL to the audio file
+    /// - Returns: DiarizationResult containing speaker segments with embeddings
+    func processAudioFile(_ fileURL: URL) async throws -> DiarizationResult {
+        guard isEnabled, isInitialized else {
+            throw DiarizationError.notInitialized
+        }
+
+        print("🎤 [DiarizationManager] Processing audio file: \(fileURL.lastPathComponent)")
+
+        // Load audio file
+        guard let audioFile = try? AVAudioFile(forReading: fileURL) else {
+            throw DiarizationError.processingFailed("Could not read audio file")
+        }
+
+        let format = audioFile.processingFormat
+        let frameCount = AVAudioFrameCount(audioFile.length)
+
+        guard let buffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: frameCount) else {
+            throw DiarizationError.processingFailed("Could not create audio buffer")
+        }
+
+        try audioFile.read(into: buffer)
+
+        // Convert to float array at 16kHz
+        guard let floatSamples = convertBufferToFloatArray(buffer) else {
+            throw DiarizationError.processingFailed("Could not convert audio format")
+        }
+
+        // Process the audio with FluidAudio
+        guard let diarizer = fluidDiarizer else {
+            throw DiarizationError.notInitialized
+        }
+
+        isProcessing = true
+
+        do {
+            // Use the same method as processChunk
+            let result = try diarizer.performCompleteDiarization(floatSamples)
+
+            // Create DiarizationResult with the same structure as processChunk
+            let diarizationResult = DiarizationResult(
+                segments: result.segments,
+                speakerDatabase: result.speakerDatabase,
+                timings: result.timings
+            )
+
+            lastResult = diarizationResult
+            isProcessing = false
+
+            let speakerCount = Set(result.segments.map { $0.speakerId }).count
+            print("✅ [DiarizationManager] File processing complete. Found \(speakerCount) speaker(s)")
+
+            return diarizationResult
+
+        } catch {
+            isProcessing = false
+            lastError = error
+            throw DiarizationError.processingFailed(error.localizedDescription)
+        }
+    }
+
     /// Clean up resources
     deinit {
         // Clean up non-MainActor properties only

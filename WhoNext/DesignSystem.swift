@@ -1,4 +1,5 @@
 import SwiftUI
+import CoreData
 
 // MARK: - Color Palette
 extension Color {
@@ -115,7 +116,9 @@ struct ParticipantAvatarStack: View {
 // MARK: - Enhanced Person Avatar
 struct EnhancedPersonAvatar: View {
     let name: String
-    
+    @Environment(\.managedObjectContext) private var viewContext
+    @State private var photoData: Data?
+
     private var initials: String {
         let names = name.split(separator: " ")
         if names.count >= 2 {
@@ -125,20 +128,42 @@ struct EnhancedPersonAvatar: View {
         }
         return "?"
     }
-    
+
     private var backgroundColor: Color {
         let colors: [Color] = [.primaryBlue, .primaryGreen, .primaryPurple, .orange, .pink]
         let index = abs(name.hashValue) % colors.count
         return colors[index]
     }
-    
+
     var body: some View {
         ZStack {
-            Circle()
-                .fill(backgroundColor)
-            Text(initials.uppercased())
-                .font(.system(size: 10, weight: .semibold))
-                .foregroundColor(.white)
+            if let photoData = photoData, let nsImage = NSImage(data: photoData) {
+                // Show photo if available
+                Image(nsImage: nsImage)
+                    .resizable()
+                    .aspectRatio(contentMode: .fill)
+                    .clipShape(Circle())
+            } else {
+                // Fallback to colored circle with initials
+                Circle()
+                    .fill(backgroundColor)
+                Text(initials.uppercased())
+                    .font(.system(size: 10, weight: .semibold))
+                    .foregroundColor(.white)
+            }
+        }
+        .onAppear {
+            lookupPerson()
+        }
+    }
+
+    private func lookupPerson() {
+        let request: NSFetchRequest<Person> = Person.fetchRequest()
+        request.predicate = NSPredicate(format: "name CONTAINS[cd] %@", name)
+        request.fetchLimit = 1
+
+        if let person = try? viewContext.fetch(request).first {
+            photoData = person.photo
         }
     }
 }
