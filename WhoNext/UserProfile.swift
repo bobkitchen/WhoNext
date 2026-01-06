@@ -1,73 +1,91 @@
 import Foundation
 import Combine
+import CoreData
 
 /// App-wide user profile settings
-/// Stores the current user's name and email to exclude them from attendee lists
-/// and personalize the app experience
+/// Stores the current user's name, email, photo, and voice profile
+/// Syncs across devices via CloudKit through Core Data
 class UserProfile: ObservableObject {
-    
+
     // MARK: - Singleton
     static let shared = UserProfile()
-    
+
+    // MARK: - Core Data Context
+    private var viewContext: NSManagedObjectContext {
+        PersistenceController.shared.container.viewContext
+    }
+
     // MARK: - Published Properties
-    @Published var name: String {
+    @Published var name: String = "" {
         didSet {
-            saveToUserDefaults()
+            guard !isLoading else { return }
+            saveToEntity()
         }
     }
-    
-    @Published var email: String {
+
+    @Published var email: String = "" {
         didSet {
-            saveToUserDefaults()
+            guard !isLoading else { return }
+            saveToEntity()
         }
     }
-    
-    @Published var jobTitle: String {
+
+    @Published var jobTitle: String = "" {
         didSet {
-            saveToUserDefaults()
+            guard !isLoading else { return }
+            saveToEntity()
         }
     }
-    
-    @Published var organization: String {
+
+    @Published var organization: String = "" {
         didSet {
-            saveToUserDefaults()
+            guard !isLoading else { return }
+            saveToEntity()
+        }
+    }
+
+    @Published var photo: Data? = nil {
+        didSet {
+            guard !isLoading else { return }
+            saveToEntity()
         }
     }
 
     // MARK: - Voice Profile
-
-    /// User's voice embedding for speaker identification
-    @Published var voiceEmbedding: [Float]? {
+    @Published var voiceEmbedding: [Float]? = nil {
         didSet {
-            saveVoiceEmbedding()
+            guard !isLoading else { return }
+            saveToEntity()
         }
     }
 
-    /// Confidence level in user's voice profile (0.0 - 1.0)
-    @Published var voiceConfidence: Float {
+    @Published var voiceConfidence: Float = 0.0 {
         didSet {
-            UserDefaults.standard.set(voiceConfidence, forKey: Keys.userVoiceConfidence)
+            guard !isLoading else { return }
+            saveToEntity()
         }
     }
 
-    /// Number of voice samples collected
-    @Published var voiceSampleCount: Int {
+    @Published var voiceSampleCount: Int = 0 {
         didSet {
-            UserDefaults.standard.set(voiceSampleCount, forKey: Keys.userVoiceSampleCount)
+            guard !isLoading else { return }
+            saveToEntity()
         }
     }
 
-    /// Last time voice profile was updated
-    @Published var lastVoiceUpdate: Date? {
+    @Published var lastVoiceUpdate: Date? = nil {
         didSet {
-            if let date = lastVoiceUpdate {
-                UserDefaults.standard.set(date, forKey: Keys.userLastVoiceUpdate)
-            }
+            guard !isLoading else { return }
+            saveToEntity()
         }
     }
 
-    // MARK: - User Defaults Keys
-    private enum Keys {
+    // MARK: - Private State
+    private var isLoading = false
+    private var cancellables = Set<AnyCancellable>()
+
+    // MARK: - User Defaults Keys (for migration)
+    private enum LegacyKeys {
         static let userName = "userProfileName"
         static let userEmail = "userProfileEmail"
         static let userJobTitle = "userProfileJobTitle"
@@ -76,58 +94,178 @@ class UserProfile: ObservableObject {
         static let userVoiceConfidence = "userProfileVoiceConfidence"
         static let userVoiceSampleCount = "userProfileVoiceSampleCount"
         static let userLastVoiceUpdate = "userProfileLastVoiceUpdate"
+        static let migrationComplete = "userProfileMigratedToCoreData_v1"
     }
-    
+
     // MARK: - Initialization
     private init() {
-        // Load from UserDefaults
-        self.name = UserDefaults.standard.string(forKey: Keys.userName) ?? ""
-        self.email = UserDefaults.standard.string(forKey: Keys.userEmail) ?? ""
-        self.jobTitle = UserDefaults.standard.string(forKey: Keys.userJobTitle) ?? ""
-        self.organization = UserDefaults.standard.string(forKey: Keys.userOrganization) ?? ""
+        // Set up notification listener for remote changes
+        setupRemoteChangeListener()
 
-        // Load voice profile
-        self.voiceConfidence = UserDefaults.standard.float(forKey: Keys.userVoiceConfidence)
-        self.voiceSampleCount = UserDefaults.standard.integer(forKey: Keys.userVoiceSampleCount)
-        self.lastVoiceUpdate = UserDefaults.standard.object(forKey: Keys.userLastVoiceUpdate) as? Date
-        self.voiceEmbedding = loadVoiceEmbedding()
+        // Load from Core Data (will also handle migration)
+        loadFromEntity()
+    }
+
+    // MARK: - Remote Change Listening
+
+    private func setupRemoteChangeListener() {
+        NotificationCenter.default.addObserver(
+            forName: .NSPersistentStoreRemoteChange,
+            object: PersistenceController.shared.container.persistentStoreCoordinator,
+            queue: .main
+        ) { [weak self] _ in
+            print("👤 [UserProfile] Remote changes detected - reloading profile")
+            self?.loadFromEntity()
+        }
+    }
+
+    // MARK: - Core Data Operations
+
+    private func loadFromEntity() {
+        isLoading = true
+        defer { isLoading = false }
+
+        // First, check if we need to migrate from UserDefaults
+        migrateFromUserDefaultsIfNeeded()
+
+        // Fetch or create the entity
+        let entity = UserProfileEntity.getOrCreate(in: viewContext)
+
+        // Load values
+        name = entity.name ?? ""
+        email = entity.email ?? ""
+        jobTitle = entity.jobTitle ?? ""
+        organization = entity.organization ?? ""
+        photo = entity.photo
+        voiceEmbedding = entity.voiceEmbeddingArray
+        voiceConfidence = entity.voiceConfidence
+        voiceSampleCount = Int(entity.voiceSampleCount)
+        lastVoiceUpdate = entity.lastVoiceUpdate
+
+        print("👤 [UserProfile] Loaded from Core Data: \(name), \(email)")
 
         // Try to auto-populate from system if empty
         if name.isEmpty {
             autoPopulateFromSystem()
         }
     }
-    
+
+    private func saveToEntity() {
+        viewContext.perform { [self] in
+            let entity = UserProfileEntity.getOrCreate(in: viewContext)
+
+            entity.name = name
+            entity.email = email
+            entity.jobTitle = jobTitle
+            entity.organization = organization
+            entity.photo = photo
+            entity.voiceEmbeddingArray = voiceEmbedding
+            entity.voiceConfidence = voiceConfidence
+            entity.voiceSampleCount = Int32(voiceSampleCount)
+            entity.lastVoiceUpdate = lastVoiceUpdate
+            entity.modifiedAt = Date()
+
+            do {
+                if viewContext.hasChanges {
+                    try viewContext.save()
+                    print("👤 [UserProfile] Saved to Core Data (will sync via CloudKit)")
+                }
+            } catch {
+                print("👤 [UserProfile] Error saving: \(error)")
+            }
+        }
+    }
+
+    // MARK: - Migration from UserDefaults
+
+    private func migrateFromUserDefaultsIfNeeded() {
+        let defaults = UserDefaults.standard
+
+        // Check if already migrated
+        guard !defaults.bool(forKey: LegacyKeys.migrationComplete) else {
+            return
+        }
+
+        print("👤 [UserProfile] Migrating from UserDefaults to Core Data...")
+
+        // Check if there's existing data in UserDefaults
+        let legacyName = defaults.string(forKey: LegacyKeys.userName) ?? ""
+        let legacyEmail = defaults.string(forKey: LegacyKeys.userEmail) ?? ""
+        let legacyJobTitle = defaults.string(forKey: LegacyKeys.userJobTitle) ?? ""
+        let legacyOrganization = defaults.string(forKey: LegacyKeys.userOrganization) ?? ""
+        let legacyVoiceConfidence = defaults.float(forKey: LegacyKeys.userVoiceConfidence)
+        let legacyVoiceSampleCount = defaults.integer(forKey: LegacyKeys.userVoiceSampleCount)
+        let legacyLastVoiceUpdate = defaults.object(forKey: LegacyKeys.userLastVoiceUpdate) as? Date
+        let legacyVoiceEmbedding = loadLegacyVoiceEmbedding()
+
+        // Only migrate if there's data
+        if !legacyName.isEmpty || !legacyEmail.isEmpty || legacyVoiceEmbedding != nil {
+            let entity = UserProfileEntity.getOrCreate(in: viewContext)
+
+            // Only set values if entity doesn't already have them (remote sync may have beaten us)
+            if (entity.name ?? "").isEmpty { entity.name = legacyName }
+            if (entity.email ?? "").isEmpty { entity.email = legacyEmail }
+            if (entity.jobTitle ?? "").isEmpty { entity.jobTitle = legacyJobTitle }
+            if (entity.organization ?? "").isEmpty { entity.organization = legacyOrganization }
+
+            // Voice profile - only migrate if entity doesn't have one
+            if entity.voiceSampleCount == 0 && legacyVoiceEmbedding != nil {
+                entity.voiceEmbeddingArray = legacyVoiceEmbedding
+                entity.voiceConfidence = legacyVoiceConfidence
+                entity.voiceSampleCount = Int32(legacyVoiceSampleCount)
+                entity.lastVoiceUpdate = legacyLastVoiceUpdate
+            }
+
+            entity.modifiedAt = Date()
+
+            do {
+                try viewContext.save()
+                print("👤 [UserProfile] Migration complete!")
+            } catch {
+                print("👤 [UserProfile] Migration error: \(error)")
+            }
+        }
+
+        // Mark migration complete
+        defaults.set(true, forKey: LegacyKeys.migrationComplete)
+    }
+
+    private func loadLegacyVoiceEmbedding() -> [Float]? {
+        guard let data = UserDefaults.standard.data(forKey: LegacyKeys.userVoiceEmbedding) else {
+            return nil
+        }
+        return data.withUnsafeBytes { buffer in
+            Array(buffer.bindMemory(to: Float.self))
+        }
+    }
+
     // MARK: - Public Methods
-    
+
     /// Check if a given attendee string matches the current user
     func isCurrentUser(_ attendee: String) -> Bool {
-        // Check if it's empty
         guard !attendee.isEmpty else { return false }
-        
+
         // Check email match
         if !email.isEmpty && attendee.localizedCaseInsensitiveContains(email) {
             return true
         }
-        
+
         // Check name match
         if !name.isEmpty {
-            // Direct match
             if attendee.localizedCaseInsensitiveCompare(name) == .orderedSame {
                 return true
             }
-            
-            // Check if attendee contains all parts of the user's name
+
             let nameParts = name.split(separator: " ").map { String($0).lowercased() }
             let attendeeLower = attendee.lowercased()
             if nameParts.allSatisfy({ attendeeLower.contains($0) }) {
                 return true
             }
         }
-        
+
         return false
     }
-    
+
     /// Extract name from email for comparison
     func extractName(from email: String) -> String {
         if email.contains("@") {
@@ -136,57 +274,48 @@ class UserProfile: ObservableObject {
                 .replacingOccurrences(of: ".", with: " ")
                 .replacingOccurrences(of: "_", with: " ")
                 .replacingOccurrences(of: "-", with: " ")
-            
+
             return name.split(separator: " ")
                 .map { $0.prefix(1).uppercased() + $0.dropFirst().lowercased() }
                 .joined(separator: " ")
         }
         return email
     }
-    
+
     /// Reset user profile
     func reset() {
+        isLoading = true
         name = ""
         email = ""
         jobTitle = ""
         organization = ""
-        saveToUserDefaults()
+        photo = nil
+        isLoading = false
+        saveToEntity()
     }
-    
+
     // MARK: - Private Methods
-    
-    private func saveToUserDefaults() {
-        UserDefaults.standard.set(name, forKey: Keys.userName)
-        UserDefaults.standard.set(email, forKey: Keys.userEmail)
-        UserDefaults.standard.set(jobTitle, forKey: Keys.userJobTitle)
-        UserDefaults.standard.set(organization, forKey: Keys.userOrganization)
-    }
-    
+
     private func autoPopulateFromSystem() {
-        // Try to get the user's full name from the system
         let fullName = NSFullUserName()
         if !fullName.isEmpty {
+            isLoading = true
             self.name = fullName
-        }
-        
-        // Try to get username and construct email (this is a guess)
-        let username = NSUserName()
-        if !username.isEmpty {
-            // Don't auto-populate email as we can't know the domain
-            // Users should set this manually
+            isLoading = false
+            saveToEntity()
         }
     }
-    
+
     // MARK: - Computed Properties
-    
+
     var displayName: String {
         return name.isEmpty ? "User" : name
     }
-    
+
     var hasProfile: Bool {
         return !name.isEmpty || !email.isEmpty
     }
-    
+
     var profileSummary: String {
         var parts: [String] = []
         if !name.isEmpty { parts.append(name) }
@@ -213,12 +342,15 @@ class UserProfile: ObservableObject {
         }
     }
 
+    var hasPhoto: Bool {
+        return photo != nil
+    }
+
     // MARK: - Voice Profile Management
 
     /// Add a new voice sample and update the user's voice embedding
     func addVoiceSample(_ embedding: [Float]) {
         if let existing = voiceEmbedding {
-            // Weighted average: give more weight to existing profile
             let weight = min(0.2, 1.0 / Float(voiceSampleCount + 1))
             voiceEmbedding = zip(existing, embedding).map { old, new in
                 old * (1 - weight) + new * weight
@@ -229,8 +361,6 @@ class UserProfile: ObservableObject {
 
         voiceSampleCount += 1
         lastVoiceUpdate = Date()
-
-        // Update confidence based on sample count
         updateVoiceConfidence()
     }
 
@@ -240,11 +370,6 @@ class UserProfile: ObservableObject {
         voiceConfidence = 0.0
         voiceSampleCount = 0
         lastVoiceUpdate = nil
-
-        UserDefaults.standard.removeObject(forKey: Keys.userVoiceEmbedding)
-        UserDefaults.standard.removeObject(forKey: Keys.userVoiceConfidence)
-        UserDefaults.standard.removeObject(forKey: Keys.userVoiceSampleCount)
-        UserDefaults.standard.removeObject(forKey: Keys.userLastVoiceUpdate)
     }
 
     /// Match a given embedding against the user's voice profile
@@ -259,32 +384,9 @@ class UserProfile: ObservableObject {
 
     // MARK: - Private Voice Methods
 
-    private func saveVoiceEmbedding() {
-        guard let embedding = voiceEmbedding else {
-            UserDefaults.standard.removeObject(forKey: Keys.userVoiceEmbedding)
-            return
-        }
-
-        let data = embedding.withUnsafeBufferPointer { buffer in
-            Data(buffer: buffer)
-        }
-        UserDefaults.standard.set(data, forKey: Keys.userVoiceEmbedding)
-    }
-
-    private func loadVoiceEmbedding() -> [Float]? {
-        guard let data = UserDefaults.standard.data(forKey: Keys.userVoiceEmbedding) else {
-            return nil
-        }
-
-        return data.withUnsafeBytes { buffer in
-            Array(buffer.bindMemory(to: Float.self))
-        }
-    }
-
     private func updateVoiceConfidence() {
-        // Confidence improves with more samples, plateaus around 10 samples
         let sampleFactor = min(Float(voiceSampleCount) / 10.0, 1.0)
-        voiceConfidence = 0.5 + (sampleFactor * 0.5) // Range: 0.5 - 1.0
+        voiceConfidence = 0.5 + (sampleFactor * 0.5)
     }
 
     private func cosineSimilarity(_ a: [Float], _ b: [Float]) -> Float {
@@ -296,5 +398,10 @@ class UserProfile: ObservableObject {
 
         guard magnitudeA > 0 && magnitudeB > 0 else { return 0.0 }
         return dotProduct / (magnitudeA * magnitudeB)
+    }
+
+    /// Force refresh from Core Data (useful after sync)
+    func refreshFromCoreData() {
+        loadFromEntity()
     }
 }
