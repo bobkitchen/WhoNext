@@ -1,5 +1,6 @@
 import SwiftUI
 import CoreData
+import CloudKit
 import UniformTypeIdentifiers
 import EventKit
 import Supabase
@@ -1153,6 +1154,64 @@ Best regards
     // MARK: - Sync Settings
     private var syncSettingsView: some View {
         VStack(alignment: .leading, spacing: 20) {
+            // iCloud Account Status Section
+            VStack(alignment: .leading, spacing: 12) {
+                Text("iCloud Status")
+                    .font(.headline)
+                Text("CloudKit sync requires an active iCloud account")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+
+                HStack(spacing: 12) {
+                    // Status indicator
+                    HStack(spacing: 8) {
+                        Circle()
+                            .fill(iCloudStatusColor)
+                            .frame(width: 10, height: 10)
+
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(iCloudStatusText)
+                                .font(.subheadline)
+                                .foregroundColor(.primary)
+
+                            if let lastChange = PersistenceController.lastRemoteChangeDate {
+                                Text("Last remote change: \(lastChange, formatter: RelativeDateTimeFormatter())")
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                            } else {
+                                Text("No remote changes since app launch")
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                            }
+                        }
+                    }
+
+                    Spacer()
+
+                    Button("Refresh Status") {
+                        // Re-check iCloud status
+                        checkCloudKitStatus()
+                    }
+                    .buttonStyle(LiquidGlassButtonStyle(variant: .secondary, size: .small))
+                }
+
+                // Helpful tips based on status
+                if PersistenceController.iCloudStatus != .available {
+                    HStack {
+                        Image(systemName: "exclamationmark.triangle.fill")
+                            .foregroundColor(.orange)
+                            .font(.caption)
+                        Text(iCloudTroubleshootingTip)
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                    .padding(.top, 4)
+                }
+            }
+            .padding()
+            .background(Color(NSColor.controlBackgroundColor))
+            .cornerRadius(8)
+
             // Cloud Sync Section
             VStack(alignment: .leading, spacing: 12) {
                 Text("Cloud Sync")
@@ -1415,6 +1474,64 @@ Best regards
             return .red
         case .partial:
             return .orange
+        }
+    }
+
+    // MARK: - iCloud Status Helpers
+
+    private var iCloudStatusColor: Color {
+        switch PersistenceController.iCloudStatus {
+        case .available:
+            return .green
+        case .noAccount:
+            return .red
+        case .restricted, .couldNotDetermine, .temporarilyUnavailable:
+            return .orange
+        @unknown default:
+            return .gray
+        }
+    }
+
+    private var iCloudStatusText: String {
+        switch PersistenceController.iCloudStatus {
+        case .available:
+            return "✅ iCloud Connected"
+        case .noAccount:
+            return "❌ No iCloud Account"
+        case .restricted:
+            return "⚠️ iCloud Restricted"
+        case .couldNotDetermine:
+            return "⚠️ Status Unknown"
+        case .temporarilyUnavailable:
+            return "⚠️ Temporarily Unavailable"
+        @unknown default:
+            return "⚠️ Unknown Status"
+        }
+    }
+
+    private var iCloudTroubleshootingTip: String {
+        switch PersistenceController.iCloudStatus {
+        case .noAccount:
+            return "Sign in to iCloud in System Settings → Apple Account to enable sync"
+        case .restricted:
+            return "iCloud access is restricted. Check parental controls or MDM settings"
+        case .couldNotDetermine:
+            return "Could not determine iCloud status. Try restarting the app"
+        case .temporarilyUnavailable:
+            return "iCloud is temporarily unavailable. Check your internet connection"
+        default:
+            return "Check System Settings → Apple Account for iCloud status"
+        }
+    }
+
+    private func checkCloudKitStatus() {
+        CKContainer.default().accountStatus { status, error in
+            Task { @MainActor in
+                PersistenceController.iCloudStatus = status
+                if let error = error {
+                    print("☁️ [CloudKit] Status check error: \(error.localizedDescription)")
+                }
+            }
         }
     }
 
