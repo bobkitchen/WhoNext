@@ -43,6 +43,7 @@ class RefinedRecordingWindowController: NSWindowController {
         panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
         panel.contentViewController = hostingController
         panel.isFloatingPanel = true
+        panel.hidesOnDeactivate = false  // Stay visible when app is not active
         panel.becomesKeyOnlyIfNeeded = true
         panel.minSize = NSSize(width: 420, height: 540)
         panel.maxSize = NSSize(width: 600, height: 900)

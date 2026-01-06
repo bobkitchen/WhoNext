@@ -515,6 +515,7 @@ class EnhancedFloatingWindow: NSPanel {
         self.titleVisibility = .hidden
         self.titlebarAppearsTransparent = true
         self.isFloatingPanel = true
+        self.hidesOnDeactivate = false  // Stay visible when app is not active
         self.hasShadow = false // SwiftUI handles shadows
         self.animationBehavior = .utilityWindow
 

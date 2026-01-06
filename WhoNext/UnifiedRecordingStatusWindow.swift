@@ -48,6 +48,7 @@ class UnifiedRecordingStatusWindowController: NSWindowController {
         panel.hasShadow = true
         panel.contentViewController = hostingController
         panel.isFloatingPanel = true
+        panel.hidesOnDeactivate = false  // CRITICAL: Stay visible when app is not active
         panel.titlebarAppearsTransparent = true
         panel.titleVisibility = .hidden
         panel.styleMask.insert(.fullSizeContentView)

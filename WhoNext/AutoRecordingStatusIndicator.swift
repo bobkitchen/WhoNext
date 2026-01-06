@@ -114,6 +114,7 @@ class FloatingStatusWindow: NSPanel {
         self.titleVisibility = .hidden
         self.titlebarAppearsTransparent = true
         self.isFloatingPanel = true
+        self.hidesOnDeactivate = false  // Stay visible when app is not active
         
         // Set content view
         // Wrap NSHostingView in a container to avoid Auto Layout constraint loops

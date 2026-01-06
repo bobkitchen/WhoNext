@@ -15,26 +15,30 @@ class LiveMeetingWindowController: NSWindowController {
         let hostingController = NSHostingController(rootView: contentView)
         self.hostingController = hostingController
         
-        // Create the window
-        let window = NSWindow(
+        // Create the window as NSPanel for floating behavior
+        let panel = NSPanel(
             contentRect: NSRect(x: 0, y: 0, width: 380, height: 280),
-            styleMask: [.titled, .closable, .miniaturizable, .resizable, .fullSizeContentView],
+            styleMask: [.titled, .closable, .miniaturizable, .resizable, .fullSizeContentView, .utilityWindow],
             backing: .buffered,
             defer: false
         )
-        
-        window.title = "Live Meeting"
-        window.titlebarAppearsTransparent = true
-        window.isMovableByWindowBackground = true
-        window.backgroundColor = .clear
-        window.hasShadow = true
-        window.level = .floating
-        window.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
-        window.contentViewController = hostingController
+
+        panel.title = "Live Meeting"
+        panel.titlebarAppearsTransparent = true
+        panel.isMovableByWindowBackground = true
+        panel.backgroundColor = .clear
+        panel.hasShadow = true
+        panel.level = .floating
+        panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
+        panel.contentViewController = hostingController
+        panel.isFloatingPanel = true
+        panel.hidesOnDeactivate = false  // Stay visible when app is not active
 
         // CRITICAL: Disable window restoration to prevent bad positioning
-        window.isRestorable = false
-        window.setFrameAutosaveName("")
+        panel.isRestorable = false
+        panel.setFrameAutosaveName("")
+
+        let window = panel
 
         super.init(window: window)
 
