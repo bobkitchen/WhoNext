@@ -69,7 +69,16 @@ struct PersistenceController {
         store.setOption(true as NSNumber, forKey: NSPersistentHistoryTrackingKey)
         store.setOption(true as NSNumber, forKey: NSPersistentStoreRemoteChangeNotificationPostOptionKey)
 
-        // 3. In-memory override for previews
+        // 3. CRITICAL: Set CloudKit container options - THIS IS REQUIRED FOR SYNC
+        if !inMemory {
+            let cloudKitContainerID = "iCloud.com.bobkitchen.WhoNext"
+            store.cloudKitContainerOptions = NSPersistentCloudKitContainerOptions(
+                containerIdentifier: cloudKitContainerID
+            )
+            print("☁️ [CloudKit] Container options set: \(cloudKitContainerID)")
+        }
+
+        // 4. In-memory override for previews
         if inMemory { store.url = URL(fileURLWithPath: "/dev/null") }
 
         // ---------------------------------------------------------------------
