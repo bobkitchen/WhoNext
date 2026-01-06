@@ -1,35 +1,46 @@
 import Cocoa
 import SwiftUI
 
-class NewConversationWindowController: NSWindowController {
+class AddPersonWindowController: NSWindowController {
     private var onSave: (() -> Void)?
     private var onCancel: (() -> Void)?
 
-    convenience init(person: Person? = nil, onSave: (() -> Void)? = nil, onCancel: (() -> Void)? = nil) {
+    convenience init(onSave: (() -> Void)? = nil, onCancel: (() -> Void)? = nil) {
         let context = PersistenceController.shared.container.viewContext
-        let conversationManager = ConversationStateManager(viewContext: context)
+
+        // Create a temporary person for the form
+        let tempPerson = Person(context: context)
+        tempPerson.identifier = UUID()
+        tempPerson.name = ""
+        tempPerson.role = ""
+
         let contentView = NSHostingView(rootView:
-            NewConversationWindowView(
-                preselectedPerson: person, 
-                conversationManager: conversationManager,
+            AddPersonWindowView(
+                person: tempPerson,
+                isNewPerson: true,
                 onSave: {
                     onSave?()
-                }, 
+                },
                 onCancel: {
+                    // Delete the temp person if cancelled
+                    context.delete(tempPerson)
+                    try? context.save()
                     onCancel?()
                 }
             )
             .environment(\.managedObjectContext, context)
         )
-        let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 560, height: 680),
+
+        let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 500, height: 600),
                               styleMask: [.titled, .closable, .resizable, .miniaturizable],
                               backing: .buffered,
                               defer: false)
-        window.title = "New Conversation"
+        window.title = "New Person"
         window.contentView = contentView
         window.center()
         window.isMovableByWindowBackground = true
-        window.setFrameAutosaveName("NewConversationWindow")
+        window.setFrameAutosaveName("AddPersonWindow")
+
         self.init(window: window)
         self.onSave = onSave
         self.onCancel = onCancel

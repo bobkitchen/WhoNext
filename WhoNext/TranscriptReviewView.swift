@@ -18,12 +18,22 @@ struct TranscriptReviewView: View {
     @State private var manualSearchResults: [Person] = []
     @State private var manualParticipants: [ParticipantInfo] = []
     @State private var autoMatchConfirmed: [String: Bool] = [:]
-    
+    @State private var showFullTranscript: Bool = false
+
+    // Meeting date handling
+    @State private var meetingDate: Date = Date()
+    @State private var useCurrentDate: Bool = false
+    @State private var showDateWarning: Bool = false
+
     init(processedTranscript: ProcessedTranscript) {
         self.processedTranscript = processedTranscript
         self._editedTitle = State(initialValue: processedTranscript.suggestedTitle)
         self._editedSummary = State(initialValue: processedTranscript.summary)
         self._selectedParticipants = State(initialValue: Set(processedTranscript.participants))
+
+        // Try to infer meeting date (default to 1 hour ago if imported transcript)
+        let oneHourAgo = Calendar.current.date(byAdding: .hour, value: -1, to: Date()) ?? Date()
+        self._meetingDate = State(initialValue: oneHourAgo)
     }
     
     var body: some View {
@@ -44,12 +54,71 @@ struct TranscriptReviewView: View {
                 VStack(alignment: .leading, spacing: 12) {
                     Text("Meeting Title")
                         .font(.headline)
-                    
+
                     TextField("Enter meeting title", text: $editedTitle)
                         .textFieldStyle(.roundedBorder)
                         .font(.title3)
                 }
-                
+
+                // Meeting Date Section
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("Meeting Date & Time")
+                        .font(.headline)
+
+                    VStack(alignment: .leading, spacing: 8) {
+                        Toggle("Use current date/time", isOn: $useCurrentDate)
+                            .toggleStyle(.switch)
+                            .onChange(of: useCurrentDate) { _, newValue in
+                                if newValue {
+                                    meetingDate = Date()
+                                }
+                            }
+
+                        if !useCurrentDate {
+                            DatePicker(
+                                "When did this meeting occur?",
+                                selection: $meetingDate,
+                                displayedComponents: [.date, .hourAndMinute]
+                            )
+                            .datePickerStyle(.compact)
+                        } else {
+                            HStack {
+                                Image(systemName: "clock")
+                                    .foregroundColor(.secondary)
+                                Text("Will be saved as: \(Date().formatted(date: .abbreviated, time: .shortened))")
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                            }
+                        }
+
+                        // Warning if date is suspicious
+                        if showDateWarning {
+                            HStack(spacing: 8) {
+                                Image(systemName: "exclamationmark.triangle.fill")
+                                    .foregroundColor(.orange)
+                                Text("This date is in the future or very recent. Please verify.")
+                                    .font(.caption)
+                                    .foregroundColor(.orange)
+                            }
+                            .padding(8)
+                            .background(Color.orange.opacity(0.1))
+                            .cornerRadius(8)
+                        }
+
+                        HStack {
+                            Image(systemName: "info.circle")
+                                .foregroundColor(.blue)
+                                .font(.caption)
+                            Text("Accurate dates are important for meeting history and insights.")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        }
+                    }
+                    .padding()
+                    .background(Color(.controlBackgroundColor))
+                    .cornerRadius(12)
+                }
+
                 // Participants Section
                 VStack(alignment: .leading, spacing: 12) {
                     Text("Participants (\(selectedParticipants.count))")
@@ -66,19 +135,28 @@ struct TranscriptReviewView: View {
                         }
                     }
                     
-                    if selectedParticipants.isEmpty {
-                        Text("No participants detected in transcript. You can manually add participants below.")
+                    if selectedParticipants.isEmpty && processedTranscript.participants.isEmpty {
+                        Text("No participants detected in transcript. Add participants manually below.")
                             .font(.caption)
                             .foregroundColor(.secondary)
                             .padding()
                             .background(Color.yellow.opacity(0.1))
                             .cornerRadius(8)
                     }
-                    
+
                     // Manual search and add section
+                    if !processedTranscript.participants.isEmpty {
+                        Divider()
+                            .padding(.vertical, 8)
+                    }
+
                     VStack(alignment: .leading, spacing: 8) {
+                        Text("Add Additional Participants")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+
                         HStack(spacing: 8) {
-                            TextField("Search for a participant...", text: $manualSearchQuery)
+                            TextField("Search your contacts to add more people...", text: $manualSearchQuery)
                                 .textFieldStyle(.roundedBorder)
                                 .onSubmit {
                                     if manualSearchQuery.count > 2 {
@@ -92,7 +170,7 @@ struct TranscriptReviewView: View {
                                         manualSearchResults = []
                                     }
                                 }
-                            
+
                             if !manualSearchResults.isEmpty {
                                 Menu {
                                     ForEach(manualSearchResults.indices, id: \.self) { idx in
@@ -100,11 +178,19 @@ struct TranscriptReviewView: View {
                                             let person = manualSearchResults[idx]
                                             addManualParticipant(for: person)
                                         }) {
-                                            Text(manualSearchResults[idx].name ?? "Unknown")
+                                            HStack {
+                                                Text(manualSearchResults[idx].name ?? "Unknown")
+                                                if let role = manualSearchResults[idx].role, !role.isEmpty {
+                                                    Text("·")
+                                                        .foregroundColor(.secondary)
+                                                    Text(role)
+                                                        .foregroundColor(.secondary)
+                                                }
+                                            }
                                         }
                                     }
                                 } label: {
-                                    Text("Add (\(manualSearchResults.count))")
+                                    Text("Add Person (\(manualSearchResults.count))")
                                         .font(.caption)
                                 }
                                 .menuStyle(.borderlessButton)
@@ -332,7 +418,67 @@ struct TranscriptReviewView: View {
                         .cornerRadius(12)
                     }
                 }
-                
+
+                // Full Transcript Section (Collapsible)
+                VStack(alignment: .leading, spacing: 12) {
+                    Button(action: {
+                        withAnimation {
+                            showFullTranscript.toggle()
+                        }
+                    }) {
+                        HStack {
+                            Text("Full Transcript")
+                                .font(.headline)
+
+                            Spacer()
+
+                            Image(systemName: showFullTranscript ? "chevron.up.circle.fill" : "chevron.down.circle.fill")
+                                .foregroundColor(.blue)
+                                .font(.title3)
+                        }
+                    }
+                    .buttonStyle(.plain)
+                    .padding()
+                    .background(Color(.controlBackgroundColor))
+                    .cornerRadius(12)
+
+                    if showFullTranscript {
+                        VStack(alignment: .leading, spacing: 8) {
+                            HStack {
+                                Image(systemName: "doc.text")
+                                    .foregroundColor(.secondary)
+                                Text("Complete conversation record")
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                                Spacer()
+                                Text("\(processedTranscript.originalTranscript.rawText.count) characters")
+                                    .font(.caption2)
+                                    .foregroundColor(.secondary)
+                            }
+                            .padding(.horizontal)
+                            .padding(.top, 8)
+
+                            Divider()
+
+                            ScrollView {
+                                Text(processedTranscript.originalTranscript.rawText)
+                                    .font(.system(size: 13, design: .monospaced))
+                                    .foregroundColor(.primary)
+                                    .textSelection(.enabled)
+                                    .padding()
+                            }
+                            .frame(maxHeight: 400)
+                            .background(Color(.textBackgroundColor))
+                            .cornerRadius(8)
+                            .padding(.horizontal)
+                            .padding(.bottom)
+                        }
+                        .background(Color(.controlBackgroundColor))
+                        .cornerRadius(12)
+                        .transition(.opacity.combined(with: .move(edge: .top)))
+                    }
+                }
+
                 Spacer(minLength: 100)
             }
             .padding(24)
@@ -381,19 +527,40 @@ struct TranscriptReviewView: View {
         let context = viewContext.persistentStoreCoordinator != nil ? viewContext : PersistenceController.shared.container.viewContext
         print("🔧 Using context: \(context)")
         print("🔧 Context has coordinator: \(context.persistentStoreCoordinator != nil)")
-        
+
         let conversation = Conversation(context: context)
         conversation.uuid = UUID()
-        conversation.date = Date()
+
+        // ✅ FIX: Use the user-selected date, not current time
+        let selectedDate = useCurrentDate ? Date() : meetingDate
+        conversation.date = selectedDate
+
         // Store the title in the summary field (this is what shows in conversation lists)
         conversation.summary = editedTitle
         // Store the detailed meeting content in the notes field
         conversation.notes = editedSummary
         conversation.duration = 30 // Default duration
-        
+
+        // Add audit metadata to track when record was created
+        conversation.createdAt = Date()
+
+        // Validate and log date integrity
+        let now = Date()
+        let hoursDifference = selectedDate.timeIntervalSince(now) / 3600
+        let isInFuture = selectedDate > now
+        let isVeryRecent = abs(hoursDifference) < 0.5 // Within 30 minutes
+
+        if isInFuture {
+            print("⚠️ WARNING: Meeting date is in the FUTURE (\(selectedDate.formatted()))")
+        } else if isVeryRecent && !useCurrentDate {
+            print("⚠️ NOTICE: Meeting date is very recent but user opted not to use current time")
+        }
+
         print("🔧 Created conversation with:")
         print("🔧   UUID: \(conversation.uuid?.uuidString ?? "nil")")
-        print("🔧   Date: \(conversation.date?.description ?? "nil")")
+        print("🔧   Meeting Date: \(conversation.date?.description ?? "nil") (selected by user: \(!useCurrentDate))")
+        print("🔧   Created At: \(conversation.createdAt?.description ?? "nil")")
+        print("🔧   Time difference from now: \(String(format: "%.1f", hoursDifference)) hours")
         print("🔧   Summary length: \(conversation.summary?.count ?? 0)")
         print("🔧   Notes length: \(conversation.notes?.count ?? 0)")
         
@@ -427,9 +594,12 @@ struct TranscriptReviewView: View {
         print("🔗 Linking conversation to \(selectedParticipants.count) participants")
         for participant in selectedParticipants {
             print("🔗 Processing participant: \(participant.name)")
-            let person = participantReplacements[participant.name] ?? 
-                          (participant.existingPersonId != nil ? findPersonById(participant.existingPersonId!) : nil) ??
-                          findOrCreatePerson(named: participant.name, context: context)
+            guard let person = participantReplacements[participant.name] ??
+                                (participant.existingPersonId != nil ? findPersonById(participant.existingPersonId!) : nil) ??
+                                findOrCreatePerson(named: participant.name, context: context) else {
+                print("⚠️ Skipping participant (current user): \(participant.name)")
+                continue
+            }
             print("🔗 Found/created person: \(person.name ?? "Unknown") (ID: \(person.objectID))")
             
             // For the primary person relationship (maintaining backward compatibility)
@@ -486,11 +656,18 @@ struct TranscriptReviewView: View {
         }
     }
     
-    private func findOrCreatePerson(named name: String, context: NSManagedObjectContext) -> Person {
+    private func findOrCreatePerson(named name: String, context: NSManagedObjectContext) -> Person? {
         print("👤 Finding or creating person: '\(name)'")
+
+        // Check if this is the current user - should not create Person record for user
+        if UserProfile.shared.isCurrentUser(name) {
+            print("⚠️ Attempted to create Person record for current user '\(name)' - skipping")
+            return nil
+        }
+
         let request = NSFetchRequest<Person>(entityName: "Person")
         request.predicate = NSPredicate(format: "name == %@", name)
-        
+
         do {
             let people = try context.fetch(request)
             if let existingPerson = people.first {
@@ -500,7 +677,7 @@ struct TranscriptReviewView: View {
         } catch {
             print("👤 Error fetching person: \(error)")
         }
-        
+
         // Create new person
         print("👤 Creating new person: '\(name)'")
         let newPerson = Person(context: context)
@@ -579,7 +756,7 @@ struct TranscriptReviewView: View {
         let request = NSFetchRequest<Person>(entityName: "Person")
         request.predicate = NSPredicate(format: "identifier == %@", id as CVarArg)
         request.fetchLimit = 1
-        
+
         do {
             return try context.fetch(request).first
         } catch {
@@ -587,7 +764,32 @@ struct TranscriptReviewView: View {
             return nil
         }
     }
-    
+
+    /// Mark a participant as the current user and update user profile
+    private func markAsCurrentUser(_ participant: ParticipantInfo) {
+        print("🙋 User identified themselves as: \(participant.name)")
+
+        // Update UserProfile with the participant's name if not already set
+        if UserProfile.shared.name.isEmpty {
+            UserProfile.shared.name = participant.name
+            print("✅ Updated UserProfile name to: \(participant.name)")
+        }
+
+        // Remove the participant from selected participants (users don't appear in their own meetings)
+        selectedParticipants.remove(participant)
+
+        // Show notification about voice training
+        print("💡 Voice training from meetings will be available in a future update")
+        print("💡 For now, use Settings > General > Voice Recognition to train your voice")
+
+        // TODO: In the future, if this participant has a voice embedding from diarization,
+        // we could save it to UserProfile.shared.addVoiceSample(embedding)
+        // This would require:
+        // 1. Extending ParticipantInfo to include voiceEmbedding: [Float]?
+        // 2. Having DiarizationManager populate those embeddings
+        // 3. Passing them through the TranscriptProcessor pipeline
+    }
+
     private func participantCard(for participant: ParticipantInfo) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
@@ -651,17 +853,24 @@ struct TranscriptReviewView: View {
             .cornerRadius(8)
             
             // Search field for this participant (only show if no replacement is set and no auto-match confirmed)
-            if participantReplacements[participant.name] == nil && 
+            if participantReplacements[participant.name] == nil &&
                !(participant.existingPersonId != nil && autoMatchConfirmed[participant.name] == true) {
-                TextField("Search for correct person...", text: Binding(
-                    get: { searchQueries[participant.name] ?? "" },
-                    set: { newValue in
-                        searchQueries[participant.name] = newValue
-                        searchPeople(for: participant.name, query: newValue)
-                    }
-                ))
-                .textFieldStyle(RoundedBorderTextFieldStyle())
-                .padding(.horizontal)
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Link to existing contact:")
+                        .font(.caption2)
+                        .foregroundColor(.secondary)
+                        .padding(.horizontal)
+
+                    TextField("Search your contacts to link this participant...", text: Binding(
+                        get: { searchQueries[participant.name] ?? "" },
+                        set: { newValue in
+                            searchQueries[participant.name] = newValue
+                            searchPeople(for: participant.name, query: newValue)
+                        }
+                    ))
+                    .textFieldStyle(RoundedBorderTextFieldStyle())
+                    .padding(.horizontal)
+                }
                 
                 // Search results
                 if let results = searchResults[participant.name], !results.isEmpty {
@@ -691,7 +900,36 @@ struct TranscriptReviewView: View {
                     .padding(.horizontal)
                 }
             }
-            
+
+            // "This is me" button - for user self-identification and voice training
+            if !UserProfile.shared.isCurrentUser(participant.name) {
+                HStack(spacing: 8) {
+                    Button {
+                        markAsCurrentUser(participant)
+                    } label: {
+                        HStack(spacing: 6) {
+                            Image(systemName: "person.circle.fill")
+                            Text("This is me")
+                        }
+                    }
+                    .buttonStyle(LiquidGlassButtonStyle(variant: .tertiary, size: .small))
+                    .help("Identify yourself and optionally train voice recognition")
+                }
+                .padding(.horizontal)
+                .padding(.top, 4)
+            } else {
+                // Show that this is the current user
+                HStack(spacing: 8) {
+                    Image(systemName: "checkmark.seal.fill")
+                        .foregroundColor(.blue)
+                    Text("This is you")
+                        .font(.caption)
+                        .foregroundColor(.blue)
+                }
+                .padding(.horizontal)
+                .padding(.top, 4)
+            }
+
             // Auto-match confirmation buttons (only show if auto-matched but not confirmed)
             if let existingPersonId = participant.existingPersonId,
                participantReplacements[participant.name] == nil,

@@ -11,7 +11,6 @@ struct EnhancedPeopleView: View {
     @State private var searchText = ""
     @State private var selectedFilters: Set<PersonFilter> = []
     @State private var sortOption: PersonSortOption = .name
-    @State private var showingAddPerson = false
     @State private var showingImport = false
     
     // Fetch request for people
@@ -23,7 +22,10 @@ struct EnhancedPeopleView: View {
     // Computed properties for grouped people
     private var filteredPeople: [Person] {
         var result = Array(allPeople)
-        
+
+        // Exclude current user from People directory
+        result = result.filter { !$0.isCurrentUser }
+
         // Apply search
         if !searchText.isEmpty {
             result = result.filter { person in
@@ -33,15 +35,15 @@ struct EnhancedPeopleView: View {
                 return name.contains(search) || role.contains(search)
             }
         }
-        
+
         // Apply filters
         for filter in selectedFilters {
             result = applyFilter(filter, to: result)
         }
-        
+
         // Apply sorting
         result = sortPeople(result, by: sortOption)
-        
+
         return result
     }
     
@@ -98,26 +100,6 @@ struct EnhancedPeopleView: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .sheet(isPresented: $showingAddPerson) {
-            AddPersonView { name, role, _, isDirectReport, timezone, photo in
-                let newPerson = Person(context: viewContext)
-                newPerson.identifier = UUID()
-                newPerson.name = name
-                newPerson.role = role
-                newPerson.isDirectReport = isDirectReport
-                newPerson.timezone = timezone
-                newPerson.photo = photo
-                
-                do {
-                    try viewContext.save()
-                    RobustSyncManager.shared.triggerSync()
-                    selectedPerson = newPerson
-                    showingAddPerson = false
-                } catch {
-                    print("Failed to create person: \(error)")
-                }
-            }
-        }
     }
     
     // MARK: - Header View
@@ -157,7 +139,17 @@ struct EnhancedPeopleView: View {
                 Spacer()
                 
                 // Add button
-                Button(action: { showingAddPerson = true }) {
+                Button(action: {
+                    let windowController = AddPersonWindowController(
+                        onSave: {
+                            // Person will be saved automatically
+                        },
+                        onCancel: {
+                            // Nothing to do on cancel
+                        }
+                    )
+                    windowController.showWindow()
+                }) {
                     Image(systemName: "plus")
                         .font(.system(size: 12, weight: .medium))
                 }
@@ -322,8 +314,18 @@ struct EnhancedPeopleView: View {
                     }
                     .buttonStyle(.bordered)
                     .controlSize(.large)
-                    
-                    Button(action: { showingAddPerson = true }) {
+
+                    Button(action: {
+                        let windowController = AddPersonWindowController(
+                            onSave: {
+                                // Person will be saved automatically
+                            },
+                            onCancel: {
+                                // Nothing to do on cancel
+                            }
+                        )
+                        windowController.showWindow()
+                    }) {
                         Label("Add Person", systemImage: "plus")
                     }
                     .buttonStyle(.borderedProminent)

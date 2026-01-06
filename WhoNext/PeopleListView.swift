@@ -8,7 +8,12 @@ struct PeopleListView: View {
     @FetchRequest(
         sortDescriptors: [NSSortDescriptor(keyPath: \Person.name, ascending: true)],
         animation: nil
-    ) private var people: FetchedResults<Person>
+    ) private var allPeople: FetchedResults<Person>
+
+    // Filter out current user from People directory
+    private var people: [Person] {
+        allPeople.filter { !$0.isCurrentUser }
+    }
 
     private func openAddPersonWindow() {
         let window = NSWindow(

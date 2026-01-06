@@ -43,19 +43,23 @@ class ChatContextService {
     
     // MARK: - Main Context Generation
     static func generateContext(for message: String, people: [Person], provider: HybridAIProvider = .openAI) -> String {
+        // Filter out the current user from chat suggestions
+        let filteredPeople = people.filter { !$0.isCurrentUser }
+
         let strategy = determineContextStrategy(for: message)
-        
+
         print("🔍 [ChatContext] Strategy: \(strategy) for message: \(String(message.prefix(50)))...")
-        
+        print("🔍 [ChatContext] Filtered out current user, including \(filteredPeople.count) of \(people.count) people")
+
         switch strategy {
         case .minimal:
             return generateMinimalContext()
         case .basic:
-            return generateBasicContext(peopleCount: people.count)
+            return generateBasicContext(peopleCount: filteredPeople.count)
         case .comprehensive:
-            return generateComprehensiveContext(for: message, people: people, provider: provider)
+            return generateComprehensiveContext(for: message, people: filteredPeople, provider: provider)
         case .targeted:
-            return generateTargetedContext(for: message, people: people, provider: provider)
+            return generateTargetedContext(for: message, people: filteredPeople, provider: provider)
         }
     }
     
@@ -194,13 +198,42 @@ class ChatContextService {
     }
     
     // MARK: - Helper Methods
-    
+
+    /// Checks if a person's name (or part of it) is mentioned in the message
+    private static func isPersonMentioned(_ fullName: String?, in message: String) -> Bool {
+        guard let fullName = fullName else { return false }
+
+        let nameLower = fullName.lowercased()
+        let messageLower = message.lowercased()
+
+        // Check full name
+        if messageLower.contains(nameLower) {
+            return true
+        }
+
+        // Check first name only (handles "Ciaran" matching "Ciarán Donnelly")
+        let nameParts = nameLower.components(separatedBy: " ")
+        for part in nameParts where part.count > 2 { // Ignore initials
+            // Handle accented characters by comparing normalized versions
+            let normalizedPart = part.folding(options: .diacriticInsensitive, locale: .current)
+            let normalizedMessage = messageLower.folding(options: .diacriticInsensitive, locale: .current)
+
+            if normalizedMessage.contains(normalizedPart) {
+                return true
+            }
+        }
+
+        return false
+    }
+
     private static func prioritizePeople(_ people: [Person], for message: String, isWorkHistoryQuery: Bool) -> [Person] {
+        let messageLower = message.lowercased()
+
         return people.sorted { person1, person2 in
-            // Prioritize people mentioned by name in the query
-            let name1Mentioned = person1.name?.lowercased().contains(where: { message.lowercased().contains($0.lowercased()) }) ?? false
-            let name2Mentioned = person2.name?.lowercased().contains(where: { message.lowercased().contains($0.lowercased()) }) ?? false
-            
+            // Prioritize people mentioned by name in the query (handles partial names)
+            let name1Mentioned = isPersonMentioned(person1.name, in: messageLower)
+            let name2Mentioned = isPersonMentioned(person2.name, in: messageLower)
+
             if name1Mentioned != name2Mentioned {
                 return name1Mentioned
             }
@@ -239,10 +272,10 @@ class ChatContextService {
     
     private static func findRelevantPeople(for message: String, in people: [Person]) -> [Person] {
         let lowercased = message.lowercased()
-        
+
         return people.filter { person in
-            // Check if person is mentioned by name
-            if let name = person.name, lowercased.contains(name.lowercased()) {
+            // Check if person is mentioned by name (using improved matching)
+            if isPersonMentioned(person.name, in: lowercased) {
                 return true
             }
             
@@ -276,62 +309,103 @@ class ChatContextService {
         let isDirectReport = person.isDirectReport
         let timezone = person.timezone ?? "Unknown"
         let conversations = person.conversations as? Set<Conversation> ?? []
-        
+
+        print("📋 [PersonContext] Building context for: \(name), conversations: \(conversations.count)")
+
         var context = """
-        
+
         PERSON: \(name)
         Role: \(role)
         Direct Report: \(isDirectReport ? "Yes" : "No")
         Timezone: \(timezone)
         """
-        
+
         // Add background notes if available
         if let notes = person.notes, !notes.isEmpty {
             context += "\nBackground: \(notes)"
+            print("  ✅ Added background notes (\(notes.count) chars)")
         }
-        
+
         // Add scheduled conversation info
         if let scheduledDate = person.scheduledConversationDate {
             context += "\nNext Scheduled: \(scheduledDate.formatted())"
         }
-        
+
         context += "\nConversation History: \(conversations.count) total conversations"
-        
+
         // Add conversation details
         if !conversations.isEmpty {
-            let sortedConversations = conversations.sorted { 
+            let sortedConversations = conversations.sorted {
                 ($0.date ?? .distantPast) > ($1.date ?? .distantPast)
             }
-            
+
             let limit = includeFullHistory ? (focused ? 5 : 3) : 2
             let recentConversations = Array(sortedConversations.prefix(limit))
-            
+
             context += "\n\nRecent Conversations:"
-            for conversation in recentConversations {
+            print("  📝 Including \(recentConversations.count) of \(conversations.count) conversations")
+
+            for (index, conversation) in recentConversations.enumerated() {
+                print("    📄 Processing conversation \(index + 1)")
+
+                // Validation flags
+                var dateWarning = ""
+                let now = Date()
+
+                // Always include conversation, even if no date
                 if let date = conversation.date {
-                    let daysSince = Calendar.current.dateComponents([.day], from: date, to: Date()).day ?? 0
+                    let daysSince = Calendar.current.dateComponents([.day], from: date, to: now).day ?? 0
+
+                    // Check for suspicious dates
+                    if date > now {
+                        let daysFuture = Calendar.current.dateComponents([.day], from: now, to: date).day ?? 0
+                        dateWarning = " [⚠️ FUTURE DATE - \(daysFuture) days ahead - POSSIBLE DATA ERROR]"
+                        print("      ❌ WARNING: Conversation dated in future!")
+                    } else if daysSince == 0, let notes = conversation.notes, notes.count > 1000 {
+                        dateWarning = " [⚠️ DATED TODAY - extensive notes suggest may be misdated]"
+                        print("      ⚠️ WARNING: Extensive notes but dated today")
+                    }
+
+                    // Check for date/created mismatch
+                    if let createdDate = conversation.createdAt {
+                        let daysDiff = abs(Calendar.current.dateComponents([.day], from: date, to: createdDate).day ?? 0)
+                        if daysDiff > 7 {
+                            dateWarning += " [Created \(daysDiff) days after meeting date - verify accuracy]"
+                            print("      ⚠️ WARNING: \(daysDiff) day gap between meeting and creation")
+                        }
+                    }
+
                     let timeContext = daysSince == 0 ? "Today" : daysSince == 1 ? "Yesterday" : "\(daysSince) days ago"
-                    
-                    context += "\n- \(date.formatted(date: .abbreviated, time: .omitted)) (\(timeContext))"
-                    
-                    if let summary = conversation.summary, !summary.isEmpty {
-                        context += "\n  Summary: \(summary)"
-                    }
-                    
-                    if let notes = conversation.notes, !notes.isEmpty {
-                        context += "\n  Notes: \(notes)"
-                    }
-                    
-                    // Add engagement metrics if available
-                    if !(conversation.sentimentLabel?.isEmpty ?? true) {
-                        context += "\n  Sentiment: \(conversation.sentimentLabel ?? "Unknown")"
-                    }
+                    context += "\n- \(date.formatted(date: .abbreviated, time: .omitted)) (\(timeContext))\(dateWarning)"
+                    print("      Date: \(date)")
+                } else {
+                    context += "\n- [No date recorded - INCOMPLETE DATA]"
+                    print("      ⚠️ No date on this conversation")
+                }
+
+                if let summary = conversation.summary, !summary.isEmpty {
+                    context += "\n  Summary: \(summary)"
+                    print("      ✅ Added summary (\(summary.count) chars)")
+                }
+
+                if let notes = conversation.notes, !notes.isEmpty {
+                    context += "\n  Notes: \(notes)"
+                    print("      ✅ Added notes (\(notes.count) chars)")
+                } else {
+                    print("      ⚠️ No notes for this conversation")
+                }
+
+                // Add engagement metrics if available
+                if !(conversation.sentimentLabel?.isEmpty ?? true) {
+                    context += "\n  Sentiment: \(conversation.sentimentLabel ?? "Unknown")"
                 }
             }
+        } else {
+            print("  ⚠️ No conversations found for \(name)")
         }
-        
+
         context += "\n" + String(repeating: "-", count: 40)
-        
+
         return context
     }
     

@@ -588,35 +588,28 @@ class RobustSyncManager: ObservableObject {
     
     // MARK: - Public API
     func performSync() async -> SyncResult {
-        // Prevent concurrent syncs
-        guard !isSyncing else {
-            return .failure(.concurrentModification)
-        }
-        
-        // Start sync task
-        return await withTaskCancellation { [self] in
-            self.isSyncing = true
-            self.syncStatus = "Initializing sync..."
-            self.syncProgress = 0.0
-            
-            let result = await self.performSyncInternal()
-            
-            self.isSyncing = false
-            self.syncProgress = 1.0
-            self.lastSyncResult = result
-            
-            switch result {
-            case .success:
-                self.lastSuccessfulSync = Date()
-                self.syncStatus = "Sync completed successfully"
-            case .failure(let error):
-                self.syncStatus = "Sync failed: \(error.errorDescription ?? "Unknown error")"
-            case .partial(let stats, let errors):
-                self.syncStatus = "Sync partially completed (\(stats.totalOperations) operations, \(errors.count) errors)"
-            }
-            
-            return result
-        }
+        // DISABLED: Now using CloudKit for automatic sync instead of Supabase
+        // CloudKit sync happens automatically via NSPersistentCloudKitContainer
+        print("☁️ CloudKit: Sync request ignored - using automatic CloudKit sync")
+
+        // Return success to avoid breaking calling code
+        let stats = SyncStats(
+            peopleInserted: 0,
+            peopleUpdated: 0,
+            peopleDeleted: 0,
+            conversationsInserted: 0,
+            conversationsUpdated: 0,
+            conversationsDeleted: 0,
+            startTime: Date(),
+            endTime: Date(),
+            networkLatency: 0,
+            databaseSaveTime: 0,
+            conflictsDetected: 0,
+            conflictsResolved: 0,
+            bytesTransferred: 0,
+            retryAttempts: 0
+        )
+        return .success(stats)
     }
     
     func resetSyncState() {
@@ -1371,16 +1364,9 @@ class RobustSyncManager: ObservableObject {
     
     // MARK: - Utility Methods
     private func validateConnectivity() async throws {
-        try await withExponentialBackoff(
-            operation: {
-                let _ = try await self.supabase
-                    .from("people")
-                    .select("id")
-                    .limit(1)
-                    .execute()
-            },
-            shouldRetry: shouldRetryError
-        )
+        // DISABLED: Now using CloudKit, no need to validate Supabase connectivity
+        // CloudKit connectivity is handled automatically by NSPersistentCloudKitContainer
+        return
     }
     
     private func validateRelationships(context: NSManagedObjectContext) async throws -> [SyncError] {
@@ -1639,9 +1625,10 @@ class RobustSyncManager: ObservableObject {
     
     // Public trigger sync method for compatibility
     func triggerSync() {
-        Task {
-            await performSync()
-        }
+        // DISABLED: Now using CloudKit for automatic sync instead of Supabase
+        // CloudKit sync happens automatically via NSPersistentCloudKitContainer
+        print("☁️ CloudKit: Sync trigger ignored - using automatic CloudKit sync")
+        // Do nothing - CloudKit handles sync automatically
     }
     
     // Manual cleanup method for orphaned conversations

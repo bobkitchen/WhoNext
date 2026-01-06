@@ -18,7 +18,6 @@ struct ContentView: View {
     @State private var columnVisibility: NavigationSplitViewVisibility = .all
     @State private var selectedItem: NavigationItem = .home
     @State private var people: [Person] = []
-    @State private var showingAddPerson = false
 
     enum NavigationItem: Hashable {
         case home
@@ -62,8 +61,8 @@ struct ContentView: View {
                         isLoading: appStateManager.isLoadingPeople,
                         text: "Loading people..."
                     )
-                } else if appStateManager.selectedTab == .analytics {
-                    AnalyticsView()
+                } else if appStateManager.selectedTab == .insights {
+                    InsightsView()
                         .environmentObject(appStateManager)
                 }
             }
@@ -91,40 +90,20 @@ struct ContentView: View {
                 CenterNavigationView(appState: appStateManager)
             }
             
-            // Far right: Empty for now (search is in People tab)
+            // Far right: Monitoring window toggle
             ToolbarItem(placement: .automatic) {
-                EmptyView()
+                Button(action: {
+                    UnifiedRecordingStatusWindowManager.shared.toggle()
+                }) {
+                    Image(systemName: UnifiedRecordingStatusWindowManager.shared.isVisible ? "waveform.circle.fill" : "waveform.circle")
+                        .font(.system(size: 18))
+                        .foregroundColor(MeetingRecordingEngine.shared.isRecording ? .red : .green)
+                        .help(UnifiedRecordingStatusWindowManager.shared.isVisible ? "Hide Recording Monitor" : "Show Recording Monitor")
+                }
+                .buttonStyle(.borderless)
             }
         }
         .errorAlert(appStateManager.errorManager)
-        .sheet(isPresented: $showingAddPerson) {
-            AddPersonView { name, role, _, isDirectReport, timezone, photo in
-                // Create person using legacy approach for now
-                let newPerson = Person(context: viewContext)
-                newPerson.identifier = UUID()
-                newPerson.name = name
-                newPerson.role = role
-                newPerson.isDirectReport = isDirectReport
-                newPerson.timezone = timezone
-                newPerson.photo = photo
-                
-                do {
-                    try viewContext.save()
-                    
-                    // Trigger immediate sync for new person
-                    RobustSyncManager.shared.triggerSync()
-                    
-                    fetchPeople()
-                    showingAddPerson = false
-                    
-                    // Use AppStateManager for selection
-                    appStateManager.selectPerson(newPerson)
-                } catch {
-                    // Use AppStateManager error handling
-                    appStateManager.errorManager.handle(error, context: "Failed to create person")
-                }
-            }
-        }
     }
     
     private func fetchPeople() {

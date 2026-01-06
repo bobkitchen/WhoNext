@@ -254,58 +254,86 @@ struct NewConversationWindowView: View {
                 // Person selection
                 VStack(alignment: .leading, spacing: 8) {
                     Label("Person", systemImage: "person.fill")
-                        .font(.headline)
-                        .foregroundColor(.primary)
-                    
+                        .font(.subheadline)
+                        .fontWeight(.medium)
+                        .foregroundColor(.secondary)
+
                     toFieldSection
                 }
-                
+
                 // Date selection
                 VStack(alignment: .leading, spacing: 8) {
                     Label("Date", systemImage: "calendar")
-                        .font(.headline)
-                        .foregroundColor(.primary)
-                    
+                        .font(.subheadline)
+                        .fontWeight(.medium)
+                        .foregroundColor(.secondary)
+
                     DatePicker("", selection: $date, displayedComponents: .date)
                         .datePickerStyle(.compact)
                         .labelsHidden()
                 }
                 
                 // Duration selection
-                VStack(alignment: .leading, spacing: 8) {
+                VStack(alignment: .leading, spacing: 12) {
                     Label("Duration", systemImage: "clock")
-                        .font(.headline)
-                        .foregroundColor(.primary)
-                    
-                    HStack(spacing: 12) {
-                        Picker("Duration", selection: $duration) {
-                            ForEach([15, 30, 45, 60, 90, 120], id: \.self) { minutes in
-                                Text("\(minutes) min").tag(minutes)
+                        .font(.subheadline)
+                        .fontWeight(.medium)
+                        .foregroundColor(.secondary)
+
+                    // Grid layout for duration buttons
+                    LazyVGrid(columns: [
+                        GridItem(.flexible()),
+                        GridItem(.flexible()),
+                        GridItem(.flexible())
+                    ], spacing: 8) {
+                        ForEach([15, 30, 45, 60, 90, 120], id: \.self) { minutes in
+                            Button(action: {
+                                duration = minutes
+                            }) {
+                                Text("\(minutes) min")
+                                    .font(.system(size: 13, weight: .medium))
+                                    .frame(maxWidth: .infinity)
+                                    .padding(.vertical, 8)
+                                    .background(
+                                        RoundedRectangle(cornerRadius: 6)
+                                            .fill(duration == minutes ? Color.accentColor : Color(NSColor.controlBackgroundColor))
+                                    )
+                                    .foregroundColor(duration == minutes ? .white : .primary)
                             }
+                            .buttonStyle(.plain)
                         }
-                        .pickerStyle(.segmented)
-                        .frame(maxWidth: 300)
-                        
-                        Spacer()
                     }
                 }
                 
                 // Notes section
                 VStack(alignment: .leading, spacing: 8) {
                     Label("Notes", systemImage: "note.text")
-                        .font(.headline)
-                        .foregroundColor(.primary)
-                    
-                    TextEditor(text: $notes)
-                        .font(.system(size: 13))
-                        .frame(height: 180)
-                        .padding(12)
-                        .background(Color(NSColor.textBackgroundColor))
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 8)
-                                .stroke(Color.secondary.opacity(0.2), lineWidth: 1)
-                        )
-                        .cornerRadius(8)
+                        .font(.subheadline)
+                        .fontWeight(.medium)
+                        .foregroundColor(.secondary)
+
+                    ZStack(alignment: .topLeading) {
+                        // Placeholder text
+                        if notes.isEmpty {
+                            Text("Key discussion points, action items, decisions made...")
+                                .font(.system(size: 13))
+                                .foregroundColor(.secondary.opacity(0.5))
+                                .padding(.horizontal, 16)
+                                .padding(.vertical, 20)
+                        }
+
+                        TextEditor(text: $notes)
+                            .font(.system(size: 13))
+                            .frame(height: 180)
+                            .padding(12)
+                            .background(Color(NSColor.textBackgroundColor))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 8)
+                                    .stroke(Color.secondary.opacity(0.2), lineWidth: 1)
+                            )
+                            .cornerRadius(8)
+                            .scrollContentBackground(.hidden)
+                    }
                 }
                 
                 Spacer()
@@ -335,7 +363,7 @@ struct NewConversationWindowView: View {
             .padding(.vertical, 20)
             .background(Color(NSColor.controlBackgroundColor))
         }
-        .frame(minWidth: 480, minHeight: 520)
+        .frame(minWidth: 560, minHeight: 680)
         .background(Color(NSColor.windowBackgroundColor))
         .onAppear {
             if let preselected = preselectedPerson, selectedPerson == nil {

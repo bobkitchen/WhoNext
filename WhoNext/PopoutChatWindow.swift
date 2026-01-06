@@ -246,16 +246,86 @@ struct PopoutChatView: View {
     }
     
     private func generateContext(for message: String) -> String {
+        // Add explicit instructions at the start with temporal clarity
+        var context = """
+        CRITICAL INSTRUCTIONS FOR AI ASSISTANT:
+
+        You have access to TWO types of information:
+        1. PAST CONVERSATION DATA (historical records from CoreData)
+        2. FUTURE SCHEDULED MEETINGS (upcoming events from calendar)
+
+        IMPORTANT RULES:
+        - CLEARLY DISTINGUISH between past events and future events
+        - NEVER invent or hallucinate dates, times, or locations not explicitly provided
+        - NEVER mix past conversation data with future meeting metadata
+        - If asked about "last meeting" or "previous meeting" → use ONLY past conversation data
+        - If asked about "next meeting" or "upcoming meeting" → use ONLY future calendar data
+        - If data looks suspicious or contradictory (e.g., meeting dated today with old content), MENTION this uncertainty
+        - Use specific details from conversation notes and summaries, not generic responses
+        - Quote or paraphrase actual meeting content when available
+
+        """
+
+        // === PAST CONVERSATIONS (Historical Data) ===
+        context += "\n" + String(repeating: "=", count: 80)
+        context += "\n=== HISTORICAL CONVERSATION DATA (PAST MEETINGS) ===\n"
+        context += String(repeating: "=", count: 80) + "\n"
+
         // Use the same centralized context service as main chat
         let hybridAI = HybridAIService()
-        let context = ChatContextService.generateContext(
-            for: message, 
-            people: people, 
+        let historicalContext = ChatContextService.generateContext(
+            for: message,
+            people: people,
             provider: hybridAI.preferredProvider
         )
-        
+        context += historicalContext
+
+        // === DATA QUALITY WARNINGS ===
+        let validationWarnings = validateContextIntegrity(people)
+        if !validationWarnings.isEmpty {
+            context += "\n\n" + String(repeating: "=", count: 80)
+            context += "\n=== DATA QUALITY NOTES ===\n"
+            context += String(repeating: "=", count: 80) + "\n"
+            context += validationWarnings
+        }
+
         // Optimize context for the current provider
         return ChatContextService.optimizeContextForProvider(context, provider: hybridAI.preferredProvider)
+    }
+
+    // Validate data integrity and flag suspicious dates
+    private func validateContextIntegrity(_ people: [Person]) -> String {
+        var warnings = ""
+        let now = Date()
+        let calendar = Calendar.current
+
+        for person in people {
+            if let conversations = person.conversations as? Set<Conversation> {
+                for conv in conversations {
+                    // Check for future dates
+                    if let date = conv.date, date > now {
+                        let daysFuture = calendar.dateComponents([.day], from: now, to: date).day ?? 0
+                        warnings += "⚠️ SUSPICIOUS: Conversation with \(person.name ?? "Unknown") is dated \(daysFuture) days in the FUTURE (\(date.formatted())) - likely a data error\n"
+                    }
+
+                    // Check for today's date with extensive content
+                    if let date = conv.date, calendar.isDateInToday(date),
+                       let notes = conv.notes, notes.count > 1000 {
+                        warnings += "⚠️ VERIFY: Conversation with \(person.name ?? "Unknown") is dated today but has extensive notes (\(notes.count) chars) - may be misdated\n"
+                    }
+
+                    // Check for major discrepancy between created date and meeting date
+                    if let meetingDate = conv.date, let createdDate = conv.createdAt {
+                        let daysDiff = abs(calendar.dateComponents([.day], from: meetingDate, to: createdDate).day ?? 0)
+                        if daysDiff > 7 {
+                            warnings += "⚠️ DATE MISMATCH: Conversation with \(person.name ?? "Unknown") dated \(meetingDate.formatted()) but created \(createdDate.formatted()) - \(daysDiff) day difference\n"
+                        }
+                    }
+                }
+            }
+        }
+
+        return warnings
     }
     
     private func fetchPeople() {

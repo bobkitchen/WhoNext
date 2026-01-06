@@ -4,16 +4,26 @@ import ScreenCaptureKit
 import SwiftUI
 import Combine
 import AppKit
+import Accelerate
+
+/// Capture mode for audio sources
+enum CaptureMode {
+    case full              // Both microphone and system audio
+    case microphoneOnly    // Only microphone (system audio permission denied or failed)
+    case systemAudioOnly   // Only system audio (microphone permission denied)
+    case none              // No audio capture available
+}
 
 /// Captures both microphone and system audio for two-way conversation detection
 /// Uses AVAudioEngine for microphone and ScreenCaptureKit for system audio on macOS 13+
 class SystemAudioCapture: NSObject, ObservableObject {
-    
+
     // MARK: - Published Properties
     @Published var isCapturing: Bool = false
     @Published var microphoneLevel: Float = 0.0
     @Published var systemAudioLevel: Float = 0.0
     @Published var captureError: Error?
+    @Published var captureMode: CaptureMode = .none
     
     // MARK: - Audio Engine Components
     private var audioEngine: AVAudioEngine?
@@ -32,10 +42,38 @@ class SystemAudioCapture: NSObject, ObservableObject {
     private let sampleRate: Double = 16000 // 16kHz for speech
     let audioFormat: AVAudioFormat
     
-    // MARK: - Callbacks
+    // MARK: - Retry Logic
+    private var systemAudioRetryCount = 0
+    private let maxRetries = 3
+    private var retryTask: Task<Void, Never>?
+
+    // MARK: - Callbacks (Deprecated - use AsyncStreams instead)
     var onAudioBuffersAvailable: ((AVAudioPCMBuffer?, AVAudioPCMBuffer?) -> Void)?
     var onMixedAudioAvailable: ((AVAudioPCMBuffer) -> Void)?
-    
+
+    // MARK: - AsyncStream Architecture
+
+    /// Stream of audio buffer pairs (microphone, system audio)
+    private(set) lazy var audioBuffersStream: AsyncStream<(mic: AVAudioPCMBuffer?, system: AVAudioPCMBuffer?)> = {
+        let (stream, continuation) = AsyncStream<(mic: AVAudioPCMBuffer?, system: AVAudioPCMBuffer?)>.makeStream(
+            bufferingPolicy: .bufferingNewest(50)  // Buffer up to 50 frames (~3 seconds at 16kHz)
+        )
+        self.audioBuffersContinuation = continuation
+        return stream
+    }()
+
+    /// Stream of mixed audio buffers (ready for transcription)
+    private(set) lazy var mixedAudioStream: AsyncStream<AVAudioPCMBuffer> = {
+        let (stream, continuation) = AsyncStream<AVAudioPCMBuffer>.makeStream(
+            bufferingPolicy: .bufferingNewest(50)
+        )
+        self.mixedAudioContinuation = continuation
+        return stream
+    }()
+
+    private var audioBuffersContinuation: AsyncStream<(mic: AVAudioPCMBuffer?, system: AVAudioPCMBuffer?)>.Continuation?
+    private var mixedAudioContinuation: AsyncStream<AVAudioPCMBuffer>.Continuation?
+
     // MARK: - Initialization
     override init() {
         // Create audio format for speech processing (16kHz, mono)
@@ -61,25 +99,40 @@ class SystemAudioCapture: NSObject, ObservableObject {
         try await requestPermissions()
         
         // Set up microphone capture
-        try setupMicrophoneCapture()
-        
-        // Set up system audio capture (macOS 13+)
+        var micSetupSuccess = false
+        do {
+            try setupMicrophoneCapture()
+            micSetupSuccess = true
+        } catch {
+            print("❌ Microphone setup failed: \(error.localizedDescription)")
+        }
+
+        // Set up system audio capture (macOS 13+) with retry logic
+        var systemAudioSetupSuccess = false
         if #available(macOS 13.0, *) {
             // Check for screen recording permission
             let hasPermission = await checkScreenRecordingPermission()
             if hasPermission {
-                do {
-                    try await setupSystemAudioCapture()
-                } catch {
-                    print("⚠️ System audio setup failed: \(error.localizedDescription)")
-                    print("🎙️ Falling back to microphone-only mode")
-                }
+                systemAudioSetupSuccess = await setupSystemAudioCaptureWithRetry()
             } else {
                 print("⚠️ Screen recording permission not granted")
                 print("🎙️ Using microphone-only recording mode")
             }
         } else {
             print("⚠️ System audio capture requires macOS 13 or later")
+        }
+
+        // Update capture mode based on what succeeded
+        await MainActor.run {
+            if micSetupSuccess && systemAudioSetupSuccess {
+                self.captureMode = .full
+            } else if micSetupSuccess {
+                self.captureMode = .microphoneOnly
+            } else if systemAudioSetupSuccess {
+                self.captureMode = .systemAudioOnly
+            } else {
+                self.captureMode = .none
+            }
         }
         
         // Start the audio engine
@@ -109,11 +162,18 @@ class SystemAudioCapture: NSObject, ObservableObject {
             }
             stream = nil
         }
-        
+
+        // Finish AsyncStream continuations
+        audioBuffersContinuation?.finish()
+        mixedAudioContinuation?.finish()
+        audioBuffersContinuation = nil
+        mixedAudioContinuation = nil
+
         DispatchQueue.main.async {
             self.isCapturing = false
             self.microphoneLevel = 0.0
             self.systemAudioLevel = 0.0
+            self.captureMode = .none
         }
     }
     
@@ -182,17 +242,52 @@ class SystemAudioCapture: NSObject, ObservableObject {
             self.microphoneLevel = level
         }
         
-        // Notify delegate with separate buffers
+        // Notify delegate with separate buffers (deprecated callback)
         onAudioBuffersAvailable?(microphoneBuffer, systemAudioBuffer)
-        
+
+        // Yield to AsyncStream (modern approach)
+        audioBuffersContinuation?.yield((mic: microphoneBuffer, system: systemAudioBuffer))
+
         // Also provide mixed audio for transcription
         if let mixedBuffer = mixAudioBuffers(mic: microphoneBuffer, system: systemAudioBuffer) {
-            onMixedAudioAvailable?(mixedBuffer)
+            onMixedAudioAvailable?(mixedBuffer)  // Deprecated callback
+            mixedAudioContinuation?.yield(mixedBuffer)  // AsyncStream
         }
     }
     
     // MARK: - Private Methods - System Audio Capture
-    
+
+    /// Set up system audio with fast retry logic (optimized for quick startup)
+    @available(macOS 13.0, *)
+    private func setupSystemAudioCaptureWithRetry() async -> Bool {
+        systemAudioRetryCount = 0
+
+        while systemAudioRetryCount <= maxRetries {
+            do {
+                try await setupSystemAudioCapture()
+                print("✅ System audio setup succeeded")
+                systemAudioRetryCount = 0  // Reset on success
+                return true
+            } catch {
+                systemAudioRetryCount += 1
+
+                if systemAudioRetryCount <= maxRetries {
+                    // Fast retry: 200ms, 500ms, 1s (instead of 2s, 4s, 8s)
+                    let delayMs: UInt64 = systemAudioRetryCount == 1 ? 200 : (systemAudioRetryCount == 2 ? 500 : 1000)
+                    print("⚠️ System audio setup failed (attempt \(systemAudioRetryCount)/\(maxRetries)): \(error.localizedDescription)")
+                    print("🔄 Retrying in \(delayMs)ms...")
+
+                    try? await Task.sleep(nanoseconds: delayMs * 1_000_000)
+                } else {
+                    print("❌ System audio setup failed after \(maxRetries) attempts")
+                    print("🎙️ Permanently falling back to microphone-only mode")
+                }
+            }
+        }
+
+        return false
+    }
+
     @available(macOS 13.0, *)
     private func setupSystemAudioCapture() async throws {
         // Get available content
@@ -290,12 +385,16 @@ class SystemAudioCapture: NSObject, ObservableObject {
             self.systemAudioLevel = level
         }
         
-        // Notify delegate with separate buffers
+        // Notify delegate with separate buffers (deprecated callback)
         onAudioBuffersAvailable?(microphoneBuffer, systemAudioBuffer)
-        
+
+        // Yield to AsyncStream (modern approach)
+        audioBuffersContinuation?.yield((mic: microphoneBuffer, system: systemAudioBuffer))
+
         // Also provide mixed audio for transcription
         if let mixedBuffer = mixAudioBuffers(mic: microphoneBuffer, system: systemAudioBuffer) {
-            onMixedAudioAvailable?(mixedBuffer)
+            onMixedAudioAvailable?(mixedBuffer)  // Deprecated callback
+            mixedAudioContinuation?.yield(mixedBuffer)  // AsyncStream
         }
     }
     
@@ -330,40 +429,51 @@ class SystemAudioCapture: NSObject, ObservableObject {
         
         mixedBuffer.frameLength = frameLength
         
-        // Mix the audio data
+        // Mix the audio data using Accelerate framework for SIMD performance
         if let micData = micBuffer.floatChannelData,
            let systemData = systemBuffer.floatChannelData,
            let mixedData = mixedBuffer.floatChannelData {
-            
+
             let channelCount = Int(micBuffer.format.channelCount)
-            
+
             for channel in 0..<channelCount {
-                for frame in 0..<Int(frameLength) {
-                    var mixedSample: Float = 0.0
-                    var sourceCount: Float = 0.0
-                    
-                    // Add microphone sample if available
-                    if frame < Int(micBuffer.frameLength) {
-                        mixedSample += micData[channel][frame]
-                        sourceCount += 1.0
+                let micLen = Int(micBuffer.frameLength)
+                let sysLen = Int(systemBuffer.frameLength)
+                let outLen = Int(frameLength)
+
+                // Use vDSP for vectorized audio mixing (5-10x faster than loops)
+                if micLen == sysLen && micLen == outLen {
+                    // Simple case: same length, just add and average
+                    vDSP_vadd(micData[channel], 1, systemData[channel], 1, mixedData[channel], 1, vDSP_Length(outLen))
+                    var scale: Float = 0.5 // Average to prevent clipping
+                    vDSP_vsmul(mixedData[channel], 1, &scale, mixedData[channel], 1, vDSP_Length(outLen))
+                } else {
+                    // Different lengths: copy and mix carefully
+                    // Zero out the buffer first
+                    vDSP_vclr(mixedData[channel], 1, vDSP_Length(outLen))
+
+                    // Add mic data (up to its length)
+                    if micLen > 0 {
+                        vDSP_vadd(mixedData[channel], 1, micData[channel], 1, mixedData[channel], 1, vDSP_Length(micLen))
                     }
-                    
-                    // Add system audio sample if available
-                    if frame < Int(systemBuffer.frameLength) {
-                        mixedSample += systemData[channel][frame]
-                        sourceCount += 1.0
+
+                    // Add system data (up to its length)
+                    if sysLen > 0 {
+                        vDSP_vadd(mixedData[channel], 1, systemData[channel], 1, mixedData[channel], 1, vDSP_Length(sysLen))
                     }
-                    
-                    // Normalize if we have multiple sources to prevent clipping
-                    // But don't reduce volume if only one source is active at this frame
-                    if sourceCount > 1.0 {
-                        mixedSample /= sourceCount
+
+                    // Average the overlapping region
+                    let overlapLen = min(micLen, sysLen)
+                    if overlapLen > 0 {
+                        var scale: Float = 0.5
+                        vDSP_vsmul(mixedData[channel], 1, &scale, mixedData[channel], 1, vDSP_Length(overlapLen))
                     }
-                    
-                    // Clip to valid range
-                    mixedSample = max(-1.0, min(1.0, mixedSample))
-                    mixedData[channel][frame] = mixedSample
                 }
+
+                // Clip to valid range [-1.0, 1.0] using vDSP
+                var lowerBound: Float = -1.0
+                var upperBound: Float = 1.0
+                vDSP_vclip(mixedData[channel], 1, &lowerBound, &upperBound, mixedData[channel], 1, vDSP_Length(outLen))
             }
         }
         

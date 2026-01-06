@@ -22,14 +22,14 @@ struct AnalyticsView: View {
                 // Header
                 VStack(alignment: .leading, spacing: 8) {
                     HStack {
-                        Image(systemName: "chart.bar.fill")
+                        Image(systemName: "lightbulb.fill")
                             .font(.title2)
                             .foregroundColor(.accentColor)
-                        Text("Analytics")
+                        Text("Insights")
                             .font(.largeTitle)
                             .fontWeight(.bold)
                     }
-                    Text("Insights into your conversation patterns and team engagement")
+                    Text("AI-powered insights into your relationships and conversations")
                         .font(.body)
                         .foregroundColor(.secondary)
                 }

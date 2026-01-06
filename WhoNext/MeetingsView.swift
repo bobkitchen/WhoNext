@@ -41,10 +41,7 @@ struct MeetingsView: View {
     // Collapsible Section States
     @AppStorage("isTodayExpanded") private var isTodayExpanded = true
     @AppStorage("isThisWeekExpanded") private var isThisWeekExpanded = true
-    
-    // Chat Window Management
-    @State private var chatWindow: PopoutChatWindow?
-    
+
     var body: some View {
         VStack(spacing: 0) {
             // Unified Header
@@ -52,14 +49,9 @@ struct MeetingsView: View {
                 selectedFilter: $selectedFilter,
                 todaysCount: todaysMeetings.count,
                 thisWeeksCount: thisWeeksMeetings.count,
-                onJoinMeeting: {
-                    // Logic to join next meeting
-                    if let nextMeeting = todaysMeetings.first(where: { $0.startDate > Date() }) ?? todaysMeetings.first {
-                        if let location = nextMeeting.location,
-                           let url = extractMeetingURL(from: location) {
-                            NSWorkspace.shared.open(url)
-                        }
-                    }
+                onRecordMeeting: {
+                    // Start manual recording immediately
+                    recordingEngine.manualStartRecording()
                 }
             )
             
@@ -87,14 +79,6 @@ struct MeetingsView: View {
                 .padding(24)
             }
             .background(Color(NSColor.windowBackgroundColor))
-        }
-        .toolbar {
-            ToolbarItem(placement: .automatic) {
-                Button(action: openChatWindow) {
-                    Label("Chat Insights", systemImage: "bubble.left.and.bubble.right")
-                }
-                .help("Open AI Chat Insights")
-            }
         }
         .onAppear {
             // Request calendar access and fetch meetings
@@ -196,13 +180,6 @@ struct MeetingsView: View {
                 .padding(.leading, 16) // Indent content slightly
             }
         }
-    }
-    
-    private func openChatWindow() {
-        if chatWindow == nil {
-            chatWindow = PopoutChatWindow(context: viewContext)
-        }
-        chatWindow?.makeKeyAndOrderFront(nil)
     }
     
     // MARK: - Recording Settings Popover

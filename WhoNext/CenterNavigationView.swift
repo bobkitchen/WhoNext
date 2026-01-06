@@ -24,11 +24,11 @@ struct CenterNavigationView<T: StateManagement>: View {
             )
             
             NavigationTabButton(
-                icon: "chart.bar.fill",
-                title: "Analytics",
-                isSelected: appState.selectedTab == .analytics,
-                action: { 
-                    appState.selectedTab = .analytics 
+                icon: "lightbulb.fill",
+                title: "Insights",
+                isSelected: appState.selectedTab == .insights,
+                action: {
+                    appState.selectedTab = .insights
                 }
             )
         }

@@ -2,10 +2,11 @@ import SwiftUI
 import CoreData
 import UniformTypeIdentifiers
 
-struct PersonEditView: View {
+struct AddPersonWindowView: View {
     @ObservedObject var person: Person
+    var isNewPerson: Bool = true
     @Environment(\.managedObjectContext) private var viewContext
-    
+
     @State private var editingName: String = ""
     @State private var editingRole: String = ""
     @State private var editingTimezone: String = ""
@@ -16,10 +17,10 @@ struct PersonEditView: View {
     @State private var editingPhotoImage: NSImage? = nil
     @State private var showingPhotoPicker = false
     @State private var showingLinkedInSearch = false
-    
+
     var onSave: (() -> Void)?
     var onCancel: (() -> Void)?
-    
+
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
             ScrollView {
@@ -28,7 +29,7 @@ struct PersonEditView: View {
                     VStack(alignment: .leading, spacing: 12) {
                         Text("Photo")
                             .font(.system(size: 16, weight: .semibold))
-                        
+
                         HStack(spacing: 16) {
                             ZStack {
                                 Circle()
@@ -39,7 +40,7 @@ struct PersonEditView: View {
                                             .stroke(Color.blue.opacity(0.3), lineWidth: 2)
                                             .opacity(canPasteImage() ? 1 : 0)
                                     )
-                                
+
                                 if let image = editingPhotoImage {
                                     Image(nsImage: image)
                                         .resizable()
@@ -56,19 +57,19 @@ struct PersonEditView: View {
                                 pasteImageFromClipboard()
                             }
                             .help(canPasteImage() ? "Click to paste image from clipboard" : "Copy an image to clipboard first")
-                            
+
                             VStack(alignment: .leading, spacing: 8) {
                                 Button("Choose Photo") {
                                     showingPhotoPicker = true
                                 }
                                 .buttonStyle(LiquidGlassButtonStyle(variant: .secondary, size: .small))
-                                
+
                                 Button("Paste from Clipboard") {
                                     pasteImageFromClipboard()
                                 }
                                 .buttonStyle(LiquidGlassButtonStyle(variant: .secondary, size: .small))
                                 .disabled(!canPasteImage())
-                                
+
                                 if editingPhotoImage != nil {
                                     Button("Remove Photo") {
                                         editingPhotoData = nil
@@ -79,12 +80,12 @@ struct PersonEditView: View {
                             }
                         }
                     }
-                    
+
                     // Basic Info Section
                     VStack(alignment: .leading, spacing: 16) {
                         Text("Basic Information")
                             .font(.system(size: 16, weight: .semibold))
-                        
+
                         VStack(alignment: .leading, spacing: 12) {
                             VStack(alignment: .leading, spacing: 4) {
                                 Text("Name")
@@ -93,7 +94,7 @@ struct PersonEditView: View {
                                 TextField("Enter name", text: $editingName)
                                     .textFieldStyle(.roundedBorder)
                             }
-                            
+
                             VStack(alignment: .leading, spacing: 4) {
                                 Text("Role")
                                     .font(.system(size: 14, weight: .medium))
@@ -101,19 +102,19 @@ struct PersonEditView: View {
                                 TextField("Enter role", text: $editingRole)
                                     .textFieldStyle(.roundedBorder)
                             }
-                            
+
                             VStack(alignment: .leading, spacing: 4) {
                                 Text("Timezone")
                                     .font(.system(size: 14, weight: .medium))
                                     .foregroundColor(.secondary)
-                                
+
                                 VStack(alignment: .leading, spacing: 0) {
                                     TextField("Type to search timezone", text: $editingTimezone)
                                         .textFieldStyle(.roundedBorder)
                                         .onChange(of: editingTimezone) { _, _ in
                                             showingTimezoneDropdown = !editingTimezone.isEmpty && !filteredTimezones.isEmpty
                                         }
-                                    
+
                                     if showingTimezoneDropdown && !filteredTimezones.isEmpty {
                                         ScrollView {
                                             LazyVStack(alignment: .leading, spacing: 2) {
@@ -131,9 +132,6 @@ struct PersonEditView: View {
                                                     }
                                                     .buttonStyle(PlainButtonStyle())
                                                     .background(Color.clear)
-                                                    .onHover { isHovered in
-                                                        // Add hover effect if needed
-                                                    }
                                                 }
                                             }
                                         }
@@ -148,12 +146,12 @@ struct PersonEditView: View {
                                     }
                                 }
                             }
-                            
+
                             Toggle("Direct Report", isOn: $isDirectReport)
                                 .font(.system(size: 14, weight: .medium))
                         }
                     }
-                    
+
                     // Notes Section
                     VStack(alignment: .leading, spacing: 12) {
                         HStack {
@@ -195,19 +193,21 @@ struct PersonEditView: View {
                     }
                 }
             }
-            
+
             // Action Buttons
             HStack {
                 Button("Cancel") {
                     onCancel?()
+                    closeWindow()
                 }
                 .buttonStyle(LiquidGlassButtonStyle(variant: .secondary, size: .medium))
-                
+
                 Spacer()
-                
+
                 Button("Save") {
                     saveChanges()
                     onSave?()
+                    closeWindow()
                 }
                 .buttonStyle(LiquidGlassButtonStyle(variant: .primary, size: .medium))
                 .disabled(editingName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
@@ -244,7 +244,7 @@ struct PersonEditView: View {
             loadPersonData()
         }
     }
-    
+
     var filteredTimezones: [String] {
         if editingTimezone.isEmpty {
             return TimeZone.knownTimeZoneIdentifiers.sorted()
@@ -252,14 +252,14 @@ struct PersonEditView: View {
             return TimeZone.knownTimeZoneIdentifiers.sorted().filter { $0.lowercased().contains(editingTimezone.lowercased()) }
         }
     }
-    
+
     private func loadPersonData() {
         editingName = person.name ?? ""
         editingRole = person.role ?? ""
         editingTimezone = person.timezone ?? ""
         editingNotes = person.notes ?? ""
         isDirectReport = person.isDirectReport
-        
+
         if let data = person.photo, let image = NSImage(data: data) {
             editingPhotoData = data
             editingPhotoImage = image
@@ -268,7 +268,7 @@ struct PersonEditView: View {
             editingPhotoImage = nil
         }
     }
-    
+
     private func cleanMarkdown(_ text: String) -> String {
         // Remove existing markdown formatting (asterisks, etc.)
         return text
@@ -278,9 +278,8 @@ struct PersonEditView: View {
     }
 
     private func populateFromLinkedInData(_ data: LinkedInProfileData) {
-        print("✅ [PersonEditView] LinkedIn data extracted!")
+        print("✅ [AddPersonWindowView] LinkedIn data extracted!")
         print("   LinkedIn headline: '\(data.headline)'")
-        print("   Current editing role: '\(editingRole)'")
 
         // Format LinkedIn data into notes (similar to PersonDetailView)
         var formatted = ""
@@ -386,36 +385,36 @@ struct PersonEditView: View {
         person.notes = editingNotes.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? nil : editingNotes.trimmingCharacters(in: .whitespacesAndNewlines)
         person.isDirectReport = isDirectReport
         person.photo = editingPhotoData
-        person.modifiedAt = Date() // Mark as modified for sync
-        
+        person.modifiedAt = Date()
+
         do {
             try viewContext.save()
-            
-            // Trigger immediate sync for updates
+
+            // Trigger immediate sync for new person
             RobustSyncManager.shared.triggerSync()
         } catch {
             print("Failed to save person: \(error)")
         }
     }
-    
+
     private func initials(from name: String) -> String {
         let components = name.split(separator: " ")
         let initials = components.prefix(2).map { String($0.prefix(1)) }
         return initials.joined().uppercased()
     }
-    
+
     private func canPasteImage() -> Bool {
         let pasteboard = NSPasteboard.general
-        return pasteboard.types?.contains(.png) == true || 
+        return pasteboard.types?.contains(.png) == true ||
                pasteboard.types?.contains(.tiff) == true ||
                pasteboard.canReadItem(withDataConformingToTypes: [NSPasteboard.PasteboardType.png.rawValue, NSPasteboard.PasteboardType.tiff.rawValue])
     }
-    
+
     private func pasteImageFromClipboard() {
         let pasteboard = NSPasteboard.general
-        
+
         // Try to get image data from various formats
-        if let imageData = pasteboard.data(forType: .png) ?? 
+        if let imageData = pasteboard.data(forType: .png) ??
                           pasteboard.data(forType: .tiff),
            let image = NSImage(data: imageData) {
             editingPhotoData = imageData
@@ -430,14 +429,4 @@ struct PersonEditView: View {
             }
         }
     }
-}
-
-#Preview {
-    let context = PersistenceController.preview.container.viewContext
-    let person = Person(context: context)
-    person.name = "John Doe"
-    person.role = "Software Engineer"
-    
-    return PersonEditView(person: person)
-        .environment(\.managedObjectContext, context)
 }

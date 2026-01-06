@@ -67,6 +67,12 @@ extension Person {
         let initials = components.prefix(2).map { String($0.prefix(1)) }
         return initials.joined()
     }
+
+    /// Check if this person is the current user
+    public var isCurrentUser: Bool {
+        guard let name = name else { return false }
+        return UserProfile.shared.isCurrentUser(name)
+    }
 }
 
 extension Person: Identifiable {

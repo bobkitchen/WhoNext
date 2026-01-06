@@ -1,6 +1,14 @@
 import Foundation
 import SwiftUI
 
+// MARK: - Brief Cache
+private struct BriefCacheEntry {
+    let brief: String
+    let timestamp: Date
+    let personID: UUID
+    let conversationCount: Int // Track if new conversations were added
+}
+
 class HybridAIService: ObservableObject {
     @AppStorage("aiProvider") private var aiProvider: String = "apple" {
         didSet {
@@ -8,18 +16,27 @@ class HybridAIService: ObservableObject {
             objectWillChange.send()
         }
     }
-    
+    @AppStorage("fallbackProvider") private var fallbackProvider: String = "openrouter"
+
     // Secure API key access
     private var openaiApiKey: String {
         SecureStorage.getAPIKey(for: .openai)
     }
-    
+
     private var openrouterApiKey: String {
         SecureStorage.getAPIKey(for: .openrouter)
     }
-    
+
+    private var claudeApiKey: String {
+        SecureStorage.getAPIKey(for: .claude)
+    }
+
     private var appleIntelligenceService: Any? // Will be AppleIntelligenceService when available
     private var aiService: AIService
+
+    // Brief caching - 1 hour cache duration
+    private var briefCache: [UUID: BriefCacheEntry] = [:]
+    private let cacheExpirationInterval: TimeInterval = 3600 // 1 hour
     
     init() {
         self.aiService = AIService()
@@ -51,25 +68,26 @@ class HybridAIService: ObservableObject {
     }
     
     var preferredProvider: HybridAIProvider {
-        // print(" [HybridAI] Provider selection - aiProvider: '\(aiProvider)', Apple Intelligence available: \(isAppleIntelligenceAvailable)")
-        print(" [HybridAI] API Keys - OpenRouter: \(!openrouterApiKey.isEmpty), OpenAI: \(!openaiApiKey.isEmpty)")
-        
-        // Handle legacy "local" setting by treating it as "apple"
-        let normalizedProvider = aiProvider == "local" ? "apple" : aiProvider
+        // Normalize legacy provider settings
+        var normalizedProvider = aiProvider
+        if aiProvider == "local" {
+            normalizedProvider = "apple"
+        } else if aiProvider == "openai" || aiProvider == "claude" {
+            // Migrate old direct OpenAI/Claude settings to OpenRouter
+            normalizedProvider = "openrouter"
+            // Update persisted setting
+            aiProvider = "openrouter"
+        }
+
         print(" [HybridAI] Normalized provider: '\(normalizedProvider)' (original: '\(aiProvider)')")
-        
+        print(" [HybridAI] API Keys - OpenRouter: \(!openrouterApiKey.isEmpty)")
+
         if isAppleIntelligenceAvailable && (normalizedProvider == "apple") {
             print(" [HybridAI] Selecting Apple Intelligence")
             return .appleIntelligence
         } else if !openrouterApiKey.isEmpty && normalizedProvider == "openrouter" {
             print(" [HybridAI] Selecting OpenRouter")
             return .openRouter
-        } else if !openaiApiKey.isEmpty && normalizedProvider == "openai" {
-            print(" [HybridAI] Selecting OpenAI")
-            return .openAI
-        } else if !openaiApiKey.isEmpty {
-            print(" [HybridAI] Selecting OpenAI (fallback)")
-            return .openAI
         } else if isAppleIntelligenceAvailable {
             print(" [HybridAI] Selecting Apple Intelligence (fallback)")
             return .appleIntelligence
@@ -85,12 +103,16 @@ class HybridAIService: ObservableObject {
         case .appleIntelligence:
             if #available(iOS 18.1, macOS 15.5, *),
                let appleService = appleIntelligenceService as? AppleIntelligenceService {
-                do {
-                    return try await appleService.analyzeSentiment(text: text)
-                } catch {
-                    print("Apple Intelligence failed, falling back to cloud: \(error)")
-                    return try await aiService.analyzeSentiment(text: text)
-                }
+                return try await executeWithFallback(
+                    primaryProvider: "Apple Intelligence",
+                    primaryOperation: {
+                        try await appleService.analyzeSentiment(text: text)
+                    },
+                    fallbackOperation: {
+                        try await self.aiService.analyzeSentiment(text: text)
+                    },
+                    errorContext: "sentiment analysis"
+                )
             }
             fallthrough
         case .openRouter, .openAI:
@@ -100,18 +122,79 @@ class HybridAIService: ObservableObject {
         }
     }
     
+    // MARK: - Fallback Execution Helper
+    private func executeWithFallback<T>(
+        primaryProvider: String,
+        primaryOperation: () async throws -> T,
+        fallbackOperation: () async throws -> T,
+        errorContext: String
+    ) async throws -> T {
+        do {
+            return try await primaryOperation()
+        } catch let error as NSError {
+            // Detect content policy refusal
+            let errorMessage = error.localizedDescription.lowercased()
+            let isContentPolicy = errorMessage.contains("refuse") ||
+                                 errorMessage.contains("sensitive") ||
+                                 errorMessage.contains("policy") ||
+                                 errorMessage.contains("inappropriate") ||
+                                 errorMessage.contains("cannot") ||
+                                 errorMessage.contains("unable to")
+
+            print("🔄 [HybridAI] Primary provider failed: \(error)")
+            print("🔄 [HybridAI] Attempting fallback to \(fallbackProvider)")
+
+            // Show notification
+            let fallbackReason: FallbackNotification.FallbackReason
+            if isContentPolicy {
+                fallbackReason = .contentPolicy(content: errorContext)
+            } else {
+                fallbackReason = .apiError(message: error.localizedDescription)
+            }
+
+            FallbackNotificationManager.shared.showFallback(
+                reason: fallbackReason,
+                from: primaryProvider,
+                to: fallbackProvider.capitalized
+            )
+
+            // Execute fallback
+            return try await fallbackOperation()
+        }
+    }
+
+    private func getFallbackProvider() -> HybridAIProvider {
+        // Normalize fallback provider (migrate old settings)
+        var normalizedFallback = fallbackProvider
+        if fallbackProvider == "openai" || fallbackProvider == "claude" {
+            normalizedFallback = "openrouter"
+            fallbackProvider = "openrouter"
+        }
+
+        switch normalizedFallback {
+        case "openrouter":
+            return !openrouterApiKey.isEmpty ? .openRouter : .none
+        default:
+            return .none
+        }
+    }
+
     // MARK: - Meeting Summary Generation
     func generateMeetingSummary(transcript: String) async throws -> String {
         switch preferredProvider {
         case .appleIntelligence:
             if #available(iOS 18.1, macOS 15.5, *),
                let appleService = appleIntelligenceService as? AppleIntelligenceService {
-                do {
-                    return try await appleService.generateMeetingSummary(transcript: transcript)
-                } catch {
-                    print("Apple Intelligence failed, falling back to cloud: \(error)")
-                    return try await aiService.generateMeetingSummary(transcript: transcript)
-                }
+                return try await executeWithFallback(
+                    primaryProvider: "Apple Intelligence",
+                    primaryOperation: {
+                        try await appleService.generateMeetingSummary(transcript: transcript)
+                    },
+                    fallbackOperation: {
+                        try await self.aiService.generateMeetingSummary(transcript: transcript)
+                    },
+                    errorContext: "meeting summary"
+                )
             }
             fallthrough
         case .openRouter, .openAI:
@@ -146,14 +229,59 @@ class HybridAIService: ObservableObject {
     func generateBrief(for person: Person, completion: @escaping (Result<String, Error>) -> Void) {
         Task {
             do {
+                guard let personID = person.identifier else {
+                    throw HybridAIError.invalidData
+                }
+
+                let conversationCount = (person.conversations as? Set<Conversation>)?.count ?? 0
+
+                // Check cache first
+                if let cachedEntry = briefCache[personID] {
+                    let timeSinceCache = Date().timeIntervalSince(cachedEntry.timestamp)
+                    let conversationsUnchanged = cachedEntry.conversationCount == conversationCount
+
+                    // Return cached brief if:
+                    // 1. Cache is less than 1 hour old AND
+                    // 2. No new conversations have been added
+                    if timeSinceCache < cacheExpirationInterval && conversationsUnchanged {
+                        print("✅ [BriefCache] Using cached brief for \(person.name ?? "Unknown") (age: \(Int(timeSinceCache/60))m)")
+                        completion(.success(cachedEntry.brief))
+                        return
+                    } else {
+                        print("🔄 [BriefCache] Cache expired or stale for \(person.name ?? "Unknown") (age: \(Int(timeSinceCache/60))m, conversations: \(conversationCount) vs cached: \(cachedEntry.conversationCount))")
+                    }
+                }
+
+                print("🚀 [BriefCache] Generating new brief for \(person.name ?? "Unknown")")
+
                 // Use the enhanced context generation
                 let context = PreMeetingBriefContextHelper.generateContext(for: person)
                 let personData = [person]
                 let brief = try await generatePreMeetingBrief(personData: personData, context: context)
+
+                // Cache the result
+                briefCache[personID] = BriefCacheEntry(
+                    brief: brief,
+                    timestamp: Date(),
+                    personID: personID,
+                    conversationCount: conversationCount
+                )
+
                 completion(.success(brief))
             } catch {
                 completion(.failure(error))
             }
+        }
+    }
+
+    // MARK: - Cache Management
+    func clearBriefCache(for personID: UUID? = nil) {
+        if let personID = personID {
+            briefCache.removeValue(forKey: personID)
+            print("🗑️ [BriefCache] Cleared cache for person \(personID)")
+        } else {
+            briefCache.removeAll()
+            print("🗑️ [BriefCache] Cleared all brief cache")
         }
     }
     
@@ -201,17 +329,11 @@ class HybridAIService: ObservableObject {
             
             throw HybridAIError.noProvidersAvailable
             
-        case .openRouter:
+        case .openRouter, .openAI:
+            // Both routed through OpenRouter now (OpenAI models accessible via OpenRouter)
             print(" [HybridAI] Using OpenRouter...")
             return try await aiService.sendMessage(message, context: context)
-            
-        case .openAI:
-            print(" [HybridAI] Using OpenAI...")
-            let openAIService = AIService()
-            openAIService.openaiApiKey = openaiApiKey
-            openAIService.currentProvider = .openai
-            return try await openAIService.sendMessage(message, context: context)
-            
+
         case .none:
             print(" [HybridAI] No AI providers available")
             throw HybridAIError.noProvidersAvailable
@@ -324,10 +446,8 @@ class HybridAIService: ObservableObject {
         switch provider {
         case .appleIntelligence:
             return " Apple Intelligence (On-Device)"
-        case .openRouter:
+        case .openRouter, .openAI:
             return " OpenRouter (Cloud)"
-        case .openAI:
-            return " OpenAI (Cloud)"
         case .none:
             return " No AI Provider Available"
         }
@@ -370,6 +490,7 @@ enum HybridAIError: Error {
     case allProvidersFailed
     case serviceUnavailable
     case noProvidersAvailable
+    case invalidData
 }
 
 // MARK: - AIService Extension
@@ -568,69 +689,59 @@ extension AIService {
     }
     
     func generatePreMeetingBrief(personData: [Person], context: String) async throws -> String {
-        // Get the user's custom prompt
+        // OPTIMIZED VERSION: Balanced detail and speed
+        // Get the user's custom prompt (or use optimized default)
         let customPrompt = UserDefaults.standard.string(forKey: "customPreMeetingPrompt") ?? """
-You are an executive assistant preparing a comprehensive pre-meeting intelligence brief. Analyze the conversation history and generate actionable insights to help the user engage confidently and build stronger relationships.
-
-## Required Analysis Sections:
+Prepare a pre-meeting brief with these sections:
 
 **🎯 MEETING FOCUS**
-- Primary topics likely to be discussed based on recent patterns
-- Key decisions or follow-ups pending from previous conversations
-- Strategic priorities this person is currently focused on
+- Key topics and pending decisions from recent meetings
+- Current priorities they're working on
+- What needs to be discussed or decided in this meeting
 
-**🔍 RELATIONSHIP INTELLIGENCE** 
-- Communication style and preferences observed
-- Working relationship trajectory and current dynamic
-- Personal interests, motivations, or concerns mentioned
-- Trust level and rapport-building opportunities
+**🔍 RELATIONSHIP INSIGHTS**
+- Communication style and preferences
+- Working relationship status and recent dynamics
+- Notable concerns or stressors mentioned
 
-**⚡ ACTIONABLE INSIGHTS**
-- Specific tasks, commitments, or deadlines to reference
-- Wins, achievements, or positive developments to acknowledge  
-- Challenges, concerns, or support needs to address
-- Conversation starters that demonstrate you remember past discussions
+**⚡ ACTION ITEMS & FOLLOW-UPS**
+- Specific commitments or tasks discussed in recent meetings (with dates)
+- Deadlines or milestones to check on
+- Issues or decisions that were pending last time you spoke
+- Wins or progress to acknowledge and celebrate
+- Concerns or challenges they raised that need follow-up
 
-**📈 PATTERNS & TRENDS**
-- Evolution of topics or priorities over time
-- Meeting frequency patterns and optimal timing
-- Engagement levels and conversation quality trends
-- Any recurring themes or persistent issues
+**💡 TALKING POINTS**
+- Specific conversation starters based on what was discussed recently
+- Questions that show you remember and care about their work
+- Personal or professional interests they mentioned
 
-**🎪 STRATEGIC RECOMMENDATIONS**
-- Key talking points to strengthen the relationship
-- Questions to ask that show engagement and care
-- Potential challenges to navigate carefully
-- Follow-up actions to propose or discuss
+IMPORTANT: Include specific details from the most recent 2-3 conversations:
+- Quote or reference specific things they said
+- Mention specific projects, people, or situations they discussed
+- Note exact dates when relevant
+- Provide enough context and nuance to refresh your memory of the conversations
 
-## Output Guidelines:
-- Be specific with dates, quotes, and concrete details
-- Prioritize recent conversations but reference historical context
-- Include both professional and personal rapport-building elements
-- Highlight gaps where information is missing or unclear
-- Format with clear headers and bullet points for easy scanning
-
-Generate a comprehensive brief that enables confident, relationship-building engagement:
+Format with clear headers and bullets. Be specific, not generic.
 """
-        
-        // Enhanced prompt with analysis instructions
+
+        // Enhanced prompt with emphasis on details
         let enhancedPrompt = """
 \(customPrompt)
 
-CONTEXT TO ANALYZE:
 \(context)
 
-ANALYSIS INSTRUCTIONS:
-- Extract specific insights, patterns, and actionable intelligence from the conversation history
-- Identify relationship dynamics, communication preferences, and working styles  
-- Highlight any recurring themes, concerns, or opportunities mentioned across conversations
-- Note any commitments, deadlines, or follow-up items that need attention
-- Suggest specific talking points that would demonstrate understanding and build rapport
-- Be specific with dates, details, and quotes when relevant
+Focus on SPECIFIC DETAILS from recent conversations. Include:
+- Direct references to what was discussed
+- Specific names, projects, dates, and commitments
+- Follow-up items from the last 2-3 meetings
+- Enough nuance to refresh memory without reading full meeting notes
 
-Generate a comprehensive pre-meeting brief following the format above.
+Be concrete and actionable.
 """
-        
+
+        // Use the user's selected AI provider (respects Apple Intelligence, OpenRouter, OpenAI settings)
+        // The optimization comes from reduced tokens (context + prompt) and caching, not the specific model
         return try await sendMessage(enhancedPrompt, context: "")
     }
     

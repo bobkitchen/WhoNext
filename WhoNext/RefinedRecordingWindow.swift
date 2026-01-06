@@ -9,20 +9,31 @@ class RefinedRecordingWindowController: NSWindowController {
     
     init(meeting: LiveMeeting) {
         self.meeting = meeting
-        
+
         // Create the SwiftUI view
         let contentView = RefinedRecordingView(meeting: meeting)
         let hostingController = NSHostingController(rootView: contentView)
         self.hostingController = hostingController
-        
-        // Create a floating panel with better default size
+
+        // Get screen dimensions for positioning
+        let screen = NSScreen.main ?? NSScreen.screens.first!
+        let screenFrame = screen.visibleFrame
+        let windowWidth: CGFloat = 480
+        let windowHeight: CGFloat = 640
+        let padding: CGFloat = 20
+
+        // Calculate top-right position
+        let xPos = screenFrame.maxX - windowWidth - padding
+        let yPos = screenFrame.maxY - windowHeight - padding
+
+        // Create window at the correct position from the start
         let panel = NSPanel(
-            contentRect: NSRect(x: 0, y: 0, width: 480, height: 640),
+            contentRect: NSRect(x: xPos, y: yPos, width: windowWidth, height: windowHeight),
             styleMask: [.titled, .closable, .miniaturizable, .resizable, .fullSizeContentView],
             backing: .buffered,
             defer: false
         )
-        
+
         panel.title = ""
         panel.titlebarAppearsTransparent = true
         panel.titleVisibility = .hidden
@@ -33,15 +44,11 @@ class RefinedRecordingWindowController: NSWindowController {
         panel.contentViewController = hostingController
         panel.isFloatingPanel = true
         panel.becomesKeyOnlyIfNeeded = true
-        
-        // Set size constraints
         panel.minSize = NSSize(width: 420, height: 540)
         panel.maxSize = NSSize(width: 600, height: 900)
-        
+        panel.setFrameAutosaveName("")
+
         super.init(window: panel)
-        
-        // Position window
-        positionWindow()
     }
     
     required init?(coder: NSCoder) {
@@ -49,21 +56,49 @@ class RefinedRecordingWindowController: NSWindowController {
     }
     
     private func positionWindow() {
-        guard let window = window, let screen = NSScreen.main else { return }
-        
+        guard let window = window else {
+            print("🔵 ERROR: No window available for positioning")
+            return
+        }
+
+        print("🔵🔵🔵 RefinedRecordingWindow: positionWindow() CALLED 🔵🔵🔵")
+
+        // Use visibleFrame to account for menu bar and dock (best practice)
+        let screen = window.screen ?? NSScreen.main ?? NSScreen.screens.first
+        guard let screen = screen else {
+            print("🔵 ERROR: No screen available!")
+            return
+        }
+
         let screenFrame = screen.visibleFrame
-        let windowWidth: CGFloat = 480
-        let windowHeight: CGFloat = 640
-        
-        // Position in the right side of the screen with proper margin
-        // Ensure window is fully visible on screen
-        let rightMargin: CGFloat = 40
-        let topMargin: CGFloat = 80
-        
-        let xPos = max(screenFrame.minX + 20, min(screenFrame.maxX - windowWidth - rightMargin, screenFrame.maxX - windowWidth - rightMargin))
-        let yPos = max(screenFrame.minY + 20, min(screenFrame.maxY - windowHeight - topMargin, screenFrame.maxY - windowHeight - topMargin))
-        
-        window.setFrame(NSRect(x: xPos, y: yPos, width: windowWidth, height: windowHeight), display: true)
+        let windowSize = window.frame.size
+
+        print("🔵 Screen visible frame: \(screenFrame)")
+        print("🔵 Current window size: \(windowSize)")
+
+        // Position in the top-right corner with safe margins
+        let margin: CGFloat = 20
+
+        // Calculate position (macOS uses bottom-left origin, so calculate carefully)
+        let xPos = screenFrame.maxX - windowSize.width - margin
+        let yPos = screenFrame.maxY - windowSize.height - margin
+
+        print("🔵 Calculated position: x=\(xPos), y=\(yPos)")
+
+        // Ensure window stays within screen bounds
+        let safeX = max(screenFrame.minX + margin, min(xPos, screenFrame.maxX - windowSize.width - margin))
+        let safeY = max(screenFrame.minY + margin, min(yPos, screenFrame.maxY - windowSize.height - margin))
+
+        print("🔵 Safe position: x=\(safeX), y=\(safeY)")
+
+        // Set position using setFrameOrigin (more reliable than setFrame for positioning)
+        window.setFrameOrigin(NSPoint(x: safeX, y: safeY))
+
+        // Force display update
+        window.display()
+
+        print("🔵 ✅ Window positioned successfully at: \(window.frame.origin)")
+        print("🔵 ✅ Final window frame: \(window.frame)")
     }
 }
 

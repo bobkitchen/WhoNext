@@ -58,52 +58,65 @@ struct PreMeetingBriefContextHelper {
             }
             context += "\n"
             
-            // Detailed conversation history with enhanced analysis
+            // Detailed conversation history - OPTIMIZED: Limit to 10 most recent
             context += "## DETAILED CONVERSATION HISTORY\n"
-            context += "(Ordered by most recent first)\n\n"
-            
-            for (index, conversation) in sortedConversations.enumerated() {
-                let isRecent = index < 3 // Mark the 3 most recent as priority
+            context += "(Most recent 10 conversations - ordered by most recent first)\n\n"
+
+            // Limit to 10 conversations for performance
+            let limitedConversations = sortedConversations.prefix(10)
+
+            for (index, conversation) in limitedConversations.enumerated() {
+                let isRecent = index < 5 // First 5 get full detail
                 let prefix = isRecent ? "🔥 RECENT" : "📋 HISTORICAL"
-                
+
                 if let date = conversation.date {
                     let daysSince = Calendar.current.dateComponents([.day], from: date, to: now).day ?? 0
                     let timeContext = daysSince == 0 ? "Today" : daysSince == 1 ? "Yesterday" : "\(daysSince) days ago"
                     context += "\(prefix) - \(date.formatted(date: .abbreviated, time: .omitted)) (\(timeContext))\n"
                 }
-                
-                // Enhanced summary with key insights
-                if let summary = conversation.summary, !summary.isEmpty {
-                    context += "SUMMARY: \(summary)\n"
-                }
-                
-                // Enhanced notes with actionable items
-                if let notes = conversation.notes, !notes.isEmpty {
-                    context += "NOTES: \(notes)\n"
-                }
-                
-                // Add sentiment and quality indicators if available
-                if let sentiment = conversation.sentimentLabel, !sentiment.isEmpty {
-                    context += "SENTIMENT: \(sentiment)"
-                    if conversation.sentimentScore > 0 {
-                        context += " (Score: \(Int(conversation.sentimentScore))%)"
+
+                if isRecent {
+                    // Full detail for recent 5 conversations
+                    if let summary = conversation.summary, !summary.isEmpty {
+                        context += "SUMMARY: \(summary)\n"
                     }
-                    context += "\n"
+
+                    if let notes = conversation.notes, !notes.isEmpty {
+                        context += "NOTES: \(notes)\n"
+                    }
+
+                    if let sentiment = conversation.sentimentLabel, !sentiment.isEmpty {
+                        context += "SENTIMENT: \(sentiment)"
+                        if conversation.sentimentScore > 0 {
+                            context += " (\(Int(conversation.sentimentScore))%)"
+                        }
+                        context += "\n"
+                    }
+
+                    if let topics = conversation.keyTopics, !topics.isEmpty {
+                        context += "KEY TOPICS: \(topics.joined(separator: ", "))\n"
+                    }
+                } else {
+                    // Summary only for older conversations (6-10)
+                    if let summary = conversation.summary, !summary.isEmpty {
+                        // Truncate summary to first 200 chars for older conversations
+                        let truncated = summary.count > 200 ? String(summary.prefix(200)) + "..." : summary
+                        context += "SUMMARY: \(truncated)\n"
+                    }
+
+                    if let topics = conversation.keyTopics, !topics.isEmpty {
+                        context += "TOPICS: \(topics.prefix(3).joined(separator: ", "))\n"
+                    }
                 }
-                
-                if conversation.qualityScore > 0 {
-                    context += "CONVERSATION QUALITY: \(Int(conversation.qualityScore))%\n"
-                }
-                
-                if let engagementLevel = conversation.engagementLevel, !engagementLevel.isEmpty {
-                    context += "ENGAGEMENT LEVEL: \(engagementLevel)\n"
-                }
-                
-                if let topics = conversation.keyTopics, !topics.isEmpty {
-                    context += "KEY TOPICS: \(topics.joined(separator: ", "))\n"
-                }
-                
+
                 context += "\n" + String(repeating: "-", count: 50) + "\n\n"
+            }
+
+            // Add summary for conversations beyond the 10 shown
+            if sortedConversations.count > 10 {
+                context += "📊 ADDITIONAL HISTORICAL DATA\n"
+                context += "Total older conversations: \(sortedConversations.count - 10)\n"
+                context += "(Not shown to optimize brief generation speed)\n\n"
             }
             
             // Intelligence analysis section

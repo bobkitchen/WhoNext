@@ -68,8 +68,8 @@ struct ClaudeUsage: Decodable {
 class AIService {
     static let shared = AIService()
     
-    @AppStorage("currentProvider") var currentProvider: AIProvider = .openai
-    @AppStorage("openrouterModel") var openrouterModel: String = "meta-llama/llama-3.1-8b-instruct:free"
+    @AppStorage("currentProvider") var currentProvider: AIProvider = .openrouter
+    @AppStorage("openrouterModel") var openrouterModel: String = "google/gemma-2-9b-it:free"
     @AppStorage("openaiModel") var openaiModel: String = "gpt-5-nano"  // Configurable OpenAI model
     
     // Secure API key access
@@ -99,6 +99,12 @@ class AIService {
     init() {
         // Migrate keys from UserDefaults to secure storage on first run
         SecureStorage.migrateFromUserDefaults()
+
+        // Force migration to OpenRouter if still using old providers
+        if currentProvider != .openrouter {
+            print("🔄 Migrating provider from \(currentProvider) to OpenRouter")
+            currentProvider = .openrouter
+        }
     }
     
     func sendMessage(_ message: String, context: String? = nil) async throws -> String {
@@ -338,7 +344,7 @@ IMPORTANT FORMATTING RULES:
         request.setValue("2023-06-01", forHTTPHeaderField: "anthropic-version")
         
         let requestBody: [String: Any] = [
-            "model": "claude-sonnet-4-20250514",
+            "model": "claude-sonnet-4-5-20250929",
             "max_tokens": 8000,
             "system": formattingInstructions,
             "messages": messages
@@ -477,13 +483,7 @@ IMPORTANT FORMATTING RULES:
         case .claude:
             analyzeImageWithVisionClaude(imageData: imageData, prompt: prompt, completion: completion)
         case .openrouter:
-            // OpenRouter free models don't support vision - fallback to OpenAI if available
-            if !openaiApiKey.isEmpty {
-                print("🔄 [Vision] OpenRouter free tier doesn't support vision, using OpenAI fallback")
-                analyzeImageWithVisionOpenAI(imageData: imageData, prompt: prompt, completion: completion)
-            } else {
-                completion(.failure(NSError(domain: "AIService", code: 1, userInfo: [NSLocalizedDescriptionKey: "Vision analysis requires OpenAI or Claude. Please configure an API key in settings."])))
-            }
+            analyzeImageWithVisionOpenRouter(imageData: imageData, prompt: prompt, completion: completion)
         }
     }
     
@@ -500,9 +500,10 @@ IMPORTANT FORMATTING RULES:
         
         let visionURL = "https://api.openai.com/v1/chat/completions"
         
-        // Use GPT-4o for vision tasks (GPT-5 doesn't support vision yet)
+        // Use GPT-5 for best-in-class visual perception and OCR accuracy (Jan 2026)
+        // GPT-5 uses max_completion_tokens instead of max_tokens
         let requestBody: [String: Any] = [
-            "model": "gpt-4o",
+            "model": "gpt-5",
             "messages": [
                 [
                     "role": "user",
@@ -520,8 +521,7 @@ IMPORTANT FORMATTING RULES:
                     ]
                 ]
             ],
-            "max_tokens": 8000,
-            "temperature": 0.7
+            "max_completion_tokens": 8000
         ]
         
         // Debug request body
@@ -603,7 +603,7 @@ IMPORTANT FORMATTING RULES:
         let visionURL = "https://api.anthropic.com/v1/messages"
         
         let requestBody: [String: Any] = [
-            "model": "claude-sonnet-4-20250514",
+            "model": "claude-sonnet-4-5-20250929",
             "max_tokens": 8000,
             "system": """
             You are a helpful assistant for relationship management and conversation tracking.
@@ -683,7 +683,110 @@ IMPORTANT FORMATTING RULES:
             }
         }.resume()
     }
-    
+
+    private func analyzeImageWithVisionOpenRouter(imageData: String, prompt: String, completion: @escaping (Result<String, Error>) -> Void) {
+        guard !openrouterApiKey.isEmpty else {
+            print("❌ [OpenRouter] API key is missing")
+            completion(.failure(AIError.missingAPIKey))
+            return
+        }
+
+        print("🔍 [OpenRouter] Starting vision analysis with model: \(openrouterModel)")
+        print("🔍 [OpenRouter] Image data length: \(imageData.count)")
+
+        let visionURL = "https://openrouter.ai/api/v1/chat/completions"
+
+        // Determine if we need max_completion_tokens (GPT-5 family) or max_tokens
+        let useCompletionTokens = openrouterModel.contains("gpt-5") || openrouterModel.contains("openai/gpt-5")
+
+        var requestBody: [String: Any] = [
+            "model": openrouterModel,
+            "messages": [
+                [
+                    "role": "user",
+                    "content": [
+                        [
+                            "type": "text",
+                            "text": prompt
+                        ],
+                        [
+                            "type": "image_url",
+                            "image_url": [
+                                "url": "data:image/jpeg;base64,\(imageData)"
+                            ]
+                        ]
+                    ]
+                ]
+            ]
+        ]
+
+        // Add the correct token parameter based on model
+        if useCompletionTokens {
+            requestBody["max_completion_tokens"] = 8000
+        } else {
+            requestBody["max_tokens"] = 8000
+        }
+
+        guard let url = URL(string: visionURL) else {
+            completion(.failure(AIError.invalidResponse))
+            return
+        }
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("Bearer \(openrouterApiKey)", forHTTPHeaderField: "Authorization")
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+
+        do {
+            request.httpBody = try JSONSerialization.data(withJSONObject: requestBody)
+        } catch {
+            print("❌ [OpenRouter] Failed to create request body: \(error)")
+            completion(.failure(error))
+            return
+        }
+
+        print("🔍 [OpenRouter] Sending request to: \(visionURL)")
+
+        URLSession.shared.dataTask(with: request) { data, response, error in
+            if let error = error {
+                print("❌ [OpenRouter] Network error: \(error)")
+                completion(.failure(error))
+                return
+            }
+
+            guard let data = data,
+                  let httpResponse = response as? HTTPURLResponse else {
+                print("❌ [OpenRouter] No data received")
+                completion(.failure(AIError.invalidResponse))
+                return
+            }
+
+            print("🔍 [OpenRouter] Response status: \(httpResponse.statusCode)")
+            let responseString = String(data: data, encoding: .utf8) ?? "No response data"
+            print("🔍 [OpenRouter] Raw response: \(String(responseString.prefix(500)))...")
+
+            do {
+                if httpResponse.statusCode == 200 {
+                    let jsonResponse = try JSONSerialization.jsonObject(with: data) as? [String: Any]
+                    let choices = jsonResponse?["choices"] as? [[String: Any]]
+                    let message = choices?.first?["message"] as? [String: Any]
+                    let content = message?["content"] as? String ?? "No response content."
+                    print("🔍 [OpenRouter] Success! Response length: \(content.count) characters")
+                    completion(.success(content))
+                } else {
+                    let errorResponse = try? JSONSerialization.jsonObject(with: data) as? [String: Any]
+                    let errorMessage = (errorResponse?["error"] as? [String: Any])?["message"] as? String
+                    print("❌ [OpenRouter] API Error (\(httpResponse.statusCode)): \(errorMessage ?? "Unknown error")")
+                    print("❌ [OpenRouter] Full error response: \(responseString)")
+                    completion(.failure(AIError.apiError(message: errorMessage ?? "OpenRouter API error \(httpResponse.statusCode)")))
+                }
+            } catch {
+                print("❌ [OpenRouter] JSON parsing error: \(error)")
+                completion(.failure(error))
+            }
+        }.resume()
+    }
+
     // MARK: - Multi-Image Analysis with Format Support
     func analyzeMultipleImagesWithVision(imageDataArray: [(base64: String, format: String)], prompt: String, completion: @escaping (Result<String, Error>) -> Void) {
         print("🔍 [AI] analyzeMultipleImagesWithVision called with provider: \(currentProvider)")
@@ -694,12 +797,7 @@ IMPORTANT FORMATTING RULES:
         case .claude:
             analyzeMultipleImagesWithVisionClaude(imageDataArray: imageDataArray, prompt: prompt, completion: completion)
         case .openrouter:
-            if !openaiApiKey.isEmpty {
-                print("🔄 [Vision] OpenRouter free tier doesn't support vision, using OpenAI fallback")
-                analyzeMultipleImagesWithVisionOpenAI(imageDataArray: imageDataArray, prompt: prompt, completion: completion)
-            } else {
-                completion(.failure(NSError(domain: "AIService", code: 1, userInfo: [NSLocalizedDescriptionKey: "Vision analysis requires OpenAI or Claude. Please configure an API key in settings."])))
-            }
+            analyzeMultipleImagesWithVisionOpenRouter(imageDataArray: imageDataArray, prompt: prompt, completion: completion)
         }
     }
     
@@ -744,14 +842,14 @@ IMPORTANT FORMATTING RULES:
         }
         
         let requestBody: [String: Any] = [
-            "model": "gpt-4o",
+            "model": "gpt-5",
             "messages": [
                 [
                     "role": "user",
                     "content": contentArray
                 ]
             ],
-            "max_tokens": 8000 // Increased for comprehensive analysis
+            "max_completion_tokens": 8000 // GPT-5 requires max_completion_tokens
         ]
         
         guard let url = URL(string: visionURL) else {
@@ -860,7 +958,7 @@ IMPORTANT FORMATTING RULES:
         }
         
         let requestBody: [String: Any] = [
-            "model": "claude-sonnet-4-20250514",
+            "model": "claude-sonnet-4-5-20250929",
             "max_tokens": 3000, // Increased for multiple images
             "system": """
             You are a helpful assistant for relationship management and conversation tracking.
@@ -938,7 +1036,129 @@ IMPORTANT FORMATTING RULES:
             }
         }.resume()
     }
-    
+
+    private func analyzeMultipleImagesWithVisionOpenRouter(imageDataArray: [(base64: String, format: String)], prompt: String, completion: @escaping (Result<String, Error>) -> Void) {
+        guard !openrouterApiKey.isEmpty else {
+            completion(.failure(AIError.missingAPIKey))
+            return
+        }
+
+        print("🔍 [OpenRouter] Starting multi-image analysis with \(imageDataArray.count) images")
+        print("🔍 [OpenRouter] Prompt length: \(prompt.count) characters")
+
+        let totalImageSize = imageDataArray.reduce(0) { $0 + $1.base64.count }
+        print("🔍 [OpenRouter] Total image data size: \(totalImageSize / 1024 / 1024)MB")
+
+        let visionURL = "https://openrouter.ai/api/v1/chat/completions"
+
+        // Build content array with text prompt and multiple images
+        var contentArray: [[String: Any]] = [
+            [
+                "type": "text",
+                "text": prompt
+            ]
+        ]
+
+        // Add each image to the content array
+        for imageData in imageDataArray {
+            contentArray.append([
+                "type": "image_url",
+                "image_url": [
+                    "url": "data:image/\(imageData.format);base64,\(imageData.base64)"
+                ]
+            ])
+        }
+
+        // Determine if we need max_completion_tokens (GPT-5 family) or max_tokens
+        let useCompletionTokens = openrouterModel.contains("gpt-5") || openrouterModel.contains("openai/gpt-5")
+
+        var requestBody: [String: Any] = [
+            "model": openrouterModel,
+            "messages": [
+                [
+                    "role": "user",
+                    "content": contentArray
+                ]
+            ]
+        ]
+
+        // Add the correct token parameter based on model
+        if useCompletionTokens {
+            requestBody["max_completion_tokens"] = 8000
+        } else {
+            requestBody["max_tokens"] = 8000
+        }
+
+        guard let url = URL(string: visionURL) else {
+            completion(.failure(AIError.invalidResponse))
+            return
+        }
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("Bearer \(openrouterApiKey)", forHTTPHeaderField: "Authorization")
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+
+        // Set extended timeout for large image processing
+        request.timeoutInterval = 120.0
+
+        do {
+            request.httpBody = try JSONSerialization.data(withJSONObject: requestBody)
+        } catch {
+            completion(.failure(error))
+            return
+        }
+
+        // Create custom URLSession with extended timeout configuration
+        let sessionConfig = URLSessionConfiguration.default
+        sessionConfig.timeoutIntervalForRequest = 120.0
+        sessionConfig.timeoutIntervalForResource = 300.0
+        let customSession = URLSession(configuration: sessionConfig)
+
+        print("🔍 [OpenRouter] Sending request with extended timeout (120s request, 300s resource)")
+
+        customSession.dataTask(with: request) { data, response, error in
+            if let error = error {
+                print("❌ [OpenRouter] Network error: \(error)")
+                completion(.failure(error))
+                return
+            }
+
+            guard let data = data,
+                  let httpResponse = response as? HTTPURLResponse else {
+                print("❌ [OpenRouter] No data received")
+                completion(.failure(AIError.invalidResponse))
+                return
+            }
+
+            do {
+                if httpResponse.statusCode == 200 {
+                    let responseString = String(data: data, encoding: .utf8) ?? "No response data"
+                    print("🔍 [OpenRouter] Raw response: \(String(responseString.prefix(200)))...")
+
+                    let jsonResponse = try JSONSerialization.jsonObject(with: data) as? [String: Any]
+                    let choices = jsonResponse?["choices"] as? [[String: Any]]
+                    let message = choices?.first?["message"] as? [String: Any]
+                    let content = message?["content"] as? String ?? "No response content."
+                    print("🔍 [OpenRouter] Multi-image analysis successful, response length: \(content.count) characters")
+                    completion(.success(content))
+                } else {
+                    let errorData = String(data: data, encoding: .utf8) ?? "No error data"
+                    print("❌ [OpenRouter] Error response data: \(errorData)")
+                    let errorResponse = try? JSONSerialization.jsonObject(with: data) as? [String: Any]
+                    let errorMessage = (errorResponse?["error"] as? [String: Any])?["message"] as? String
+                    print("❌ [OpenRouter] Multi-image analysis failed with status \(httpResponse.statusCode): \(errorMessage ?? "Unknown error")")
+                    completion(.failure(AIError.apiError(message: errorMessage ?? "Unknown API error")))
+                }
+            } catch {
+                let responseString = String(data: data, encoding: .utf8) ?? "No response data"
+                print("❌ [OpenRouter] Response that failed to parse: \(responseString)")
+                print("❌ [OpenRouter] Multi-image analysis parsing error: \(error)")
+                completion(.failure(error))
+            }
+        }.resume()
+    }
+
     enum AIError: Error {
         case missingAPIKey
         case invalidResponse

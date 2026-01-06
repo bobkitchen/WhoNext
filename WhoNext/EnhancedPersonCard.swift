@@ -62,14 +62,26 @@ struct EnhancedPersonCard: View {
                         .font(.system(size: 14, weight: .semibold))
                         .foregroundColor(.primary)
                         .lineLimit(1)
-                    
+
+                    if person.isCurrentUser {
+                        Text("(You)")
+                            .font(.system(size: 10, weight: .medium))
+                            .foregroundColor(.blue)
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 2)
+                            .background(
+                                Capsule()
+                                    .fill(Color.blue.opacity(0.15))
+                            )
+                    }
+
                     if person.isDirectReport {
                         Image(systemName: "star.fill")
                             .font(.system(size: 10))
                             .foregroundColor(.yellow)
                             .symbolRenderingMode(.multicolor)
                     }
-                    
+
                     Spacer()
                 }
                 

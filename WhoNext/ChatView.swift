@@ -1,6 +1,7 @@
 import SwiftUI
 import CoreData
 import AppKit
+import Down
 
 struct ChatView: View {
     @Environment(\.managedObjectContext) private var viewContext
@@ -384,7 +385,7 @@ struct ChatView: View {
 struct MessageBubble: View {
     let message: ChatMessage
     @State private var isHovered = false
-    
+
     var body: some View {
         HStack {
             if message.isUser {
@@ -396,8 +397,8 @@ struct MessageBubble: View {
                         .padding(16)
                         .background(
                             LinearGradient(
-                                colors: [Color.accentColor, Color.accentColor.opacity(0.8)], 
-                                startPoint: .topLeading, 
+                                colors: [Color.accentColor, Color.accentColor.opacity(0.8)],
+                                startPoint: .topLeading,
                                 endPoint: .bottomTrailing
                             )
                         )
@@ -407,9 +408,9 @@ struct MessageBubble: View {
                         .scaleEffect(isHovered ? 1.02 : 1.0)
                         .animation(.easeInOut(duration: 0.2), value: isHovered)
                 } else {
-                    // Enhanced AI response bubble
-                    Text(message.content)
-                        .padding(16)
+                    // Enhanced AI response bubble with proper markdown indentation
+                    PopoutMarkdownTextView(markdown: message.content)
+                        .frame(maxWidth: 400, alignment: .leading)
                         .background(
                             RoundedRectangle(cornerRadius: 18)
                                 .fill(Color(NSColor.controlBackgroundColor))
@@ -418,11 +419,6 @@ struct MessageBubble: View {
                                         .stroke(Color.gray.opacity(0.1), lineWidth: 1)
                                 )
                         )
-                        .foregroundColor(.primary)
-                        .textSelection(.enabled)
-                        .font(.system(size: 15, weight: .regular, design: .rounded))
-                        .multilineTextAlignment(.leading)
-                        .frame(maxWidth: 400, alignment: .leading)
                         .shadow(color: .black.opacity(0.08), radius: isHovered ? 6 : 3, x: 0, y: 1)
                         .scaleEffect(isHovered ? 1.01 : 1.0)
                         .animation(.easeInOut(duration: 0.2), value: isHovered)
@@ -589,6 +585,123 @@ struct OnboardingRow: View {
                 Text(description)
                     .font(.callout)
                     .foregroundColor(.secondary)
+            }
+        }
+    }
+}
+
+// Custom markdown renderer that preserves list indentation with proper sizing
+struct PopoutMarkdownTextView: View {
+    let markdown: String
+    @State private var calculatedHeight: CGFloat = 0
+
+    var body: some View {
+        MarkdownTextViewWrapper(markdown: markdown, calculatedHeight: $calculatedHeight)
+            .frame(height: max(calculatedHeight, 30))
+    }
+}
+
+struct MarkdownTextViewWrapper: NSViewRepresentable {
+    let markdown: String
+    @Binding var calculatedHeight: CGFloat
+
+    func makeNSView(context: Context) -> NSScrollView {
+        let scrollView = NSScrollView()
+        scrollView.hasVerticalScroller = false
+        scrollView.hasHorizontalScroller = false
+        scrollView.borderType = .noBorder
+        scrollView.backgroundColor = .clear
+        scrollView.drawsBackground = false
+
+        let textView = NSTextView()
+        textView.isEditable = false
+        textView.isSelectable = true
+        textView.backgroundColor = .clear
+        textView.drawsBackground = false
+        textView.textContainerInset = NSSize(width: 16, height: 14)
+        textView.textContainer?.lineFragmentPadding = 0
+        textView.textContainer?.widthTracksTextView = true
+        textView.isVerticallyResizable = true
+        textView.isHorizontallyResizable = false
+        textView.autoresizingMask = [.width]
+
+        scrollView.documentView = textView
+
+        return scrollView
+    }
+
+    func updateNSView(_ nsView: NSScrollView, context: Context) {
+        guard let textView = nsView.documentView as? NSTextView else { return }
+
+        do {
+            let down = try Down(markdownString: markdown)
+            let attributedString = try down.toAttributedString()
+
+            // Apply proper styling with indentation
+            let mutableString = NSMutableAttributedString(attributedString: attributedString)
+            let fullRange = NSRange(location: 0, length: mutableString.length)
+
+            // Set base font
+            mutableString.addAttribute(.font, value: NSFont.systemFont(ofSize: 15), range: fullRange)
+            mutableString.addAttribute(.foregroundColor, value: NSColor.labelColor, range: fullRange)
+
+            // Configure paragraph styles for lists
+            mutableString.enumerateAttribute(.paragraphStyle, in: fullRange) { value, range, _ in
+                let paragraphStyle = (value as? NSParagraphStyle)?.mutableCopy() as? NSMutableParagraphStyle ?? NSMutableParagraphStyle()
+
+                // Get the text in this range to check if it's a list item
+                let text = (mutableString.string as NSString).substring(with: range)
+
+                // Detect and style numbered lists (1., 2., etc.)
+                if text.range(of: #"^\d+\."#, options: .regularExpression) != nil {
+                    paragraphStyle.firstLineHeadIndent = 0
+                    paragraphStyle.headIndent = 0
+                    paragraphStyle.paragraphSpacing = 8
+                    paragraphStyle.paragraphSpacingBefore = 4
+                }
+                // Detect and style bullet points with proper indentation
+                else if text.hasPrefix("•") || text.hasPrefix("-") || text.hasPrefix("*") {
+                    // Check indentation level based on leading whitespace
+                    let leadingSpaces = text.prefix(while: { $0.isWhitespace }).count
+                    let indentLevel = leadingSpaces / 2 // Assuming 2 spaces per indent level
+
+                    let baseIndent: CGFloat = 20
+                    let indentMultiplier: CGFloat = 20
+
+                    paragraphStyle.firstLineHeadIndent = baseIndent + (CGFloat(indentLevel) * indentMultiplier)
+                    paragraphStyle.headIndent = baseIndent + (CGFloat(indentLevel) * indentMultiplier) + 15
+                    paragraphStyle.tabStops = [NSTextTab(textAlignment: .left, location: paragraphStyle.headIndent)]
+                    paragraphStyle.paragraphSpacing = 4
+                }
+                // Regular paragraph
+                else {
+                    paragraphStyle.paragraphSpacing = 8
+                }
+
+                mutableString.addAttribute(.paragraphStyle, value: paragraphStyle, range: range)
+            }
+
+            textView.textStorage?.setAttributedString(mutableString)
+
+            // Calculate required height
+            textView.layoutManager?.ensureLayout(for: textView.textContainer!)
+            let usedRect = textView.layoutManager?.usedRect(for: textView.textContainer!)
+            let height = (usedRect?.height ?? 0) + textView.textContainerInset.height * 2
+
+            DispatchQueue.main.async {
+                calculatedHeight = height
+            }
+        } catch {
+            // Fallback to plain text
+            textView.string = markdown
+
+            // Calculate height for plain text
+            textView.layoutManager?.ensureLayout(for: textView.textContainer!)
+            let usedRect = textView.layoutManager?.usedRect(for: textView.textContainer!)
+            let height = (usedRect?.height ?? 0) + textView.textContainerInset.height * 2
+
+            DispatchQueue.main.async {
+                calculatedHeight = height
             }
         }
     }

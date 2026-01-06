@@ -365,14 +365,14 @@ class TranscriptProcessor: ObservableObject {
     
     private func createParticipantInfoWithMatching(from names: [String]) async -> [ParticipantInfo] {
         var participantInfos: [ParticipantInfo] = []
-        
+
         for name in names {
-            // Skip if this is Bob (the user)
-            if name.lowercased().contains("bob") {
-                print("🔍 Skipping user's own name: \(name)")
+            // Skip if this is the current user
+            if UserProfile.shared.isCurrentUser(name) {
+                print("🔍 Skipping current user: \(name)")
                 continue
             }
-            
+
             let matchedPerson = await findBestMatch(for: name)
             let participantInfo = ParticipantInfo(
                 name: name,
@@ -382,14 +382,14 @@ class TranscriptProcessor: ObservableObject {
                 existingPersonId: matchedPerson?.identifier
             )
             participantInfos.append(participantInfo)
-            
+
             if let match = matchedPerson {
                 print("🔍 Auto-matched '\(name)' to existing person: '\(match.name ?? "Unknown")' (confidence: high)")
             } else {
                 print("🔍 No match found for '\(name)' - will need manual selection")
             }
         }
-        
+
         return participantInfos
     }
     

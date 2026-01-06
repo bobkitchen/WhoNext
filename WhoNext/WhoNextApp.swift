@@ -13,13 +13,17 @@ struct WhoNextApp: App {
         WindowGroup(id: "main-window") {
             ContentView()
                 .environment(\.managedObjectContext, persistenceController.container.viewContext)
+                .fallbackNotifications()
                 .onAppear {
+                    // Clean up any Person records for the current user
+                    cleanupUserPersonRecords()
+
                     // Initialize sentiment analysis on app startup
                     initializeSentimentAnalysis()
-                    
+
                     // Trigger initial sync on app launch
                     triggerLaunchSync()
-                    
+
                     // Auto-start meeting monitoring for seamless recording
                     startAutoRecordingMonitoring()
                 }
@@ -105,50 +109,53 @@ struct WhoNextApp: App {
     
     /// Trigger sync on app launch to ensure fresh data
     private func triggerLaunchSync() {
-        print("🚀 App Launch: Triggering sync to ensure fresh data...")
-        Task {
-            let result = await RobustSyncManager.shared.performSync()
-            switch result {
-            case .success(let stats):
-                print("✅ Launch sync completed: \(stats.totalOperations) operations in \(String(format: "%.1f", stats.duration))s")
-            case .failure(let error):
-                print("❌ Launch sync failed: \(error.errorDescription ?? "Unknown error")")
-            case .partial(let stats, let errors):
-                print("⚠️ Launch sync partial: \(stats.totalOperations) operations, \(errors.count) errors")
-            }
-        }
+        // DISABLED: Now using CloudKit for automatic sync instead of Supabase
+        // CloudKit sync happens automatically via NSPersistentCloudKitContainer
+        print("☁️ CloudKit: Automatic sync enabled - no manual sync needed")
     }
     
     /// Auto-start meeting monitoring for seamless recording
     private func startAutoRecordingMonitoring() {
-        // Always start monitoring (Default behavior)
-        print("🎯 Auto-Recording: Starting monitoring on app launch...")
-        
-        // Start the recording engine monitoring
-        MeetingRecordingEngine.shared.startMonitoring()
-        
-        // Log the status and show floating indicator
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
-            if MeetingRecordingEngine.shared.isMonitoring {
-                print("✅ Auto-Recording: Monitoring active - ready to detect meetings")
-                
-                // Show floating status indicator
-                FloatingStatusWindowController.shared.showIfNeeded()
-                
-                // Post notification for UI updates
-                NotificationCenter.default.post(
-                    name: Notification.Name("MonitoringStatusChanged"),
-                    object: nil,
-                    userInfo: ["isMonitoring": true]
-                )
-            } else {
-                print("⚠️ Auto-Recording: Failed to start monitoring")
+        // DISABLED: Do NOT auto-start monitoring to avoid interfering with AirPods/audio
+        // Users can manually start monitoring via the toolbar button or menu command
+        print("🎯 Auto-Recording: Auto-start disabled - user can manually start monitoring")
+        print("🎯 Use the toolbar button or Recording > Start Monitoring menu to begin")
+
+        // Don't start monitoring automatically
+        // MeetingRecordingEngine.shared.startMonitoring()
+    }
+
+    /// Remove any Person records that belong to the current user
+    private func cleanupUserPersonRecords() {
+        let context = persistenceController.container.viewContext
+        let request = NSFetchRequest<Person>(entityName: "Person")
+
+        do {
+            let allPeople = try context.fetch(request)
+            var deletedCount = 0
+
+            for person in allPeople {
+                if person.isCurrentUser {
+                    print("🗑️ Removing user Person record: \(person.name ?? "Unknown")")
+                    context.delete(person)
+                    deletedCount += 1
+                }
             }
+
+            if deletedCount > 0 {
+                try context.save()
+                print("✅ Cleaned up \(deletedCount) user Person record(s)")
+            } else {
+                print("✅ No user Person records to clean up")
+            }
+        } catch {
+            print("❌ Failed to cleanup user Person records: \(error)")
         }
     }
-    
+
 }
 
 extension Notification.Name {
     static let triggerCSVImport = Notification.Name("triggerCSVImport")
+    static let showParticipantConfirmation = Notification.Name("showParticipantConfirmation")
 }

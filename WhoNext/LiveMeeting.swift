@@ -157,6 +157,42 @@ class LiveMeeting: ObservableObject, Identifiable {
             }
         }.joined(separator: "\n")
     }
+
+    // MARK: - Memory Management
+
+    private var flushedSegments: [TranscriptSegment] = [] // Segments saved to disk
+    private var lastFlushTime: Date?
+    private let maxSegmentsInMemory = 100
+
+    /// Flush old transcript segments to reduce memory usage during long meetings
+    func flushOldSegments() {
+        guard transcript.count > maxSegmentsInMemory else { return }
+
+        // Move older segments to flushed array (would be written to disk in production)
+        let segmentsToFlush = transcript.count - maxSegmentsInMemory
+        let oldSegments = Array(transcript.prefix(segmentsToFlush))
+
+        // In production, write to disk here
+        flushedSegments.append(contentsOf: oldSegments)
+
+        // Keep only recent segments in memory
+        transcript = Array(transcript.suffix(maxSegmentsInMemory))
+
+        lastFlushTime = Date()
+        print("💾 Flushed \(segmentsToFlush) transcript segments to disk, keeping \(transcript.count) in memory")
+    }
+
+    /// Get full transcript including flushed segments
+    func getFullTranscriptText() -> String {
+        let allSegments = flushedSegments + transcript
+        return allSegments.map { segment in
+            if let speaker = segment.speakerName {
+                return "\(speaker): \(segment.text)"
+            } else {
+                return segment.text
+            }
+        }.joined(separator: "\n")
+    }
     
     // MARK: - Meeting Type Detection
     

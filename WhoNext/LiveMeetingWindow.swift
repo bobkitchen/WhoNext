@@ -31,9 +31,13 @@ class LiveMeetingWindowController: NSWindowController {
         window.level = .floating
         window.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
         window.contentViewController = hostingController
-        
+
+        // CRITICAL: Disable window restoration to prevent bad positioning
+        window.isRestorable = false
+        window.setFrameAutosaveName("")
+
         super.init(window: window)
-        
+
         // Position window in top-right corner
         positionWindow()
     }
@@ -43,15 +47,26 @@ class LiveMeetingWindowController: NSWindowController {
     }
     
     private func positionWindow() {
-        guard let window = window, let screen = NSScreen.main else { return }
-        
+        guard let window = window else { return }
+        let screen = window.screen ?? NSScreen.main ?? NSScreen.screens.first
+        guard let screen = screen else { return }
+
         let screenFrame = screen.visibleFrame
         let windowFrame = window.frame
-        
-        let xPos = screenFrame.maxX - windowFrame.width - 20
-        let yPos = screenFrame.maxY - windowFrame.height - 20
-        
-        window.setFrameOrigin(NSPoint(x: xPos, y: yPos))
+        let padding: CGFloat = 20
+
+        // Calculate position from top-right with padding
+        let xPos = screenFrame.maxX - windowFrame.width - padding
+        let yPos = screenFrame.maxY - windowFrame.height - padding
+
+        // Ensure window stays fully on screen with safe boundaries
+        let safeX = max(screenFrame.minX + padding, min(xPos, screenFrame.maxX - windowFrame.width - padding))
+        let safeY = max(screenFrame.minY + padding, min(yPos, screenFrame.maxY - windowFrame.height - padding))
+
+        window.setFrameOrigin(NSPoint(x: safeX, y: safeY))
+
+        print("🟢 LiveMeetingWindow positioned at: \(safeX), \(safeY)")
+        print("🟢 Screen bounds: \(screenFrame)")
     }
     
     func updateMeeting(_ meeting: LiveMeeting) {

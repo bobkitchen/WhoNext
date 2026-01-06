@@ -16,15 +16,17 @@ struct LeftToolbarActions<T: StateManagement>: View {
             .padding(.horizontal, 4)
             
             Button(action: {
-                // If not on People tab, switch to People, then trigger add person after a short delay
-                if appState.selectedTab != .people {
-                    appState.selectedTab = .people
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
-                        NotificationCenter.default.post(name: .triggerAddPerson, object: nil)
+                // Open the Add Person window
+                let windowController = AddPersonWindowController(
+                    onSave: {
+                        // Switch to People tab to show the new person
+                        appState.selectedTab = .people
+                    },
+                    onCancel: {
+                        // Nothing to do on cancel
                     }
-                } else {
-                    NotificationCenter.default.post(name: .triggerAddPerson, object: nil)
-                }
+                )
+                windowController.showWindow()
             }) {
                 Image(systemName: "person.crop.circle.badge.plus")
                     .font(.system(size: 16, weight: .medium))

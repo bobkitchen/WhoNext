@@ -5,15 +5,16 @@ struct UpcomingMeetingsView: View {
     @Binding var selectedPersonID: UUID?
     @Binding var selectedPerson: Person?
     @Binding var selectedTab: SidebarItem
-    
+
     @Environment(\.managedObjectContext) private var viewContext
     @FetchRequest(
         sortDescriptors: [NSSortDescriptor(keyPath: \Person.name, ascending: true)],
         predicate: nil,
         animation: .default
     ) private var people: FetchedResults<Person>
-    
+
     @StateObject private var calendarService = CalendarService.shared
+    @ObservedObject private var recordingEngine = MeetingRecordingEngine.shared
     
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
@@ -35,24 +36,14 @@ struct UpcomingMeetingsView: View {
                     GridItem(.flexible(), spacing: 16)
                 ], spacing: 16) {
                     ForEach(upcomingMeetingsThisWeek, id: \.id) { meeting in
-                        UpcomingMeetingCard(
+                        EnhancedMeetingCard(
                             meeting: meeting,
-                            matchedPerson: people.first { person in
-                                meeting.attendees?.contains { attendee in
-                                    attendee.lowercased().contains(person.name?.lowercased() ?? "")
-                                } ?? false
-                            }
-                        ) {
-                            if let matchedPerson = people.first(where: { person in
-                                meeting.attendees?.contains { attendee in
-                                    attendee.lowercased().contains(person.name?.lowercased() ?? "")
-                                } ?? false
-                            }) {
-                                selectedPerson = matchedPerson
-                                selectedPersonID = matchedPerson.identifier
-                                selectedTab = .people
-                            }
-                        }
+                            recordingEngine: recordingEngine,
+                            selectedPersonID: $selectedPersonID,
+                            selectedPerson: $selectedPerson,
+                            selectedTab: $selectedTab,
+                            isCurrentlyRecording: recordingEngine.currentMeeting?.calendarTitle == meeting.title
+                        )
                     }
                 }
             }

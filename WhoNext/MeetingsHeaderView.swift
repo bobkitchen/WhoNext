@@ -4,7 +4,7 @@ struct MeetingsHeaderView: View {
     @Binding var selectedFilter: MeetingsView.MeetingFilter
     let todaysCount: Int
     let thisWeeksCount: Int
-    let onJoinMeeting: () -> Void
+    let onRecordMeeting: () -> Void
     
     var body: some View {
         VStack(spacing: 0) {
@@ -42,7 +42,7 @@ struct MeetingsHeaderView: View {
                 Spacer()
                 
                 // Record Button (Quick Action)
-                Button(action: onJoinMeeting) {
+                Button(action: onRecordMeeting) {
                     Label("Record Meeting", systemImage: "record.circle")
                         .font(.system(size: 12, weight: .medium))
                 }

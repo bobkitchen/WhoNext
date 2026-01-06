@@ -13,7 +13,7 @@ struct SettingsView: View {
     @State private var claudeApiKey: String = ""
     @State private var openrouterApiKey: String = ""
     @State private var hasLoadedKeys = false
-    @AppStorage("openrouterModel") private var openrouterModel: String = "meta-llama/llama-3.1-8b-instruct:free"
+    @AppStorage("openrouterModel") private var openrouterModel: String = "google/gemma-2-9b-it:free"
     @AppStorage("aiProvider") private var aiProvider: String = "apple"
     @AppStorage("fallbackProvider") private var fallbackProvider: String = "openrouter"
     @AppStorage("dismissedPeople") private var dismissedPeopleData: Data = Data()
@@ -118,6 +118,8 @@ Best regards
     @State private var importSuccess: String?
     @State private var pastedPeopleText: String = ""
     @State private var showResetConfirmation = false
+    @State private var showModelWarning = false
+    @State private var pendingFileURL: URL?
     @State private var showDeleteOrphanedConfirmation = false
     @State private var showAdvancedSyncOptions = false
     @State private var availableCalendars: [EKCalendar] = []
@@ -252,6 +254,26 @@ Best regards
                     SecureStorage.setAPIKey(newValue, for: .openrouter)
                 }
             }
+        }
+        .alert("Recommended Model for Org Charts", isPresented: $showModelWarning) {
+            Button("Switch to GPT-5") {
+                openrouterModel = "openai/gpt-5"
+                if let fileURL = pendingFileURL {
+                    performOrgChartImport(fileURL)
+                }
+                pendingFileURL = nil
+            }
+            Button("Continue with \(openrouterModel.components(separatedBy: "/").last ?? openrouterModel)") {
+                if let fileURL = pendingFileURL {
+                    performOrgChartImport(fileURL)
+                }
+                pendingFileURL = nil
+            }
+            Button("Cancel", role: .cancel) {
+                pendingFileURL = nil
+            }
+        } message: {
+            Text("For best results with org chart imports, GPT-5 or GPT-5.2 are recommended.\n\nCurrent model: \(openrouterModel)")
         }
         .sheet(isPresented: $showingVoiceTraining) {
             VoiceTrainingView()
@@ -510,280 +532,97 @@ Best regards
     // MARK: - AI Settings
     private var aiSettingsView: some View {
         VStack(alignment: .leading, spacing: 20) {
-            // AI Provider Section
+            // OpenRouter API Key Section
             VStack(alignment: .leading, spacing: 8) {
-                Text("AI Provider")
+                Text("OpenRouter API Configuration")
                     .font(.headline)
-                Picker("AI Provider", selection: $aiProvider) {
-                    if #available(iOS 18.1, macOS 15.1, *) {
-                        Text("🍎 Apple Intelligence (On-Device)").tag("apple")
+
+                Text("API Key")
+                    .font(.subheadline)
+                HStack {
+                    SecureField("or-...", text: $openrouterApiKey)
+                        .textFieldStyle(.roundedBorder)
+                    Button("Get Free Key") {
+                        if let url = URL(string: "https://openrouter.ai/keys") {
+                            NSWorkspace.shared.open(url)
+                        }
                     }
-                    Text("OpenAI").tag("openai")
-                    Text("Claude").tag("claude")
-                    Text("OpenRouter (Free)").tag("openrouter")
+                }
+                Text("OpenRouter provides access to premium models (GPT-5.2, Claude Sonnet 4.5), mid-tier options (GPT-4o Mini, Claude Haiku), and free models through one API key.")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+
+                Text("Select Model")
+                    .font(.subheadline)
+                Picker("Select Model", selection: $openrouterModel) {
+                    // FREE MODELS
+                    Text("🆓 Google Gemma 2 9B (FREE)").tag("google/gemma-2-9b-it:free")
+                    Text("🆓 Llama 3.1 8B (FREE)").tag("meta-llama/llama-3.1-8b-instruct:free")
+
+                    // BUDGET - OpenAI
+                    Text("⚡ GPT-4o Mini ($0.15/$0.60)").tag("openai/gpt-4o-mini")
+                    Text("⚡ GPT-4.1 Nano").tag("openai/gpt-4.1-nano")
+
+                    // BUDGET - Claude
+                    Text("🤖 Claude 4.5 Haiku").tag("anthropic/claude-4.5-haiku")
+
+                    // PREMIUM - OpenAI
+                    Text("💎 GPT-5 ($1.25/$10)").tag("openai/gpt-5")
+                    Text("💎 GPT-5.2 ($1.75/$14)").tag("openai/gpt-5.2")
+
+                    // PREMIUM - Claude
+                    Text("⭐ Claude Sonnet 4.5 ($3/$15)").tag("anthropic/claude-sonnet-4.5")
                 }
                 .pickerStyle(.menu)
-                
-                // Provider benefits
-                if aiProvider == "apple" {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("✅ Complete Privacy - Processing stays on device")
-                            .font(.caption)
-                            .foregroundColor(.green)
-                        Text("✅ No API costs or internet required")
-                            .font(.caption)
-                            .foregroundColor(.green)
-                        Text("✅ Fast response times")
-                            .font(.caption)
-                            .foregroundColor(.green)
-                        if #unavailable(iOS 18.1, macOS 15.1) {
-                            Text("⚠️ Requires iOS 18.1+ or macOS 15.1+")
-                                .font(.caption)
-                                .foregroundColor(.orange)
-                        }
-                    }
-                }
+                Text("Current: \(openrouterModel)")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
             }
-            
-            // API Key Section
-            if aiProvider != "apple" {
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("API Key")
+
+            // OpenRouter Balance Display
+            VStack(alignment: .leading, spacing: 8) {
+                HStack {
+                    Text("OpenRouter Credits")
                         .font(.headline)
-                    if aiProvider == "openai" {
-                        HStack {
-                            SecureField("sk-...", text: $apiKey)
-                                .textFieldStyle(.roundedBorder)
-                            Button("Validate") {
-                                validateApiKey()
-                            }
-                            .buttonStyle(LiquidGlassButtonStyle(variant: .secondary, size: .small))
-                            .disabled(isValidatingKey)
+
+                    Spacer()
+
+                    Button(action: {
+                        Task {
+                            await checkAPIBalance()
                         }
-                        if isValidatingKey {
-                            Text("Validating...")
-                                .foregroundColor(.secondary)
-                        } else if isKeyValid {
-                            Text("✓ Valid API Key")
-                                .foregroundColor(.green)
-                        } else if let error = keyError {
-                            Text("✗ \(error)")
-                                .foregroundColor(.red)
-                        }
-                    } else if aiProvider == "claude" {
-                        HStack {
-                            SecureField("ck-...", text: $claudeApiKey)
-                                .textFieldStyle(.roundedBorder)
-                            Button("Validate") {
-                                validateClaudeApiKey()
+                    }) {
+                        HStack(spacing: 4) {
+                            if isCheckingBalance {
+                                ProgressView()
+                                    .scaleEffect(0.7)
+                                    .frame(width: 14, height: 14)
+                            } else {
+                                Image(systemName: "arrow.clockwise")
                             }
-                            .buttonStyle(LiquidGlassButtonStyle(variant: .secondary, size: .small))
-                            .disabled(isValidatingClaudeKey)
-                        }
-                        if isValidatingClaudeKey {
-                            Text("Validating...")
-                                .foregroundColor(.secondary)
-                        } else if isClaudeKeyValid {
-                            Text("✓ Valid API Key")
-                                .foregroundColor(.green)
-                        } else if let error = claudeKeyError {
-                            Text("✗ \(error)")
-                                .foregroundColor(.red)
-                        }
-                    } else if aiProvider == "openrouter" {
-                        VStack(alignment: .leading, spacing: 8) {
-                            HStack {
-                                SecureField("or-...", text: $openrouterApiKey)
-                                    .textFieldStyle(.roundedBorder)
-                                Button("Get Free Key") {
-                                    if let url = URL(string: "https://openrouter.ai/keys") {
-                                        NSWorkspace.shared.open(url)
-                                    }
-                                }
-                            }
-                            Text("OpenRouter provides free access to Llama 3.1 8B and other models. Vision analysis will fallback to OpenAI if configured.")
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-                            HStack {
-                                Text("Model")
-                                    .frame(width: 60, alignment: .leading)
-                                Picker("Select Model", selection: $openrouterModel) {
-                                    Text("Llama 3.1 8B (Free)").tag("meta-llama/llama-3.1-8b-instruct:free")
-                                    Text("Llama 3.2 3B (Free)").tag("meta-llama/llama-3.2-3b-instruct:free")
-                                    Text("Mistral 7B (Free)").tag("mistralai/mistral-7b-instruct:free")
-                                    Text("Nous Hermes 2 Mixtral (Free)").tag("nousresearch/hermes-2-pro-mistral-7b:free")
-                                    Text("Phi-3 Mini (Free)").tag("microsoft/phi-3-mini-128k-instruct:free")
-                                    Text("Gemma 2 9B (Free)").tag("google/gemma-2-9b-it:free")
-                                    Text("Qwen 2.5 7B (Free)").tag("qwen/qwen-2.5-7b-instruct:free")
-                                }
-                                .pickerStyle(.menu)
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                            }
-                            Text("Current: \(openrouterModel)")
-                                .font(.caption)
-                                .foregroundColor(.secondary)
+                            Text(isCheckingBalance ? "Checking..." : "Check Balance")
                         }
                     }
+                    .buttonStyle(.link)
+                    .disabled(isCheckingBalance)
                 }
-            }
 
-            // API Balance/Credits Display
-            if aiProvider != "apple" {
-                VStack(alignment: .leading, spacing: 8) {
-                    HStack {
-                        Text("API Credits / Balance")
-                            .font(.headline)
-
-                        Spacer()
-
-                        Button(action: {
-                            Task {
-                                await checkAPIBalance()
-                            }
-                        }) {
-                            HStack(spacing: 4) {
-                                if isCheckingBalance {
-                                    ProgressView()
-                                        .scaleEffect(0.7)
-                                        .frame(width: 14, height: 14)
-                                } else {
-                                    Image(systemName: "arrow.clockwise")
-                                }
-                                Text(isCheckingBalance ? "Checking..." : "Check Balance")
-                            }
-                        }
-                        .buttonStyle(.link)
-                        .disabled(isCheckingBalance)
-                    }
-
-                    // Display balance for current provider
-                    if aiProvider == "openai", let balance = openaiBalance {
-                        BalanceDisplayRow(balance: balance)
-                    } else if aiProvider == "claude", let balance = claudeBalance {
-                        BalanceDisplayRow(balance: balance)
-                    } else if aiProvider == "openrouter", let balance = openrouterBalance {
-                        BalanceDisplayRow(balance: balance)
-                    } else {
-                        Text("Click 'Check Balance' to view your API credits")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                    }
-
-                    // Links to add credits
-                    if aiProvider == "openai" {
-                        Button("Add Credits at platform.openai.com") {
-                            if let url = URL(string: "https://platform.openai.com/account/billing/overview") {
-                                NSWorkspace.shared.open(url)
-                            }
-                        }
-                        .buttonStyle(.link)
-                        .font(.caption)
-                    } else if aiProvider == "claude" {
-                        Button("Add Credits at console.anthropic.com") {
-                            if let url = URL(string: "https://console.anthropic.com/settings/billing") {
-                                NSWorkspace.shared.open(url)
-                            }
-                        }
-                        .buttonStyle(.link)
-                        .font(.caption)
-                    } else if aiProvider == "openrouter" {
-                        Button("Add Credits at openrouter.ai") {
-                            if let url = URL(string: "https://openrouter.ai/credits") {
-                                NSWorkspace.shared.open(url)
-                            }
-                        }
-                        .buttonStyle(.link)
-                        .font(.caption)
-                    }
-                }
-            }
-
-            // Fallback Provider Section (only show when primary is Apple Intelligence)
-            if aiProvider == "apple" {
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("Fallback AI Provider")
-                        .font(.headline)
-                    Text("When Apple Intelligence refuses sensitive content, automatically use:")
+                // Display OpenRouter balance
+                if let balance = openrouterBalance {
+                    BalanceDisplayRow(balance: balance)
+                } else {
+                    Text("Click 'Check Balance' to view your API credits")
                         .font(.caption)
                         .foregroundColor(.secondary)
-
-                    Picker("Fallback Provider", selection: $fallbackProvider) {
-                        Text("OpenRouter (Free)").tag("openrouter")
-                        Text("OpenAI").tag("openai")
-                        Text("Claude").tag("claude")
-                    }
-                    .pickerStyle(.menu)
-
-                    // Show warning if fallback provider isn't configured
-                    if fallbackProvider == "openrouter" && openrouterApiKey.isEmpty {
-                        HStack(spacing: 8) {
-                            Image(systemName: "exclamationmark.triangle.fill")
-                                .foregroundColor(.orange)
-                            Text("Configure OpenRouter API key below to enable fallback")
-                                .font(.caption)
-                                .foregroundColor(.orange)
-                        }
-                        .padding(.vertical, 4)
-                    } else if fallbackProvider == "openai" && apiKey.isEmpty {
-                        HStack(spacing: 8) {
-                            Image(systemName: "exclamationmark.triangle.fill")
-                                .foregroundColor(.orange)
-                            Text("Configure OpenAI API key below to enable fallback")
-                                .font(.caption)
-                                .foregroundColor(.orange)
-                        }
-                        .padding(.vertical, 4)
-                    } else if fallbackProvider == "claude" && claudeApiKey.isEmpty {
-                        HStack(spacing: 8) {
-                            Image(systemName: "exclamationmark.triangle.fill")
-                                .foregroundColor(.orange)
-                            Text("Configure Claude API key below to enable fallback")
-                                .font(.caption)
-                                .foregroundColor(.orange)
-                        }
-                        .padding(.vertical, 4)
-                    } else {
-                        HStack(spacing: 8) {
-                            Image(systemName: "checkmark.circle.fill")
-                                .foregroundColor(.green)
-                            Text("Fallback configured - will automatically switch if needed")
-                                .font(.caption)
-                                .foregroundColor(.green)
-                        }
-                        .padding(.vertical, 4)
-                    }
                 }
 
-                // Show API key field for fallback provider if not configured
-                if (fallbackProvider == "openrouter" && openrouterApiKey.isEmpty) ||
-                   (fallbackProvider == "openai" && apiKey.isEmpty) ||
-                   (fallbackProvider == "claude" && claudeApiKey.isEmpty) {
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("\(fallbackProvider == "openrouter" ? "OpenRouter" : fallbackProvider == "openai" ? "OpenAI" : "Claude") API Key (for fallback)")
-                            .font(.headline)
-
-                        if fallbackProvider == "openrouter" {
-                            HStack {
-                                SecureField("or-...", text: $openrouterApiKey)
-                                    .textFieldStyle(.roundedBorder)
-                                Button("Get Free Key") {
-                                    if let url = URL(string: "https://openrouter.ai/keys") {
-                                        NSWorkspace.shared.open(url)
-                                    }
-                                }
-                            }
-                            Text("Free tier includes Llama, Gemini Flash, Mistral and more")
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-                        } else if fallbackProvider == "openai" {
-                            SecureField("sk-...", text: $apiKey)
-                                .textFieldStyle(.roundedBorder)
-                        } else {
-                            SecureField("sk-ant-...", text: $claudeApiKey)
-                                .textFieldStyle(.roundedBorder)
-                        }
+                Button("Add Credits at openrouter.ai") {
+                    if let url = URL(string: "https://openrouter.ai/credits") {
+                        NSWorkspace.shared.open(url)
                     }
                 }
+                .buttonStyle(.link)
+                .font(.caption)
             }
 
             Divider()
@@ -1735,18 +1574,7 @@ Best regards
 
     private func checkAPIBalance() async {
         isCheckingBalance = true
-
-        switch aiProvider {
-        case "openai":
-            openaiBalance = await APIBalanceService.checkOpenAIBalance(apiKey: apiKey)
-        case "claude":
-            claudeBalance = await APIBalanceService.checkClaudeBalance(apiKey: claudeApiKey)
-        case "openrouter":
-            openrouterBalance = await APIBalanceService.checkOpenRouterBalance(apiKey: openrouterApiKey)
-        default:
-            break
-        }
-
+        openrouterBalance = await APIBalanceService.checkOpenRouterBalance(apiKey: openrouterApiKey)
         isCheckingBalance = false
     }
 
@@ -1910,11 +1738,26 @@ Best regards
     private func processOrgChartFile(_ fileURL: URL) {
         print("🔍 [DROP] File dropped: \(fileURL.lastPathComponent)")
         print("🔍 [DROP] File path: \(fileURL.path)")
-        
+
         // Clear previous messages
         importSuccess = nil
         importError = nil
-        
+
+        // Check if current model is GPT - if not, show warning
+        let isGPTModel = openrouterModel.contains("gpt-") || openrouterModel.contains("openai/gpt")
+
+        if !isGPTModel {
+            // Store the file URL and show warning
+            pendingFileURL = fileURL
+            showModelWarning = true
+            return
+        }
+
+        // Process directly if using GPT
+        performOrgChartImport(fileURL)
+    }
+
+    private func performOrgChartImport(_ fileURL: URL) {
         pdfProcessor.processOrgChartFile(fileURL) { result in
             DispatchQueue.main.async {
                 switch result {

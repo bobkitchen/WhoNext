@@ -2,11 +2,10 @@
 //  Persistence.swift
 //  WhoNext
 //
-//  Updated for CloudKit sync
+//  Updated for Supabase integration - CloudKit removed
 //
 
 import CoreData
-import CloudKit
 
 struct PersistenceController {
     static let shared = PersistenceController()
@@ -29,7 +28,7 @@ struct PersistenceController {
 
     // MARK: - Core stack ------------------------------------------------------
 
-    let container: NSPersistentCloudKitContainer
+    let container: NSPersistentContainer
 
     init(inMemory: Bool = false) {
 
@@ -44,9 +43,9 @@ struct PersistenceController {
             fatalError("❌ Unable to locate Core Data model.")
         }
 
-        // Create CloudKit container for automatic iCloud sync
-        container = NSPersistentCloudKitContainer(name: modelName,
-                                                  managedObjectModel: model)
+        // Create a regular Core Data container (no CloudKit)
+        container = NSPersistentContainer(name: modelName,
+                                         managedObjectModel: model)
 
         // ---------------------------------------------------------------------
         // TUNE THE PERSISTENT-STORE DESCRIPTION
@@ -58,8 +57,8 @@ struct PersistenceController {
         // 1. Allow lightweight migration
         store.setOption(true as NSNumber, forKey: NSMigratePersistentStoresAutomaticallyOption)
         store.setOption(true as NSNumber, forKey: NSInferMappingModelAutomaticallyOption)
-
-        // 2. Enable persistent history tracking (required for CloudKit)
+        
+        // 2. Enable persistent history tracking to avoid read-only mode
         store.setOption(true as NSNumber, forKey: NSPersistentHistoryTrackingKey)
         store.setOption(true as NSNumber, forKey: NSPersistentStoreRemoteChangeNotificationPostOptionKey)
 
