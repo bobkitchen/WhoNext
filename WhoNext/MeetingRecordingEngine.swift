@@ -1386,23 +1386,6 @@ class MeetingRecordingEngine: ObservableObject {
         }
     }
     
-    private func showLiveMeetingWindow() {
-        guard let meeting = currentMeeting else { return }
-        print("🪟 Showing live meeting window")
-        
-        DispatchQueue.main.async {
-            LiveMeetingWindowManager.shared.showWindow(for: meeting)
-        }
-    }
-    
-    private func hideLiveMeetingWindow() {
-        print("🪟 Hiding live meeting window")
-        
-        DispatchQueue.main.async {
-            LiveMeetingWindowManager.shared.hideWindow()
-        }
-    }
-    
     // MARK: - Private Methods - Voice Print Management
     
     /// Save speaker embeddings from diarization to Person records
@@ -2306,18 +2289,7 @@ extension MeetingRecordingEngine {
     /// Handle ad-hoc meeting detected by microphone monitor
     private func handleAdHocMeetingDetected(_ appName: String) {
         print("📞 Ad-hoc meeting detected via microphone: \(appName)")
-
-        // Create detected meeting for user prompt
-        let meeting = DetectedMeeting(
-            title: "\(appName) Call",
-            source: .microphoneActivity,
-            detectedAt: Date(),
-            confidence: 0.7,
-            participants: nil
-        )
-
-        // Unified window automatically shows meeting status
-        // Old EnhancedFloatingWindowController.showMeetingPrompt removed
+        // Unified recording status window automatically shows meeting status
     }
 
 }

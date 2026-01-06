@@ -705,4 +705,48 @@ class UnifiedRecordingStatusWindowManager {
     }
 }
 
-// VisualEffectBlur is already defined in EnhancedFloatingRecordingPrompt.swift
+// MARK: - Visual Effect Blur
+
+/// Native macOS visual effect blur for HUD-style windows
+struct VisualEffectBlur: NSViewRepresentable {
+    var material: NSVisualEffectView.Material
+    var blendingMode: NSVisualEffectView.BlendingMode
+
+    func makeNSView(context: Context) -> NSVisualEffectView {
+        let view = NSVisualEffectView()
+        view.material = material
+        view.blendingMode = blendingMode
+        view.state = .active
+        return view
+    }
+
+    func updateNSView(_ nsView: NSVisualEffectView, context: Context) {
+        nsView.material = material
+        nsView.blendingMode = blendingMode
+    }
+}
+
+// MARK: - Stat Item View
+
+/// Small stat display for the recording status window
+struct StatItem: View {
+    let value: String
+    let label: String
+    let icon: String
+
+    var body: some View {
+        VStack(spacing: 4) {
+            Image(systemName: icon)
+                .font(.system(size: 12))
+                .foregroundColor(.white.opacity(0.6))
+
+            Text(value)
+                .font(.system(size: 14, weight: .semibold, design: .monospaced))
+                .foregroundColor(.white.opacity(0.9))
+
+            Text(label)
+                .font(.system(size: 9))
+                .foregroundColor(.white.opacity(0.5))
+        }
+    }
+}

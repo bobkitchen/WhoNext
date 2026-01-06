@@ -191,14 +191,6 @@ struct MeetingRecordingView: View {
                     .buttonStyle(.borderedProminent)
                     .controlSize(.large)
                     .tint(.red)
-                    
-                    Spacer()
-                    
-                    Button(action: showLiveMeetingWindow) {
-                        Label("Show Live Window", systemImage: "rectangle.portrait.on.rectangle.portrait")
-                    }
-                    .buttonStyle(.bordered)
-                    .controlSize(.large)
                 }
             }
             .padding()
@@ -338,11 +330,6 @@ struct MeetingRecordingView: View {
         }
     }
     
-    private func showLiveMeetingWindow() {
-        if let meeting = recordingEngine.currentMeeting {
-            LiveMeetingWindowManager.shared.showWindow(for: meeting)
-        }
-    }
 }
 
 
