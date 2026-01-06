@@ -3,9 +3,10 @@ import CoreData
 
 struct EnhancedPeopleView: View {
     @Binding var selectedPerson: Person?
+    @Binding var selectedGroup: Group?
     @Environment(\.managedObjectContext) private var viewContext
     @Environment(\.openWindow) private var openWindow
-    
+
     // View state
     @State private var viewMode: ViewMode = .individuals
     @State private var searchText = ""
@@ -95,7 +96,11 @@ struct EnhancedPeopleView: View {
                 if viewMode == .individuals {
                     peopleListContent
                 } else {
-                    GroupsListView()
+                    GroupsListView(selectedGroup: $selectedGroup, onGroupSelected: { group in
+                        // Clear person selection when a group is selected
+                        selectedPerson = nil
+                        selectedGroup = group
+                    })
                 }
             }
         }

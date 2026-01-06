@@ -2,12 +2,17 @@ import SwiftUI
 import CoreData
 
 struct GroupsListView: View {
+    @Binding var selectedGroup: Group?
+    var onGroupSelected: ((Group) -> Void)?
+
     @Environment(\.managedObjectContext) private var viewContext
-    @State private var selectedGroup: Group?
     @State private var showingCreateGroup = false
-    
+    @State private var showingMeetingsSheet = false
+    @State private var groupForMeetings: Group?
+
     @FetchRequest(
         sortDescriptors: [NSSortDescriptor(keyPath: \Group.name, ascending: true)],
+        predicate: NSPredicate(format: "isSoftDeleted == NO"),
         animation: .default
     ) private var groups: FetchedResults<Group>
     
@@ -76,14 +81,98 @@ struct GroupsListView: View {
         ScrollView(.vertical, showsIndicators: false) {
             LazyVStack(spacing: 2) {
                 ForEach(groups, id: \.identifier) { group in
-                    GroupRow(group: group, isSelected: selectedGroup == group) {
-                        selectedGroup = group
-                    }
+                    GroupRow(
+                        group: group,
+                        isSelected: selectedGroup == group,
+                        onSelect: {
+                            selectedGroup = group
+                            onGroupSelected?(group)
+                        },
+                        onViewMeetings: {
+                            groupForMeetings = group
+                            showingMeetingsSheet = true
+                        },
+                        onAddMeeting: {
+                            // Select the group first, then the detail view will have an add meeting button
+                            selectedGroup = group
+                            onGroupSelected?(group)
+                        }
+                    )
                 }
             }
             .padding(.horizontal, 2)
         }
         .liquidGlassBackground(cornerRadius: 0, elevation: .low)
+        .sheet(isPresented: $showingMeetingsSheet) {
+            if let group = groupForMeetings {
+                GroupMeetingsSheet(group: group)
+                    .environment(\.managedObjectContext, viewContext)
+            }
+        }
+    }
+}
+
+// MARK: - Group Meetings Sheet
+struct GroupMeetingsSheet: View {
+    let group: Group
+    @Environment(\.dismiss) private var dismiss
+    @Environment(\.managedObjectContext) private var viewContext
+
+    private var meetings: [GroupMeeting] {
+        group.sortedMeetings.filter { !$0.isSoftDeleted }
+    }
+
+    var body: some View {
+        VStack(spacing: 0) {
+            // Header
+            HStack {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Meetings")
+                        .font(.title2)
+                        .fontWeight(.semibold)
+                    Text(group.name ?? "Group")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                }
+
+                Spacer()
+
+                Button("Done") {
+                    dismiss()
+                }
+                .buttonStyle(.borderedProminent)
+            }
+            .padding()
+
+            Divider()
+
+            if meetings.isEmpty {
+                VStack(spacing: 16) {
+                    Spacer()
+                    Image(systemName: "calendar.badge.exclamationmark")
+                        .font(.system(size: 48))
+                        .foregroundColor(.secondary)
+                    Text("No meetings yet")
+                        .font(.title3)
+                        .foregroundColor(.secondary)
+                    Text("Meetings will appear here once recorded or added")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                    Spacer()
+                }
+            } else {
+                ScrollView {
+                    LazyVStack(spacing: 8) {
+                        ForEach(meetings) { meeting in
+                            GroupMeetingRowView(meeting: meeting)
+                                .environment(\.managedObjectContext, viewContext)
+                        }
+                    }
+                    .padding()
+                }
+            }
+        }
+        .frame(width: 600, height: 500)
     }
 }
 
@@ -91,58 +180,80 @@ struct GroupsListView: View {
 struct GroupRow: View {
     let group: Group
     let isSelected: Bool
-    let action: () -> Void
-    
+    let onSelect: () -> Void
+    var onViewMeetings: (() -> Void)?
+    var onAddMeeting: (() -> Void)?
+
     @Environment(\.managedObjectContext) private var viewContext
-    
+
     private var memberCount: Int {
-        // Count unique participants from group meetings
-        let meetings = group.meetings as? Set<GroupMeeting> ?? []
-        let uniqueParticipants = Set(meetings.flatMap { meeting in
-            // Parse participants from transcript or other fields
-            return [] as [String] // Placeholder - would parse from meeting data
-        })
-        return uniqueParticipants.count
+        group.memberCount
     }
-    
+
     private var lastMeetingDate: Date? {
-        let meetings = group.meetings as? Set<GroupMeeting> ?? []
-        return meetings.map { $0.date ?? Date.distantPast }.max()
+        group.lastMeetingDate ?? group.mostRecentMeeting?.date
     }
-    
+
     private var meetingCount: Int {
-        (group.meetings as? Set<GroupMeeting>)?.count ?? 0
+        group.meetingCount
     }
-    
+
+    private var groupColor: Color {
+        switch group.type?.lowercased() {
+        case "team": return .blue
+        case "project": return .purple
+        case "department": return .green
+        case "external": return .orange
+        default: return .accentColor
+        }
+    }
+
+    private var groupIcon: String {
+        switch group.type?.lowercased() {
+        case "team": return "person.3.fill"
+        case "project": return "folder.fill"
+        case "department": return "building.2.fill"
+        case "external": return "globe"
+        default: return "person.3.fill"
+        }
+    }
+
     var body: some View {
         LiquidGlassListRow(
             isSelected: isSelected,
-            action: action
+            action: onSelect
         ) {
             HStack(spacing: 16) {
                 // Group Icon
                 ZStack {
                     Circle()
-                        .fill(Color.blue.opacity(0.1))
+                        .fill(groupColor.opacity(0.1))
                         .frame(width: 48, height: 48)
-                    
-                    Image(systemName: "person.3.fill")
+
+                    Image(systemName: groupIcon)
                         .font(.system(size: 20))
-                        .foregroundColor(.blue)
+                        .foregroundColor(groupColor)
                 }
-                
+
                 // Group Info
                 VStack(alignment: .leading, spacing: 4) {
                     Text(group.name ?? "Unnamed Group")
                         .font(.system(size: 14, weight: .semibold))
                         .foregroundColor(.primary)
-                    
+
                     HStack(spacing: 12) {
+                        // Member count
+                        if memberCount > 0 {
+                            Label("\(memberCount) members", systemImage: "person.2")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        }
+
                         // Meeting count
                         Label("\(meetingCount) meetings", systemImage: "calendar")
                             .font(.caption)
                             .foregroundColor(.secondary)
-                        
+
                         // Last meeting
                         if let lastMeeting = lastMeetingDate {
                             Label(relativeDate(lastMeeting), systemImage: "clock")
@@ -151,27 +262,29 @@ struct GroupRow: View {
                         }
                     }
                 }
-                
+
                 Spacer()
-                
+
                 // Quick Actions
                 HStack(spacing: 8) {
                     // View meetings button
                     Button(action: {
-                        // Show group meetings
+                        onViewMeetings?()
                     }) {
                         Image(systemName: "list.bullet")
                             .font(.system(size: 12))
+                            .foregroundColor(.secondary)
                     }
                     .buttonStyle(.plain)
                     .help("View Meetings")
-                    
+
                     // Add meeting button
                     Button(action: {
-                        // Add new group meeting
+                        onAddMeeting?()
                     }) {
                         Image(systemName: "plus.circle")
                             .font(.system(size: 12))
+                            .foregroundColor(.accentColor)
                     }
                     .buttonStyle(.plain)
                     .help("Add Meeting")
@@ -182,7 +295,7 @@ struct GroupRow: View {
             .padding(.vertical, 10)
         }
     }
-    
+
     private func relativeDate(_ date: Date) -> String {
         let formatter = RelativeDateTimeFormatter()
         formatter.unitsStyle = .abbreviated
@@ -290,11 +403,15 @@ struct CreateGroupView: View {
         let newGroup = Group(context: viewContext)
         newGroup.identifier = UUID()
         newGroup.name = groupName
+        newGroup.groupDescription = description
         newGroup.createdAt = Date()
-        
-        // Note: We're not directly linking people to groups in the current model
-        // This would require updating the Core Data model
-        
+        newGroup.modifiedAt = Date()
+
+        // Add selected people as members
+        for person in selectedPeople {
+            newGroup.addMember(person)
+        }
+
         do {
             try viewContext.save()
             dismiss()
