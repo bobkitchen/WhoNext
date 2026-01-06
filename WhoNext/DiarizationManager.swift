@@ -49,22 +49,35 @@ class DiarizationManager: ObservableObject {
     
     // MARK: - Initialization
     
-    init(isEnabled: Bool = true, enableRealTimeProcessing: Bool = false, clusteringThreshold: Float = 0.85) {
-        // Configure for better speaker separation
-        // IMPORTANT: In FluidAudio's implementation:
-        // - Higher threshold (0.85-0.95) = MORE permissive, accepts speakers as different at higher distances
-        // - Lower threshold (0.3-0.5) = LESS permissive, requires very different voices
-        // Your logs show speaker distance ~0.82, so threshold must be > 0.82 to separate them
+    init(isEnabled: Bool = true, enableRealTimeProcessing: Bool = false, clusteringThreshold: Float = 0.70) {
+        // Configure for optimal speaker separation based on FluidAudio benchmarks:
+        // - 0.7 = OPTIMAL (17.7% Diarization Error Rate)
+        // - 0.6-0.8 = Safe range for most conversations
+        // - 0.9+ = Under-clustering (speakers merge - BAD)
+        // - 0.5- = Over-clustering (one person split into multiple - BAD)
+        //
+        // FluidAudio threshold semantics:
+        // - Higher threshold = more lenient clustering (accepts higher speaker distances as "same")
+        // - Lower threshold = stricter clustering (requires closer embeddings to merge)
         self.config = DiarizerConfig(
-            clusteringThreshold: clusteringThreshold,  // Default 0.85 for similar voices
-            minSpeechDuration: 0.5,     // Reduced to capture shorter utterances  
-            minSilenceGap: 0.3,         // Reduced for more natural conversation flow
+            clusteringThreshold: clusteringThreshold,  // Default 0.70 for optimal separation
+            minSpeechDuration: 0.3,     // Capture shorter utterances (was 0.5)
+            minSilenceGap: 0.2,         // Natural conversation flow (was 0.3)
             debugMode: true             // Enable to get speaker embeddings
         )
         self.isEnabled = isEnabled
         self.enableRealTimeProcessing = enableRealTimeProcessing
-        
-        print("🎙️ DiarizationManager initialized with real-time: \(enableRealTimeProcessing)")
+
+        print("🎙️ [DiarizationManager] Initialized:")
+        print("   - Clustering threshold: \(clusteringThreshold) (optimal: 0.70)")
+        print("   - Min speech duration: 0.3s")
+        print("   - Min silence gap: 0.2s")
+        print("   - Real-time processing: \(enableRealTimeProcessing)")
+        if clusteringThreshold > 0.80 {
+            print("   ⚠️ WARNING: Threshold > 0.80 may cause under-clustering (speakers merging)")
+        } else if clusteringThreshold < 0.60 {
+            print("   ⚠️ WARNING: Threshold < 0.60 may cause over-clustering (one person split)")
+        }
     }
     
     // MARK: - Configuration

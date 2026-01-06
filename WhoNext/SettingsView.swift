@@ -1058,25 +1058,49 @@ Best regards
                         .help("Identify different speakers in the conversation")
                     
                     if recordingConfig.transcriptionSettings.speakerDiarizationEnabled {
-                        VStack(alignment: .leading, spacing: 4) {
-                            HStack {
-                                Text("Speaker Sensitivity")
+                        DisclosureGroup("Advanced Speaker Settings") {
+                            VStack(alignment: .leading, spacing: 8) {
+                                HStack {
+                                    Text("Speaker Separation")
+                                        .font(.caption)
+                                    Spacer()
+                                    Text(speakerSensitivityLabel(recordingConfig.transcriptionSettings.speakerSensitivity))
+                                        .font(.caption)
+                                        .fontWeight(.medium)
+                                        .foregroundColor(speakerSensitivityColor(recordingConfig.transcriptionSettings.speakerSensitivity))
+                                }
+
+                                Slider(value: $recordingConfig.transcriptionSettings.speakerSensitivity,
+                                       in: 0.60...0.80,
+                                       step: 0.02)
+                                    .help("Lower = stricter separation (better for similar voices). Default: 0.70")
+
+                                HStack(spacing: 0) {
+                                    Text("Strict (similar voices)")
+                                        .font(.caption2)
+                                        .foregroundColor(.secondary)
+                                    Spacer()
+                                    Text("Relaxed (different voices)")
+                                        .font(.caption2)
+                                        .foregroundColor(.secondary)
+                                }
+
+                                if abs(recordingConfig.transcriptionSettings.speakerSensitivity - 0.70) > 0.01 {
+                                    Button("Reset to Optimal (0.70)") {
+                                        recordingConfig.transcriptionSettings.speakerSensitivity = 0.70
+                                    }
                                     .font(.caption)
-                                Spacer()
-                                Text(String(format: "%.0f%%", recordingConfig.transcriptionSettings.speakerSensitivity * 100))
-                                    .font(.caption)
+                                    .buttonStyle(.link)
+                                }
+
+                                Text("Only adjust if speakers with similar voices aren't being separated correctly.")
+                                    .font(.caption2)
                                     .foregroundColor(.secondary)
+                                    .padding(.top, 4)
                             }
-                            
-                            Slider(value: $recordingConfig.transcriptionSettings.speakerSensitivity, 
-                                   in: 0.7...0.95,
-                                   step: 0.05)
-                                .help("Higher values = more permissive (separates similar voices). Lower = requires very different voices.")
-                            
-                            Text("Adjust if speakers aren't being properly separated")
-                                .font(.caption2)
-                                .foregroundColor(.secondary)
+                            .padding(.top, 8)
                         }
+                        .font(.caption)
                         .padding(.leading, 20)
                     }
                     
@@ -1393,7 +1417,35 @@ Best regards
             return .orange
         }
     }
-    
+
+    // MARK: - Speaker Sensitivity Helpers
+
+    private func speakerSensitivityLabel(_ value: Double) -> String {
+        switch value {
+        case ..<0.65:
+            return "Very Strict"
+        case 0.65..<0.68:
+            return "Strict"
+        case 0.68..<0.72:
+            return "Optimal"
+        case 0.72..<0.76:
+            return "Relaxed"
+        default:
+            return "Very Relaxed"
+        }
+    }
+
+    private func speakerSensitivityColor(_ value: Double) -> Color {
+        switch value {
+        case 0.68..<0.72:
+            return .green  // Optimal range
+        case 0.65..<0.75:
+            return .blue   // Good range
+        default:
+            return .orange // Edge of safe range
+        }
+    }
+
     private func requestCalendarAccess() {
         let eventStore = EKEventStore()
         if #available(macOS 14.0, *) {

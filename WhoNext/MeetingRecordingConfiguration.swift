@@ -244,7 +244,7 @@ struct TranscriptionSettings: Codable {
     var useLocalTranscription: Bool = true
     var whisperRefinementEnabled: Bool = true
     var speakerDiarizationEnabled: Bool = true
-    var speakerSensitivity: Double = 0.85  // Higher = more permissive speaker separation (default for similar voices)
+    var speakerSensitivity: Double = 0.70  // FluidAudio optimal: 0.7 achieves 17.7% DER. Range: 0.6-0.8 safe.
     var languageCode: String = "en-US"
     var punctuationEnabled: Bool = true
     var profanityFilterEnabled: Bool = false
@@ -253,9 +253,21 @@ struct TranscriptionSettings: Codable {
         if let data = UserDefaults.standard.data(forKey: "transcriptionSettings"),
            let decoded = try? JSONDecoder().decode(TranscriptionSettings.self, from: data) {
             self = decoded
+
+            // Migration: Reset speaker sensitivity if it's at the old problematic default (0.85)
+            // or outside the new safe range (0.60-0.80)
+            let migrationKey = "speakerSensitivityMigrated_v2"
+            if !UserDefaults.standard.bool(forKey: migrationKey) {
+                if self.speakerSensitivity >= 0.84 || self.speakerSensitivity < 0.60 {
+                    print("[TranscriptionSettings] Migrating speaker sensitivity from \(self.speakerSensitivity) to optimal 0.70")
+                    self.speakerSensitivity = 0.70
+                    self.saveToUserDefaults()
+                }
+                UserDefaults.standard.set(true, forKey: migrationKey)
+            }
         }
     }
-    
+
     func saveToUserDefaults() {
         if let encoded = try? JSONEncoder().encode(self) {
             UserDefaults.standard.set(encoded, forKey: "transcriptionSettings")
