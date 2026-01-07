@@ -20,6 +20,7 @@ class MeetingRecordingEngine: ObservableObject {
     @Published var recordingState: RecordingState = .idle
     @Published var autoRecordEnabled: Bool = true
     @Published var recordingDuration: TimeInterval = 0
+    @Published var isBufferingTranscript: Bool = false  // True when accumulating words for a sentence
     
     // MARK: - Recording State
     enum RecordingState {
@@ -70,6 +71,12 @@ class MeetingRecordingEngine: ObservableObject {
     private var calendarMonitorTimer: Timer?
     private var currentCalendarEvent: UpcomingMeeting?
     private var lastTranscriptionText: String = "" // Track the last full transcript to detect new content
+
+    // MARK: - Sentence Buffering (for cleaner transcript display)
+    private var sentenceBuffer: String = ""  // Accumulates words until sentence complete
+    private var sentenceBufferSpeakerID: String = "speaker_1"  // Track speaker for buffered content
+    private var lastBufferUpdateTime: Date = Date()  // For pause detection
+    private let sentencePauseThreshold: TimeInterval = 2.0  // Seconds of silence = sentence end
     
     // MARK: - Diarization (Speaker Detection)
     #if canImport(FluidAudio)
@@ -629,7 +636,9 @@ class MeetingRecordingEngine: ObservableObject {
                             do {
                                 let fullTranscript = try await framework.processAudioStream(mixedBuffer)
 
-                                // Simplified: Show transcription immediately without buffering
+                                // Sentence-buffered transcription for cleaner display
+                                // Accumulates words until sentence is complete (punctuation or pause)
+
                                 // Check if we have new content (the transcript grows incrementally)
                                 if fullTranscript.count > self.lastTranscriptionText.count {
                                     // Extract only the new portion
@@ -669,16 +678,25 @@ class MeetingRecordingEngine: ObservableObject {
                                         }
                                         #endif
 
-                                        // Create and add segment immediately
-                                        let segment = TranscriptSegment(
-                                            text: newContent,
-                                            timestamp: Date().timeIntervalSince(self.recordingStartTime ?? Date()),
-                                            speakerID: currentSpeakerID,
-                                            speakerName: nil,
-                                            confidence: 0.95,
-                                            isFinalized: true
-                                        )
-                                        self.currentMeeting?.addTranscriptSegment(segment)
+                                        // If speaker changed, flush current buffer first
+                                        if currentSpeakerID != self.sentenceBufferSpeakerID && !self.sentenceBuffer.isEmpty {
+                                            self.flushSentenceBuffer()
+                                        }
+
+                                        // Append new content to sentence buffer
+                                        self.sentenceBuffer += newContent
+                                        self.sentenceBufferSpeakerID = currentSpeakerID
+                                        self.lastBufferUpdateTime = Date()
+                                        self.isBufferingTranscript = true
+
+                                        // Check if sentence is complete (ends with punctuation)
+                                        let trimmedBuffer = self.sentenceBuffer.trimmingCharacters(in: .whitespaces)
+                                        let sentenceEnders: Set<Character> = [".", "?", "!"]
+                                        let isSentenceComplete = trimmedBuffer.last.map { sentenceEnders.contains($0) } ?? false
+
+                                        if isSentenceComplete {
+                                            self.flushSentenceBuffer()
+                                        }
 
                                         // Update tracking
                                         if self.currentMeeting != nil {
@@ -687,6 +705,12 @@ class MeetingRecordingEngine: ObservableObject {
 
                                         // Update meeting metrics
                                         self.updateMeetingMetrics()
+                                    }
+                                } else {
+                                    // No new content - check for pause-based sentence completion
+                                    let timeSinceLastUpdate = Date().timeIntervalSince(self.lastBufferUpdateTime)
+                                    if !self.sentenceBuffer.isEmpty && timeSinceLastUpdate >= self.sentencePauseThreshold {
+                                        self.flushSentenceBuffer()
                                     }
                                 }
                             } catch {
@@ -749,7 +773,8 @@ class MeetingRecordingEngine: ObservableObject {
 
         recordingStartTime = Date()
         totalFramesProcessed = 0  // Reset frame counter for accurate timing
-        
+        resetSentenceBuffer()  // Clear any leftover buffer from previous recording
+
         // For auto-recording, reset the transcription framework
         // (Manual recording already resets before calling this)
         if !isManual {
@@ -898,9 +923,14 @@ class MeetingRecordingEngine: ObservableObject {
     
     func stopRecording() {
         guard isRecording else { return }
-        
+
+        // Flush any remaining buffered text before stopping
+        Task { @MainActor in
+            self.flushSentenceBuffer()
+        }
+
         let duration = recordingStartTime.map { Date().timeIntervalSince($0) } ?? 0
-        
+
         // Stop recording timer
         recordingTimer?.invalidate()
         recordingTimer = nil
@@ -1611,7 +1641,51 @@ class MeetingRecordingEngine: ObservableObject {
         }
         stopMonitoring()
     }
-    
+
+    // MARK: - Sentence Buffer Management
+
+    /// Flush the sentence buffer and create a transcript segment
+    /// Called when sentence is complete (punctuation) or after pause threshold
+    @MainActor
+    private func flushSentenceBuffer() {
+        guard !sentenceBuffer.isEmpty else { return }
+
+        // Clean up the buffer - ensure complete words only
+        let cleanedText = sentenceBuffer
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .replacingOccurrences(of: "  ", with: " ")  // Remove double spaces
+
+        guard !cleanedText.isEmpty else {
+            sentenceBuffer = ""
+            isBufferingTranscript = false
+            return
+        }
+
+        // Create the transcript segment
+        let segment = TranscriptSegment(
+            text: cleanedText,
+            timestamp: Date().timeIntervalSince(self.recordingStartTime ?? Date()),
+            speakerID: sentenceBufferSpeakerID,
+            speakerName: nil,
+            confidence: 0.95,
+            isFinalized: true
+        )
+
+        currentMeeting?.addTranscriptSegment(segment)
+
+        // Clear the buffer
+        sentenceBuffer = ""
+        isBufferingTranscript = false
+    }
+
+    /// Reset sentence buffer state (called when recording starts/stops)
+    private func resetSentenceBuffer() {
+        sentenceBuffer = ""
+        sentenceBufferSpeakerID = "speaker_1"
+        lastBufferUpdateTime = Date()
+        isBufferingTranscript = false
+    }
+
     // MARK: - Meeting Metrics Updates
     
     /// Update all meeting metrics

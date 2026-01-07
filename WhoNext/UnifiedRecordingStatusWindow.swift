@@ -359,12 +359,18 @@ struct UnifiedRecordingStatusView: View {
                 ScrollViewReader { proxy in
                     ScrollView {
                         VStack(alignment: .leading, spacing: 12) {
-                            if meeting.transcript.isEmpty {
+                            if meeting.transcript.isEmpty && !recordingEngine.isBufferingTranscript {
                                 emptyTranscriptState
                             } else {
                                 ForEach(Array(meeting.transcript.suffix(15))) { segment in
                                     transcriptSegmentView(segment: segment)
                                         .id(segment.id)
+                                }
+
+                                // Typing indicator when buffering transcript
+                                if recordingEngine.isBufferingTranscript {
+                                    typingIndicatorView
+                                        .id("typing-indicator")
                                 }
                             }
                         }
@@ -448,6 +454,32 @@ struct UnifiedRecordingStatusView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .padding(.vertical, 40)
+    }
+
+    /// Animated typing indicator shown while buffering transcript text
+    private var typingIndicatorView: some View {
+        HStack(alignment: .top, spacing: 10) {
+            // Placeholder avatar
+            Circle()
+                .fill(Color.white.opacity(0.1))
+                .frame(width: 24, height: 24)
+                .overlay(
+                    Image(systemName: "ellipsis")
+                        .font(.system(size: 10))
+                        .foregroundColor(.white.opacity(0.4))
+                )
+
+            // Animated dots
+            HStack(spacing: 4) {
+                TypingDot(delay: 0.0)
+                TypingDot(delay: 0.2)
+                TypingDot(delay: 0.4)
+            }
+            .padding(.vertical, 8)
+
+            Spacer(minLength: 0)
+        }
+        .padding(.horizontal, 4)
     }
 
     private func transcriptSegmentView(segment: TranscriptSegment) -> some View {
@@ -889,6 +921,31 @@ struct VisualEffectBlur: NSViewRepresentable {
     func updateNSView(_ nsView: NSVisualEffectView, context: Context) {
         nsView.material = material
         nsView.blendingMode = blendingMode
+    }
+}
+
+// MARK: - Typing Indicator
+
+/// Animated dot for typing indicator
+struct TypingDot: View {
+    let delay: Double
+    @State private var isAnimating = false
+
+    var body: some View {
+        Circle()
+            .fill(Color.white.opacity(0.6))
+            .frame(width: 6, height: 6)
+            .scaleEffect(isAnimating ? 1.0 : 0.5)
+            .opacity(isAnimating ? 1.0 : 0.3)
+            .animation(
+                Animation.easeInOut(duration: 0.5)
+                    .repeatForever(autoreverses: true)
+                    .delay(delay),
+                value: isAnimating
+            )
+            .onAppear {
+                isAnimating = true
+            }
     }
 }
 
