@@ -238,26 +238,20 @@ class PreMeetingBriefManager: ObservableObject {
         return false
     }
 
-    /// Find Person by name or email
+    /// Find Person by name (extracted from email or display name)
     private func findPerson(matching attendee: String, in context: NSManagedObjectContext) -> Person? {
         let request: NSFetchRequest<Person> = Person.fetchRequest()
 
-        // Try exact email match first
-        if attendee.contains("@") {
-            request.predicate = NSPredicate(format: "email ==[c] %@", attendee)
-            if let results = try? context.fetch(request), let person = results.first {
-                return person
-            }
-        }
-
-        // Try name contains match
+        // Extract clean name from email or display name
         let cleanName = extractCleanName(from: attendee)
+
+        // Try full name match first
         request.predicate = NSPredicate(format: "name CONTAINS[cd] %@", cleanName)
         if let results = try? context.fetch(request), let person = results.first {
             return person
         }
 
-        // Try matching individual name parts
+        // Try matching individual name parts (for partial matches)
         let nameParts = cleanName.split(separator: " ")
         for part in nameParts where part.count > 2 {
             request.predicate = NSPredicate(format: "name CONTAINS[cd] %@", String(part))
