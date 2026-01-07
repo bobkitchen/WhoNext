@@ -83,6 +83,9 @@ class UserProfile: ObservableObject {
     // MARK: - Private State
     private var isLoading = false
     private var cancellables = Set<AnyCancellable>()
+    private var pendingReloadWorkItem: DispatchWorkItem?
+    private var lastReloadTime: Date?
+    private let reloadDebounceInterval: TimeInterval = 1.0  // Debounce reloads to 1 second
 
     // MARK: - User Defaults Keys (for migration)
     private enum LegacyKeys {
@@ -114,9 +117,34 @@ class UserProfile: ObservableObject {
             object: PersistenceController.shared.container.persistentStoreCoordinator,
             queue: .main
         ) { [weak self] _ in
-            print("👤 [UserProfile] Remote changes detected - reloading profile")
-            self?.loadFromEntity()
+            self?.scheduleReload()
         }
+    }
+
+    /// Debounced reload to prevent flooding during rapid CloudKit sync events
+    private func scheduleReload() {
+        // Cancel any pending reload
+        pendingReloadWorkItem?.cancel()
+
+        // Check if we've reloaded recently
+        if let lastReload = lastReloadTime,
+           Date().timeIntervalSince(lastReload) < reloadDebounceInterval {
+            // Schedule a delayed reload instead
+            let workItem = DispatchWorkItem { [weak self] in
+                self?.performReload()
+            }
+            pendingReloadWorkItem = workItem
+            DispatchQueue.main.asyncAfter(deadline: .now() + reloadDebounceInterval, execute: workItem)
+        } else {
+            // Reload immediately
+            performReload()
+        }
+    }
+
+    private func performReload() {
+        lastReloadTime = Date()
+        print("👤 [UserProfile] Remote changes detected - reloading profile")
+        loadFromEntity()
     }
 
     // MARK: - Core Data Operations
