@@ -21,6 +21,10 @@ class MeetingRecordingEngine: ObservableObject {
     @Published var autoRecordEnabled: Bool = true
     @Published var recordingDuration: TimeInterval = 0
     @Published var isBufferingTranscript: Bool = false  // True when accumulating words for a sentence
+
+    // MARK: - Overlapping Meeting Detection
+    @Published var overlappingMeetings: [UpcomingMeeting] = []  // Calendar events during recording window
+    @Published var selectedMeetingID: String? = nil  // User's selected meeting (nil = generic title)
     
     // MARK: - Recording State
     enum RecordingState {
@@ -824,12 +828,21 @@ class MeetingRecordingEngine: ObservableObject {
         meeting.bufferHealth = .good
         meeting.detectedLanguage = "English" // Will be updated by transcription
 
-        // Try to get calendar context
-        if let calendarEvent = getUpcomingCalendarEvent() {
-            meeting.calendarTitle = calendarEvent.title
-            meeting.scheduledDuration = calendarEvent.duration
-            meeting.expectedParticipants = calendarEvent.attendees ?? []
+        // Detect overlapping calendar events
+        detectOverlappingMeetings()
+
+        // Apply calendar context based on detected meetings
+        if overlappingMeetings.count == 1 {
+            // Only one meeting - auto-select it
+            let meeting = overlappingMeetings[0]
+            selectedMeetingID = meeting.id
+            applyCalendarContext(from: meeting, to: self.currentMeeting)
+        } else if overlappingMeetings.count > 1 {
+            // Multiple meetings - use generic title until user selects
+            selectedMeetingID = nil
+            // meeting.calendarTitle stays nil, so displayTitle will show "Meeting HH:MM"
         }
+        // If no meetings found, calendarTitle stays nil (generic title)
 
         // For manual recording, ensure audio capture is running
         if isManual && !audioCapture.isCapturing {
@@ -1580,7 +1593,7 @@ class MeetingRecordingEngine: ObservableObject {
     private func getUpcomingCalendarEvent() -> CalendarEvent? {
         // Check CalendarService for upcoming meeting
         let upcomingMeetings = CalendarService.shared.upcomingMeetings
-        
+
         // Find meeting starting within 5 minutes
         let now = Date()
         return upcomingMeetings.first { meeting in
@@ -1593,6 +1606,75 @@ class MeetingRecordingEngine: ObservableObject {
                 duration: 3600, // Default 1 hour
                 attendees: meeting.attendees
             )
+        }
+    }
+
+    // MARK: - Overlapping Meeting Detection
+
+    /// Detects all calendar events that overlap with the current time window
+    /// Populates overlappingMeetings array for user selection
+    private func detectOverlappingMeetings() {
+        let upcomingMeetings = CalendarService.shared.upcomingMeetings
+        let now = Date()
+
+        // Find all meetings that are currently active or starting within 5 minutes
+        // A meeting is "active" if: now is between start and end (start + duration)
+        overlappingMeetings = upcomingMeetings.filter { meeting in
+            let startDiff = meeting.startDate.timeIntervalSince(now)
+            let duration = meeting.duration ?? 3600  // Default 1 hour if not specified
+            let endTime = meeting.startDate.addingTimeInterval(duration)
+            let endDiff = endTime.timeIntervalSince(now)
+
+            // Meeting is relevant if:
+            // 1. Starting within next 5 minutes (startDiff <= 300 && startDiff >= -60)
+            // 2. Currently in progress (startDiff < 0 && endDiff > 0)
+            let isStartingSoon = startDiff >= -60 && startDiff <= 300
+            let isInProgress = startDiff < 0 && endDiff > 0
+
+            return isStartingSoon || isInProgress
+        }
+
+        print("📅 Detected \(overlappingMeetings.count) overlapping meeting(s)")
+        for meeting in overlappingMeetings {
+            print("   - \(meeting.title) at \(meeting.startDate)")
+        }
+    }
+
+    /// Apply calendar context from an UpcomingMeeting to a LiveMeeting
+    private func applyCalendarContext(from calendarMeeting: UpcomingMeeting, to liveMeeting: LiveMeeting?) {
+        guard let liveMeeting = liveMeeting else { return }
+
+        liveMeeting.calendarTitle = calendarMeeting.title
+        liveMeeting.calendarEventTitle = calendarMeeting.title
+        liveMeeting.scheduledDuration = calendarMeeting.duration ?? 3600
+        liveMeeting.expectedParticipants = calendarMeeting.attendees ?? []
+
+        print("✅ Applied calendar context: '\(calendarMeeting.title)' with \(liveMeeting.expectedParticipants.count) expected participants")
+    }
+
+    /// User selects which meeting they're attending (for overlapping meetings)
+    func selectMeeting(id: String) {
+        guard let meeting = overlappingMeetings.first(where: { $0.id == id }) else {
+            print("⚠️ Meeting with ID \(id) not found in overlapping meetings")
+            return
+        }
+
+        selectedMeetingID = id
+        applyCalendarContext(from: meeting, to: currentMeeting)
+
+        // Trigger speaker correlation with new expected participants
+        Task { @MainActor in
+            await self.correlateDetectedSpeakers()
+        }
+    }
+
+    /// Clear meeting selection (reverts to generic title)
+    func clearMeetingSelection() {
+        selectedMeetingID = nil
+        if let meeting = currentMeeting {
+            meeting.calendarTitle = nil
+            meeting.calendarEventTitle = nil
+            meeting.expectedParticipants = []
         }
     }
     

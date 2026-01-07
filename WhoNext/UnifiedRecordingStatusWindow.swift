@@ -222,10 +222,15 @@ struct UnifiedRecordingStatusView: View {
                     .shadow(color: .black.opacity(0.3), radius: 1, x: 0, y: 1)
 
                 if recordingEngine.isRecording, let meeting = recordingEngine.currentMeeting {
-                    Text(meeting.displayTitle)
-                        .font(.system(size: 11))
-                        .foregroundColor(.white.opacity(0.7))
-                        .lineLimit(1)
+                    // Show meeting selector if multiple overlapping meetings
+                    if recordingEngine.overlappingMeetings.count > 1 {
+                        meetingSelector(currentMeeting: meeting)
+                    } else {
+                        Text(meeting.displayTitle)
+                            .font(.system(size: 11))
+                            .foregroundColor(.white.opacity(0.7))
+                            .lineLimit(1)
+                    }
                 }
             }
 
@@ -308,10 +313,15 @@ struct UnifiedRecordingStatusView: View {
                         .foregroundColor(.white.opacity(0.95))
 
                     if recordingEngine.isRecording, let meeting = recordingEngine.currentMeeting {
-                        Text(meeting.displayTitle)
-                            .font(.system(size: 11))
-                            .foregroundColor(.white.opacity(0.7))
-                            .lineLimit(1)
+                        // Show meeting selector if multiple overlapping meetings
+                        if recordingEngine.overlappingMeetings.count > 1 {
+                            meetingSelector(currentMeeting: meeting)
+                        } else {
+                            Text(meeting.displayTitle)
+                                .font(.system(size: 11))
+                                .foregroundColor(.white.opacity(0.7))
+                                .lineLimit(1)
+                        }
                     }
                 }
             }
@@ -508,6 +518,67 @@ struct UnifiedRecordingStatusView: View {
 
             Spacer(minLength: 0)
         }
+    }
+
+    /// Meeting selector dropdown for overlapping meetings
+    private func meetingSelector(currentMeeting: LiveMeeting) -> some View {
+        Menu {
+            // Option to use generic title (no specific meeting)
+            Button(action: {
+                recordingEngine.clearMeetingSelection()
+            }) {
+                HStack {
+                    Text("Meeting at \(currentMeeting.formattedStartTime)")
+                    if recordingEngine.selectedMeetingID == nil {
+                        Image(systemName: "checkmark")
+                    }
+                }
+            }
+
+            Divider()
+
+            // List all overlapping meetings
+            ForEach(recordingEngine.overlappingMeetings, id: \.id) { meeting in
+                Button(action: {
+                    recordingEngine.selectMeeting(id: meeting.id)
+                }) {
+                    HStack {
+                        VStack(alignment: .leading) {
+                            Text(meeting.title)
+                            if let attendees = meeting.attendees, !attendees.isEmpty {
+                                Text("\(attendees.count) attendees")
+                                    .font(.caption)
+                            }
+                        }
+                        if recordingEngine.selectedMeetingID == meeting.id {
+                            Image(systemName: "checkmark")
+                        }
+                    }
+                }
+            }
+        } label: {
+            HStack(spacing: 4) {
+                Text(currentMeeting.displayTitle)
+                    .font(.system(size: 11))
+                    .foregroundColor(.white.opacity(0.7))
+                    .lineLimit(1)
+
+                Image(systemName: "chevron.down")
+                    .font(.system(size: 8))
+                    .foregroundColor(.white.opacity(0.5))
+
+                // Badge showing multiple meetings
+                Text("\(recordingEngine.overlappingMeetings.count)")
+                    .font(.system(size: 9, weight: .bold))
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 5)
+                    .padding(.vertical, 2)
+                    .background(Color.orange.opacity(0.8))
+                    .cornerRadius(8)
+            }
+        }
+        .menuStyle(.borderlessButton)
+        .fixedSize()
     }
 
     private func statsCard(meeting: LiveMeeting) -> some View {
