@@ -13,8 +13,27 @@ struct EnhancedMeetingCard: View {
     @State private var isExpanded = false
     @State private var showingBrief = false
     @State private var showingContextMenu = false
-    
+    @State private var showingAIBrief = true  // Toggle between AI Brief and Calendar Notes
+    @State private var isRegenerating = false
+
+    @ObservedObject private var briefManager = PreMeetingBriefManager.shared
     @Environment(\.managedObjectContext) private var viewContext
+
+    /// Check if this is a 1:1 meeting
+    private var isOneOnOne: Bool {
+        (meeting.attendees?.count ?? 0) == 2
+    }
+
+    /// Get cached brief for this meeting
+    private var cachedBrief: PreMeetingBriefManager.CachedBrief? {
+        briefManager.getBrief(for: meeting.id)
+    }
+
+    /// Check if we have a valid AI brief
+    private var hasValidBrief: Bool {
+        guard let brief = cachedBrief else { return false }
+        return !brief.briefContent.isEmpty
+    }
     
     // Extract meeting stats
     private var meetingStats: (speakers: Int, duration: String, isRecorded: Bool) {
@@ -140,25 +159,18 @@ struct EnhancedMeetingCard: View {
                     }
                 }
                 
-                // Hover Preview (Transcript or Notes)
+                // Hover Preview (AI Brief or Calendar Notes)
                 if isHovered {
                     VStack(alignment: .leading, spacing: 8) {
                         Divider()
                             .padding(.vertical, 4)
-                        
-                        if let notes = meeting.notes, !notes.isEmpty {
-                            Text("Notes:")
-                                .font(.system(size: 11, weight: .semibold))
-                                .foregroundColor(.secondary)
-                            Text(notes)
-                                .font(.system(size: 11))
-                                .foregroundColor(.secondary)
-                                .lineLimit(3)
+
+                        // Tab toggle for 1:1 meetings with briefs
+                        if isOneOnOne {
+                            meetingNotesTabToggle
                         } else {
-                            Text("No additional details available")
-                                .font(.system(size: 11))
-                                .foregroundColor(.secondary.opacity(0.7))
-                                .italic()
+                            // For group meetings, just show calendar notes
+                            calendarNotesView
                         }
                     }
                     .transition(.asymmetric(
@@ -290,6 +302,187 @@ struct EnhancedMeetingCard: View {
     
     private func deleteMeeting() {
         // TODO: Implement meeting deletion
+    }
+
+    // MARK: - Notes Views
+
+    /// Tab toggle between AI Brief and Calendar Notes for 1:1 meetings
+    private var meetingNotesTabToggle: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            // Tab header with toggle and regenerate button
+            HStack(spacing: 8) {
+                // Tab toggle
+                HStack(spacing: 0) {
+                    tabButton(title: "AI Brief", isSelected: showingAIBrief) {
+                        withAnimation(.easeInOut(duration: 0.2)) {
+                            showingAIBrief = true
+                        }
+                    }
+
+                    tabButton(title: "Calendar Notes", isSelected: !showingAIBrief) {
+                        withAnimation(.easeInOut(duration: 0.2)) {
+                            showingAIBrief = false
+                        }
+                    }
+                }
+                .background(Color(NSColor.separatorColor).opacity(0.3))
+                .cornerRadius(6)
+
+                Spacer()
+
+                // Regenerate button (only for AI Brief tab)
+                if showingAIBrief {
+                    Button(action: regenerateBrief) {
+                        if isRegenerating || briefManager.pendingMeetings.contains(meeting.id) {
+                            ProgressView()
+                                .scaleEffect(0.6)
+                                .frame(width: 14, height: 14)
+                        } else {
+                            Image(systemName: "arrow.clockwise")
+                                .font(.system(size: 10))
+                        }
+                    }
+                    .buttonStyle(.borderless)
+                    .disabled(isRegenerating || briefManager.pendingMeetings.contains(meeting.id))
+                    .help("Regenerate brief")
+                }
+            }
+
+            // Content based on selected tab
+            if showingAIBrief {
+                aiBriefView
+            } else {
+                calendarNotesView
+            }
+        }
+    }
+
+    /// Individual tab button
+    private func tabButton(title: String, isSelected: Bool, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Text(title)
+                .font(.system(size: 10, weight: isSelected ? .semibold : .regular))
+                .foregroundColor(isSelected ? .primary : .secondary)
+                .padding(.horizontal, 10)
+                .padding(.vertical, 5)
+                .background(isSelected ? Color(NSColor.controlBackgroundColor) : Color.clear)
+                .cornerRadius(5)
+        }
+        .buttonStyle(.plain)
+    }
+
+    /// AI Brief content view
+    @ViewBuilder
+    private var aiBriefView: some View {
+        if let brief = cachedBrief, !brief.briefContent.isEmpty {
+            VStack(alignment: .leading, spacing: 4) {
+                HStack {
+                    Image(systemName: "sparkles")
+                        .font(.system(size: 10))
+                        .foregroundColor(.purple)
+                    Text("Brief for \(brief.personName)")
+                        .font(.system(size: 10, weight: .medium))
+                        .foregroundColor(.purple)
+                }
+
+                Text(brief.briefContent)
+                    .font(.system(size: 11))
+                    .foregroundColor(.secondary)
+                    .lineLimit(5)
+
+                if brief.isStale {
+                    HStack(spacing: 4) {
+                        Image(systemName: "exclamationmark.triangle")
+                            .font(.system(size: 9))
+                        Text("Brief may be outdated")
+                            .font(.system(size: 9))
+                    }
+                    .foregroundColor(.orange)
+                }
+            }
+        } else if briefManager.pendingMeetings.contains(meeting.id) || briefManager.isGenerating {
+            HStack(spacing: 8) {
+                ProgressView()
+                    .scaleEffect(0.7)
+                Text("Generating brief...")
+                    .font(.system(size: 11))
+                    .foregroundColor(.secondary)
+            }
+        } else if cachedBrief != nil {
+            // Brief exists but is empty - means no Person found
+            VStack(alignment: .leading, spacing: 4) {
+                Text("No Person record found for this meeting")
+                    .font(.system(size: 11))
+                    .foregroundColor(.secondary.opacity(0.7))
+                    .italic()
+
+                Button(action: {
+                    Task { @MainActor in
+                        await briefManager.generateBriefForMeeting(meeting)
+                    }
+                }) {
+                    Label("Generate Brief", systemImage: "sparkles")
+                        .font(.system(size: 10))
+                }
+                .buttonStyle(.bordered)
+                .controlSize(.small)
+            }
+        } else {
+            // No brief generated yet
+            VStack(alignment: .leading, spacing: 4) {
+                Text("AI brief not yet generated")
+                    .font(.system(size: 11))
+                    .foregroundColor(.secondary.opacity(0.7))
+                    .italic()
+
+                Button(action: {
+                    Task { @MainActor in
+                        await briefManager.generateBriefForMeeting(meeting)
+                    }
+                }) {
+                    Label("Generate Brief", systemImage: "sparkles")
+                        .font(.system(size: 10))
+                }
+                .buttonStyle(.bordered)
+                .controlSize(.small)
+            }
+        }
+    }
+
+    /// Calendar notes view
+    @ViewBuilder
+    private var calendarNotesView: some View {
+        if let notes = meeting.notes, !notes.isEmpty {
+            VStack(alignment: .leading, spacing: 4) {
+                HStack {
+                    Image(systemName: "calendar")
+                        .font(.system(size: 10))
+                        .foregroundColor(.blue)
+                    Text("Calendar Notes")
+                        .font(.system(size: 10, weight: .medium))
+                        .foregroundColor(.blue)
+                }
+
+                Text(notes)
+                    .font(.system(size: 11))
+                    .foregroundColor(.secondary)
+                    .lineLimit(5)
+            }
+        } else {
+            Text("No calendar notes available")
+                .font(.system(size: 11))
+                .foregroundColor(.secondary.opacity(0.7))
+                .italic()
+        }
+    }
+
+    /// Regenerate brief action
+    private func regenerateBrief() {
+        isRegenerating = true
+        Task { @MainActor in
+            await briefManager.regenerateBrief(for: meeting)
+            isRegenerating = false
+        }
     }
 }
 
