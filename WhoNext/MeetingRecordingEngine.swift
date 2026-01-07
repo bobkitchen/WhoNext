@@ -1437,23 +1437,22 @@ class MeetingRecordingEngine: ObservableObject {
     /// Identify speakers in real-time during recording
     private func identifySpeakersInRealTime(_ speakerDatabase: [String: [Float]]) async {
         let voicePrintManager = VoicePrintManager()
-        
+
         for (speakerId, embedding) in speakerDatabase {
-            // Check if we already identified this speaker
-            if let existingParticipant = currentMeeting?.identifiedParticipants.first(where: { 
-                "\($0.speakerID)" == speakerId && $0.name != nil && !$0.name!.isEmpty
+            // Check if we already identified this speaker with high confidence
+            if let existingParticipant = currentMeeting?.identifiedParticipants.first(where: {
+                "\($0.speakerID)" == speakerId && $0.confidence >= 0.85 && $0.namingMode == .linkedToPerson
             }) {
-                continue // Already identified
+                continue // Already confidently identified via voice imprint
             }
-            
-            // Try to match with known voices
+
             // Try to match with known voices
             if let (person, confidence) = voicePrintManager.findMatchingPerson(for: embedding) {
-                if confidence > 0.8 { // Only apply high-confidence matches in real-time
+                if confidence >= 0.85 { // Only auto-assign at 85%+ confidence (user requirement)
                     // Extract Sendable data to pass to MainActor
                     let personID = person?.objectID
                     let personName = person?.name
-                    
+
                     await MainActor.run {
                         // Re-fetch person on main context if we have an ID
                         var mainPerson: Person? = nil
@@ -1461,29 +1460,44 @@ class MeetingRecordingEngine: ObservableObject {
                             let context = PersistenceController.shared.container.viewContext
                             mainPerson = try? context.existingObject(with: objectID) as? Person
                         }
-                        
+
                         // Update or create participant
                         if let participant = currentMeeting?.identifiedParticipants.first(where: { "\($0.speakerID)" == speakerId }) {
                             participant.name = personName
                             participant.confidence = confidence
                             participant.personRecord = mainPerson
-                            participant.person = mainPerson  // Also set the alias
+                            participant.person = mainPerson
+                            participant.namingMode = .linkedToPerson  // Mark as auto-identified via voice
                         } else {
                             let participant = IdentifiedParticipant()
                             participant.speakerID = Int(speakerId) ?? 0
                             participant.name = personName
                             participant.confidence = confidence
                             participant.personRecord = mainPerson
-                            participant.person = mainPerson  // Also set the alias
+                            participant.person = mainPerson
+                            participant.namingMode = .linkedToPerson  // Mark as auto-identified via voice
                             currentMeeting?.identifyParticipant(participant)
                         }
-                        
-                        // Note: Transcript segments are immutable once added
-                        // Future segments will use the identified speaker name
-                        
-                        print("🎯 Real-time identification: Speaker \(speakerId) is \(personName ?? "Unknown") (confidence: \(String(format: "%.2f", confidence)))")
+
+                        // Update transcript segment speaker names for this speaker
+                        if let name = personName, let meeting = currentMeeting {
+                            updateTranscriptSpeakerNames(meeting: meeting, speakerId: speakerId, name: name)
+                        }
+
+                        print("🎯 AUTO-IDENTIFIED: Speaker \(speakerId) → \(personName ?? "Unknown") (confidence: \(String(format: "%.0f%%", confidence * 100)))")
                     }
                 }
+            }
+        }
+    }
+
+    /// Update speaker names in transcript segments when a speaker is identified
+    private func updateTranscriptSpeakerNames(meeting: LiveMeeting, speakerId: String, name: String) {
+        // TranscriptSegment.speakerName is mutable, so we can update it
+        for i in 0..<meeting.transcript.count {
+            if meeting.transcript[i].speakerID == speakerId ||
+               meeting.transcript[i].speakerID == "speaker_\(speakerId)" {
+                meeting.transcript[i].speakerName = name
             }
         }
     }

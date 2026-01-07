@@ -1,5 +1,6 @@
 import SwiftUI
 import AppKit
+import CoreData
 
 /// Unified floating window that smoothly transitions between monitoring and recording states
 /// Compact by default, user can expand to see full details
@@ -53,7 +54,7 @@ class UnifiedRecordingStatusWindowController: NSWindowController {
         panel.titleVisibility = .hidden
         panel.styleMask.insert(.fullSizeContentView)
         panel.minSize = NSSize(width: 320, height: 80)
-        panel.maxSize = NSSize(width: 480, height: 800)
+        panel.maxSize = NSSize(width: 600, height: 800)  // Wider to accommodate speaker stats sidebar
         panel.setFrameAutosaveName("")
 
         super.init(window: panel)
@@ -153,11 +154,15 @@ struct UnifiedRecordingStatusView: View {
     @State private var editingNamingMode: NamingMode = .unnamed
     @State private var unnamedSpeakers: Set<String> = []
 
+    // Speaker assignment state
+    @State private var selectedParticipantForAssignment: IdentifiedParticipant?
+    @State private var showingSpeakerAssignmentPopover = false
+
     var body: some View {
         ZStack {
             if isExpanded {
                 expandedView
-                    .frame(width: 480, height: 640)
+                    .frame(width: 580, height: 640)  // Wider for speaker stats sidebar
             } else {
                 compactView
                     .frame(width: 320, height: 80)
@@ -348,40 +353,58 @@ struct UnifiedRecordingStatusView: View {
 
     private func recordingContent(meeting: LiveMeeting) -> some View {
         VStack(spacing: 0) {
-            // Transcript - fills available space
-            ScrollViewReader { proxy in
-                ScrollView {
-                    VStack(alignment: .leading, spacing: 12) {
-                        if meeting.transcript.isEmpty {
-                            emptyTranscriptState
-                        } else {
-                            ForEach(Array(meeting.transcript.suffix(15))) { segment in
-                                transcriptSegmentView(segment: segment)
-                                    .id(segment.id)
+            // Main content area with transcript and speaker stats sidebar
+            HStack(spacing: 0) {
+                // Transcript - fills available space
+                ScrollViewReader { proxy in
+                    ScrollView {
+                        VStack(alignment: .leading, spacing: 12) {
+                            if meeting.transcript.isEmpty {
+                                emptyTranscriptState
+                            } else {
+                                ForEach(Array(meeting.transcript.suffix(15))) { segment in
+                                    transcriptSegmentView(segment: segment)
+                                        .id(segment.id)
+                                }
+                            }
+                        }
+                        .frame(maxWidth: .infinity, minHeight: 0, alignment: .topLeading)
+                        .padding(12)
+                    }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .background(Color(white: 0.10).opacity(0.5))
+                    .onChange(of: meeting.transcript.count) { _, _ in
+                        if let last = meeting.transcript.last {
+                            withAnimation {
+                                proxy.scrollTo(last.id, anchor: .bottom)
                             }
                         }
                     }
-                    .frame(maxWidth: .infinity, minHeight: 0, alignment: .topLeading)
-                    .padding(12)
                 }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .background(Color(white: 0.10).opacity(0.5))
-                .onChange(of: meeting.transcript.count) { _, _ in
-                    if let last = meeting.transcript.last {
-                        withAnimation {
-                            proxy.scrollTo(last.id, anchor: .bottom)
-                        }
-                    }
-                }
+
+                Divider()
+                    .background(Color.white.opacity(0.1))
+
+                // Speaker stats sidebar
+                speakerStatsColumn(meeting: meeting)
             }
 
-            // Stats cards
+            // Stats card (just one now - speakers are in sidebar)
             HStack(spacing: 8) {
                 statsCard(meeting: meeting)
-                speakersCard(meeting: meeting)
             }
             .padding(.horizontal, 8)
             .padding(.vertical, 8)
+        }
+        .popover(isPresented: $showingSpeakerAssignmentPopover, arrowEdge: .leading) {
+            if let participant = selectedParticipantForAssignment {
+                SpeakerAssignmentPopover(
+                    isPresented: $showingSpeakerAssignmentPopover,
+                    participant: participant,
+                    meeting: meeting,
+                    onAssign: handleSpeakerAssignment
+                )
+            }
         }
     }
 
@@ -522,6 +545,140 @@ struct UnifiedRecordingStatusView: View {
         .cornerRadius(8)
     }
 
+    // MARK: - Speaker Stats Sidebar
+
+    private func speakerStatsColumn(meeting: LiveMeeting) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            // Header
+            Text("SPEAKERS")
+                .font(.system(size: 9, weight: .semibold))
+                .foregroundColor(.white.opacity(0.5))
+                .padding(.bottom, 4)
+
+            if meeting.identifiedParticipants.isEmpty {
+                VStack(spacing: 8) {
+                    Image(systemName: "person.2.slash")
+                        .font(.system(size: 20))
+                        .foregroundColor(.white.opacity(0.3))
+
+                    Text("Awaiting\nspeakers...")
+                        .font(.system(size: 10))
+                        .foregroundColor(.white.opacity(0.4))
+                        .multilineTextAlignment(.center)
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else {
+                // Speaker rows
+                ScrollView {
+                    VStack(spacing: 6) {
+                        ForEach(meeting.identifiedParticipants.sorted(by: { $0.totalSpeakingTime > $1.totalSpeakingTime })) { participant in
+                            speakerStatsRow(participant: participant, meetingDuration: meeting.duration)
+                        }
+                    }
+                }
+            }
+
+            Spacer()
+        }
+        .padding(12)
+        .frame(width: 160)
+        .background(Color(white: 0.08).opacity(0.9))
+    }
+
+    private func speakerStatsRow(participant: IdentifiedParticipant, meetingDuration: TimeInterval) -> some View {
+        let speakingPercentage = meetingDuration > 0 ? (participant.totalSpeakingTime / meetingDuration) * 100 : 0
+        let isAutoIdentified = participant.confidence >= 0.85 && participant.namingMode == .linkedToPerson
+
+        return Button(action: {
+            selectedParticipantForAssignment = participant
+            showingSpeakerAssignmentPopover = true
+        }) {
+            VStack(alignment: .leading, spacing: 4) {
+                // Speaker name with indicators
+                HStack(spacing: 6) {
+                    // Speaking indicator
+                    Circle()
+                        .fill(participant.isSpeaking ? Color.green : participant.color.opacity(0.5))
+                        .frame(width: 8, height: 8)
+
+                    // Name
+                    Text(participant.name ?? "Speaker \(participant.speakerID)")
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundColor(.white.opacity(0.9))
+                        .lineLimit(1)
+
+                    // Auto-identified badge
+                    if isAutoIdentified {
+                        Image(systemName: "checkmark.circle.fill")
+                            .font(.system(size: 8))
+                            .foregroundColor(.green)
+                    }
+                }
+
+                // Stats: time and percentage
+                HStack(spacing: 8) {
+                    // Time spoken
+                    Text(formatSpeakingTime(participant.totalSpeakingTime))
+                        .font(.system(size: 10, design: .monospaced))
+                        .foregroundColor(.white.opacity(0.7))
+
+                    // Percentage
+                    Text("(\(Int(speakingPercentage))%)")
+                        .font(.system(size: 10))
+                        .foregroundColor(.white.opacity(0.5))
+                }
+            }
+            .padding(8)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(
+                RoundedRectangle(cornerRadius: 6)
+                    .fill(Color.white.opacity(0.05))
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 6)
+                    .stroke(participant.isSpeaking ? Color.green.opacity(0.4) : Color.clear, lineWidth: 1)
+            )
+        }
+        .buttonStyle(.plain)
+    }
+
+    private func formatSpeakingTime(_ seconds: TimeInterval) -> String {
+        let mins = Int(seconds) / 60
+        let secs = Int(seconds) % 60
+        return String(format: "%02d:%02d", mins, secs)
+    }
+
+    // MARK: - Speaker Assignment Handler
+
+    private func handleSpeakerAssignment(name: String, person: Person?, mode: NamingMode) {
+        guard let participant = selectedParticipantForAssignment,
+              let meeting = recordingEngine.currentMeeting else { return }
+
+        // Update participant
+        participant.name = name
+        participant.personRecord = person
+        participant.person = person
+        participant.namingMode = mode
+        participant.confidence = person != nil ? 1.0 : 0.5
+
+        // Update all transcript segments with this speaker ID
+        let speakerIDString = "\(participant.speakerID)"
+        for i in 0..<meeting.transcript.count {
+            var segment = meeting.transcript[i]
+            if segment.speakerID == speakerIDString || segment.speakerID == "speaker_\(participant.speakerID)" {
+                segment.speakerName = name
+                // Since TranscriptSegment.speakerName is a var, update in place
+            }
+        }
+
+        // Also update local speaker names dictionary for display
+        speakerNames[speakerIDString] = name
+        speakerNames["speaker_\(participant.speakerID)"] = name
+        speakerNamingModes[speakerIDString] = mode
+
+        selectedParticipantForAssignment = nil
+    }
+
     private var expandedFooter: some View {
         HStack {
             // Quality indicator
@@ -584,7 +741,7 @@ struct UnifiedRecordingStatusView: View {
         }).first else { return }
 
         if expanded {
-            windowController.expand(to: NSSize(width: 480, height: 640), animated: true)
+            windowController.expand(to: NSSize(width: 580, height: 640), animated: true)  // Wider for speaker stats
         } else {
             windowController.collapse(animated: true)
         }
@@ -747,6 +904,231 @@ struct StatItem: View {
             Text(label)
                 .font(.system(size: 9))
                 .foregroundColor(.white.opacity(0.5))
+        }
+    }
+}
+
+// MARK: - Speaker Assignment Popover
+
+/// Popover for assigning a speaker to a Person record or typing a new name
+struct SpeakerAssignmentPopover: View {
+    @Binding var isPresented: Bool
+    @ObservedObject var participant: IdentifiedParticipant
+    var meeting: LiveMeeting
+    let onAssign: (String, Person?, NamingMode) -> Void
+
+    @State private var searchText: String = ""
+    @State private var selectedPerson: Person?
+    @State private var showingCreatePersonAlert: Bool = false
+
+    @FetchRequest(
+        entity: Person.entity(),
+        sortDescriptors: [NSSortDescriptor(keyPath: \Person.name, ascending: true)]
+    ) private var allPeople: FetchedResults<Person>
+
+    private var filteredPeople: [Person] {
+        if searchText.isEmpty {
+            return Array(allPeople.prefix(10))
+        }
+        return allPeople.filter { $0.wrappedName.localizedCaseInsensitiveContains(searchText) }.prefix(10).map { $0 }
+    }
+
+    var body: some View {
+        VStack(spacing: 0) {
+            popoverHeader
+            Divider()
+            searchSection
+            Divider()
+            actionButtons
+        }
+        .frame(width: 320, height: 340)
+        .background(Color(NSColor.windowBackgroundColor))
+        .alert("Create New Person?", isPresented: $showingCreatePersonAlert) {
+            Button("Create & Save Voice") { createNewPersonAndAssign(saveVoice: true) }
+            Button("Just Use Name") { onAssign(searchText, nil, .transcriptOnly); isPresented = false }
+            Button("Cancel", role: .cancel) { }
+        } message: {
+            Text("Would you like to create a new person record for \"\(searchText)\" and save their voice imprint for future meetings?")
+        }
+    }
+
+    private var popoverHeader: some View {
+        HStack {
+            Text("Assign Speaker \(participant.speakerID)")
+                .font(.headline)
+                .foregroundColor(.primary)
+            Spacer()
+            Button(action: { isPresented = false }) {
+                Image(systemName: "xmark.circle.fill")
+                    .font(.system(size: 18))
+                    .foregroundColor(.secondary)
+            }
+            .buttonStyle(.plain)
+        }
+        .padding()
+        .background(Color(NSColor.windowBackgroundColor))
+    }
+
+    private var searchSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            TextField("Search people or type name...", text: $searchText)
+                .textFieldStyle(.roundedBorder)
+                .onSubmit { handleSubmit() }
+
+            if !searchText.isEmpty {
+                searchResultsList
+            }
+        }
+        .padding()
+    }
+
+    private var searchResultsList: some View {
+        ScrollView {
+            VStack(spacing: 2) {
+                ForEach(filteredPeople) { person in
+                    personResultRow(person: person)
+                }
+
+                if !filteredPeople.contains(where: { $0.wrappedName.lowercased() == searchText.lowercased() }) {
+                    Divider().padding(.vertical, 4)
+                    Text("No exact match found")
+                        .font(.system(size: 10))
+                        .foregroundColor(.secondary)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.horizontal, 8)
+                }
+            }
+        }
+        .frame(maxHeight: 150)
+    }
+
+    private func personResultRow(person: Person) -> some View {
+        Button(action: {
+            selectedPerson = person
+            searchText = person.wrappedName
+        }) {
+            HStack {
+                Circle()
+                    .fill(Color.blue.opacity(0.2))
+                    .frame(width: 28, height: 28)
+                    .overlay(
+                        Text(person.initials)
+                            .font(.system(size: 10, weight: .medium))
+                            .foregroundColor(.blue)
+                    )
+
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(person.wrappedName)
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundColor(.primary)
+
+                    if person.voiceEmbeddings != nil {
+                        HStack(spacing: 4) {
+                            Image(systemName: "waveform")
+                                .font(.system(size: 8))
+                            Text("Voice imprint")
+                                .font(.system(size: 9))
+                        }
+                        .foregroundColor(.green)
+                    }
+                }
+
+                Spacer()
+
+                if selectedPerson == person {
+                    Image(systemName: "checkmark.circle.fill")
+                        .foregroundColor(.blue)
+                }
+            }
+            .padding(.horizontal, 8)
+            .padding(.vertical, 6)
+            .background(
+                RoundedRectangle(cornerRadius: 6)
+                    .fill(selectedPerson == person ? Color.blue.opacity(0.1) : Color.clear)
+            )
+        }
+        .buttonStyle(.plain)
+    }
+
+    private var actionButtons: some View {
+        HStack(spacing: 12) {
+            Button("Cancel") { isPresented = false }
+                .buttonStyle(.plain)
+                .foregroundColor(.secondary)
+
+            Spacer()
+
+            Button("This transcript only") {
+                onAssign(searchText, nil, .transcriptOnly)
+                isPresented = false
+            }
+            .buttonStyle(.bordered)
+            .disabled(searchText.isEmpty)
+
+            Button(selectedPerson != nil ? "Assign" : "Create & Assign") {
+                if let person = selectedPerson {
+                    onAssign(searchText, person, .linkedToPerson)
+                    saveVoiceImprint(for: person)
+                    isPresented = false
+                } else if !searchText.isEmpty {
+                    showingCreatePersonAlert = true
+                }
+            }
+            .buttonStyle(.borderedProminent)
+            .disabled(searchText.isEmpty)
+        }
+        .padding()
+    }
+
+    private func handleSubmit() {
+        if let person = selectedPerson {
+            onAssign(person.wrappedName, person, .linkedToPerson)
+            saveVoiceImprint(for: person)
+            isPresented = false
+        } else if !searchText.isEmpty {
+            showingCreatePersonAlert = true
+        }
+    }
+
+    private func createNewPersonAndAssign(saveVoice: Bool) {
+        let context = PersistenceController.shared.container.viewContext
+        let newPerson = Person(context: context)
+        newPerson.id = UUID()
+        newPerson.name = searchText
+        newPerson.createdAt = Date()
+        newPerson.modifiedAt = Date()
+
+        if saveVoice {
+            saveVoiceImprint(for: newPerson)
+        }
+
+        do {
+            try context.save()
+            onAssign(searchText, newPerson, .linkedToPerson)
+            isPresented = false
+        } catch {
+            print("Error creating person: \(error)")
+            onAssign(searchText, nil, .transcriptOnly)
+            isPresented = false
+        }
+    }
+
+    private func saveVoiceImprint(for person: Person) {
+        guard let diarizationManager = MeetingRecordingEngine.shared.diarizationManager,
+              let speakerDatabase = diarizationManager.lastResult?.speakerDatabase else {
+            print("No speaker database available for voice imprint")
+            return
+        }
+
+        let speakerKey = "speaker_\(participant.speakerID)"
+        let alternateKey = "\(participant.speakerID)"
+
+        if let embedding = speakerDatabase[speakerKey] ?? speakerDatabase[alternateKey] {
+            let voicePrintManager = VoicePrintManager()
+            voicePrintManager.addEmbeddings([embedding], for: person)
+            print("Saved voice imprint for \(person.wrappedName) from speaker \(participant.speakerID)")
+        } else {
+            print("No embedding found for speaker \(participant.speakerID)")
         }
     }
 }
