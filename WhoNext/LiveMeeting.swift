@@ -273,9 +273,12 @@ class IdentifiedParticipant: ObservableObject, Identifiable {
     @Published var totalSpeakingTime: TimeInterval = 0
     @Published var lastSpokeAt: Date?
     @Published var namingMode: NamingMode = .unnamed  // Track how this speaker was named
-    
+    @Published var isCurrentUser: Bool = false  // True if user identified this as themselves
+
     var displayName: String {
-        if let name = name {
+        if isCurrentUser {
+            return "Me"
+        } else if let name = name {
             return name
         } else if let person = personRecord {
             return person.name ?? "Unknown"

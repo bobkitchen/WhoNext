@@ -596,19 +596,27 @@ struct UnifiedRecordingStatusView: View {
             VStack(alignment: .leading, spacing: 4) {
                 // Speaker name with indicators
                 HStack(spacing: 6) {
-                    // Speaking indicator
+                    // Speaking indicator - purple for current user
                     Circle()
-                        .fill(participant.isSpeaking ? Color.green : participant.color.opacity(0.5))
+                        .fill(participant.isCurrentUser ? Color.purple :
+                              (participant.isSpeaking ? Color.green : participant.color.opacity(0.5)))
                         .frame(width: 8, height: 8)
 
-                    // Name
-                    Text(participant.name ?? "Speaker \(participant.speakerID)")
-                        .font(.system(size: 11, weight: .medium))
-                        .foregroundColor(.white.opacity(0.9))
+                    // "Me" icon for current user
+                    if participant.isCurrentUser {
+                        Image(systemName: "person.crop.circle.fill")
+                            .font(.system(size: 10))
+                            .foregroundColor(.purple)
+                    }
+
+                    // Name - uses displayName which returns "Me" for current user
+                    Text(participant.displayName)
+                        .font(.system(size: 11, weight: participant.isCurrentUser ? .semibold : .medium))
+                        .foregroundColor(participant.isCurrentUser ? .purple : .white.opacity(0.9))
                         .lineLimit(1)
 
-                    // Auto-identified badge
-                    if isAutoIdentified {
+                    // Auto-identified badge (not shown for "Me" since we use purple styling)
+                    if isAutoIdentified && !participant.isCurrentUser {
                         Image(systemName: "checkmark.circle.fill")
                             .font(.system(size: 8))
                             .foregroundColor(.green)
@@ -632,11 +640,12 @@ struct UnifiedRecordingStatusView: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(
                 RoundedRectangle(cornerRadius: 6)
-                    .fill(Color.white.opacity(0.05))
+                    .fill(participant.isCurrentUser ? Color.purple.opacity(0.15) : Color.white.opacity(0.05))
             )
             .overlay(
                 RoundedRectangle(cornerRadius: 6)
-                    .stroke(participant.isSpeaking ? Color.green.opacity(0.4) : Color.clear, lineWidth: 1)
+                    .stroke(participant.isCurrentUser ? Color.purple.opacity(0.4) :
+                            (participant.isSpeaking ? Color.green.opacity(0.4) : Color.clear), lineWidth: 1)
             )
         }
         .buttonStyle(.plain)
@@ -1051,33 +1060,82 @@ struct SpeakerAssignmentPopover: View {
     }
 
     private var actionButtons: some View {
-        HStack(spacing: 12) {
-            Button("Cancel") { isPresented = false }
-                .buttonStyle(.plain)
-                .foregroundColor(.secondary)
-
-            Spacer()
-
-            Button("This transcript only") {
-                onAssign(searchText, nil, .transcriptOnly)
-                isPresented = false
+        VStack(spacing: 12) {
+            // "This is me" button - prominent at top
+            Button(action: { markAsCurrentUser() }) {
+                HStack {
+                    Image(systemName: "person.crop.circle.fill")
+                    Text("This is me")
+                }
+                .frame(maxWidth: .infinity)
             }
             .buttonStyle(.bordered)
-            .disabled(searchText.isEmpty)
+            .tint(.purple)
 
-            Button(selectedPerson != nil ? "Assign" : "Create & Assign") {
-                if let person = selectedPerson {
-                    onAssign(searchText, person, .linkedToPerson)
-                    saveVoiceImprint(for: person)
+            Divider()
+
+            // Other action buttons
+            HStack(spacing: 12) {
+                Button("Cancel") { isPresented = false }
+                    .buttonStyle(.plain)
+                    .foregroundColor(.secondary)
+
+                Spacer()
+
+                Button("This transcript only") {
+                    onAssign(searchText, nil, .transcriptOnly)
                     isPresented = false
-                } else if !searchText.isEmpty {
-                    showingCreatePersonAlert = true
                 }
+                .buttonStyle(.bordered)
+                .disabled(searchText.isEmpty)
+
+                Button(selectedPerson != nil ? "Assign" : "Create & Assign") {
+                    if let person = selectedPerson {
+                        onAssign(searchText, person, .linkedToPerson)
+                        saveVoiceImprint(for: person)
+                        isPresented = false
+                    } else if !searchText.isEmpty {
+                        showingCreatePersonAlert = true
+                    }
+                }
+                .buttonStyle(.borderedProminent)
+                .disabled(searchText.isEmpty)
             }
-            .buttonStyle(.borderedProminent)
-            .disabled(searchText.isEmpty)
         }
         .padding()
+    }
+
+    private func markAsCurrentUser() {
+        // Mark participant as current user
+        participant.isCurrentUser = true
+        participant.namingMode = .linkedToPerson
+        participant.confidence = 1.0
+
+        // Save voice embedding to user profile
+        saveVoiceToUserProfile()
+
+        // Update transcript segments to show "Me"
+        onAssign("Me", nil, .linkedToPerson)
+        isPresented = false
+    }
+
+    private func saveVoiceToUserProfile() {
+        guard let diarizationManager = MeetingRecordingEngine.shared.diarizationManager,
+              let speakerDatabase = diarizationManager.lastResult?.speakerDatabase else {
+            print("No speaker database available for voice imprint")
+            return
+        }
+
+        let speakerKey = "speaker_\(participant.speakerID)"
+        let alternateKey = "\(participant.speakerID)"
+
+        if let embedding = speakerDatabase[speakerKey] ?? speakerDatabase[alternateKey] {
+            // Save to UserProfile
+            UserProfile.shared.addVoiceSample(embedding)
+            print("✓ Saved voice imprint to user profile from speaker \(participant.speakerID)")
+        } else {
+            print("No embedding found for speaker \(participant.speakerID)")
+        }
     }
 
     private func handleSubmit() {
