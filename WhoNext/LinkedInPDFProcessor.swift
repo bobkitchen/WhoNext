@@ -2,14 +2,229 @@ import Foundation
 import PDFKit
 import AppKit
 import UniformTypeIdentifiers
+import Vision
+
+/// Result of LinkedIn PDF processing containing extracted profile data
+struct LinkedInExtractedData {
+    let markdown: String
+}
 
 class LinkedInPDFProcessor: ObservableObject {
     @Published var isProcessing = false
     @Published var processingStatus = ""
     @Published var error: String?
     @Published var processedFiles: [String] = []
-    
+
     private let aiService = AIService.shared
+
+    // MARK: - OCR-Based Processing (New Method)
+
+    /// Process LinkedIn PDFs using Apple Vision OCR + AI parsing
+    /// This approach extracts text via OCR first, then uses AI to structure it
+    func processLinkedInPDFsWithOCR(_ fileURLs: [URL], completion: @escaping (Result<LinkedInExtractedData, Error>) -> Void) {
+        print("📄 [LinkedInPDF] Starting OCR-based processing with \(fileURLs.count) files")
+
+        DispatchQueue.main.async {
+            self.isProcessing = true
+            self.processingStatus = "Reading PDF files..."
+            self.error = nil
+            self.processedFiles = []
+        }
+
+        DispatchQueue.global(qos: .userInitiated).async {
+            do {
+                var allText: [String] = []
+
+                // Process each PDF file
+                for (index, fileURL) in fileURLs.enumerated() {
+                    let fileName = fileURL.lastPathComponent
+                    print("📄 [LinkedInPDF] Processing file \(index + 1)/\(fileURLs.count): \(fileName)")
+
+                    self.updateStatus("Reading \(fileName)...")
+
+                    guard fileURL.pathExtension.lowercased() == "pdf" else {
+                        throw LinkedInProcessingError.invalidFileType
+                    }
+
+                    guard let pdfDocument = PDFDocument(url: fileURL) else {
+                        throw LinkedInProcessingError.invalidPDF
+                    }
+
+                    // Convert PDF pages to images and OCR
+                    self.updateStatus("Extracting text from \(fileName)...")
+                    let images = try self.convertPDFToImages(pdfDocument)
+
+                    for (pageIndex, image) in images.enumerated() {
+                        self.updateStatus("OCR page \(pageIndex + 1) of \(images.count)...")
+                        if let text = try self.performOCR(on: image) {
+                            allText.append(text)
+                        }
+                    }
+
+                    DispatchQueue.main.async {
+                        self.processedFiles.append(fileName)
+                    }
+
+                    print("📄 [LinkedInPDF] Extracted text from \(images.count) pages in \(fileName)")
+                }
+
+                // Combine all extracted text
+                let combinedText = allText.joined(separator: "\n\n---PAGE BREAK---\n\n")
+                print("📄 [LinkedInPDF] Total OCR text length: \(combinedText.count) characters")
+
+                if combinedText.isEmpty {
+                    throw LinkedInProcessingError.noTextExtracted
+                }
+
+                // Use AI to parse the text into structured markdown
+                self.updateStatus("Structuring profile data...")
+                self.parseTextWithAI(combinedText) { result in
+                    DispatchQueue.main.async {
+                        self.isProcessing = false
+                    }
+
+                    switch result {
+                    case .success(let markdown):
+                        completion(.success(LinkedInExtractedData(markdown: markdown)))
+                    case .failure(let error):
+                        completion(.failure(error))
+                    }
+                }
+
+            } catch {
+                print("❌ [LinkedInPDF] Processing failed: \(error)")
+                DispatchQueue.main.async {
+                    self.isProcessing = false
+                    self.error = error.localizedDescription
+                }
+                completion(.failure(error))
+            }
+        }
+    }
+
+    // MARK: - OCR
+
+    private func performOCR(on image: NSImage) throws -> String? {
+        guard let cgImage = image.cgImage(forProposedRect: nil, context: nil, hints: nil) else {
+            return nil
+        }
+
+        var recognizedText = ""
+        let semaphore = DispatchSemaphore(value: 0)
+        var ocrError: Error?
+
+        let request = VNRecognizeTextRequest { request, error in
+            defer { semaphore.signal() }
+
+            if let error = error {
+                ocrError = error
+                return
+            }
+
+            guard let observations = request.results as? [VNRecognizedTextObservation] else {
+                return
+            }
+
+            // Sort observations by Y position (top to bottom), then X (left to right)
+            let sortedObservations = observations.sorted { obs1, obs2 in
+                // VNRecognizedTextObservation uses normalized coordinates (0-1, origin bottom-left)
+                // Higher Y means higher on the page
+                if abs(obs1.boundingBox.midY - obs2.boundingBox.midY) > 0.01 {
+                    return obs1.boundingBox.midY > obs2.boundingBox.midY
+                }
+                return obs1.boundingBox.midX < obs2.boundingBox.midX
+            }
+
+            for observation in sortedObservations {
+                if let topCandidate = observation.topCandidates(1).first {
+                    recognizedText += topCandidate.string + "\n"
+                }
+            }
+        }
+
+        request.recognitionLevel = .accurate
+        request.usesLanguageCorrection = true
+        request.recognitionLanguages = ["en-US"]
+
+        let handler = VNImageRequestHandler(cgImage: cgImage, options: [:])
+
+        do {
+            try handler.perform([request])
+        } catch {
+            throw error
+        }
+
+        semaphore.wait()
+
+        if let error = ocrError {
+            throw error
+        }
+
+        return recognizedText.isEmpty ? nil : recognizedText
+    }
+
+    // MARK: - AI Parsing
+
+    private func parseTextWithAI(_ ocrText: String, completion: @escaping (Result<String, Error>) -> Void) {
+        let prompt = """
+        Parse this LinkedIn profile text (extracted via OCR from a PDF) and return structured markdown.
+
+        TEXT FROM LINKEDIN PDF:
+        ---
+        \(ocrText.prefix(15000))
+        ---
+
+        Return markdown in this EXACT format:
+
+        **{Full Name}**
+        {Headline/Current Title}
+
+        📍 {Location}
+
+        ## About
+        {About section text if present - keep it concise}
+
+        ## Experience
+        **{Job Title}**
+        {Company Name}
+        {Date Range}
+
+        **{Job Title 2}**
+        {Company Name}
+        {Date Range}
+
+        (Continue for ALL jobs found...)
+
+        ## Education
+        **{School Name}**
+        {Degree} - {Field of Study}
+        {Years}
+
+        ## Skills
+        • {Skill 1}
+        • {Skill 2}
+        • {Skill 3}
+        ...
+
+        IMPORTANT RULES:
+        1. Extract ALL work experience, not just the first few jobs
+        2. Keep exact company and school names from the OCR text
+        3. Use bullet points (•) for skills
+        4. If a section is missing or empty in the OCR text, omit it entirely
+        5. Don't add information that isn't in the OCR text
+        6. Keep the markdown clean and well-formatted
+        7. Respond ONLY with the formatted markdown, no explanations
+        """
+
+        Task {
+            do {
+                let response = try await aiService.sendMessage(prompt)
+                completion(.success(response))
+            } catch {
+                completion(.failure(error))
+            }
+        }
+    }
     
     func processLinkedInPDFs(_ fileURLs: [URL], completion: @escaping (Result<String, Error>) -> Void) {
         print("🔍 [LinkedIn] Starting LinkedIn PDF processing with \(fileURLs.count) files")
@@ -343,7 +558,8 @@ enum LinkedInProcessingError: LocalizedError {
     case invalidFileType
     case noImagesExtracted
     case imageConversionFailed
-    
+    case noTextExtracted
+
     var errorDescription: String? {
         switch self {
         case .invalidPDF:
@@ -354,6 +570,8 @@ enum LinkedInProcessingError: LocalizedError {
             return "No images could be extracted from the PDF"
         case .imageConversionFailed:
             return "Failed to convert images for AI processing"
+        case .noTextExtracted:
+            return "No text could be extracted from the PDF. Please ensure the PDF is not password-protected."
         }
     }
 }

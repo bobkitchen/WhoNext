@@ -30,6 +30,7 @@ struct PersonDetailView: View {
     @StateObject private var hybridAI = HybridAIService()
     @State private var preMeetingBriefWindowController: PreMeetingBriefWindowController?
     @State private var profileWindowController: ProfileWindowController?
+    @State private var showLinkedInImport = false
 
     init(person: Person) {
         self.person = person
@@ -43,6 +44,7 @@ struct PersonDetailView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 24) {
                 headerView
+                linkedInImportView
                 notesView
                 sentimentAnalyticsView
                 preMeetingBriefView
@@ -188,28 +190,16 @@ struct PersonDetailView: View {
             
             Spacer()
             
-            // More subtle and integrated action buttons
-            HStack(spacing: 12) {
-                Button(action: searchLinkedIn) {
-                    HStack(spacing: 6) {
-                        Image(systemName: "magnifyingglass")
-                            .font(.system(size: 11, weight: .medium))
-                        Text("LinkedIn")
-                            .font(.system(size: 12, weight: .medium))
-                    }
+            // Action button - Edit only (LinkedIn import moved to dedicated section)
+            Button(action: openEditWindow) {
+                HStack(spacing: 6) {
+                    Image(systemName: "pencil")
+                        .font(.system(size: 11, weight: .medium))
+                    Text("Edit")
+                        .font(.system(size: 12, weight: .medium))
                 }
-                .buttonStyle(LiquidGlassButtonStyle(variant: .secondary, size: .small))
-                
-                Button(action: openEditWindow) {
-                    HStack(spacing: 6) {
-                        Image(systemName: "pencil")
-                            .font(.system(size: 11, weight: .medium))
-                        Text("Edit")
-                            .font(.system(size: 12, weight: .medium))
-                    }
-                }
-                .buttonStyle(LiquidGlassButtonStyle(variant: .secondary, size: .small))
             }
+            .buttonStyle(LiquidGlassButtonStyle(variant: .secondary, size: .small))
         }
         .liquidGlassCard(
             cornerRadius: 16,
@@ -218,7 +208,82 @@ struct PersonDetailView: View {
             isInteractive: false
         )
     }
-    
+
+    // MARK: - LinkedIn Import Section
+
+    @ViewBuilder
+    private var linkedInImportView: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            // Collapsible header
+            Button(action: { withAnimation(.easeInOut(duration: 0.2)) { showLinkedInImport.toggle() } }) {
+                HStack {
+                    Image(systemName: showLinkedInImport ? "chevron.down" : "chevron.right")
+                        .font(.system(size: 10, weight: .semibold))
+                        .foregroundColor(.secondary)
+                        .frame(width: 16)
+
+                    Image(systemName: "doc.badge.arrow.up")
+                        .font(.system(size: 14))
+                        .foregroundColor(.accentColor)
+
+                    Text("Import LinkedIn Profile")
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundColor(.primary)
+
+                    Spacer()
+
+                    if person.notes?.isEmpty ?? true {
+                        Text("No profile data")
+                            .font(.system(size: 11))
+                            .foregroundColor(.orange)
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 3)
+                            .background(Color.orange.opacity(0.1))
+                            .clipShape(Capsule())
+                    }
+                }
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+
+            // Expandable drop zone
+            if showLinkedInImport {
+                CompactLinkedInDropZone { markdown in
+                    // Update person.notes with the extracted markdown
+                    person.notes = markdown
+                    person.modifiedAt = Date()
+
+                    // Extract location and set timezone if not already set
+                    if person.timezone?.isEmpty ?? true || person.timezone == "UTC" {
+                        if let location = extractLocationFromMarkdown(markdown) {
+                            let timezone = mapLocationToTimezone(location)
+                            person.timezone = timezone
+                            print("🌍 [PersonDetail] Set timezone to \(timezone) based on location: \(location)")
+                        }
+                    }
+
+                    // Save changes
+                    do {
+                        try viewContext.save()
+                        print("✅ [PersonDetail] LinkedIn profile data saved for \(person.name ?? "Unknown")")
+
+                        // Collapse the import section after successful import
+                        withAnimation {
+                            showLinkedInImport = false
+                        }
+                    } catch {
+                        print("❌ [PersonDetail] Failed to save LinkedIn data: \(error)")
+                        ErrorManager.shared.handle(error, context: "Failed to save LinkedIn profile data")
+                    }
+                }
+                .transition(.opacity.combined(with: .move(edge: .top)))
+            }
+        }
+        .padding(16)
+        .background(Color(nsColor: .controlBackgroundColor).opacity(0.3))
+        .cornerRadius(12)
+    }
+
     @ViewBuilder
     private var notesView: some View {
         VStack(alignment: .leading, spacing: 16) {
@@ -230,7 +295,7 @@ struct PersonDetailView: View {
                     .font(.system(size: 16, weight: .semibold))
                     .foregroundColor(.primary)
                 Spacer()
-                
+
                 // Pop-out button
                 Button(action: openProfileWindow) {
                     Image(systemName: "arrow.up.forward.square")
@@ -238,30 +303,30 @@ struct PersonDetailView: View {
                         .help("Open profile in new window")
                 }
                 .buttonStyle(.plain)
-                
-                // Quick tip for LinkedIn info
-                Text("💡 Tip: Use 'Find on LinkedIn' button above, then copy/paste profile info here")
-                    .font(.system(size: 11))
-                    .foregroundColor(.secondary)
-                    .italic()
             }
-            
+
             if let notes = person.notes, !notes.isEmpty {
                 ScrollView {
                     ProfileContentView(content: notes)
                 }
-                .frame(maxHeight: 120)
+                .frame(maxHeight: 200)
             } else {
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("No profile information available")
-                        .font(.system(size: 14))
+                VStack(alignment: .center, spacing: 12) {
+                    Image(systemName: "doc.text")
+                        .font(.system(size: 28))
+                        .foregroundColor(.secondary.opacity(0.5))
+
+                    Text("No profile information")
+                        .font(.system(size: 14, weight: .medium))
                         .foregroundColor(.secondary)
-                    
-                    Text("Click 'Find on LinkedIn' above to search for this person, then copy relevant details (job history, education, etc.) and paste them in the Edit view.")
+
+                    Text("Import a LinkedIn PDF above or add notes manually via Edit")
                         .font(.system(size: 12))
                         .foregroundColor(.secondary)
-                        .italic()
+                        .multilineTextAlignment(.center)
                 }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 20)
             }
         }
         .padding(16)
@@ -638,8 +703,8 @@ struct PersonDetailView: View {
     private func openProfileWindow() {
         // Close existing window if open
         closeProfileWindow()
-        
-        let profileContent = person.notes ?? "No profile information available.\n\nClick 'Find on LinkedIn' to search for this person, then copy relevant details and paste them in the Edit view."
+
+        let profileContent = person.notes ?? "No profile information available."
         
         let windowController = ProfileWindowController(
             personName: person.name ?? "Unknown",
@@ -679,154 +744,127 @@ struct PersonDetailView: View {
         NSPasteboard.general.clearContents()
         NSPasteboard.general.setString(text, forType: .string)
     }
-    
-    private func searchLinkedIn() {
-        print("🔍 [PersonDetailView] Opening LinkedIn Search Window")
-        print("🔍 [PersonDetailView] Current person: \(person.name ?? "Unknown"), role: \(person.role ?? "none")")
 
-        // Open LinkedIn search window with robust extraction
-        let window = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 900, height: 700),
-            styleMask: [.titled, .closable, .resizable],
-            backing: .buffered,
-            defer: false
-        )
-        window.title = "LinkedIn Profile Search - \(person.name ?? "Unknown")"
-        window.center()
-        window.isReleasedWhenClosed = false
-        window.contentView = NSHostingView(
-            rootView: LinkedInSearchWindow(
-                onDataExtracted: { profileData in
-                    print("✅ [PersonDetailView] LinkedIn data extracted!")
-                    print("   LinkedIn headline: '\(profileData.headline)'")
-                    print("   Current person role: '\(self.person.role ?? "none")'")
-                    print("   Will update role? NO - preserving app data")
+    // MARK: - Location & Timezone Helpers
 
-                    // Convert structured data to formatted notes
-                    let formattedNotes = self.formatLinkedInData(profileData)
-
-                    // Update person's notes with the formatted profile data
-                    self.person.notes = formattedNotes
-                    self.person.modifiedAt = Date()
-
-                    // Only populate empty fields - never overwrite existing data
-                    // (Your app data is likely more up-to-date than LinkedIn)
-
-                    if !profileData.name.isEmpty && (self.person.name?.isEmpty ?? true) {
-                        self.person.name = profileData.name
-                        print("📝 Updated name: \(profileData.name)")
-                    } else {
-                        print("ℹ️  Skipped name update (already set)")
-                    }
-
-                    if !profileData.location.isEmpty && (self.person.timezone?.isEmpty ?? true) {
-                        self.person.timezone = profileData.location
-                        print("📝 Updated location: \(profileData.location)")
-                    } else {
-                        print("ℹ️  Skipped location update (already set)")
-                    }
-
-                    // Note: Role/headline NOT auto-populated as app data is often more current
-                    // LinkedIn job title is in the notes if you want to manually copy it
-                    print("ℹ️  LinkedIn headline '\(profileData.headline)' saved to notes only (not applied to role field)")
-
-                    // Always download and save profile photo (safe to overwrite)
-                    if !profileData.photo.isEmpty, let photoURL = URL(string: profileData.photo) {
-                        Task {
-                            do {
-                                let (data, _) = try await URLSession.shared.data(from: photoURL)
-                                await MainActor.run {
-                                    self.person.photo = data
-                                    try? self.viewContext.save()
-                                    print("✅ Profile photo saved successfully")
-                                }
-                            } catch {
-                                print("❌ Failed to download profile photo: \(error)")
-                            }
-                        }
-                    }
-
-                    // Save changes
-                    try? self.viewContext.save()
-
-                    // Trigger immediate sync for person updates
-                    RobustSyncManager.shared.triggerSync()
-
-                    print("✅ LinkedIn profile data saved for \(profileData.name)")
-                    if !profileData.headline.isEmpty {
-                        print("ℹ️  LinkedIn job title '\(profileData.headline)' saved in notes (not auto-populated)")
-                    }
-                },
-                onClose: {
-                    window.close()
+    private func extractLocationFromMarkdown(_ markdown: String) -> String? {
+        // Look for location line with 📍 emoji
+        let lines = markdown.components(separatedBy: "\n")
+        for line in lines {
+            let trimmed = line.trimmingCharacters(in: .whitespaces)
+            if trimmed.hasPrefix("📍") {
+                let location = trimmed.replacingOccurrences(of: "📍", with: "").trimmingCharacters(in: .whitespaces)
+                if !location.isEmpty {
+                    return location
                 }
-            )
-        )
-        window.makeKeyAndOrderFront(nil)
+            }
+        }
+        return nil
     }
 
-    /// Format LinkedIn profile data into readable notes
-    private func formatLinkedInData(_ data: LinkedInProfileData) -> String {
-        var formatted = ""
+    private func mapLocationToTimezone(_ location: String) -> String {
+        let lowercased = location.lowercased()
 
-        // Header
-        if !data.name.isEmpty {
-            formatted += "**\(data.name)**\n"
-        }
-        if !data.headline.isEmpty {
-            formatted += "\(data.headline)\n"
-        }
-        if !data.location.isEmpty {
-            formatted += "📍 \(data.location)\n"
-        }
-        formatted += "\n"
+        // Country/region to timezone mapping
+        let timezoneMap: [(keywords: [String], timezone: String)] = [
+            // Africa
+            (["kenya", "nairobi"], "Africa/Nairobi"),
+            (["ethiopia", "addis"], "Africa/Addis_Ababa"),
+            (["nigeria", "lagos"], "Africa/Lagos"),
+            (["south africa", "johannesburg", "cape town"], "Africa/Johannesburg"),
+            (["egypt", "cairo"], "Africa/Cairo"),
+            (["morocco", "casablanca"], "Africa/Casablanca"),
+            (["ghana", "accra"], "Africa/Accra"),
+            (["tanzania", "dar es salaam"], "Africa/Dar_es_Salaam"),
+            (["uganda", "kampala"], "Africa/Kampala"),
+            (["rwanda", "kigali"], "Africa/Kigali"),
+            (["senegal", "dakar"], "Africa/Dakar"),
+            (["democratic republic of congo", "kinshasa", "drc"], "Africa/Kinshasa"),
 
-        // About section
-        if !data.about.isEmpty {
-            formatted += "## About\n"
-            formatted += "\(data.about)\n\n"
-        }
+            // Europe
+            (["london", "uk", "united kingdom", "england", "britain"], "Europe/London"),
+            (["paris", "france"], "Europe/Paris"),
+            (["berlin", "germany"], "Europe/Berlin"),
+            (["amsterdam", "netherlands"], "Europe/Amsterdam"),
+            (["madrid", "spain"], "Europe/Madrid"),
+            (["rome", "italy"], "Europe/Rome"),
+            (["zurich", "switzerland", "geneva"], "Europe/Zurich"),
+            (["stockholm", "sweden"], "Europe/Stockholm"),
+            (["oslo", "norway"], "Europe/Oslo"),
+            (["copenhagen", "denmark"], "Europe/Copenhagen"),
+            (["dublin", "ireland"], "Europe/Dublin"),
+            (["brussels", "belgium"], "Europe/Brussels"),
+            (["vienna", "austria"], "Europe/Vienna"),
+            (["warsaw", "poland"], "Europe/Warsaw"),
+            (["prague", "czech"], "Europe/Prague"),
 
-        // Experience section
-        if !data.experience.isEmpty {
-            formatted += "## Experience\n"
-            for exp in data.experience {
-                formatted += "• **\(exp.title)**"
-                if !exp.company.isEmpty {
-                    formatted += " at \(exp.company)"
+            // Americas
+            (["new york", "nyc", "eastern"], "America/New_York"),
+            (["los angeles", "la", "california", "pacific"], "America/Los_Angeles"),
+            (["chicago", "central"], "America/Chicago"),
+            (["denver", "mountain"], "America/Denver"),
+            (["seattle", "washington"], "America/Los_Angeles"),
+            (["san francisco", "sf", "bay area"], "America/Los_Angeles"),
+            (["boston", "massachusetts"], "America/New_York"),
+            (["miami", "florida"], "America/New_York"),
+            (["atlanta", "georgia"], "America/New_York"),
+            (["dallas", "texas", "houston", "austin"], "America/Chicago"),
+            (["phoenix", "arizona"], "America/Phoenix"),
+            (["toronto", "ontario", "canada"], "America/Toronto"),
+            (["vancouver", "british columbia"], "America/Vancouver"),
+            (["mexico city", "mexico"], "America/Mexico_City"),
+            (["sao paulo", "brazil", "rio"], "America/Sao_Paulo"),
+            (["buenos aires", "argentina"], "America/Argentina/Buenos_Aires"),
+            (["bogota", "colombia"], "America/Bogota"),
+            (["lima", "peru"], "America/Lima"),
+            (["santiago", "chile"], "America/Santiago"),
+
+            // Asia
+            (["tokyo", "japan"], "Asia/Tokyo"),
+            (["beijing", "china", "shanghai"], "Asia/Shanghai"),
+            (["hong kong"], "Asia/Hong_Kong"),
+            (["singapore"], "Asia/Singapore"),
+            (["india", "mumbai", "delhi", "bangalore", "chennai"], "Asia/Kolkata"),
+            (["dubai", "uae", "abu dhabi"], "Asia/Dubai"),
+            (["seoul", "korea", "south korea"], "Asia/Seoul"),
+            (["bangkok", "thailand"], "Asia/Bangkok"),
+            (["jakarta", "indonesia"], "Asia/Jakarta"),
+            (["manila", "philippines"], "Asia/Manila"),
+            (["kuala lumpur", "malaysia"], "Asia/Kuala_Lumpur"),
+            (["vietnam", "ho chi minh", "hanoi"], "Asia/Ho_Chi_Minh"),
+            (["pakistan", "karachi", "lahore"], "Asia/Karachi"),
+            (["bangladesh", "dhaka"], "Asia/Dhaka"),
+            (["israel", "tel aviv", "jerusalem"], "Asia/Jerusalem"),
+            (["turkey", "istanbul", "ankara"], "Europe/Istanbul"),
+            (["saudi arabia", "riyadh"], "Asia/Riyadh"),
+            (["jordan", "amman"], "Asia/Amman"),
+            (["lebanon", "beirut"], "Asia/Beirut"),
+            (["iraq", "baghdad"], "Asia/Baghdad"),
+            (["iran", "tehran"], "Asia/Tehran"),
+            (["afghanistan", "kabul"], "Asia/Kabul"),
+            (["nepal", "kathmandu"], "Asia/Kathmandu"),
+            (["sri lanka", "colombo"], "Asia/Colombo"),
+            (["myanmar", "yangon"], "Asia/Yangon"),
+
+            // Oceania
+            (["sydney", "australia", "melbourne", "brisbane"], "Australia/Sydney"),
+            (["perth", "western australia"], "Australia/Perth"),
+            (["auckland", "new zealand", "wellington"], "Pacific/Auckland"),
+
+            // US States
+            (["washington dc", "dc", "virginia", "maryland"], "America/New_York"),
+        ]
+
+        for (keywords, timezone) in timezoneMap {
+            for keyword in keywords {
+                if lowercased.contains(keyword) {
+                    return timezone
                 }
-                if !exp.duration.isEmpty {
-                    formatted += " — \(exp.duration)"
-                }
-                formatted += "\n"
             }
-            formatted += "\n"
         }
 
-        // Education section
-        if !data.education.isEmpty {
-            formatted += "## Education\n"
-            for edu in data.education {
-                formatted += "• \(edu.school)"
-                if !edu.degree.isEmpty {
-                    formatted += " — \(edu.degree)"
-                }
-                if !edu.field.isEmpty {
-                    formatted += " in \(edu.field)"
-                }
-                formatted += "\n"
-            }
-            formatted += "\n"
-        }
-
-        // Skills section
-        if !data.skills.isEmpty {
-            formatted += "## Skills\n"
-            formatted += data.skills.prefix(15).map { "• \($0)" }.joined(separator: "\n")
-            formatted += "\n"
-        }
-
-        return formatted.trimmingCharacters(in: .whitespacesAndNewlines)
+        // Default to UTC if no match found
+        return "UTC"
     }
 }
 
@@ -1004,10 +1042,9 @@ struct ConversationRowView: View {
     }
     
     private func deleteConversation() {
-        // Use RobustSyncManager for proper deletion sync
-        Task {
-            await RobustSyncManager.shared.deleteConversation(conversation, context: viewContext)
-        }
+        // Delete locally - CloudKit sync handles propagation automatically
+        viewContext.delete(conversation)
+        try? viewContext.save()
     }
     
     private let dayFormatter: DateFormatter = {
@@ -1305,7 +1342,7 @@ struct ProfileWindow: View {
             
             // Content
             ScrollView {
-                if !profileContent.isEmpty && profileContent != "No profile information available.\n\nClick 'Find on LinkedIn' to search for this person, then copy relevant details and paste them in the Edit view." {
+                if !profileContent.isEmpty && !profileContent.starts(with: "No profile") {
                     ProfileContentView(content: profileContent)
                         .padding(.horizontal, 24)
                         .padding(.vertical, 20)
@@ -1314,19 +1351,19 @@ struct ProfileWindow: View {
                         Image(systemName: "doc.text")
                             .font(.system(size: 48))
                             .foregroundColor(.secondary)
-                        
+
                         Text("No profile information available")
                             .font(.system(size: 16, weight: .medium))
                             .foregroundColor(.secondary)
-                        
+
                         Text("To add profile information:")
                             .font(.system(size: 14))
                             .foregroundColor(.secondary)
-                        
+
                         VStack(alignment: .leading, spacing: 8) {
-                            Label("1. Click 'Find on LinkedIn' to search for this person", systemImage: "1.circle")
-                            Label("2. Copy relevant profile details", systemImage: "2.circle")
-                            Label("3. Click 'Edit' and paste the information", systemImage: "3.circle")
+                            Label("1. Print LinkedIn profile to PDF from your browser", systemImage: "1.circle")
+                            Label("2. Drop the PDF onto the 'Import LinkedIn Profile' section", systemImage: "2.circle")
+                            Label("3. Or click 'Edit' to add notes manually", systemImage: "3.circle")
                         }
                         .font(.system(size: 13))
                         .foregroundColor(.secondary)

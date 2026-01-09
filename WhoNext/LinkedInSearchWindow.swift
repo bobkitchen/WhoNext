@@ -2,52 +2,126 @@ import SwiftUI
 import WebKit
 import CoreData
 
+
+// MARK: - View Model for WebView Persistence
+class WebViewModel: ObservableObject {
+    var webView: WKWebView = WKWebView()
+    var isConfigured: Bool = false
+}
+
 struct LinkedInSearchWindow: View {
+    // ... (unchanged properties)
+    var personName: String = ""
+    var personRole: String? = nil
+
     let onDataExtracted: (LinkedInProfileData) -> Void
     let onClose: () -> Void
-    
+
     @State private var captureState: CaptureState = .browsing
     @State private var extractedData: LinkedInProfileData?
     @State private var isProcessing: Bool = false
     @State private var processingError: String?
-    @State private var currentWebView: WKWebView?
-    @State private var isWebViewReady: Bool = false
-    @StateObject private var hybridAI = HybridAIService()
+    @State private var processingStatus: String = "Extracting profile..."
     
+    // Use StateObject to keep WebView alive across view updates
+    @StateObject private var webViewModel = WebViewModel()
+    @State private var debugRawResponse: String = "" // For debugging
+    @State private var extractedPhotoURL: String = "" // Captured via JS
+    @State private var mainPageOCRText: String = "" // Store main page OCR text
+    @State private var hasMainPageCapture: Bool = false // Track if main page was captured
+    @State private var debugLog: String = "Monitoring network... (v6)" // DEBUG LOG
+
+
+    private let aiService = AIService.shared
+
     enum CaptureState {
         case browsing
+        case capturedMain  // New state: main page captured, waiting for experience
         case processing
         case reviewing
     }
     
+    // ... (rest of struct)
+
+
+    // Construct search query from person name and role
+    private var searchQuery: String {
+        var query = personName
+        if let role = personRole, !role.isEmpty {
+            query += " " + role
+        }
+        return query.trimmingCharacters(in: .whitespaces)
+    }
+
     var body: some View {
         VStack(spacing: 0) {
             // Header
             headerView
-            
+
             // Main Content
-            switch captureState {
-            case .browsing:
+            ZStack {
+                // Keep WebView alive and visible
                 linkedInWebView
-            case .processing:
-                processingView
-            case .reviewing:
-                reviewView
+                    .opacity(captureState == .reviewing ? 0 : 1) 
+
+                if captureState == .processing {
+                    // Overlay processing status on top of webview (glassy look)
+                    // This ensures WebView isn't considered "occluded" by the OS
+                    Color.black.opacity(0.3)
+                    
+                    processingView
+                        .background(.ultraThinMaterial)
+                        .cornerRadius(12)
+                        .padding(40)
+                        .transition(.opacity)
+                }
+                
+                if captureState == .reviewing {
+                    reviewView
+                        .background(Color(nsColor: .windowBackgroundColor))
+                        .transition(.move(edge: .trailing))
+                }
             }
-            
+
             // Bottom Controls
             bottomControlsView
         }
         .frame(minWidth: 900, minHeight: 700)
         .background(Color(nsColor: .windowBackgroundColor))
     }
-    
+
     private var headerView: some View {
         HStack {
-            Text("LinkedIn Profile Search")
-                .font(.system(size: 18, weight: .semibold))
-            
+            VStack(alignment: .leading, spacing: 2) {
+                Text("LinkedIn Profile Search")
+                    .font(.system(size: 18, weight: .semibold))
+                if !personName.isEmpty {
+                    Text("Searching for: \(personName)")
+                        .font(.system(size: 12))
+                        .foregroundColor(.secondary)
+                }
+                // DEBUG LOG SCROLL
+                ScrollView {
+                    Text(debugLog)
+                        .font(.system(size: 9, design: .monospaced))
+                        .foregroundColor(.orange)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(4)
+                }
+                .frame(height: 60)
+                .background(Color.black.opacity(0.1))
+                .cornerRadius(4)
+                .padding(.top, 4)
+            }
+
             Spacer()
+
+            Button("Clear Log") {
+                debugLog = "Log cleared."
+                debugRawResponse = ""
+                extractedData = nil
+            }
+            .buttonStyle(LiquidGlassButtonStyle(variant: .secondary, size: .small))
             
             Button("Close") {
                 onClose()
@@ -58,47 +132,135 @@ struct LinkedInSearchWindow: View {
         .padding(.vertical, 12)
         .background(Color(nsColor: .controlBackgroundColor))
     }
-    
+
     private var linkedInWebView: some View {
         VStack(spacing: 12) {
-            HStack {
-                Text("Search for a LinkedIn profile, then click 'Extract Profile Data' when you find the right person.")
-                    .font(.system(size: 14))
-                    .foregroundColor(.secondary)
-                Spacer()
-            }
-            .padding(.horizontal, 20)
-            .padding(.top, 12)
-            
-            LinkedInWebViewRepresentable(searchQuery: "", onWebViewReady: { webView in
-                DispatchQueue.main.async {
-                    currentWebView = webView
-                    isWebViewReady = true
-                    print("🔧 WebView ready, stored reference")
-                    print("🔧 isWebViewReady set to: \(isWebViewReady)")
-                    print("🔧 currentWebView is nil: \(currentWebView == nil)")
+            LinkedInSearchWebView(
+                searchQuery: searchQuery,
+                viewModel: webViewModel,
+                onDataIntercepted: { profile, rawJSON in
+                    // NOISE FILTER: LinkedIn sends lots of background data (messenger, notifications).
+                    // We only want to react if we successfully parsed a profile, OR if it looks like a profile but failed.
+                    
+                    if let profile = profile {
+                        self.debugRawResponse = rawJSON
+                        self.extractedData = profile
+                        self.captureState = .reviewing
+                        self.isProcessing = false
+                        print("🚀 Intercepted Profile: \(profile.name)")
+                    } else {
+                        // It failed parsing. Is it a profile?
+                        // HEURISTIC:
+                        // 1. Log everything to the debug log.
+                        // 2. Filter messenger/noise/obfuscated data.
+                        
+                        let timestamp = DateFormatter.localizedString(from: Date(), dateStyle: .none, timeStyle: .medium)
+                        let snippet = rawJSON.prefix(50).replacingOccurrences(of: "\n", with: " ")
+                        
+                        // NOISE FILTERS
+                        let isMessengerNoise = rawJSON.contains("messengerConversationsBySyncToken") ||
+                                               rawJSON.contains("messengerMailboxCounts") ||
+                                               rawJSON.contains("typingIndicators")
+                        
+                        let isObfuscated = rawJSON.contains("\"ob\":") || rawJSON.contains("\"do\":null")
+                        
+                        // NEW: Ignore massive SDUI / Search Filter Noise
+                        let isSDUINoise = rawJSON.contains("proto.sdui.responses") || 
+                                          rawJSON.contains("SEARCH_FILTER_")
+                        
+                        // NEW: Ignore small fragments unless they have "included"
+                        let isTooSmall = rawJSON.count < 1000 && !rawJSON.contains("\"included\":[")
+
+                        if isMessengerNoise {
+                             // let msg = "[\(timestamp)] 🛑 Ignored Messenger (\(rawJSON.count)b)"
+                             // self.debugLog += "\n" + msg
+                             return
+                        }
+                        
+                        if isObfuscated {
+                             // let msg = "[\(timestamp)] 🛑 Ignored Obfuscated (\(rawJSON.count)b)"
+                             // self.debugLog += "\n" + msg
+                             return
+                        }
+
+                        if isSDUINoise {
+                             let msg = "[\(timestamp)] 🛑 Ignored SDUI/Filter Data (\(rawJSON.count)b)"
+                             print(msg)
+                             self.debugLog += "\n" + msg
+                             return
+                        }
+
+                        // IGNORE CSS/JS/HTML (Static Assets)
+                        let trimmed = rawJSON.trimmingCharacters(in: .whitespacesAndNewlines)
+                        if trimmed.hasPrefix(":") || trimmed.hasPrefix("@") || trimmed.hasPrefix("<") || 
+                           trimmed.hasPrefix("var ") || trimmed.hasPrefix("function") {
+                             // let msg = "[\(timestamp)] 🛑 Ignored Static Asset/Code (\(rawJSON.count)b)"
+                             // self.debugLog += "\n" + msg
+                             return
+                        }
+
+                        // Accept almost anything else that has some substance
+                        // RELAXED FILTER: If it starts with { or [ and is > 2KB, capture it.
+                        let isJSON = trimmed.hasPrefix("{") || trimmed.hasPrefix("[")
+                        let isLikelyProfile = !isTooSmall && isJSON && (
+                                              rawJSON.count > 2000 ||
+                                              rawJSON.contains("com.linkedin.voyager.dash.identity.profile.Profile") ||
+                                              rawJSON.contains("firstName") ||
+                                              rawJSON.contains("\"included\":[") ||
+                                              rawJSON.contains("urn:li:fsd_profile")
+                        )
+                        
+                        if isLikelyProfile {
+                             let msg = "[\(timestamp)] ✅ CAPTURED DATA (\(rawJSON.count)b): \(snippet)..."
+                             print(msg)
+                             self.debugLog += "\n" + msg
+                             
+                             // ACCUMULATE RAW RESPONSES (Don't overwrite)
+                             let separator = "\n\n========== [CAPTURE \(timestamp) - \(rawJSON.count)b] ==========\n"
+                             self.debugRawResponse += separator + rawJSON
+                             
+                             // Create dummy data to trigger "Review" state if not already reviewing
+                             if self.captureState != .reviewing {
+                                 var errorData = LinkedInProfileData(
+                                     name: "", headline: "Multiple Captures (See Raw Data)", location: "", about: "",
+                                     experience: [], education: [], skills: [], photo: "",
+                                     pageUrl: nil, pageTitle: nil
+                                 )
+                                 self.extractedData = errorData
+                                 self.captureState = .reviewing
+                                 self.isProcessing = false
+                             }
+                        } else {
+                            let msg = "[\(timestamp)] ➖ Ignored Small/Other (\(rawJSON.count)b): \(snippet)..."
+                            print(msg)
+                            self.debugLog += "\n" + msg
+                        }
+                    }
                 }
-            })
+            )
         }
     }
-    
+
     private var processingView: some View {
         VStack(spacing: 20) {
             ProgressView()
                 .scaleEffect(1.5)
-            
-            Text("Extracting profile data...")
+
+            Text(processingStatus)
                 .font(.system(size: 16, weight: .medium))
-            
+                .multilineTextAlignment(.center)
+
             if let error = processingError {
                 Text("Error: \(error)")
                     .foregroundColor(.red)
                     .font(.system(size: 14))
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal)
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
-    
+
     private var reviewView: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
@@ -106,36 +268,79 @@ struct LinkedInSearchWindow: View {
                     VStack(alignment: .leading, spacing: 12) {
                         Text("Extracted Profile Data")
                             .font(.system(size: 18, weight: .semibold))
-                        
-                        SwiftUI.Group {
+
+                        // Show debug info if data appears empty
+                        if data.name.isEmpty && data.experience.isEmpty {
+                            VStack(alignment: .leading, spacing: 8) {
+                                Text("⚠️ AI returned empty data")
+                                    .foregroundColor(.orange)
+                                    .font(.system(size: 14, weight: .medium))
+
+                                Text("Raw AI Response:")
+                                    .font(.system(size: 12, weight: .semibold))
+
+                                ScrollView {
+                                    Text(debugRawResponse.isEmpty ? "No response captured" : debugRawResponse)
+                                        .font(.system(size: 11, design: .monospaced))
+                                        .foregroundColor(.secondary)
+                                        .textSelection(.enabled)
+                                }
+                                .frame(maxHeight: 200)
+                                .padding(8)
+                                .background(Color(nsColor: .textBackgroundColor))
+                                .cornerRadius(6)
+                                
+                                Button(action: {
+                                    let pasteboard = NSPasteboard.general
+                                    pasteboard.clearContents()
+                                    pasteboard.setString(debugRawResponse, forType: .string)
+                                }) {
+                                    HStack {
+                                        Image(systemName: "doc.on.doc")
+                                        Text("Copy Raw Data to Clipboard")
+                                    }
+                                }
+                                .buttonStyle(LiquidGlassButtonStyle(variant: .secondary, size: .small))
+                                .padding(.top, 4)
+                            }
+                            .padding(.bottom, 12)
+                        }
+
+                        VStack(alignment: .leading, spacing: 4) {
                             ProfileDataRow(label: "Name", value: data.name)
                             ProfileDataRow(label: "Job Title", value: data.headline)
                             ProfileDataRow(label: "Location", value: data.location)
                         }
-                        
+
                         if !data.experience.isEmpty {
                             VStack(alignment: .leading, spacing: 8) {
-                                Text("Experience")
+                                Text("Experience (\(data.experience.count) roles)")
                                     .font(.system(size: 14, weight: .semibold))
-                                ForEach(data.experience.prefix(3), id: \.title) { exp in
-                                    Text("• \(exp.title) at \(exp.company)")
-                                        .font(.system(size: 12))
-                                        .foregroundColor(.secondary)
-                                }
-                                if data.experience.count > 3 {
-                                    Text("... and \(data.experience.count - 3) more")
-                                        .font(.system(size: 12))
-                                        .foregroundColor(.secondary)
+                                ForEach(Array(data.experience.enumerated()), id: \.offset) { _, exp in
+                                    VStack(alignment: .leading, spacing: 2) {
+                                        Text("• \(exp.title)")
+                                            .font(.system(size: 12, weight: .medium))
+                                        if !exp.company.isEmpty {
+                                            Text("  \(exp.company)")
+                                                .font(.system(size: 11))
+                                                .foregroundColor(.secondary)
+                                        }
+                                        if !exp.duration.isEmpty {
+                                            Text("  \(exp.duration)")
+                                                .font(.system(size: 11))
+                                                .foregroundColor(.secondary)
+                                        }
+                                    }
                                 }
                             }
                         }
-                        
+
                         if !data.education.isEmpty {
                             VStack(alignment: .leading, spacing: 8) {
                                 Text("Education")
                                     .font(.system(size: 14, weight: .semibold))
-                                ForEach(data.education.prefix(2), id: \.school) { edu in
-                                    Text("• \(edu.degree) at \(edu.school)")
+                                ForEach(Array(data.education.enumerated()), id: \.offset) { _, edu in
+                                    Text("• \(edu.school)\(edu.degree.isEmpty ? "" : " - \(edu.degree)")")
                                         .font(.system(size: 12))
                                         .foregroundColor(.secondary)
                                 }
@@ -150,519 +355,426 @@ struct LinkedInSearchWindow: View {
             .padding(20)
         }
     }
-    
+
     private var bottomControlsView: some View {
         HStack {
             switch captureState {
             case .browsing:
                 Spacer()
                 
-                Button("Extract Profile Data") {
-                    print("🔍 Extract Profile Data button clicked")
-                    if let webView = currentWebView {
-                        print("✅ WebView found, starting extraction")
-                        print("🔍 isWebViewReady: \(isWebViewReady)")
-                        print("🔍 captureState: \(captureState)")
-                        extractProfileData()
-                    } else {
-                        print("❌ No WebView available for extraction")
-                        print("🔍 isWebViewReady: \(isWebViewReady)")
-                    }
-                }
-                .buttonStyle(LiquidGlassButtonStyle(
-                    variant: isWebViewReady ? .primary : .secondary, 
-                    size: .medium
-                ))
-                .disabled(isProcessing)
-                
-            case .processing:
-                Spacer()
-                
-            case .reviewing:
-                Button("Back to Search") {
-                    captureState = .browsing
+                // Optional manual trigger if interception misses (e.g. cached page)
+                Button("Reload Page") {
+                    webViewModel.webView.reload()
                 }
                 .buttonStyle(LiquidGlassButtonStyle(variant: .secondary, size: .medium))
                 
                 Spacer()
-                
+
+            case .processing:
+                Spacer()
+
+            case .reviewing:
+                Button("Back to Profile") {
+                    // Reset state and go back to browsing
+                    mainPageOCRText = ""
+                    hasMainPageCapture = false
+                    extractedPhotoURL = ""
+                    captureState = .browsing
+                }
+                .buttonStyle(LiquidGlassButtonStyle(variant: .secondary, size: .medium))
+
+                Spacer()
+
                 Button("Use This Data") {
                     if let data = extractedData {
                         onDataExtracted(data)
-                        onClose() // Close the LinkedIn window after using the data
+                        onClose()
                     }
                 }
                 .buttonStyle(LiquidGlassButtonStyle(variant: .primary, size: .medium))
-                .disabled(extractedData == nil)
+            
+            default:
+                EmptyView()
             }
         }
         .padding(.horizontal, 20)
         .padding(.vertical, 12)
         .background(Color(nsColor: .controlBackgroundColor))
     }
+}
+
+
+
+
+
+
+
+
+// MARK: - WebView
+// MARK: - WebView
+struct LinkedInSearchWebView: NSViewRepresentable {
+    let searchQuery: String
+    @ObservedObject var viewModel: WebViewModel
     
-    private func extractProfileData() {
-        print("🚀 Starting profile data extraction...")
-        guard let webView = currentWebView else { 
-            print("❌ Error: currentWebView is nil")
-            processingError = "WebView not ready"
-            return 
-        }
-        
-        captureState = .processing
-        isProcessing = true
-        processingError = nil
-        
-        print("🔍 Current web view: \(String(describing: webView))")
-        print("🔍 Current web view URL: \(String(describing: webView.url))")
-        
-        captureWebViewContent(webView: webView) { result in
-            DispatchQueue.main.async {
-                self.isProcessing = false
+        // callback: (Profile?, RawJSON) -> Void
+    var onDataIntercepted: ((LinkedInProfileData?, String) -> Void)?
+
+    func makeNSView(context: Context) -> WKWebView {
+        // Only configure ONCE to avoid reloading/resetting state
+        if !viewModel.isConfigured {
+            print("🔧 Configuring WebView with Interceptor...")
+            
+            // Configure WebKit to intercept network traffic via JS
+            let config = WKWebViewConfiguration()
+            let userContentController = WKUserContentController()
+            
+            // INTERCEPTOR SCRIPT: Monkey-patch fetch AND XHR + DOM Scanner + UI Button
+            let interceptorScript = """
+            (function() {
+                if (window.__interceptorInjected) return;
+                window.__interceptorInjected = true;
                 
-                switch result {
-                case .success(let content):
-                    print("✅ Extracted content: \(content)")
-                    self.parseLinkedInData(content)
-                case .failure(let error):
-                    print("❌ Error extracting profile data: \(error.localizedDescription)")
-                    self.processingError = error.localizedDescription
-                    self.captureState = .browsing
-                }
-            }
-        }
-    }
-    
-    private func captureWebViewContent(webView: WKWebView, completion: @escaping (Result<String, Error>) -> Void) {
-        print("📄 Attempting to capture web view content")
-        
-        let script = """
-        (function() {
-            try {
-                console.log('Starting LinkedIn profile extraction...');
+                // 1. VISUAL DEBUG OVERLAY (Moved down to not block header)
+                const debugDiv = document.createElement('div');
+                debugDiv.style.cssText = "position:fixed; top:80px; left:10px; z-index:9999999; background:red; color:white; padding:8px; font-size:12px; font-family:monospace; pointer-events:none; border-radius:4px; box-shadow:0 2px 4px rgba(0,0,0,0.5); max-width:300px; max-height:400px; overflow:hidden;";
+                debugDiv.innerText = "Interceptor: READY (v6)";
+                document.documentElement.appendChild(debugDiv);
                 
-                // Debug: Log page structure
-                console.log('Page URL:', window.location.href);
-                console.log('Page title:', document.title);
-                
-                // Debug: Look for common LinkedIn containers
-                var mainContent = document.querySelector('main');
-                if (mainContent) {
-                    console.log('Found main content area');
-                    var headings = mainContent.querySelectorAll('h1, h2');
-                    console.log('Found headings:', headings.length);
-                    for (var h = 0; h < Math.min(headings.length, 3); h++) {
-                        console.log('Heading ' + h + ':', headings[h].textContent.trim());
-                    }
-                }
-                
-                // More comprehensive selectors for different LinkedIn page layouts
-                var profileData = {
-                    name: '',
-                    headline: '',
-                    location: '',
-                    about: '',
-                    experience: [],
-                    education: [],
-                    skills: [],
-                    photo: ''
-                };
-                
-                // Try multiple selectors for name
-                var nameSelectors = [
-                    'h1.text-heading-xlarge',
-                    '.text-heading-xlarge',
-                    '.pv-text-details__left-panel h1',
-                    '.pv-top-card-section__name',
-                    '.pv-top-card--list li:first-child',
-                    '[data-anonymize="person-name"]',
-                    'h1[data-anonymize="person-name"]',
-                    '.artdeco-entity-lockup__title h1'
-                ];
-                
-                console.log('Searching for name with selectors:', nameSelectors);
-                for (var i = 0; i < nameSelectors.length; i++) {
-                    var nameElement = document.querySelector(nameSelectors[i]);
-                    console.log('Selector', nameSelectors[i], ':', nameElement ? nameElement.textContent.trim() : 'not found');
-                    if (nameElement && nameElement.textContent) {
-                        profileData.name = nameElement.textContent.trim();
-                        console.log('Found name:', profileData.name);
-                        break;
-                    }
-                }
-                
-                // Fallback: Extract name from page title
-                if (!profileData.name && document.title) {
-                    var titleMatch = document.title.match(/^\\(\\d+\\)\\s*(.+?)\\s*\\|\\s*LinkedIn$/);
-                    if (titleMatch && titleMatch[1]) {
-                        profileData.name = titleMatch[1].trim();
-                        console.log('Extracted name from title:', profileData.name);
-                    }
-                }
-                
-                // Try multiple selectors for headline
-                var headlineSelectors = [
-                    '.pv-text-details__left-panel .text-body-medium',
-                    '.text-body-medium.break-words',
-                    '.pv-top-card-section__headline',
-                    '.pv-top-card--list-bullet li:first-child'
-                ];
-                
-                for (var i = 0; i < headlineSelectors.length; i++) {
-                    var headlineElement = document.querySelector(headlineSelectors[i]);
-                    if (headlineElement && headlineElement.textContent) {
-                        profileData.headline = headlineElement.textContent.trim();
-                        console.log('Found headline:', profileData.headline);
-                        break;
-                    }
-                }
-                
-                // Try multiple selectors for location
-                var locationSelectors = [
-                    '.text-body-small.inline.t-black--light.break-words',
-                    '.pv-text-details__left-panel .text-body-small',
-                    '.pv-top-card-section__location',
-                    '.pv-top-card--list-bullet li:last-child',
-                    '.text-body-small[data-anonymize="location"]',
-                    '.artdeco-entity-lockup__subtitle .text-body-small'
-                ];
-                
-                console.log('Searching for location with selectors:', locationSelectors);
-                for (var i = 0; i < locationSelectors.length; i++) {
-                    var locationElement = document.querySelector(locationSelectors[i]);
-                    console.log('Location selector', locationSelectors[i], ':', locationElement ? locationElement.textContent.trim() : 'not found');
-                    if (locationElement && locationElement.textContent) {
-                        profileData.location = locationElement.textContent.trim();
-                        console.log('Found location:', profileData.location);
-                        break;
-                    }
-                }
-                
-                // Try to get about section
-                var aboutSelectors = [
-                    '.pv-about-section .pv-about__summary-text',
-                    '.pv-about__summary-text',
-                    '.pv-about-section .inline-show-more-text'
-                ];
-                
-                for (var i = 0; i < aboutSelectors.length; i++) {
-                    var aboutElement = document.querySelector(aboutSelectors[i]);
-                    if (aboutElement && aboutElement.textContent) {
-                        profileData.about = aboutElement.textContent.trim();
-                        console.log('Found about:', profileData.about.substring(0, 100) + '...');
-                        break;
-                    }
-                }
-                
-                // Extract photo using modern LinkedIn selectors
-                profileData.photo = document.querySelector('img.pv-top-card-profile-picture__image')?.getAttribute('src') || 
-                       document.querySelector('img[data-anonymize="headshot"]')?.getAttribute('src') ||
-                       document.querySelector('.profile-photo-edit__preview')?.getAttribute('src') ||
-                       document.querySelector('.pv-top-card-section__photo')?.getAttribute('src') ||
-                       document.querySelector('.presence-entity__image')?.getAttribute('src') || '';
-                
-                // Extract experience using modern LinkedIn selectors
-                console.log('🔍 Starting experience extraction...');
-                var experienceItems = document.querySelectorAll('[data-view-name="profile-component-entity"]');
-                console.log('Found', experienceItems.length, 'profile component entities');
-                
-                experienceItems.forEach(function(item, index) {
-                    // Check if this is an experience item
-                    var hasExperienceIndicator = item.querySelector('[data-field="experience_company_logo"]') || 
-                                               item.querySelector('[aria-label*="Experience"]') ||
-                                               item.textContent.includes('Experience');
+                function log(msg, success=false) {
+                    console.log("[SwiftInterceptor] " + msg);
+                    const line = document.createElement('div');
+                    line.innerText = msg;
+                    if (success) line.style.color = "#ccffcc";
+                    debugDiv.appendChild(line);
+                    while (debugDiv.children.length > 8) debugDiv.removeChild(debugDiv.firstChild);
                     
-                    console.log('Item', index, 'has experience indicator:', !!hasExperienceIndicator);
+                    if (success) debugDiv.style.background = "#00AA00"; 
+                }
+                
+                log("Interceptor: INJECTED");
+
+                // --- 2. VISIBLE "FORCE SCAN" BUTTON ---
+                function injectScannerButton() {
+                    if (document.getElementById('gemini-scan-btn')) {
+                        // Ensure it's visible
+                        document.getElementById('gemini-scan-btn').style.display = 'block';
+                        return;
+                    }
                     
-                    if (hasExperienceIndicator) {
-                        // Try multiple selectors for title
-                        var titleElement = item.querySelector('h3[data-generated-suggestion-target]') ||
-                                         item.querySelector('.mr1.t-bold span[aria-hidden="true"]') ||
-                                         item.querySelector('h3') ||
-                                         item.querySelector('.t-16.t-black.t-bold');
-                        
-                        // Try multiple selectors for company  
-                        var companyElement = item.querySelector('.t-14.t-normal span[aria-hidden="true"]:first-child') ||
-                                           item.querySelector('.pv-entity__secondary-title') ||
-                                           item.querySelector('.t-14.t-normal.t-black--light span[aria-hidden="true"]');
-                        
-                        // Try multiple selectors for duration
-                        var durationElement = item.querySelector('.t-14.t-normal.t-black--light span[aria-hidden="true"]') ||
-                                            item.querySelector('.pv-entity__bullet-item-v2') ||
-                                            item.querySelector('.t-12.t-black--light.t-normal span[aria-hidden="true"]');
-                        
-                        var title = titleElement ? titleElement.textContent.trim() : '';
-                        var company = companyElement ? companyElement.textContent.trim() : '';
-                        var duration = durationElement ? durationElement.textContent.trim() : '';
-                        
-                        console.log('Experience item:', { title, company, duration });
-                        
-                        if (title || company) {
-                            profileData.experience.push({
-                                title: title,
-                                company: company,
-                                duration: duration || ''
+                    log("Injecting Button...");
+                    
+                    const btn = document.createElement('button');
+                    btn.id = 'gemini-scan-btn';
+                    btn.innerText = '🔍 FORCE SCAN DOM';
+                    btn.style.position = 'fixed';
+                    btn.style.bottom = '20px';
+                    btn.style.right = '20px';
+                    btn.style.zIndex = '2147483647'; // Max z-index
+                    btn.style.padding = '12px 24px';
+                    btn.style.backgroundColor = '#cc0000';
+                    btn.style.color = 'white';
+                    btn.style.border = '2px solid white';
+                    btn.style.borderRadius = '8px';
+                    btn.style.fontFamily = 'sans-serif';
+                    btn.style.fontWeight = 'bold';
+                    btn.style.fontSize = '16px';
+                    btn.style.cursor = 'pointer';
+                    btn.style.boxShadow = '0 6px 12px rgba(0,0,0,0.5)';
+                    
+                    btn.onclick = function() {
+                        btn.innerText = 'Scanning...';
+                        btn.style.backgroundColor = '#ff8800';
+                        scanDOM('MANUAL_BUTTON');
+                        setTimeout(() => {
+                             btn.innerText = '🔍 FORCE SCAN DOM';
+                             btn.style.backgroundColor = '#cc0000';
+                        }, 1000);
+                    };
+                    
+                    document.body.appendChild(btn);
+                    log("Button INJECTED!");
+                }
+                
+                // Inject button immediately and on intervals
+                setTimeout(injectScannerButton, 500); 
+                setInterval(injectScannerButton, 2000);
+
+
+                // --- 3. DOM SCANNER (SSR Data) ---
+                function scanDOM(source) {
+                    let foundAny = false;
+                    
+                    // A. Look for <code> tags (Old Voyager style)
+                    const codeTags = document.querySelectorAll('code');
+                    codeTags.forEach(code => {
+                        const text = code.innerText;
+                        if (text.length > 500 && (text.includes('included') || text.includes('urn:li:fsd_profile'))) {
+                             log("FOUND CODE (" + text.length + "b)", true);
+                             foundAny = true;
+                             window.webkit.messageHandlers.interceptor.postMessage({
+                                 type: 'dom-code-block-' + source,
+                                 body: text
+                             });
+                        }
+                    });
+                    
+                    // B. Look for <script type="application/ld+json"> (SEO Schema)
+                    const ldJsonTags = document.querySelectorAll('script[type="application/ld+json"]');
+                    ldJsonTags.forEach(script => {
+                        if (script.innerText.length > 100) {
+                            log("FOUND LD+JSON (" + script.innerText.length + "b)", true);
+                            foundAny = true;
+                            window.webkit.messageHandlers.interceptor.postMessage({
+                                type: 'dom-ld-json-' + source,
+                                body: script.innerText
                             });
                         }
-                    }
-                });
-                
-                // Extract education - try multiple approaches
-                console.log('Starting education extraction...');
-                
-                // First try traditional selectors
-                var educationSections = document.querySelectorAll('[data-view-name="profile-component-entity"]');
-                var foundEducation = false;
-                
-                educationSections.forEach(function(section) {
-                    var sectionText = section.textContent || '';
-                    if (sectionText.includes('Education') || 
-                        sectionText.includes('University') || 
-                        sectionText.includes('College') || 
-                        sectionText.includes('School')) {
+                    });
+                    
+                    // C. BRUTE FORCE SCRIPT SEARCH
+                    const allScripts = document.querySelectorAll('script');
+                    allScripts.forEach(script => {
+                        const html = script.innerHTML;
+                        if (!html || html.length < 500) return;
                         
-                        var items = section.querySelectorAll('.pvs-entity');
-                        items.forEach(function(item) {
-                            var schoolElement = item.querySelector('span[aria-hidden="true"]');
-                            var school = schoolElement ? schoolElement.textContent.trim() : '';
-                            
-                            if (school && school.length > 3 && school.length < 100 && 
-                                !school.includes('notifications') && 
-                                !school.includes('data') &&
-                                !school.includes('{')) {
-                                
-                                console.log('Found education (traditional):', school);
-                                profileData.education.push({
-                                    school: school,
-                                    degree: '',
-                                    field: ''
+                        // Look for profile signature (Relaxed: Don't require firstName)
+                        if (html.includes('urn:li:fsd_profile') || html.includes('\"included\":[')) {
+                             log("FOUND SCRIPT (" + html.length + "b)", true);
+                             foundAny = true;
+                             window.webkit.messageHandlers.interceptor.postMessage({
+                                 type: 'dom-script-deep-' + source,
+                                 body: html
+                             });
+                        }
+                    });
+                    
+                    if (!foundAny && source === 'MANUAL_BUTTON') {
+                        log("Scan finished. No new data.", false);
+                    }
+                }
+                
+                // ... (Fetch/XHR Patches - Unchanged logic, condensed for brevity) ...
+                
+                // 4. FETCH PATCH
+                const originalFetch = window.fetch;
+                window.fetch = async function(...args) {
+                    const response = await originalFetch(...args);
+                    const url = response.url || "unknown";
+                    try {
+                        const clone = response.clone();
+                        clone.text().then(text => {
+                            if (text.length > 500) { 
+                                window.webkit.messageHandlers.interceptor.postMessage({
+                                    type: 'fetch',
+                                    url: url,
+                                    body: text
                                 });
-                                foundEducation = true;
                             }
-                        });
-                    }
-                });
+                        }).catch(err => {});
+                    } catch(e) {}
+                    return response;
+                };
                 
-                // If no education found, try text-based approach
-                if (!foundEducation) {
-                    console.log('No education found with traditional selectors, trying text approach...');
-                    
-                    var textElements = document.querySelectorAll('span, div');
-                    var educationKeywords = ['University', 'College', 'School', 'Institute', 'Academy'];
-                    
-                    for (var i = 0; i < textElements.length; i++) {
-                        var element = textElements[i];
-                        var text = element.textContent ? element.textContent.trim() : '';
-                        
-                        // Look for education institution names
-                        for (var j = 0; j < educationKeywords.length; j++) {
-                            if (text.includes(educationKeywords[j]) && 
-                                text.length > 10 && 
-                                text.length < 80 &&
-                                !text.includes('notifications') &&
-                                !text.includes('data') &&
-                                !text.includes('{') &&
-                                !text.includes('urn:') &&
-                                !text.includes('$type')) {
-                                
-                                console.log('Found education (text):', text);
-                                profileData.education.push({
-                                    school: text,
-                                    degree: '',
-                                    field: ''
-                                });
-                                foundEducation = true;
-                                break;
-                            }
-                        }
-                        
-                        if (profileData.education.length >= 5) break; // Limit to 5 entries
-                    }
-                }
+                // 5. XHR PATCH
+                const originalOpen = XMLHttpRequest.prototype.open;
+                XMLHttpRequest.prototype.open = function(method, url) {
+                    this._url = url;
+                    return originalOpen.apply(this, arguments);
+                };
+                const originalSend = XMLHttpRequest.prototype.send;
+                XMLHttpRequest.prototype.send = function(body) {
+                    this.addEventListener('load', function() {
+                         if (this._url && this.responseText && this.responseText.length > 500) {
+                             window.webkit.messageHandlers.interceptor.postMessage({
+                                 type: 'xhr',
+                                 url: this._url,
+                                 body: this.responseText
+                             });
+                         }
+                    });
+                    return originalSend.apply(this, arguments);
+                };
                 
-                // Remove duplicates
-                var uniqueEducation = [];
-                var seenSchools = {};
-                for (var i = 0; i < profileData.education.length; i++) {
-                    var edu = profileData.education[i];
-                    if (!seenSchools[edu.school.toLowerCase()]) {
-                        seenSchools[edu.school.toLowerCase()] = true;
-                        uniqueEducation.push(edu);
-                    }
-                }
-                profileData.education = uniqueEducation;
-                
-                // Extract skills - look for skills section
-                console.log('Starting skills extraction...');
-                
-                // First try to find the skills section specifically
-                var skillsSections = document.querySelectorAll('[data-view-name="profile-component-entity"]');
-                var foundSkills = false;
-                
-                skillsSections.forEach(function(section) {
-                    var sectionText = section.textContent || '';
-                    if (sectionText.toLowerCase().includes('skills')) {
-                        var skillItems = section.querySelectorAll('.pvs-entity span[aria-hidden="true"]');
-                        
-                        skillItems.forEach(function(item) {
-                            var skill = item.textContent ? item.textContent.trim() : '';
-                            
-                            if (skill && 
-                                skill.length > 2 && 
-                                skill.length < 40 && 
-                                !skill.includes('Skills') &&
-                                !skill.includes('endorsement') &&
-                                !skill.includes('Show all') &&
-                                !skill.includes('·') &&
-                                !skill.includes('followers') &&
-                                !skill.includes('connections') &&
-                                !skill.includes('notifications') &&
-                                !skill.includes('data') &&
-                                !skill.includes('{') &&
-                                !/\\d{4}/.test(skill)) {
-                                
-                                console.log('Found skill (traditional):', skill);
-                                profileData.skills.push(skill);
-                                foundSkills = true;
-                            }
-                        });
-                    }
-                });
-                
-                // If no skills found with traditional approach, try alternative
-                if (!foundSkills || profileData.skills.length === 0) {
-                    console.log('No skills found with traditional selectors, trying alternative approach...');
-                    
-                    // Look for elements that might contain skills near "Skills" text
-                    var allSpans = document.querySelectorAll('span');
-                    var skillsContext = false;
-                    
-                    for (var i = 0; i < allSpans.length; i++) {
-                        var span = allSpans[i];
-                        var text = span.textContent ? span.textContent.trim() : '';
-                        
-                        // Check if we're in a skills context
-                        if (text.toLowerCase() === 'skills') {
-                            skillsContext = true;
-                            continue;
-                        }
-                        
-                        // If we're in skills context, look for potential skills
-                        if (skillsContext && text && 
-                            text.length > 2 && 
-                            text.length < 30 &&
-                            !text.includes('Show all') &&
-                            !text.includes('endorsement') &&
-                            !text.includes('·') &&
-                            !text.includes('followers') &&
-                            !text.includes('connections') &&
-                            !text.includes('years') &&
-                            !text.includes('months') &&
-                            !text.includes('@') &&
-                            !text.includes('http') &&
-                            !text.includes('notifications') &&
-                            !text.includes('data') &&
-                            !text.includes('{') &&
-                            !/\\d{4}/.test(text) &&
-                            !/\\d+\\s*(yr|mo)/.test(text)) {
-                            
-                            console.log('Found skill (alternative):', text);
-                            profileData.skills.push(text);
-                        }
-                        
-                        // Reset context if we've moved too far
-                        if (skillsContext && profileData.skills.length > 0 && 
-                            (text.includes('Experience') || text.includes('Education') || text.includes('About'))) {
-                            break;
-                        }
-                        
-                        if (profileData.skills.length >= 15) break; // Limit to 15 skills
-                    }
-                }
-                
-                // Remove duplicates and clean up
-                var uniqueSkills = [...new Set(profileData.skills)];
-                profileData.skills = uniqueSkills.slice(0, 15); // Limit to 15 skills
-                
-                // Get current page URL and title for debugging
-                profileData.pageUrl = window.location.href;
-                profileData.pageTitle = document.title;
-                
-                console.log('Profile extraction completed:', profileData);
-                return JSON.stringify(profileData);
-                
-            } catch (error) {
-                console.error('Error extracting profile data:', error);
-                return JSON.stringify({ 
-                    error: error.message,
-                    pageUrl: window.location.href,
-                    pageTitle: document.title
-                });
-            }
-        })();
-        """
+                log("Interceptor v6 LOADED");
+            })();
+            """
+            
+            let userScript = WKUserScript(source: interceptorScript, injectionTime: .atDocumentStart, forMainFrameOnly: false)
+            userContentController.addUserScript(userScript)
+            userContentController.add(context.coordinator, name: "interceptor")
+            
+            config.userContentController = userContentController
+            
+            // RE-CREATE WebView with the correct configuration
+            let newWebView = WKWebView(frame: .zero, configuration: config)
+            viewModel.webView = newWebView
+            viewModel.isConfigured = true
+        }
         
-        webView.evaluateJavaScript(script) { result, error in
-            if let error = error {
-                print("❌ JavaScript execution error: \(error)")
-                completion(.failure(error))
-            } else if let jsonString = result as? String {
-                print("📊 JavaScript result: \(jsonString)")
-                
-                // Check if it's an error response
-                if let errorData = try? JSONDecoder().decode([String: String].self, from: Data(jsonString.utf8)),
-                   let errorMessage = errorData["error"] {
-                    print("❌ JavaScript error: \(errorMessage)")
-                    completion(.failure(NSError(domain: "LinkedInSearch", code: 1, userInfo: [NSLocalizedDescriptionKey: "JavaScript error: \(errorMessage)"])))
-                } else {
-                    completion(.success(jsonString))
-                }
-            } else {
-                print("❌ No result from JavaScript")
-                completion(.failure(NSError(domain: "LinkedInSearch", code: 1, userInfo: [NSLocalizedDescriptionKey: "No result from JavaScript execution"])))
+        let webView = viewModel.webView
+        webView.navigationDelegate = context.coordinator
+        
+        // Only load if not already loaded
+        if webView.url == nil {
+            var urlString = "https://www.linkedin.com/search/results/people/"
+            if !searchQuery.isEmpty {
+                let encoded = searchQuery.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? ""
+                urlString += "?keywords=\(encoded)"
+            }
+
+            if let url = URL(string: urlString) {
+                webView.load(URLRequest(url: url))
             }
         }
+
+        return webView
     }
+
+    func updateNSView(_ nsView: WKWebView, context: Context) {}
     
-    private func parseLinkedInData(_ jsonString: String) {
-        print("🔍 Parsing LinkedIn data: \(jsonString)")
+    func makeCoordinator() -> Coordinator {
+        Coordinator(parent: self)
+    }
+
+    class Coordinator: NSObject, WKNavigationDelegate, WKScriptMessageHandler {
+        let parent: LinkedInSearchWebView
         
-        guard let jsonData = jsonString.data(using: .utf8) else {
-            print("❌ Failed to convert JSON string to data")
-            processingError = "Failed to parse extracted data"
-            captureState = .browsing
-            return
+        init(parent: LinkedInSearchWebView) {
+            self.parent = parent
         }
         
-        do {
-            let decoder = JSONDecoder()
-            let data = try decoder.decode(LinkedInProfileData.self, from: jsonData)
-            print("✅ Successfully decoded profile data:")
-            print("   📝 Name: '\(data.name)'")
-            print("   💼 Headline: '\(data.headline)'")
-            print("   📍 Location: '\(data.location)'")
-            print("   📄 About: '\(data.about.prefix(100))...'")
-            print("   💼 Experience: \(data.experience.count) items")
-            print("   🎓 Education: \(data.education.count) items")
-            print("   🔧 Skills: \(data.skills.count) items")
-            print("   📸 Photo: '\(data.photo.isEmpty ? "No photo" : "Has photo")'")
-            print("   📊 Page URL: '\(data.pageUrl ?? "No URL")'")
-            print("   📊 Page Title: '\(data.pageTitle ?? "No title")'")
-            extractedData = data
-            captureState = .reviewing
-        } catch {
-            print("❌ Failed to decode profile data: \(error)")
-            processingError = "Failed to decode profile data: \(error.localizedDescription)"
-            captureState = .browsing
+        func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
+            guard message.name == "interceptor",
+                  let dict = message.body as? [String: Any],
+                  let jsonString = dict["body"] as? String else { return }
+            
+            print("Intercepted Voyager Data! Size: \(jsonString.count)")
+            
+            // Parse asynchronously
+            DispatchQueue.global(qos: .userInitiated).async {
+                let profile = self.parseVoyagerJSON(jsonString)
+                DispatchQueue.main.async {
+                    // Always pass back the raw string for debugging, even if profile is nil
+                    self.parent.onDataIntercepted?(profile, jsonString)
+                }
+            }
+        }
+        
+        // Robust Voyager JSON Parser
+        private func parseVoyagerJSON(_ json: String) -> LinkedInProfileData? {
+            guard let data = json.data(using: .utf8) else { return nil }
+            
+            do {
+                // Determine structure (single object or collection)
+                // Voyager usually returns a root object with 'included' array
+                // We'll decode to a generic structure to traverse it
+                let root = try JSONDecoder().decode(VoyagerRoot.self, from: data)
+                let items = root.included ?? (root.data != nil ? [root.data!] : [])
+                
+                var collected = LinkedInProfileData(
+                    name: "", headline: "", location: "", about: "",
+                    experience: [], education: [], skills: [], photo: "",
+                    pageUrl: nil, pageTitle: nil
+                )
+                
+                var foundProfile = false
+                
+                for item in items {
+                    // Profile
+                    if item.type == "com.linkedin.voyager.dash.identity.profile.Profile" {
+                        collected.name = [(item.firstName ?? ""), (item.lastName ?? "")].joined(separator: " ").trimmingCharacters(in: .whitespaces)
+                        collected.headline = item.headline ?? ""
+                        collected.location = item.locationName ?? ""
+                        collected.about = item.summary ?? ""
+                        // Photo often in 'picture' URN or similar, skipping for now or adding later
+                        foundProfile = true
+                    }
+                    
+                    // Experience
+                    if item.type == "com.linkedin.voyager.dash.identity.profile.Position" {
+                        collected.experience.append(LinkedInProfileData.ExperienceItem(
+                            title: item.title ?? "",
+                            company: item.companyName ?? "",
+                            duration: formatDuration(item.dateRange)
+                        ))
+                    }
+                    
+                    // Education
+                    if item.type == "com.linkedin.voyager.dash.identity.profile.Education" {
+                        collected.education.append(LinkedInProfileData.EducationItem(
+                            school: item.schoolName ?? "",
+                            degree: item.degreeName ?? "",
+                            field: item.fieldOfStudy ?? ""
+                        ))
+                    }
+                }
+                
+                return foundProfile ? collected : nil
+                
+            } catch {
+                print("Failed to decode Voyager JSON: \(error)")
+                return nil
+            }
+        }
+        
+        private func formatDuration(_ range: VoyagerDateRange?) -> String {
+            guard let range = range, let start = range.start else { return "" }
+            let startStr = "\(start.year)\(start.month.map { "-\($0)" } ?? "")"
+            let endStr: String
+            if let end = range.end {
+                endStr = "\(end.year)\(end.month.map { "-\($0)" } ?? "")"
+            } else {
+                endStr = "Present"
+            }
+            return "\(startStr) - \(endStr)"
         }
     }
+}
+
+// Helper structs for Voyager Decoding
+private struct VoyagerRoot: Decodable {
+    let included: [VoyagerItem]?
+    let data: VoyagerItem?
+}
+
+private struct VoyagerItem: Decodable {
+    let type: String?
+    // Profile fields
+    let firstName: String?
+    let lastName: String?
+    let headline: String?
+    let locationName: String?
+    let summary: String?
+    // Position/Education fields
+    let title: String?
+    let companyName: String?
+    let schoolName: String?
+    let degreeName: String?
+    let fieldOfStudy: String?
+    let dateRange: VoyagerDateRange?
+    
+    enum CodingKeys: String, CodingKey {
+        case type = "$type"
+        case firstName, lastName, headline, locationName, summary
+        case title, companyName, schoolName, degreeName, fieldOfStudy, dateRange
+    }
+}
+
+private struct VoyagerDateRange: Decodable {
+    let start: VoyagerDate?
+    let end: VoyagerDate?
+}
+
+private struct VoyagerDate: Decodable {
+    let year: Int
+    let month: Int?
 }
 
 // MARK: - Supporting Views
 struct ProfileDataRow: View {
     let label: String
     let value: String
-    
+
     var body: some View {
         if !value.isEmpty {
             HStack {
@@ -679,25 +791,23 @@ struct ProfileDataRow: View {
 
 // MARK: - Data Models
 struct LinkedInProfileData: Codable {
-    let name: String
-    let headline: String
-    let location: String
-    let about: String
-    let experience: [ExperienceItem]
-    let education: [EducationItem]
-    let skills: [String]
-    let photo: String
-    
-    // Optional debugging fields
-    let pageUrl: String?
-    let pageTitle: String?
-    
+    var name: String
+    var headline: String
+    var location: String
+    var about: String
+    var experience: [ExperienceItem]
+    var education: [EducationItem]
+    var skills: [String]
+    var photo: String  // var so we can inject photo URL captured via JS
+    var pageUrl: String?
+    var pageTitle: String?
+
     struct ExperienceItem: Codable {
         let title: String
         let company: String
         let duration: String
     }
-    
+
     struct EducationItem: Codable {
         let school: String
         let degree: String
@@ -707,11 +817,9 @@ struct LinkedInProfileData: Codable {
 
 #Preview {
     LinkedInSearchWindow(
-        onDataExtracted: { data in
-            print("Extracted: \(data.name)")
-        },
-        onClose: {
-            print("Closed")
-        }
+        personName: "John Doe",
+        personRole: "Engineer",
+        onDataExtracted: { _ in },
+        onClose: {}
     )
 }
