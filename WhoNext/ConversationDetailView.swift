@@ -365,25 +365,21 @@ struct ConversationDetailView: View {
         // Save to Core Data
         do {
             try viewContext.save()
-            
-            // Trigger immediate sync for conversation updates
-            RobustSyncManager.shared.triggerSync()
-            
+            // CloudKit sync happens automatically via NSPersistentCloudKitContainer
             isEditing = false
             showingSaveConfirmation = true
-            
+
             // Post notification to refresh PersonDetailView
             NotificationCenter.default.post(name: NSNotification.Name("ConversationUpdated"), object: nil)
         } catch {
             print("Failed to save conversation changes: \(error)")
         }
     }
-    
+
     private func deleteConversation() {
-        // Use RobustSyncManager for proper deletion sync
-        Task {
-            await RobustSyncManager.shared.deleteConversation(conversation, context: viewContext)
-        }
+        // Delete locally - CloudKit sync handles propagation automatically
+        viewContext.delete(conversation)
+        try? viewContext.save()
         dismiss()
     }
     

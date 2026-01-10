@@ -6,5 +6,20 @@
 	<string>26</string>
 	<key>NSScreenCaptureUsageDescription</key>
 	<string>WhoNext needs screen recording permission to capture system audio from meeting applications like Zoom and Teams.</string>
+	<key>NSRemindersUsageDescription</key>
+	<string>WhoNext can create Apple Reminders from action items extracted from your meetings to help you track follow-ups.</string>
+	<key>NSCalendarsUsageDescription</key>
+	<string>WhoNext uses calendar access to detect upcoming meetings and integrate with your calendar events.</string>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>com.bobk.WhoNext</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>whonext</string>
+			</array>
+		</dict>
+	</array>
 </dict>
 </plist>

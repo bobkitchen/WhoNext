@@ -6,7 +6,7 @@ import CoreData
 /// Compact by default, user can expand to see full details
 class UnifiedRecordingStatusWindowController: NSWindowController {
 
-    private var hostingController: NSHostingController<UnifiedRecordingStatusView>?
+    private var hostingController: NSHostingController<AnyView>?
     private var currentState: WindowState = .monitoring
 
     enum WindowState {
@@ -15,23 +15,27 @@ class UnifiedRecordingStatusWindowController: NSWindowController {
     }
 
     init() {
-        // Create the SwiftUI view
-        let contentView = UnifiedRecordingStatusView()
+        // Create the SwiftUI view with Core Data context for @FetchRequest to work
+        let context = PersistenceController.shared.container.viewContext
+        let contentView = AnyView(
+            UnifiedRecordingStatusView()
+                .environment(\.managedObjectContext, context)
+        )
         let hostingController = NSHostingController(rootView: contentView)
         self.hostingController = hostingController
 
         // Get screen dimensions for positioning
         let screen = NSScreen.main ?? NSScreen.screens.first!
         let screenFrame = screen.visibleFrame
-        let windowWidth: CGFloat = 320
-        let windowHeight: CGFloat = 80
+        let windowWidth: CGFloat = 340
+        let windowHeight: CGFloat = 80   // Compact: small titlebar + header
         let padding: CGFloat = 20
 
         // Calculate top-right position
         let xPos = screenFrame.maxX - windowWidth - padding
         let yPos = screenFrame.maxY - windowHeight - padding
 
-        // Create window at the correct position from the start
+        // Create window - standard titlebar (no fullSizeContentView)
         let panel = NSPanel(
             contentRect: NSRect(x: xPos, y: yPos, width: windowWidth, height: windowHeight),
             styleMask: [.titled, .closable, .miniaturizable, .resizable, .utilityWindow],
@@ -40,21 +44,20 @@ class UnifiedRecordingStatusWindowController: NSWindowController {
         )
 
         // Configure panel properties
-        panel.title = "Recording Monitor"
+        panel.title = ""  // Empty title - we show our own
         panel.isOpaque = false
         panel.backgroundColor = NSColor.windowBackgroundColor.withAlphaComponent(0.95)
         panel.level = .floating
         panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
-        panel.isMovableByWindowBackground = false
+        panel.isMovableByWindowBackground = true
         panel.hasShadow = true
         panel.contentViewController = hostingController
         panel.isFloatingPanel = true
         panel.hidesOnDeactivate = false  // CRITICAL: Stay visible when app is not active
         panel.titlebarAppearsTransparent = true
         panel.titleVisibility = .hidden
-        panel.styleMask.insert(.fullSizeContentView)
-        panel.minSize = NSSize(width: 320, height: 80)
-        panel.maxSize = NSSize(width: 600, height: 800)  // Wider to accommodate speaker stats sidebar
+        panel.minSize = NSSize(width: 340, height: 80)
+        panel.maxSize = NSSize(width: 560, height: 700)
         panel.setFrameAutosaveName("")
 
         super.init(window: panel)
@@ -138,7 +141,7 @@ class UnifiedRecordingStatusWindowController: NSWindowController {
 
     /// Collapse the window to compact size
     func collapse(animated: Bool = true) {
-        expand(to: NSSize(width: 320, height: 80), animated: animated)
+        expand(to: NSSize(width: 340, height: 80), animated: animated)
     }
 }
 
@@ -159,78 +162,39 @@ struct UnifiedRecordingStatusView: View {
     @State private var showingSpeakerAssignmentPopover = false
 
     var body: some View {
-        ZStack {
+        VStack(spacing: 0) {
             if isExpanded {
                 expandedView
-                    .frame(width: 580, height: 640)  // Wider for speaker stats sidebar
             } else {
                 compactView
-                    .frame(width: 320, height: 80)
             }
         }
-        .background(
-            VisualEffectBlur(material: .hudWindow, blendingMode: .behindWindow)
-        )
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(VisualEffectBlur(material: .hudWindow, blendingMode: .behindWindow))
         .onChange(of: isExpanded) { _, newValue in
             updateWindowSize(expanded: newValue)
         }
     }
 
     // MARK: - Compact View
+    // Apple HIG: Toolbar height should be at least 52pt for comfortable interaction
 
     private var compactView: some View {
-        HStack(spacing: 12) {
-            Spacer().frame(width: 70) // Space for window controls
+        HStack(spacing: 10) {
             // Status indicator with pulsing animation
-            ZStack {
-                // Outer glow
-                Circle()
-                    .fill(statusColor.opacity(0.2))
-                    .frame(width: 20, height: 20)
-                    .blur(radius: 4)
+            statusIndicatorDot
 
-                // Pulsing ring
-                Circle()
-                    .stroke(statusColor.opacity(0.4), lineWidth: 2)
-                    .frame(width: 14, height: 14)
-                    .scaleEffect(isActive ? 1.3 : 1.0)
-                    .opacity(isActive ? 0 : 0.6)
-                    .animation(
-                        isActive ? .easeOut(duration: 1.5).repeatForever(autoreverses: false) : .default,
-                        value: isActive
-                    )
-
-                // Main dot
-                Circle()
-                    .fill(
-                        RadialGradient(
-                            colors: [statusColor.opacity(0.9), statusColor],
-                            center: .topLeading,
-                            startRadius: 0,
-                            endRadius: 4
-                        )
-                    )
-                    .frame(width: 8, height: 8)
-                    .shadow(color: statusColor, radius: 3, x: 0, y: 0)
-            }
-
-            // Status text
+            // Status text - show meeting title when recording
             VStack(alignment: .leading, spacing: 2) {
                 Text(statusTitle)
-                    .font(.system(size: 14, weight: .semibold))
+                    .font(.system(size: 13, weight: .semibold))
                     .foregroundColor(.white.opacity(0.95))
-                    .shadow(color: .black.opacity(0.3), radius: 1, x: 0, y: 1)
 
                 if recordingEngine.isRecording, let meeting = recordingEngine.currentMeeting {
-                    // Show meeting selector if multiple overlapping meetings
-                    if recordingEngine.overlappingMeetings.count > 1 {
-                        meetingSelector(currentMeeting: meeting)
-                    } else {
-                        Text(meeting.displayTitle)
-                            .font(.system(size: 11))
-                            .foregroundColor(.white.opacity(0.7))
-                            .lineLimit(1)
-                    }
+                    Text(meeting.displayTitle)
+                        .font(.system(size: 11))
+                        .foregroundColor(.white.opacity(0.6))
+                        .lineLimit(1)
                 }
             }
 
@@ -239,32 +203,70 @@ struct UnifiedRecordingStatusView: View {
             // Duration (if recording)
             if recordingEngine.isRecording, let meeting = recordingEngine.currentMeeting {
                 Text(formatDuration(meeting.duration))
-                    .font(.system(size: 16, weight: .semibold, design: .monospaced))
+                    .font(.system(size: 18, weight: .medium, design: .monospaced))
                     .foregroundColor(.white.opacity(0.95))
+            }
+
+            // Stop button (if recording)
+            if recordingEngine.isRecording {
+                Button(action: { recordingEngine.manualStopRecording() }) {
+                    Image(systemName: "stop.fill")
+                        .font(.system(size: 12))
+                        .foregroundColor(.white)
+                        .frame(width: 28, height: 28)
+                        .background(Color.red.opacity(0.9))
+                        .clipShape(RoundedRectangle(cornerRadius: 6))
+                }
+                .buttonStyle(.plain)
+                .help("Stop recording")
             }
 
             // Expand/Collapse button
             Button(action: { toggleExpanded() }) {
-                Image(systemName: isExpanded ? "chevron.up.circle.fill" : "chevron.down.circle.fill")
+                Image(systemName: "chevron.down.circle.fill")
                     .font(.system(size: 20))
-                    .foregroundColor(.white.opacity(0.9))
-                    .contentShape(Circle())
+                    .foregroundColor(.white.opacity(0.8))
             }
             .buttonStyle(.plain)
-            .help(isExpanded ? "Collapse" : "Expand to see details")
+            .help("Expand to see details")
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 16)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 10)
+    }
+
+    /// Reusable status indicator dot with pulse animation
+    private var statusIndicatorDot: some View {
+        ZStack {
+            // Pulsing ring (only when active)
+            if isActive {
+                Circle()
+                    .stroke(statusColor.opacity(0.4), lineWidth: 2)
+                    .frame(width: 16, height: 16)
+                    .scaleEffect(isActive ? 1.5 : 1.0)
+                    .opacity(isActive ? 0 : 0.6)
+                    .animation(
+                        .easeOut(duration: 1.5).repeatForever(autoreverses: false),
+                        value: isActive
+                    )
+            }
+
+            // Main dot
+            Circle()
+                .fill(statusColor)
+                .frame(width: 10, height: 10)
+                .shadow(color: statusColor.opacity(0.5), radius: 4)
+        }
     }
 
     // MARK: - Expanded View
 
     private var expandedView: some View {
         VStack(spacing: 0) {
-            // Header
+            // Header - positioned to align with traffic lights
             expandedHeader
                 .padding(.horizontal, 16)
-                .padding(.vertical, 12)
+                .padding(.top, 8)      // Small top padding below traffic lights
+                .padding(.bottom, 12)
                 .background(Color(white: 0.15).opacity(0.9))
 
             Divider()
@@ -290,39 +292,30 @@ struct UnifiedRecordingStatusView: View {
     }
 
     private var expandedHeader: some View {
-        HStack {
+        HStack(spacing: 10) {
             // Status indicator
-            HStack(spacing: 8) {
-                Circle()
-                    .fill(statusColor)
-                    .frame(width: 10, height: 10)
-                    .overlay(
-                        Circle()
-                            .fill(statusColor.opacity(0.3))
-                            .frame(width: 20, height: 20)
-                            .scaleEffect(isActive ? 1.5 : 1.0)
-                            .animation(
-                                Animation.easeInOut(duration: 1.5).repeatForever(autoreverses: true),
-                                value: isActive
-                            )
-                    )
+            statusIndicatorDot
 
-                VStack(alignment: .leading, spacing: 2) {
+            // Title section - meeting name prominent
+            VStack(alignment: .leading, spacing: 2) {
+                if recordingEngine.isRecording, let meeting = recordingEngine.currentMeeting {
+                    // Meeting title is primary when recording
+                    if recordingEngine.overlappingMeetings.count > 1 {
+                        meetingSelector(currentMeeting: meeting)
+                    } else {
+                        Text(meeting.displayTitle)
+                            .font(.system(size: 14, weight: .semibold))
+                            .foregroundColor(.white.opacity(0.95))
+                            .lineLimit(1)
+                    }
+
+                    Text(statusTitle)
+                        .font(.system(size: 11))
+                        .foregroundColor(.white.opacity(0.6))
+                } else {
                     Text(statusTitle)
                         .font(.system(size: 14, weight: .semibold))
                         .foregroundColor(.white.opacity(0.95))
-
-                    if recordingEngine.isRecording, let meeting = recordingEngine.currentMeeting {
-                        // Show meeting selector if multiple overlapping meetings
-                        if recordingEngine.overlappingMeetings.count > 1 {
-                            meetingSelector(currentMeeting: meeting)
-                        } else {
-                            Text(meeting.displayTitle)
-                                .font(.system(size: 11))
-                                .foregroundColor(.white.opacity(0.7))
-                                .lineLimit(1)
-                        }
-                    }
                 }
             }
 
@@ -330,31 +323,29 @@ struct UnifiedRecordingStatusView: View {
 
             // Duration and controls
             if recordingEngine.isRecording, let meeting = recordingEngine.currentMeeting {
-                HStack(spacing: 12) {
-                    Text(formatDuration(meeting.duration))
-                        .font(.system(size: 18, weight: .semibold, design: .monospaced))
-                        .foregroundColor(.white.opacity(0.95))
+                // Duration - larger and more prominent
+                Text(formatDuration(meeting.duration))
+                    .font(.system(size: 20, weight: .medium, design: .monospaced))
+                    .foregroundColor(.white.opacity(0.95))
 
-                    Button(action: { recordingEngine.manualStopRecording() }) {
-                        ZStack {
-                            RoundedRectangle(cornerRadius: 4)
-                                .fill(Color.red.opacity(0.2))
-                                .frame(width: 28, height: 28)
-
-                            Image(systemName: "stop.fill")
-                                .font(.system(size: 12))
-                                .foregroundColor(.red)
-                        }
-                    }
-                    .buttonStyle(.plain)
+                // Stop button
+                Button(action: { recordingEngine.manualStopRecording() }) {
+                    Image(systemName: "stop.fill")
+                        .font(.system(size: 12))
+                        .foregroundColor(.white)
+                        .frame(width: 28, height: 28)
+                        .background(Color.red.opacity(0.9))
+                        .clipShape(RoundedRectangle(cornerRadius: 6))
                 }
+                .buttonStyle(.plain)
+                .help("Stop recording")
             }
 
             // Collapse button
             Button(action: { toggleExpanded() }) {
                 Image(systemName: "chevron.up.circle.fill")
                     .font(.system(size: 20))
-                    .foregroundColor(.white.opacity(0.9))
+                    .foregroundColor(.white.opacity(0.8))
             }
             .buttonStyle(.plain)
             .help("Collapse")
@@ -368,12 +359,12 @@ struct UnifiedRecordingStatusView: View {
                 // Transcript - fills available space
                 ScrollViewReader { proxy in
                     ScrollView {
-                        VStack(alignment: .leading, spacing: 12) {
+                        VStack(alignment: .leading, spacing: 10) {
                             if meeting.transcript.isEmpty && !recordingEngine.isBufferingTranscript {
                                 emptyTranscriptState
                             } else {
-                                ForEach(Array(meeting.transcript.suffix(15))) { segment in
-                                    transcriptSegmentView(segment: segment)
+                                ForEach(Array(meeting.transcript.suffix(20).enumerated()), id: \.element.id) { index, segment in
+                                    transcriptSegmentView(segment: segment, displayIndex: getDisplayIndexForSpeaker(segment.speakerID, in: meeting))
                                         .id(segment.id)
                                 }
 
@@ -404,13 +395,7 @@ struct UnifiedRecordingStatusView: View {
                 // Speaker stats sidebar
                 speakerStatsColumn(meeting: meeting)
             }
-
-            // Stats card (just one now - speakers are in sidebar)
-            HStack(spacing: 8) {
-                statsCard(meeting: meeting)
-            }
-            .padding(.horizontal, 8)
-            .padding(.vertical, 8)
+            // Stats moved to footer - no separate card needed
         }
         .popover(isPresented: $showingSpeakerAssignmentPopover, arrowEdge: .leading) {
             if let participant = selectedParticipantForAssignment {
@@ -422,6 +407,35 @@ struct UnifiedRecordingStatusView: View {
                 )
             }
         }
+    }
+
+    /// Get display index (1, 2, 3...) for a speaker ID, maintaining consistency with speaker sidebar
+    private func getDisplayIndexForSpeaker(_ speakerID: String?, in meeting: LiveMeeting) -> Int {
+        guard let speakerID = speakerID else { return 1 }
+
+        // Get participants sorted by speaking time (same order as sidebar)
+        let sortedParticipants = meeting.identifiedParticipants
+            .sorted { $0.totalSpeakingTime > $1.totalSpeakingTime }
+            .filter { participant in
+                guard meeting.duration > 0 else { return true }
+                let percentage = (participant.totalSpeakingTime / meeting.duration) * 100
+                return percentage >= 1.0 || participant.isSpeaking || participant.isCurrentUser
+            }
+
+        // Find the index of this speaker
+        let numericID = extractNumericSpeakerID(from: speakerID)
+        if let index = sortedParticipants.firstIndex(where: {
+            "\($0.speakerID)" == numericID || "speaker_\($0.speakerID)" == speakerID
+        }) {
+            return index + 1
+        }
+
+        // Fallback: try to parse the numeric ID directly
+        if let directNumber = Int(numericID) {
+            return directNumber
+        }
+
+        return 1
     }
 
     private var monitoringContent: some View {
@@ -492,27 +506,42 @@ struct UnifiedRecordingStatusView: View {
         .padding(.horizontal, 4)
     }
 
-    private func transcriptSegmentView(segment: TranscriptSegment) -> some View {
-        HStack(alignment: .top, spacing: 10) {
-            // Speaker avatar
+    private func transcriptSegmentView(segment: TranscriptSegment, displayIndex: Int) -> some View {
+        // Use the same color as the speaker sidebar for consistency
+        let speakerColor = getSpeakerColorByIndex(displayIndex)
+
+        // Get display name consistently
+        let displayName: String
+        if let customName = speakerNames[segment.speakerID ?? ""],
+           !customName.isEmpty && !customName.hasPrefix("Speaker ") {
+            displayName = customName
+        } else if let speakerName = segment.speakerName,
+                  !speakerName.isEmpty && !speakerName.hasPrefix("Speaker ") && !speakerName.contains("speaker_") {
+            displayName = speakerName
+        } else {
+            displayName = "Speaker \(displayIndex)"
+        }
+
+        return HStack(alignment: .top, spacing: 10) {
+            // Speaker avatar with consistent color
             Circle()
-                .fill(getSpeakerColor(for: segment).opacity(0.2))
+                .fill(speakerColor.opacity(0.2))
                 .frame(width: 24, height: 24)
                 .overlay(
-                    Text(getSpeakerInitials(for: segment))
-                        .font(.system(size: 10, weight: .medium))
-                        .foregroundColor(getSpeakerColor(for: segment))
+                    Text("\(displayIndex)")
+                        .font(.system(size: 10, weight: .semibold))
+                        .foregroundColor(speakerColor)
                 )
 
             // Content
             VStack(alignment: .leading, spacing: 2) {
-                Text(getSpeakerName(for: segment))
+                Text(displayName)
                     .font(.system(size: 11, weight: .medium))
-                    .foregroundColor(getSpeakerColor(for: segment))
+                    .foregroundColor(speakerColor)
 
                 Text(segment.text)
-                    .font(.system(size: 14))
-                    .foregroundColor(.white.opacity(segment.isFinalized ? 0.95 : 0.7))
+                    .font(.system(size: 13))
+                    .foregroundColor(.white.opacity(segment.isFinalized ? 0.9 : 0.6))
                     .fixedSize(horizontal: false, vertical: true)
             }
 
@@ -651,31 +680,80 @@ struct UnifiedRecordingStatusView: View {
     // MARK: - Speaker Stats Sidebar
 
     private func speakerStatsColumn(meeting: LiveMeeting) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            // Header
-            Text("SPEAKERS")
-                .font(.system(size: 9, weight: .semibold))
-                .foregroundColor(.white.opacity(0.5))
-                .padding(.bottom, 4)
+        // Filter out speakers with < 1% talk time (noise/artifacts)
+        let significantParticipants = meeting.identifiedParticipants
+            .sorted(by: { $0.totalSpeakingTime > $1.totalSpeakingTime })
+            .filter { participant in
+                guard meeting.duration > 0 else { return true }
+                let percentage = (participant.totalSpeakingTime / meeting.duration) * 100
+                return percentage >= 1.0 || participant.isSpeaking || participant.isCurrentUser
+            }
 
-            if meeting.identifiedParticipants.isEmpty {
+        let totalSpeakers = significantParticipants.count
+        let hiddenCount = meeting.identifiedParticipants.count - totalSpeakers
+
+        return VStack(alignment: .leading, spacing: 8) {
+            // Compact header with speaker count
+            HStack {
+                Text("\(totalSpeakers)")
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundColor(.white.opacity(0.9))
+
+                Text(totalSpeakers == 1 ? "speaker" : "speakers")
+                    .font(.system(size: 11))
+                    .foregroundColor(.white.opacity(0.5))
+
+                Spacer()
+
+                // Confidence indicator from diarization manager
+                if let diarizationManager = recordingEngine.diarizationManager {
+                    let confidence = diarizationManager.speakerConfidence
+                    if confidence > 0 {
+                        HStack(spacing: 2) {
+                            Circle()
+                                .fill(confidenceColor(confidence))
+                                .frame(width: 6, height: 6)
+                            Text("\(Int(confidence * 100))%")
+                                .font(.system(size: 9))
+                                .foregroundColor(.white.opacity(0.5))
+                        }
+                        .help("Speaker detection confidence")
+                    }
+                }
+            }
+            .padding(.bottom, 4)
+
+            if significantParticipants.isEmpty {
                 VStack(spacing: 8) {
-                    Image(systemName: "person.2.slash")
+                    Image(systemName: "waveform")
                         .font(.system(size: 20))
                         .foregroundColor(.white.opacity(0.3))
+                        .symbolEffect(.pulse)
 
-                    Text("Awaiting\nspeakers...")
+                    Text("Listening...")
                         .font(.system(size: 10))
                         .foregroundColor(.white.opacity(0.4))
-                        .multilineTextAlignment(.center)
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
                 // Speaker rows
                 ScrollView {
                     VStack(spacing: 6) {
-                        ForEach(meeting.identifiedParticipants.sorted(by: { $0.totalSpeakingTime > $1.totalSpeakingTime })) { participant in
-                            speakerStatsRow(participant: participant, meetingDuration: meeting.duration)
+                        ForEach(Array(significantParticipants.enumerated()), id: \.element.id) { index, participant in
+                            speakerStatsRow(
+                                participant: participant,
+                                displayIndex: index + 1,
+                                meetingDuration: meeting.duration
+                            )
+                        }
+
+                        // Show hidden count if any
+                        if hiddenCount > 0 {
+                            Text("+\(hiddenCount) minor")
+                                .font(.system(size: 9))
+                                .foregroundColor(.white.opacity(0.3))
+                                .frame(maxWidth: .infinity, alignment: .center)
+                                .padding(.top, 4)
                         }
                     }
                 }
@@ -684,74 +762,107 @@ struct UnifiedRecordingStatusView: View {
             Spacer()
         }
         .padding(12)
-        .frame(width: 160)
+        .frame(width: 150)
         .background(Color(white: 0.08).opacity(0.9))
     }
 
-    private func speakerStatsRow(participant: IdentifiedParticipant, meetingDuration: TimeInterval) -> some View {
+    /// Get color based on confidence level
+    private func confidenceColor(_ confidence: Float) -> Color {
+        if confidence >= 0.8 { return .green }
+        if confidence >= 0.6 { return .yellow }
+        return .orange
+    }
+
+    private func speakerStatsRow(participant: IdentifiedParticipant, displayIndex: Int, meetingDuration: TimeInterval) -> some View {
         let speakingPercentage = meetingDuration > 0 ? (participant.totalSpeakingTime / meetingDuration) * 100 : 0
         let isAutoIdentified = participant.confidence >= 0.85 && participant.namingMode == .linkedToPerson
+
+        // Determine display name: use assigned name, "Me", or "Speaker N"
+        let displayName: String
+        if participant.isCurrentUser {
+            displayName = "Me"
+        } else if let name = participant.name, !name.isEmpty && !name.hasPrefix("Speaker ") && !name.contains("speaker_") {
+            displayName = name
+        } else {
+            displayName = "Speaker \(displayIndex)"
+        }
+
+        // Use consistent color based on display index
+        let speakerColor = getSpeakerColorByIndex(displayIndex)
 
         return Button(action: {
             selectedParticipantForAssignment = participant
             showingSpeakerAssignmentPopover = true
         }) {
-            VStack(alignment: .leading, spacing: 4) {
-                // Speaker name with indicators
-                HStack(spacing: 6) {
-                    // Speaking indicator - purple for current user
+            HStack(spacing: 8) {
+                // Speaking indicator with speaker color
+                ZStack {
                     Circle()
-                        .fill(participant.isCurrentUser ? Color.purple :
-                              (participant.isSpeaking ? Color.green : participant.color.opacity(0.5)))
-                        .frame(width: 8, height: 8)
+                        .fill(participant.isCurrentUser ? Color.purple.opacity(0.3) : speakerColor.opacity(0.2))
+                        .frame(width: 24, height: 24)
 
-                    // "Me" icon for current user
-                    if participant.isCurrentUser {
-                        Image(systemName: "person.crop.circle.fill")
-                            .font(.system(size: 10))
-                            .foregroundColor(.purple)
+                    if participant.isSpeaking {
+                        // Active speaking animation
+                        Circle()
+                            .stroke(speakerColor, lineWidth: 2)
+                            .frame(width: 24, height: 24)
+                            .scaleEffect(1.3)
+                            .opacity(0)
+                            .animation(
+                                .easeOut(duration: 1.0).repeatForever(autoreverses: false),
+                                value: participant.isSpeaking
+                            )
                     }
 
-                    // Name - uses displayName which returns "Me" for current user
-                    Text(participant.displayName)
-                        .font(.system(size: 11, weight: participant.isCurrentUser ? .semibold : .medium))
-                        .foregroundColor(participant.isCurrentUser ? .purple : .white.opacity(0.9))
-                        .lineLimit(1)
-
-                    // Auto-identified badge (not shown for "Me" since we use purple styling)
-                    if isAutoIdentified && !participant.isCurrentUser {
-                        Image(systemName: "checkmark.circle.fill")
-                            .font(.system(size: 8))
-                            .foregroundColor(.green)
-                    }
+                    Text(participant.isCurrentUser ? "👤" : "\(displayIndex)")
+                        .font(.system(size: participant.isCurrentUser ? 12 : 10, weight: .medium))
+                        .foregroundColor(participant.isCurrentUser ? .purple : speakerColor)
                 }
 
-                // Stats: time and percentage
-                HStack(spacing: 8) {
-                    // Time spoken
-                    Text(formatSpeakingTime(participant.totalSpeakingTime))
-                        .font(.system(size: 10, design: .monospaced))
-                        .foregroundColor(.white.opacity(0.7))
+                // Name and stats
+                VStack(alignment: .leading, spacing: 2) {
+                    HStack(spacing: 4) {
+                        Text(displayName)
+                            .font(.system(size: 11, weight: .medium))
+                            .foregroundColor(participant.isCurrentUser ? .purple : .white.opacity(0.9))
+                            .lineLimit(1)
 
-                    // Percentage
-                    Text("(\(Int(speakingPercentage))%)")
+                        // Auto-identified badge
+                        if isAutoIdentified && !participant.isCurrentUser {
+                            Image(systemName: "checkmark.circle.fill")
+                                .font(.system(size: 8))
+                                .foregroundColor(.green)
+                        }
+                    }
+
+                    // Compact stats: time - percentage
+                    Text("\(formatSpeakingTime(participant.totalSpeakingTime)) · \(Int(speakingPercentage))%")
                         .font(.system(size: 10))
                         .foregroundColor(.white.opacity(0.5))
                 }
+
+                Spacer(minLength: 0)
             }
-            .padding(8)
-            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(6)
             .background(
                 RoundedRectangle(cornerRadius: 6)
-                    .fill(participant.isCurrentUser ? Color.purple.opacity(0.15) : Color.white.opacity(0.05))
+                    .fill(participant.isSpeaking ? speakerColor.opacity(0.1) :
+                          (participant.isCurrentUser ? Color.purple.opacity(0.1) : Color.white.opacity(0.03)))
             )
             .overlay(
                 RoundedRectangle(cornerRadius: 6)
-                    .stroke(participant.isCurrentUser ? Color.purple.opacity(0.4) :
-                            (participant.isSpeaking ? Color.green.opacity(0.4) : Color.clear), lineWidth: 1)
+                    .stroke(participant.isSpeaking ? speakerColor.opacity(0.5) :
+                            (participant.isCurrentUser ? Color.purple.opacity(0.3) : Color.clear), lineWidth: 1)
             )
         }
         .buttonStyle(.plain)
+        .help("Click to assign name")
+    }
+
+    /// Consistent color palette for speakers
+    private func getSpeakerColorByIndex(_ index: Int) -> Color {
+        let colors: [Color] = [.blue, .green, .orange, .pink, .cyan, .indigo, .mint, .yellow]
+        return colors[(index - 1) % colors.count]
     }
 
     private func formatSpeakingTime(_ seconds: TimeInterval) -> String {
@@ -792,7 +903,19 @@ struct UnifiedRecordingStatusView: View {
     }
 
     private var expandedFooter: some View {
-        HStack {
+        HStack(spacing: 16) {
+            // Word count
+            if recordingEngine.isRecording, let meeting = recordingEngine.currentMeeting {
+                HStack(spacing: 4) {
+                    Image(systemName: "text.word.spacing")
+                        .font(.system(size: 10))
+                        .foregroundColor(.white.opacity(0.4))
+                    Text("\(meeting.wordCount) words")
+                        .font(.system(size: 11))
+                        .foregroundColor(.white.opacity(0.6))
+                }
+            }
+
             // Quality indicator
             HStack(spacing: 4) {
                 Circle()
@@ -803,7 +926,7 @@ struct UnifiedRecordingStatusView: View {
 
                 Text(recordingEngine.isRecording ?
                      (recordingEngine.currentMeeting?.bufferHealth.description ?? "Good") + " quality" :
-                     "System ready")
+                     "Ready")
                     .font(.system(size: 11))
                     .foregroundColor(.white.opacity(0.6))
             }
@@ -853,7 +976,7 @@ struct UnifiedRecordingStatusView: View {
         }).first else { return }
 
         if expanded {
-            windowController.expand(to: NSSize(width: 580, height: 640), animated: true)  // Wider for speaker stats
+            windowController.expand(to: NSSize(width: 540, height: 580), animated: true)
         } else {
             windowController.collapse(animated: true)
         }
@@ -887,9 +1010,23 @@ struct UnifiedRecordingStatusView: View {
         } else if let speakerName = segment.speakerName, !speakerName.isEmpty {
             return speakerName
         } else if let speakerID = segment.speakerID {
-            return "Speaker \(speakerID)"
+            // Normalize speaker ID to just the number (e.g., "speaker_1" -> "1", "1" -> "1")
+            let numericID = extractNumericSpeakerID(from: speakerID)
+            return "Speaker \(numericID)"
         }
         return "Unknown"
+    }
+
+    /// Extract numeric portion from speaker ID (handles "speaker_1", "1", etc.)
+    private func extractNumericSpeakerID(from speakerID: String) -> String {
+        if let directNumber = Int(speakerID) {
+            return String(directNumber)
+        } else if speakerID.hasPrefix("speaker_") {
+            return speakerID.replacingOccurrences(of: "speaker_", with: "")
+        }
+        // Try to extract any number from the string
+        let digits = speakerID.filter { $0.isNumber }
+        return digits.isEmpty ? speakerID : digits
     }
 
     private func getSpeakerInitials(for segment: TranscriptSegment) -> String {
@@ -905,7 +1042,13 @@ struct UnifiedRecordingStatusView: View {
 
     private func getSpeakerColor(for segment: TranscriptSegment) -> Color {
         let colors: [Color] = [.blue, .green, .orange, .purple, .pink, .cyan, .indigo, .mint]
-        let identifier = segment.speakerID ?? segment.speakerName ?? "unknown"
+        // Use normalized numeric ID for consistent colors across transcript and speaker list
+        let identifier: String
+        if let speakerID = segment.speakerID {
+            identifier = extractNumericSpeakerID(from: speakerID)
+        } else {
+            identifier = segment.speakerName ?? "unknown"
+        }
         let hash = abs(identifier.hashValue)
         return colors[hash % colors.count]
     }

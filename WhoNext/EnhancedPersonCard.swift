@@ -377,10 +377,7 @@ struct EnhancedPersonCard: View {
         }
         viewContext.delete(person)
         try? viewContext.save()
-        
-        Task {
-            await RobustSyncManager.shared.performSync()
-        }
+        // CloudKit sync happens automatically via NSPersistentCloudKitContainer
     }
 }
 

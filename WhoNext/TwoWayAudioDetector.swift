@@ -236,6 +236,24 @@ class TwoWayAudioDetector: ObservableObject {
         recentSystemActivity.removeAll()
     }
     
+    // MARK: - Simple Activity Queries (for calendar-based auto-start)
+
+    /// Returns true if ANY microphone speech was detected in the recent activity window
+    /// Used for simplified calendar-based detection: calendar event + any speech = go
+    func hasRecentMicrophoneActivity() -> Bool {
+        return recentMicActivity.contains(true)
+    }
+
+    /// Returns true if ANY system audio activity was detected in the recent activity window
+    func hasRecentSystemAudioActivity() -> Bool {
+        return recentSystemActivity.contains(true)
+    }
+
+    /// Returns true if ANY audio activity (mic or system) was detected recently
+    func hasRecentAudioActivity() -> Bool {
+        return hasRecentMicrophoneActivity() || hasRecentSystemAudioActivity()
+    }
+
     // MARK: - Context Awareness
     var isMeetingScheduled: Bool = false
     @Published var detectedApp: String?

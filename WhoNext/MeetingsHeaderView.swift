@@ -4,8 +4,7 @@ struct MeetingsHeaderView: View {
     @Binding var selectedFilter: MeetingsView.MeetingFilter
     let todaysCount: Int
     let thisWeeksCount: Int
-    let onRecordMeeting: () -> Void
-    
+
     var body: some View {
         VStack(spacing: 0) {
             // Top row with title and stats
@@ -14,7 +13,7 @@ struct MeetingsHeaderView: View {
                 Text("Meetings")
                     .font(.system(size: 18, weight: .semibold))
                     .foregroundColor(.primary)
-                
+
                 // Stats badge
                 HStack(spacing: 8) {
                     Text("\(todaysCount)")
@@ -23,10 +22,10 @@ struct MeetingsHeaderView: View {
                     Text("today")
                         .font(.system(size: 11))
                         .foregroundColor(.secondary)
-                    
+
                     Divider()
                         .frame(height: 12)
-                    
+
                     Text("\(thisWeeksCount)")
                         .font(.system(size: 11, weight: .medium))
                         .foregroundColor(.primary)
@@ -38,16 +37,8 @@ struct MeetingsHeaderView: View {
                 .padding(.vertical, 4)
                 .background(Color(NSColor.separatorColor).opacity(0.1))
                 .cornerRadius(6)
-                
+
                 Spacer()
-                
-                // Record Button (Quick Action)
-                Button(action: onRecordMeeting) {
-                    Label("Record Meeting", systemImage: "record.circle")
-                        .font(.system(size: 12, weight: .medium))
-                }
-                .buttonStyle(.borderedProminent)
-                .controlSize(.small)
             }
             .padding(.horizontal, 20)
             .padding(.vertical, 12)

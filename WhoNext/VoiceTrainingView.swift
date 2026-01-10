@@ -287,6 +287,12 @@ struct VoiceTrainingView: View {
                         }
 
                         HStack(spacing: 8) {
+                            Image(systemName: "icloud.and.arrow.up")
+                                .foregroundColor(.cyan)
+                            Text("Syncing voice profile to iCloud...")
+                        }
+
+                        HStack(spacing: 8) {
                             Image(systemName: "arrow.clockwise")
                                 .foregroundColor(.orange)
                             Text("Your profile improves with each meeting")
@@ -295,6 +301,10 @@ struct VoiceTrainingView: View {
                     .padding(20)
                     .background(Color(NSColor.controlBackgroundColor))
                     .cornerRadius(12)
+                    .onAppear {
+                        // Force sync voice profile to CloudKit after training completion
+                        userProfile.forceSyncToCloud()
+                    }
 
                     Spacer()
 

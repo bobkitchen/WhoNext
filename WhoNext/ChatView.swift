@@ -315,7 +315,7 @@ struct ChatView: View {
             }
         }
         .sheet(isPresented: $showOnboarding) {
-            OnboardingView()
+            InsightsOnboardingView()
         }
     }
     
@@ -504,8 +504,8 @@ struct BubbleShape: Shape {
     }
 }
 
-// Onboarding View
-struct OnboardingView: View {
+// Insights Onboarding View
+struct InsightsOnboardingView: View {
     @Environment(\.dismiss) private var dismiss
     
     var body: some View {

@@ -8,49 +8,331 @@ struct EnhancedMeetingCard: View {
     @Binding var selectedPerson: Person?
     @Binding var selectedTab: SidebarItem
     let isCurrentlyRecording: Bool
-    
+
     @State private var isHovered = false
-    @State private var isExpanded = false
     @State private var showingBrief = false
-    @State private var showingContextMenu = false
-    @State private var showingAIBrief = true  // Toggle between AI Brief and Calendar Notes
-    @State private var isRegenerating = false
 
     @ObservedObject private var briefManager = PreMeetingBriefManager.shared
     @Environment(\.managedObjectContext) private var viewContext
+
+    // MARK: - Computed Properties
 
     /// Check if this is a 1:1 meeting
     private var isOneOnOne: Bool {
         (meeting.attendees?.count ?? 0) == 2
     }
 
-    /// Get cached brief for this meeting
-    private var cachedBrief: PreMeetingBriefManager.CachedBrief? {
-        briefManager.getBrief(for: meeting.id)
+    /// Get matched Person for 1:1 meetings
+    private var matchedPerson: Person? {
+        findMatchedPerson()
     }
 
-    /// Check if we have a valid AI brief
-    private var hasValidBrief: Bool {
-        guard let brief = cachedBrief else { return false }
-        return !brief.briefContent.isEmpty
+    /// Pending action items count for matched person (1:1 only)
+    private var pendingActionItemsCount: Int {
+        guard let person = matchedPerson else { return 0 }
+        let items = ActionItem.fetchForPerson(person, in: viewContext)
+        return items.filter { !$0.isCompleted }.count
     }
-    
-    // Extract meeting stats
-    private var meetingStats: (speakers: Int, duration: String, isRecorded: Bool) {
-        // Check if this meeting has been recorded
-        let isRecorded = false // Simplified for now
-        
-        // Format duration
+
+    /// Participant count (excluding self for display)
+    private var participantCount: Int {
+        meeting.attendees?.count ?? 0
+    }
+
+    /// Check if meeting has calendar notes
+    private var hasNotes: Bool {
+        guard let notes = meeting.notes else { return false }
+        return !notes.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
+
+    /// Check if meeting has a Teams URL
+    private var teamsURL: URL? {
+        extractTeamsURL(from: meeting.notes)
+    }
+
+    /// Format duration nicely
+    private var formattedDuration: String {
         let minutes = Int(meeting.duration ?? 0) / 60
-        let durationStr = minutes < 60 ? "\(minutes)m" : "\(minutes/60)h \(minutes%60)m"
-        
-        // Get speaker count (default to attendee count)
-        let speakerCount = meeting.attendees?.count ?? 0
-        
-        return (speakerCount, durationStr, isRecorded)
+        if minutes < 60 {
+            return "\(minutes)m"
+        } else {
+            let hours = minutes / 60
+            let remainingMinutes = minutes % 60
+            return remainingMinutes > 0 ? "\(hours)h \(remainingMinutes)m" : "\(hours)h"
+        }
     }
-    
-    // Helper to extract clean name from email
+
+    /// Get the other person's name for 1:1 meetings
+    private var otherPersonName: String? {
+        guard isOneOnOne, let attendees = meeting.attendees else { return nil }
+
+        let userEmail = UserProfile.shared.email.lowercased().trimmingCharacters(in: .whitespaces)
+        let userName = UserProfile.shared.name.lowercased().trimmingCharacters(in: .whitespaces)
+
+        for attendee in attendees {
+            let attendeeLower = attendee.lowercased()
+            let attendeeName = extractName(from: attendee).lowercased()
+
+            let isUser = (!userEmail.isEmpty && attendeeLower.contains(userEmail)) ||
+                         (!userName.isEmpty && (attendeeLower.contains(userName) || attendeeName == userName))
+
+            if !isUser {
+                return extractName(from: attendee)
+            }
+        }
+
+        // Fallback to first attendee if can't determine
+        if let first = attendees.first {
+            return extractName(from: first)
+        }
+        return nil
+    }
+
+    // MARK: - Body
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            // Row 1: Meeting type badge + Duration + Time
+            HStack(alignment: .top) {
+                HStack(spacing: 8) {
+                    if isOneOnOne {
+                        MeetingTypeBadge(type: .oneOnOne)
+                    } else if participantCount > 2 {
+                        MeetingTypeBadge(type: .group)
+                    }
+
+                    // Recording indicator
+                    if isCurrentlyRecording {
+                        HStack(spacing: 4) {
+                            Circle()
+                                .fill(Color.red)
+                                .frame(width: 6, height: 6)
+                                .modifier(GlowingPulse(color: .red))
+                            Text("Recording")
+                                .font(.system(size: 10, weight: .semibold))
+                                .foregroundColor(.red)
+                        }
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 3)
+                        .background(Color.red.opacity(0.1))
+                        .cornerRadius(6)
+                    }
+                }
+
+                Spacer()
+
+                // Duration & Time
+                HStack(spacing: 8) {
+                    Text(formattedDuration)
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundColor(.secondary)
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 2)
+                        .background(Color(NSColor.separatorColor).opacity(0.2))
+                        .cornerRadius(4)
+
+                    Text(meeting.startDate, style: .time)
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundColor(.secondary)
+                }
+            }
+
+            // Row 2: Title
+            Text(meeting.title)
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundColor(.primary)
+                .lineLimit(1)
+
+            // Row 3: Person name (1:1) or Participant count (group)
+            if isOneOnOne {
+                // For 1:1: Show person name prominently
+                HStack(spacing: 6) {
+                    Image(systemName: "person.fill")
+                        .font(.system(size: 12))
+                        .foregroundColor(.blue)
+                    Text(otherPersonName ?? "Unknown")
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundColor(.primary)
+                }
+            } else {
+                // For groups: Show participant count
+                HStack(spacing: 6) {
+                    Image(systemName: "person.2.fill")
+                        .font(.system(size: 12))
+                        .foregroundColor(.green)
+                    Text("\(participantCount) participants")
+                        .font(.system(size: 13))
+                        .foregroundColor(.secondary)
+                }
+            }
+
+            // Row 4: Action items/Notes indicator + Join button
+            HStack {
+                if isOneOnOne {
+                    // For 1:1: Show action items count
+                    if pendingActionItemsCount > 0 {
+                        HStack(spacing: 4) {
+                            Image(systemName: "checklist")
+                                .font(.system(size: 11))
+                            Text("\(pendingActionItemsCount) task\(pendingActionItemsCount == 1 ? "" : "s")")
+                                .font(.system(size: 11, weight: .medium))
+                        }
+                        .foregroundColor(.orange)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(Color.orange.opacity(0.1))
+                        .cornerRadius(6)
+                    }
+                } else {
+                    // For groups: Show notes indicator
+                    if hasNotes {
+                        HStack(spacing: 4) {
+                            Image(systemName: "note.text")
+                                .font(.system(size: 11))
+                            Text("Notes")
+                                .font(.system(size: 11, weight: .medium))
+                        }
+                        .foregroundColor(.blue)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(Color.blue.opacity(0.1))
+                        .cornerRadius(6)
+                    }
+                }
+
+                Spacer()
+
+                // Join button (always visible if Teams URL exists)
+                if teamsURL != nil {
+                    Button(action: joinMeeting) {
+                        HStack(spacing: 4) {
+                            Image(systemName: "video.fill")
+                                .font(.system(size: 11))
+                            Text("Join")
+                                .font(.system(size: 11, weight: .semibold))
+                        }
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 6)
+                        .background(Color.blue)
+                        .cornerRadius(6)
+                    }
+                    .buttonStyle(.plain)
+                    .help("Join Teams meeting and start recording")
+                }
+            }
+        }
+        .padding(16)
+        .background(Color(NSColor.controlBackgroundColor))
+        .cornerRadius(12)
+        .overlay(
+            RoundedRectangle(cornerRadius: 12)
+                .stroke(isHovered ? Color.accentColor.opacity(0.3) : Color.borderSubtle, lineWidth: 1)
+        )
+        .shadow(color: isHovered ? Color.black.opacity(0.08) : Color.black.opacity(0.04), radius: isHovered ? 8 : 4, y: isHovered ? 4 : 2)
+        .scaleEffect(isHovered ? 1.01 : 1.0)
+        .animation(.easeInOut(duration: 0.15), value: isHovered)
+        .onHover { hovering in
+            isHovered = hovering
+        }
+        .contentShape(Rectangle())
+        .onTapGesture {
+            openMeetingDetailWindowAction()
+        }
+        .contextMenu {
+            Button(action: copyMeetingDetails) {
+                Label("Copy Details", systemImage: "doc.on.doc")
+            }
+
+            Divider()
+
+            Button(action: deleteMeeting) {
+                Label("Delete", systemImage: "trash")
+            }
+        }
+        .sheet(isPresented: $showingBrief) {
+            PreMeetingBriefWindow(
+                personName: meeting.title ?? "Meeting",
+                briefContent: meeting.notes ?? "No meeting notes available",
+                onClose: { showingBrief = false }
+            )
+        }
+    }
+
+    // MARK: - Actions
+
+    private func joinMeeting() {
+        // 1. Launch Teams meeting URL
+        if let url = teamsURL {
+            NSWorkspace.shared.open(url)
+        }
+
+        // 2. Start recording after brief delay (allow Teams to open)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+            MeetingRecordingEngine.shared.manualStartRecording()
+        }
+    }
+
+    private func copyMeetingDetails() {
+        let details = """
+        Meeting: \(meeting.title)
+        Time: \(meeting.startDate.formatted())
+        Duration: \(formattedDuration)
+        Attendees: \((meeting.attendees ?? []).joined(separator: ", "))
+        \(meeting.notes ?? "")
+        """
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.setString(details, forType: .string)
+    }
+
+    private func deleteMeeting() {
+        // TODO: Implement meeting deletion
+    }
+
+    private func openMeetingDetailWindowAction() {
+        openMeetingDetailWindow(
+            for: meeting,
+            isOneOnOne: isOneOnOne,
+            matchedPerson: matchedPerson,
+            context: viewContext
+        )
+    }
+
+    // MARK: - Helper Methods
+
+    /// Extract Teams meeting URL from notes and convert to msteams:// scheme for direct opening
+    private func extractTeamsURL(from notes: String?) -> URL? {
+        guard let notes = notes else { return nil }
+
+        let patterns = [
+            "https://teams\\.microsoft\\.com/l/meetup-join/[^\\s<>\"]+",
+            "https://teams\\.live\\.com/meet/[^\\s<>\"]+",
+            "msteams://[^\\s<>\"]+",
+        ]
+
+        for pattern in patterns {
+            if let regex = try? NSRegularExpression(pattern: pattern, options: .caseInsensitive),
+               let match = regex.firstMatch(in: notes, range: NSRange(notes.startIndex..., in: notes)),
+               let range = Range(match.range, in: notes) {
+                var urlString = String(notes[range])
+
+                // Convert HTTPS to msteams:// for direct Teams app opening
+                // This bypasses Safari and the "Allow website" dialog
+                if urlString.lowercased().hasPrefix("https://") {
+                    urlString = urlString.replacingOccurrences(
+                        of: "https://",
+                        with: "msteams://",
+                        options: .caseInsensitive
+                    )
+                }
+
+                return URL(string: urlString)
+            }
+        }
+        return nil
+    }
+
+    /// Extract clean name from email
     private func extractName(from attendee: String) -> String {
         if attendee.contains("@") {
             let namePart = attendee.split(separator: "@").first ?? Substring(attendee)
@@ -64,424 +346,54 @@ struct EnhancedMeetingCard: View {
         }
         return attendee
     }
-    
-    var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            // Main Card Content
-            VStack(alignment: .leading, spacing: 12) {
-                // Header Row
-                HStack(alignment: .top) {
-                    // Meeting Type & Status
-                    HStack(spacing: 8) {
-                        // Meeting type indicator
-                        if (meeting.attendees?.count ?? 0) == 2 {
-                            MeetingTypeBadge(type: .oneOnOne)
-                        } else if (meeting.attendees?.count ?? 0) > 2 {
-                            MeetingTypeBadge(type: .group)
-                        }
-                        
-                        // Recording indicator
-                        if isCurrentlyRecording {
-                            HStack(spacing: 4) {
-                                Circle()
-                                    .fill(Color.red)
-                                    .frame(width: 6, height: 6)
-                                    .modifier(GlowingPulse(color: .red))
-                                Text("Recording")
-                                    .font(.system(size: 10, weight: .semibold))
-                                    .foregroundColor(.red)
-                            }
-                            .padding(.horizontal, 6)
-                            .padding(.vertical, 3)
-                            .background(Color.red.opacity(0.1))
-                            .cornerRadius(6)
-                        } else if meetingStats.isRecorded {
-                            StatPill(icon: "checkmark.circle.fill", value: "Recorded", color: .green)
-                        }
-                    }
-                    
-                    Spacer()
-                    
-                    // Duration & Time
-                    HStack(spacing: 8) {
-                        DurationChip(duration: meeting.duration ?? 0)
-                        
-                        Text(meeting.startDate, style: .time)
-                            .font(.system(size: 11, weight: .medium))
-                            .foregroundColor(.secondary)
-                    }
-                }
-                
-                // Title
-                Text(meeting.title)
-                    .font(.system(size: 14, weight: .semibold))
-                    .foregroundColor(.primary)
-                    .lineLimit(isExpanded ? nil : 1)
-                
-                // Participants
-                HStack(spacing: 12) {
-                    ParticipantAvatarStack(
-                        participants: (meeting.attendees ?? []).map { extractName(from: $0) }
-                    )
-                    
-                    if !(meeting.attendees?.isEmpty ?? true) {
-                        Text((meeting.attendees ?? []).map { extractName(from: $0) }.joined(separator: ", "))
-                            .font(.system(size: 11))
-                            .foregroundColor(.secondary)
-                            .lineLimit(1)
-                    }
-                }
-                
-                // Quick Stats Row
-                HStack(spacing: 8) {
-                    StatPill(
-                        icon: "person.2",
-                        value: "\(meeting.attendees?.count ?? 0)",
-                        color: .primaryBlue
-                    )
-                    
-                    if let notes = meeting.notes, !notes.isEmpty {
-                        StatPill(
-                            icon: "note.text",
-                            value: "Notes",
-                            color: .orange
-                        )
-                    }
-                    
-                    if meeting.location?.contains("zoom.us") == true ||
-                       meeting.location?.contains("meet.google") == true ||
-                       meeting.location?.contains("teams.microsoft") == true {
-                        StatPill(
-                            icon: "video",
-                            value: "Virtual",
-                            color: .purple
-                        )
-                    }
-                }
-                
-                // Hover Preview (AI Brief or Calendar Notes)
-                if isHovered {
-                    VStack(alignment: .leading, spacing: 8) {
-                        Divider()
-                            .padding(.vertical, 4)
 
-                        // Tab toggle for 1:1 meetings with briefs
-                        if isOneOnOne {
-                            meetingNotesTabToggle
-                        } else {
-                            // For group meetings, just show calendar notes
-                            calendarNotesView
-                        }
-                    }
-                    .transition(.asymmetric(
-                        insertion: .move(edge: .top).combined(with: .opacity),
-                        removal: .opacity
-                    ))
-                }
-            }
-            .padding(16)
-            
-            // Action Bar (appears on hover)
-            if isHovered {
-                HStack(spacing: 12) {
-                    if !isCurrentlyRecording && !meetingStats.isRecorded {
-                        Button(action: startRecording) {
-                            Label("Record", systemImage: "record.circle")
-                                .font(.system(size: 11, weight: .medium))
-                        }
-                        .buttonStyle(.borderless)
-                    }
-                    
-                    Button(action: { showingBrief = true }) {
-                        Label("Brief", systemImage: "doc.text.magnifyingglass")
-                            .font(.system(size: 11, weight: .medium))
-                    }
-                    .buttonStyle(.borderless)
-                    
-                    if (meeting.attendees?.count ?? 0) == 2 {
-                        Button(action: openPersonDetails) {
-                            Label("View Person", systemImage: "person.circle")
-                                .font(.system(size: 11, weight: .medium))
-                        }
-                        .buttonStyle(.borderless)
-                    }
-                    
-                    Spacer()
-                    
-                    Button(action: { showingContextMenu.toggle() }) {
-                        Image(systemName: "ellipsis")
-                            .font(.system(size: 11, weight: .medium))
-                    }
-                    .buttonStyle(.borderless)
-                }
-                .padding(.horizontal, 16)
-                .padding(.vertical, 8)
-                .background(Color(NSColor.controlBackgroundColor).opacity(0.5))
-                .transition(.asymmetric(
-                    insertion: .move(edge: .bottom).combined(with: .opacity),
-                    removal: .opacity
-                ))
+    /// Find Person record from meeting attendee
+    private func findMatchedPerson() -> Person? {
+        guard isOneOnOne,
+              let attendees = meeting.attendees,
+              attendees.count == 2 else { return nil }
+
+        let userEmail = UserProfile.shared.email.lowercased().trimmingCharacters(in: .whitespaces)
+        let userName = UserProfile.shared.name.lowercased().trimmingCharacters(in: .whitespaces)
+
+        var otherAttendee: String?
+        for attendee in attendees {
+            let attendeeLower = attendee.lowercased()
+            let attendeeName = extractName(from: attendee).lowercased()
+
+            let isUser = (!userEmail.isEmpty && attendeeLower.contains(userEmail)) ||
+                         (!userName.isEmpty && (attendeeLower.contains(userName) || attendeeName == userName))
+
+            if !isUser {
+                otherAttendee = attendee
+                break
             }
         }
-        .background(Color(NSColor.controlBackgroundColor))
-        .cornerRadius(12)
-        .overlay(
-            RoundedRectangle(cornerRadius: 12)
-                .stroke(isHovered ? Color.accentColor.opacity(0.3) : Color.borderSubtle, lineWidth: 1)
-        )
-        .hoverEffect(scale: 1.02)
-        .onHover { hovering in
-            withAnimation(.spring(response: 0.25, dampingFraction: 0.8)) {
-                isHovered = hovering
-            }
-        }
-        .contextMenu {
-            Button(action: copyMeetingDetails) {
-                Label("Copy Details", systemImage: "doc.on.doc")
-            }
-            
-            if meetingStats.isRecorded {
-                Button(action: exportTranscript) {
-                    Label("Export Transcript", systemImage: "square.and.arrow.up")
-                }
-            }
-            
-            Divider()
-            
-            Button(action: deleteMeeting) {
-                Label("Delete", systemImage: "trash")
-            }
-        }
-        .sheet(isPresented: $showingBrief) {
-            PreMeetingBriefWindow(
-                personName: meeting.title ?? "Meeting",
-                briefContent: meeting.notes ?? "No meeting notes available",
-                onClose: { showingBrief = false }
-            )
-        }
-    }
-    
-    // MARK: - Actions
-    
-    private func startRecording() {
-        // TODO: Implement manual recording start for specific meeting
-        recordingEngine.manualStartRecording()
-    }
-    
-    private func openPersonDetails() {
-        // Find person from attendees
-        if (meeting.attendees?.count ?? 0) == 2,
-           let otherAttendee = meeting.attendees?.first(where: { !$0.contains("@yourcompany.com") }) {
-            // Search for person in Core Data
-            let request: NSFetchRequest<Person> = Person.fetchRequest()
-            request.predicate = NSPredicate(format: "name CONTAINS[cd] %@", extractName(from: otherAttendee))
-            
-            if let person = try? viewContext.fetch(request).first {
-                selectedPerson = person
-                selectedPersonID = person.identifier
-                selectedTab = .people
-            }
-        }
-    }
-    
-    private func copyMeetingDetails() {
-        let details = """
-        Meeting: \(meeting.title)
-        Time: \(meeting.startDate.formatted())
-        Duration: \(meetingStats.duration)
-        Attendees: \((meeting.attendees ?? []).joined(separator: ", "))
-        \(meeting.notes ?? "")
-        """
-        NSPasteboard.general.clearContents()
-        NSPasteboard.general.setString(details, forType: .string)
-    }
-    
-    private func exportTranscript() {
-        // TODO: Implement transcript export
-    }
-    
-    private func deleteMeeting() {
-        // TODO: Implement meeting deletion
+
+        let attendeeToMatch = otherAttendee ?? attendees.first ?? ""
+        guard !attendeeToMatch.isEmpty else { return nil }
+
+        return searchForPerson(matching: attendeeToMatch)
     }
 
-    // MARK: - Notes Views
+    /// Search for a Person matching the given attendee string
+    private func searchForPerson(matching attendee: String) -> Person? {
+        let trimmedAttendee = attendee.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard trimmedAttendee.count >= 2 else { return nil }
 
-    /// Tab toggle between AI Brief and Calendar Notes for 1:1 meetings
-    private var meetingNotesTabToggle: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            // Tab header with toggle and regenerate button
-            HStack(spacing: 8) {
-                // Tab toggle
-                HStack(spacing: 0) {
-                    tabButton(title: "AI Brief", isSelected: showingAIBrief) {
-                        withAnimation(.easeInOut(duration: 0.2)) {
-                            showingAIBrief = true
-                        }
-                    }
+        let searchName = extractName(from: trimmedAttendee)
+        guard searchName.count >= 2 else { return nil }
 
-                    tabButton(title: "Calendar Notes", isSelected: !showingAIBrief) {
-                        withAnimation(.easeInOut(duration: 0.2)) {
-                            showingAIBrief = false
-                        }
-                    }
-                }
-                .background(Color(NSColor.separatorColor).opacity(0.3))
-                .cornerRadius(6)
+        let request: NSFetchRequest<Person> = Person.fetchRequest()
+        request.predicate = NSPredicate(format: "name CONTAINS[cd] %@", searchName)
+        request.fetchLimit = 1
 
-                Spacer()
-
-                // Regenerate button (only for AI Brief tab)
-                if showingAIBrief {
-                    Button(action: regenerateBrief) {
-                        if isRegenerating || briefManager.pendingMeetings.contains(meeting.id) {
-                            ProgressView()
-                                .scaleEffect(0.6)
-                                .frame(width: 14, height: 14)
-                        } else {
-                            Image(systemName: "arrow.clockwise")
-                                .font(.system(size: 10))
-                        }
-                    }
-                    .buttonStyle(.borderless)
-                    .disabled(isRegenerating || briefManager.pendingMeetings.contains(meeting.id))
-                    .help("Regenerate brief")
-                }
-            }
-
-            // Content based on selected tab
-            if showingAIBrief {
-                aiBriefView
-            } else {
-                calendarNotesView
-            }
-        }
-    }
-
-    /// Individual tab button
-    private func tabButton(title: String, isSelected: Bool, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            Text(title)
-                .font(.system(size: 10, weight: isSelected ? .semibold : .regular))
-                .foregroundColor(isSelected ? .primary : .secondary)
-                .padding(.horizontal, 10)
-                .padding(.vertical, 5)
-                .background(isSelected ? Color(NSColor.controlBackgroundColor) : Color.clear)
-                .cornerRadius(5)
-        }
-        .buttonStyle(.plain)
-    }
-
-    /// AI Brief content view
-    @ViewBuilder
-    private var aiBriefView: some View {
-        if let brief = cachedBrief, !brief.briefContent.isEmpty {
-            VStack(alignment: .leading, spacing: 4) {
-                HStack {
-                    Image(systemName: "sparkles")
-                        .font(.system(size: 10))
-                        .foregroundColor(.purple)
-                    Text("Brief for \(brief.personName)")
-                        .font(.system(size: 10, weight: .medium))
-                        .foregroundColor(.purple)
-                }
-
-                Text(brief.briefContent)
-                    .font(.system(size: 11))
-                    .foregroundColor(.secondary)
-                    .lineLimit(5)
-
-                if brief.isStale {
-                    HStack(spacing: 4) {
-                        Image(systemName: "exclamationmark.triangle")
-                            .font(.system(size: 9))
-                        Text("Brief may be outdated")
-                            .font(.system(size: 9))
-                    }
-                    .foregroundColor(.orange)
-                }
-            }
-        } else if briefManager.pendingMeetings.contains(meeting.id) || briefManager.isGenerating {
-            HStack(spacing: 8) {
-                ProgressView()
-                    .scaleEffect(0.7)
-                Text("Generating brief...")
-                    .font(.system(size: 11))
-                    .foregroundColor(.secondary)
-            }
-        } else if cachedBrief != nil {
-            // Brief exists but is empty - means no Person found
-            VStack(alignment: .leading, spacing: 4) {
-                Text("No Person record found for this meeting")
-                    .font(.system(size: 11))
-                    .foregroundColor(.secondary.opacity(0.7))
-                    .italic()
-
-                Button(action: {
-                    Task { @MainActor in
-                        await briefManager.generateBriefForMeeting(meeting)
-                    }
-                }) {
-                    Label("Generate Brief", systemImage: "sparkles")
-                        .font(.system(size: 10))
-                }
-                .buttonStyle(.bordered)
-                .controlSize(.small)
-            }
-        } else {
-            // No brief generated yet
-            VStack(alignment: .leading, spacing: 4) {
-                Text("AI brief not yet generated")
-                    .font(.system(size: 11))
-                    .foregroundColor(.secondary.opacity(0.7))
-                    .italic()
-
-                Button(action: {
-                    Task { @MainActor in
-                        await briefManager.generateBriefForMeeting(meeting)
-                    }
-                }) {
-                    Label("Generate Brief", systemImage: "sparkles")
-                        .font(.system(size: 10))
-                }
-                .buttonStyle(.bordered)
-                .controlSize(.small)
-            }
-        }
-    }
-
-    /// Calendar notes view
-    @ViewBuilder
-    private var calendarNotesView: some View {
-        if let notes = meeting.notes, !notes.isEmpty {
-            VStack(alignment: .leading, spacing: 4) {
-                HStack {
-                    Image(systemName: "calendar")
-                        .font(.system(size: 10))
-                        .foregroundColor(.blue)
-                    Text("Calendar Notes")
-                        .font(.system(size: 10, weight: .medium))
-                        .foregroundColor(.blue)
-                }
-
-                Text(notes)
-                    .font(.system(size: 11))
-                    .foregroundColor(.secondary)
-                    .lineLimit(5)
-            }
-        } else {
-            Text("No calendar notes available")
-                .font(.system(size: 11))
-                .foregroundColor(.secondary.opacity(0.7))
-                .italic()
-        }
-    }
-
-    /// Regenerate brief action
-    private func regenerateBrief() {
-        isRegenerating = true
-        Task { @MainActor in
-            await briefManager.regenerateBrief(for: meeting)
-            isRegenerating = false
+        do {
+            let results = try viewContext.fetch(request)
+            return results.first
+        } catch {
+            print("Error searching for person: \(error)")
+            return nil
         }
     }
 }
@@ -489,23 +401,45 @@ struct EnhancedMeetingCard: View {
 // MARK: - Preview Provider
 struct EnhancedMeetingCard_Previews: PreviewProvider {
     static var previews: some View {
-        EnhancedMeetingCard(
-            meeting: UpcomingMeeting(
-                id: "preview",
-                title: "Weekly Sync with Team",
-                startDate: Date(),
-                calendarID: "primary",
-                notes: "Discuss Q4 goals and project timeline",
-                location: "https://zoom.us/j/123456789",
-                attendees: ["john.doe@company.com", "jane.smith@company.com", "bob.wilson@company.com"],
-                duration: 3600
-            ),
-            recordingEngine: MeetingRecordingEngine.shared,
-            selectedPersonID: .constant(nil),
-            selectedPerson: .constant(nil),
-            selectedTab: .constant(.meetings),
-            isCurrentlyRecording: false
-        )
+        VStack(spacing: 16) {
+            // 1:1 Meeting Preview
+            EnhancedMeetingCard(
+                meeting: UpcomingMeeting(
+                    id: "preview-1on1",
+                    title: "Quick chat re AA fund management",
+                    startDate: Date(),
+                    calendarID: "primary",
+                    notes: "Join Microsoft Teams Meeting: https://teams.microsoft.com/l/meetup-join/123456",
+                    location: nil,
+                    attendees: ["alyoscia.donofrio@company.com", "me@company.com"],
+                    duration: 1500
+                ),
+                recordingEngine: MeetingRecordingEngine.shared,
+                selectedPersonID: .constant(nil),
+                selectedPerson: .constant(nil),
+                selectedTab: .constant(.meetings),
+                isCurrentlyRecording: false
+            )
+
+            // Group Meeting Preview
+            EnhancedMeetingCard(
+                meeting: UpcomingMeeting(
+                    id: "preview-group",
+                    title: "EMU SMT Staff Rep + BK check in",
+                    startDate: Date().addingTimeInterval(3600),
+                    calendarID: "primary",
+                    notes: "Weekly sync meeting notes here. Join: https://teams.microsoft.com/l/meetup-join/789",
+                    location: nil,
+                    attendees: ["john@company.com", "jane@company.com", "bob@company.com"],
+                    duration: 3600
+                ),
+                recordingEngine: MeetingRecordingEngine.shared,
+                selectedPersonID: .constant(nil),
+                selectedPerson: .constant(nil),
+                selectedTab: .constant(.meetings),
+                isCurrentlyRecording: false
+            )
+        }
         .frame(width: 400)
         .padding()
     }

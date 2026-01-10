@@ -1,11 +1,13 @@
 import SwiftUI
 import AVFoundation
+import ApplicationServices
 
 struct PermissionsSettingsView: View {
     @ObservedObject private var recordingEngine = MeetingRecordingEngine.shared
-    
+
     @State private var microphoneStatus: Bool = false
     @State private var screenRecordingStatus: Bool = false
+    @State private var accessibilityStatus: Bool = false
     @State private var isCheckingPermissions: Bool = false
     
     var body: some View {
@@ -52,7 +54,7 @@ struct PermissionsSettingsView: View {
                         Image(systemName: "rectangle.dashed.badge.record")
                             .foregroundColor(screenRecordingStatus ? .green : .orange)
                             .frame(width: 20)
-                        
+
                         VStack(alignment: .leading, spacing: 4) {
                             Text("Screen Recording")
                                 .font(.subheadline)
@@ -61,9 +63,9 @@ struct PermissionsSettingsView: View {
                                 .font(.caption)
                                 .foregroundColor(.secondary)
                         }
-                        
+
                         Spacer()
-                        
+
                         if screenRecordingStatus {
                             Label("Granted", systemImage: "checkmark.circle.fill")
                                 .foregroundColor(.green)
@@ -71,6 +73,38 @@ struct PermissionsSettingsView: View {
                         } else {
                             Button("Grant Access") {
                                 openScreenRecordingSettings()
+                            }
+                            .buttonStyle(.bordered)
+                            .controlSize(.small)
+                        }
+                    }
+
+                    Divider()
+
+                    // Accessibility Permission
+                    HStack {
+                        Image(systemName: "hand.raised.fill")
+                            .foregroundColor(accessibilityStatus ? .green : .orange)
+                            .frame(width: 20)
+
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("Accessibility")
+                                .font(.subheadline)
+                                .fontWeight(.medium)
+                            Text("Optional: Enables smart meeting detection from app windows")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        }
+
+                        Spacer()
+
+                        if accessibilityStatus {
+                            Label("Granted", systemImage: "checkmark.circle.fill")
+                                .foregroundColor(.green)
+                                .font(.caption)
+                        } else {
+                            Button("Grant Access") {
+                                requestAccessibilityPermission()
                             }
                             .buttonStyle(.bordered)
                             .controlSize(.small)
@@ -108,8 +142,19 @@ struct PermissionsSettingsView: View {
                                 .foregroundColor(.secondary)
                         }
                     }
-                    
-                    if microphoneStatus && screenRecordingStatus {
+
+                    if !accessibilityStatus {
+                        HStack(alignment: .top, spacing: 8) {
+                            Image(systemName: "info.circle.fill")
+                                .foregroundColor(.blue)
+                                .font(.caption)
+                            Text("Accessibility is optional. It enables smarter meeting detection by reading window titles of apps like Zoom, Teams, and Slack to detect when you're in a call.")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        }
+                    }
+
+                    if microphoneStatus && screenRecordingStatus && accessibilityStatus {
                         HStack(alignment: .top, spacing: 8) {
                             Image(systemName: "checkmark.circle.fill")
                                 .foregroundColor(.green)
@@ -149,7 +194,10 @@ struct PermissionsSettingsView: View {
     
     private func checkPermissions() {
         isCheckingPermissions = true
-        
+
+        // Check Accessibility synchronously (it's a simple function call)
+        accessibilityStatus = AXIsProcessTrusted()
+
         Task {
             let status = await recordingEngine.checkPermissionStatus()
             await MainActor.run {
@@ -169,6 +217,23 @@ struct PermissionsSettingsView: View {
     private func openScreenRecordingSettings() {
         if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture") {
             NSWorkspace.shared.open(url)
+        }
+    }
+
+    private func requestAccessibilityPermission() {
+        // This will prompt the user with a system dialog and open System Preferences
+        // kAXTrustedCheckOptionPrompt: true causes the system to show the dialog
+        let options = [kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String: true] as CFDictionary
+        let trusted = AXIsProcessTrustedWithOptions(options)
+
+        // Update status (will be false until user grants and restarts app)
+        accessibilityStatus = trusted
+
+        // If not trusted, also open System Preferences directly to the Accessibility pane
+        if !trusted {
+            if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility") {
+                NSWorkspace.shared.open(url)
+            }
         }
     }
 }

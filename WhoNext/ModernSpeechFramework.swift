@@ -34,6 +34,8 @@ class ModernSpeechFramework {
     
     // Transcription state
     private var isTranscribing = false
+    private var isInitializing = false  // Guard against concurrent initialization
+    private var initializationWaiters: [CheckedContinuation<Void, Never>] = []  // Waiters for initialization to complete
     
     // Results
     private var finalizedTranscript: String = ""
@@ -43,6 +45,12 @@ class ModernSpeechFramework {
     private var transcriptionSegments: [SpeechTranscriptionSegment] = []
     private var speakerAttributions: [SpeakerAttribution] = []
     private var currentSpeakerId: Int = 0
+
+    // Buffer timestamp tracking for proper speaker attribution
+    // Tracks when each audio buffer was captured (not when transcription arrives)
+    private var cumulativeAudioDuration: TimeInterval = 0
+    private var pendingBufferTimestamps: [(start: TimeInterval, end: TimeInterval)] = []
+    private var lastProcessedSegmentIndex: Int = 0
     
     // MARK: - Initialization
     
@@ -60,8 +68,35 @@ class ModernSpeechFramework {
     
     /// Initialize the speech recognizer using new APIs
     func initialize() async throws {
+        // Guard against concurrent initialization
+        if isInitializing {
+            print("[ModernSpeech] Initialization already in progress, waiting...")
+            await withCheckedContinuation { continuation in
+                initializationWaiters.append(continuation)
+            }
+            print("[ModernSpeech] Wait completed, initialization should be done")
+            return
+        }
+
+        // If already initialized, skip
+        if analyzer != nil && transcriber != nil {
+            print("[ModernSpeech] Already initialized, skipping")
+            return
+        }
+
+        isInitializing = true
+        defer {
+            isInitializing = false
+            // Resume all waiters
+            let waiters = initializationWaiters
+            initializationWaiters.removeAll()
+            for waiter in waiters {
+                waiter.resume()
+            }
+        }
+
         print("[ModernSpeech] Starting initialization with new Speech APIs...")
-        
+
         // Deallocate any existing locales first (like yap does)
         let allocatedLocales = await AssetInventory.reservedLocales
         for locale in allocatedLocales {
@@ -252,26 +287,93 @@ class ModernSpeechFramework {
     // MARK: - Audio Processing
     
     /// Process an audio buffer - stream immediately to analyzer
+    /// Tracks buffer timestamps for proper speaker attribution
     func processAudioStream(_ buffer: AVAudioPCMBuffer) async throws -> String {
-        // Ensure analyzer is initialized
+        // Wait if initialization is in progress
+        if isInitializing {
+            print("[ModernSpeech] processAudioStream waiting for initialization...")
+            await withCheckedContinuation { continuation in
+                initializationWaiters.append(continuation)
+            }
+            print("[ModernSpeech] processAudioStream initialization wait complete")
+        }
+
+        // Ensure analyzer is initialized (only triggers if not already in progress)
         if analyzer == nil {
             print("[ModernSpeech] Analyzer not initialized, initializing now...")
             try await initialize()
         }
-        
+
         guard let analyzerFormat = analyzerFormat else {
             print("[ModernSpeech] No analyzer format available")
             throw ModernSpeechError.transcriberNotInitialized
         }
-        
+
+        // CRITICAL: Track when this buffer was captured BEFORE sending for transcription
+        // This fixes the temporal misalignment bug where speaker attribution used arrival time
+        let bufferDuration = Double(buffer.frameLength) / buffer.format.sampleRate
+        let bufferStartTime = cumulativeAudioDuration
+        let bufferEndTime = bufferStartTime + bufferDuration
+
+        // Store the timestamp for this buffer
+        pendingBufferTimestamps.append((start: bufferStartTime, end: bufferEndTime))
+        cumulativeAudioDuration = bufferEndTime
+
         // Convert buffer to optimal format
         let convertedBuffer = try converter.convertBuffer(buffer, to: analyzerFormat)
-        
+
         // Stream immediately to analyzer
         let input = AnalyzerInput(buffer: convertedBuffer)
         inputContinuation.yield(input)
-        
+
         return getCurrentTranscript()
+    }
+
+    /// Process audio buffer and return the buffer's timestamp info for speaker correlation
+    /// This is the preferred method for MeetingRecordingEngine to use
+    func processAudioStreamWithTimestamp(_ buffer: AVAudioPCMBuffer) async throws -> (transcript: String, bufferStartTime: TimeInterval, bufferEndTime: TimeInterval) {
+        // Wait if initialization is in progress
+        if isInitializing {
+            print("[ModernSpeech] processAudioStreamWithTimestamp waiting for initialization...")
+            await withCheckedContinuation { continuation in
+                initializationWaiters.append(continuation)
+            }
+            print("[ModernSpeech] processAudioStreamWithTimestamp initialization wait complete")
+        }
+
+        // Ensure analyzer is initialized (only triggers if not already in progress)
+        if analyzer == nil {
+            print("[ModernSpeech] Analyzer not initialized, initializing now...")
+            try await initialize()
+        }
+
+        guard let analyzerFormat = analyzerFormat else {
+            print("[ModernSpeech] No analyzer format available")
+            throw ModernSpeechError.transcriberNotInitialized
+        }
+
+        // CRITICAL: Track when this buffer was captured BEFORE sending for transcription
+        let bufferDuration = Double(buffer.frameLength) / buffer.format.sampleRate
+        let bufferStartTime = cumulativeAudioDuration
+        let bufferEndTime = bufferStartTime + bufferDuration
+
+        // Store the timestamp for this buffer
+        pendingBufferTimestamps.append((start: bufferStartTime, end: bufferEndTime))
+        cumulativeAudioDuration = bufferEndTime
+
+        // Convert buffer to optimal format
+        let convertedBuffer = try converter.convertBuffer(buffer, to: analyzerFormat)
+
+        // Stream immediately to analyzer
+        let input = AnalyzerInput(buffer: convertedBuffer)
+        inputContinuation.yield(input)
+
+        return (getCurrentTranscript(), bufferStartTime, bufferEndTime)
+    }
+
+    /// Get the current cumulative audio duration (for external timestamp correlation)
+    func getCurrentAudioTime() -> TimeInterval {
+        return cumulativeAudioDuration
     }
     
     // processAccumulatedChunk removed - streaming immediately now
@@ -279,12 +381,20 @@ class ModernSpeechFramework {
     /// Process an entire audio file
     func transcribeFile(at url: URL) async throws -> String {
         print("[ModernSpeech] Transcribing file: \(url.lastPathComponent)")
-        
+
+        // Wait if initialization is in progress
+        if isInitializing {
+            print("[ModernSpeech] transcribeFile waiting for initialization...")
+            await withCheckedContinuation { continuation in
+                initializationWaiters.append(continuation)
+            }
+        }
+
         // Ensure initialized
         if analyzer == nil {
             try await initialize()
         }
-        
+
         guard let analyzer = analyzer else {
             throw ModernSpeechError.transcriberNotInitialized
         }
@@ -323,6 +433,11 @@ class ModernSpeechFramework {
         finalizedTranscript = ""
         volatileTranscript = ""
         transcriptionSegments.removeAll()
+
+        // Reset timestamp tracking
+        cumulativeAudioDuration = 0
+        pendingBufferTimestamps.removeAll()
+        lastProcessedSegmentIndex = 0
         
         // Create new input stream for this session
         let (stream, continuation) = AsyncStream<AnalyzerInput>.makeStream()
@@ -415,11 +530,11 @@ class ModernSpeechFramework {
     /// Reset the transcriber
     func reset() {
         print("[ModernSpeech] Resetting...")
-        
+
         // Cancel ongoing tasks
         recognizerTask?.cancel()
         recognizerTask = nil
-        
+
         // Clear transcripts
         finalizedTranscript = ""
         volatileTranscript = ""
@@ -427,11 +542,19 @@ class ModernSpeechFramework {
         speakerAttributions.removeAll()
         currentSpeakerId = 0
         isTranscribing = false
-        
-        // Clear audio buffers
-        // audioChunkBuffer.removeAll()
-        // accumulatedFrameCount = 0
-        // chunkStartTime = Date()
+        isInitializing = false
+
+        // Resume any waiters (they'll see analyzer is nil and reinitialize if needed)
+        let waiters = initializationWaiters
+        initializationWaiters.removeAll()
+        for waiter in waiters {
+            waiter.resume()
+        }
+
+        // Clear timestamp tracking
+        cumulativeAudioDuration = 0
+        pendingBufferTimestamps.removeAll()
+        lastProcessedSegmentIndex = 0
         
         // Finish current stream
         inputContinuation.finish()
@@ -599,11 +722,19 @@ class ModernSpeechFramework {
     
     func cleanup() async {
         print("[ModernSpeech] Cleaning up...")
-        
+
         if isTranscribing {
             try? await stopTranscription()
         }
-        
+
+        // Reset initialization state and resume any waiters
+        isInitializing = false
+        let waiters = initializationWaiters
+        initializationWaiters.removeAll()
+        for waiter in waiters {
+            waiter.resume()
+        }
+
         // Deallocate locale using correct API
         let allocatedLocales = await AssetInventory.reservedLocales
         for locale in allocatedLocales {
@@ -612,10 +743,10 @@ class ModernSpeechFramework {
                 print("[ModernSpeech] Deallocated locale: \(locale.identifier)")
             }
         }
-        
+
         transcriber = nil
         analyzer = nil
-        
+
         print("[ModernSpeech] Cleanup complete")
     }
     

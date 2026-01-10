@@ -118,12 +118,9 @@ struct PersistenceController {
         container.viewContext.automaticallyMergesChangesFromParent = true
         container.viewContext.mergePolicy = NSMergeByPropertyObjectTrumpMergePolicy
 
-        // Pin viewContext to current query generation to prevent crashes
-        do {
-            try container.viewContext.setQueryGenerationFrom(.current)
-        } catch {
-            print("⚠️ [CloudKit] Failed to pin viewContext to current generation: \(error)")
-        }
+        // NOTE: Do NOT use setQueryGenerationFrom(.current) with CloudKit
+        // It can cause crashes when combined with refreshAllObjects() and remote sync
+        // The automaticallyMergesChangesFromParent handles this automatically
 
         // ---------------------------------------------------------------------
         // CloudKit Schema Initialization (DEBUG only)
@@ -194,11 +191,10 @@ struct PersistenceController {
                 }
             }
 
-            // Refresh the view context to pick up remote changes
-            PersistenceController.shared.container.viewContext.perform {
-                PersistenceController.shared.container.viewContext.refreshAllObjects()
-                print("☁️ [CloudKit] View context refreshed with remote changes")
-            }
+            // NOTE: Do NOT call refreshAllObjects() here - it can cause crashes
+            // when combined with CloudKit sync. The automaticallyMergesChangesFromParent
+            // setting handles this automatically and safely.
+            print("☁️ [CloudKit] Changes will be merged automatically")
         }
 
         // Listen for import events (CloudKit data being imported)
@@ -408,5 +404,243 @@ struct PersistenceController {
         }
 
         return summary
+    }
+
+    // MARK: - CloudKit Debugging
+
+    /// Dump local Core Data record counts for debugging
+    func dumpLocalRecordCounts() {
+        let context = container.viewContext
+        context.perform {
+            print("\n☁️ ========== LOCAL CORE DATA RECORD COUNTS ==========")
+
+            // Person count
+            let personRequest = NSFetchRequest<NSManagedObject>(entityName: "Person")
+            let personCount = (try? context.count(for: personRequest)) ?? 0
+            print("☁️ Person records: \(personCount)")
+
+            // Conversation count
+            let convRequest = NSFetchRequest<NSManagedObject>(entityName: "Conversation")
+            let convCount = (try? context.count(for: convRequest)) ?? 0
+            print("☁️ Conversation records: \(convCount)")
+
+            // UserProfileEntity count
+            let profileRequest = NSFetchRequest<NSManagedObject>(entityName: "UserProfileEntity")
+            let profileCount = (try? context.count(for: profileRequest)) ?? 0
+            print("☁️ UserProfileEntity records: \(profileCount)")
+
+            // Group count
+            let groupRequest = NSFetchRequest<NSManagedObject>(entityName: "Group")
+            let groupCount = (try? context.count(for: groupRequest)) ?? 0
+            print("☁️ Group records: \(groupCount)")
+
+            // GroupMeeting count
+            let meetingRequest = NSFetchRequest<NSManagedObject>(entityName: "GroupMeeting")
+            let meetingCount = (try? context.count(for: meetingRequest)) ?? 0
+            print("☁️ GroupMeeting records: \(meetingCount)")
+
+            print("☁️ =====================================================\n")
+        }
+    }
+
+    /// Query CloudKit directly to verify what records exist
+    func verifyCloudKitRecords() {
+        let ckContainer = CKContainer(identifier: PersistenceController.cloudKitContainerID)
+        let privateDB = ckContainer.privateCloudDatabase
+
+        print("\n☁️ ========== CLOUDKIT RECORD VERIFICATION ==========")
+        print("☁️ Querying CloudKit private database...")
+
+        // Query for CD_Person records (Core Data prefixes with CD_)
+        let recordTypes = ["CD_Person", "CD_Conversation", "CD_UserProfileEntity", "CD_Group", "CD_GroupMeeting"]
+
+        for recordType in recordTypes {
+            let query = CKQuery(recordType: recordType, predicate: NSPredicate(value: true))
+            privateDB.fetch(withQuery: query, inZoneWith: nil, desiredKeys: nil, resultsLimit: 100) { result in
+                switch result {
+                case .success(let (matchResults, _)):
+                    let count = matchResults.count
+                    print("☁️ \(recordType): \(count) records in CloudKit")
+
+                    // Log first few record IDs for debugging
+                    for (recordID, recordResult) in matchResults.prefix(3) {
+                        switch recordResult {
+                        case .success(let record):
+                            print("☁️   - \(recordID.recordName): modified \(record.modificationDate ?? Date())")
+                        case .failure(let error):
+                            print("☁️   - \(recordID.recordName): error \(error.localizedDescription)")
+                        }
+                    }
+
+                case .failure(let error):
+                    if let ckError = error as? CKError, ckError.code == .unknownItem {
+                        print("☁️ \(recordType): Record type not found in schema")
+                    } else {
+                        print("☁️ \(recordType): Error querying - \(error.localizedDescription)")
+                    }
+                }
+            }
+        }
+    }
+
+    /// Force re-initialize CloudKit schema (DEBUG only)
+    /// This creates sample records to ensure all fields are in the schema
+    func forceSchemaReinitialization() {
+        #if DEBUG
+        print("☁️ [CloudKit] Forcing schema re-initialization...")
+
+        // Clear the flag so schema initialization runs again
+        UserDefaults.standard.removeObject(forKey: "CloudKitSchemaInitialized_v1")
+
+        Task {
+            do {
+                // Use dryRun first to see what would happen
+                try container.initializeCloudKitSchema(options: [.dryRun])
+                print("☁️ [CloudKit] Schema dry run successful")
+
+                // Now do the actual initialization
+                try container.initializeCloudKitSchema(options: [])
+                print("☁️ [CloudKit] ✅ Schema force-initialized successfully")
+                print("☁️ [CloudKit] ⚠️ IMPORTANT: Deploy schema to Production in CloudKit Dashboard!")
+
+                UserDefaults.standard.set(true, forKey: "CloudKitSchemaInitialized_v1")
+            } catch {
+                print("☁️ [CloudKit] ❌ Schema initialization failed: \(error)")
+            }
+        }
+        #else
+        print("☁️ [CloudKit] Schema reinitialization only available in DEBUG builds")
+        #endif
+    }
+
+    /// Check CloudKit zone status
+    func checkCloudKitZoneStatus() {
+        let ckContainer = CKContainer(identifier: PersistenceController.cloudKitContainerID)
+        let privateDB = ckContainer.privateCloudDatabase
+
+        // The default zone for NSPersistentCloudKitContainer
+        // "_defaultOwner" represents the current user's zone
+        let zoneID = CKRecordZone.ID(zoneName: "com.apple.coredata.cloudkit.zone", ownerName: "_defaultOwner")
+
+        privateDB.fetch(withRecordZoneID: zoneID) { zone, error in
+            if let zone = zone {
+                print("☁️ [CloudKit] ✅ Zone exists: \(zone.zoneID.zoneName)")
+                print("☁️ [CloudKit] Zone capabilities: \(zone.capabilities)")
+            } else if let error = error {
+                print("☁️ [CloudKit] ❌ Zone error: \(error.localizedDescription)")
+
+                // Check if zone doesn't exist
+                if let ckError = error as? CKError, ckError.code == .zoneNotFound {
+                    print("☁️ [CloudKit] Zone not found - this means no data has ever synced!")
+                    print("☁️ [CloudKit] Try saving some data to create the zone")
+                }
+            }
+        }
+    }
+
+    /// Force sync all existing data by touching modifiedAt timestamps
+    /// This is needed because data created before history tracking was enabled won't sync
+    func forceSyncAllExistingData() {
+        let context = container.viewContext
+
+        context.perform {
+            print("☁️ [CloudKit] Force-syncing all existing data...")
+            var touchedCount = 0
+
+            // Touch all Person records
+            let personRequest: NSFetchRequest<Person> = Person.fetchRequest()
+            if let people = try? context.fetch(personRequest) {
+                for person in people {
+                    person.modifiedAt = Date()
+                    touchedCount += 1
+                }
+                print("☁️ [CloudKit] Touched \(people.count) Person records")
+            }
+
+            // Touch all Conversation records
+            let convRequest = NSFetchRequest<Conversation>(entityName: "Conversation")
+            if let conversations = try? context.fetch(convRequest) {
+                for conversation in conversations {
+                    conversation.modifiedAt = Date()
+                    touchedCount += 1
+                }
+                print("☁️ [CloudKit] Touched \(conversations.count) Conversation records")
+            }
+
+            // Touch UserProfileEntity
+            let profileRequest = NSFetchRequest<UserProfileEntity>(entityName: "UserProfileEntity")
+            if let profiles = try? context.fetch(profileRequest) {
+                for profile in profiles {
+                    profile.modifiedAt = Date()
+                    touchedCount += 1
+                }
+                print("☁️ [CloudKit] Touched \(profiles.count) UserProfileEntity records")
+            }
+
+            // Touch Group records
+            let groupRequest = NSFetchRequest<Group>(entityName: "Group")
+            if let groups = try? context.fetch(groupRequest) {
+                for group in groups {
+                    group.modifiedAt = Date()
+                    touchedCount += 1
+                }
+                print("☁️ [CloudKit] Touched \(groups.count) Group records")
+            }
+
+            // Touch GroupMeeting records
+            let meetingRequest = NSFetchRequest<GroupMeeting>(entityName: "GroupMeeting")
+            if let meetings = try? context.fetch(meetingRequest) {
+                for meeting in meetings {
+                    meeting.modifiedAt = Date()
+                    touchedCount += 1
+                }
+                print("☁️ [CloudKit] Touched \(meetings.count) GroupMeeting records")
+            }
+
+            // Save changes to trigger CloudKit sync
+            do {
+                if context.hasChanges {
+                    try context.save()
+                    print("☁️ [CloudKit] ✅ Force-synced \(touchedCount) total records - should trigger CloudKit export")
+                } else {
+                    print("☁️ [CloudKit] No changes to save")
+                }
+            } catch {
+                print("☁️ [CloudKit] ❌ Error saving force-sync changes: \(error)")
+            }
+        }
+    }
+
+    /// Comprehensive sync diagnostic
+    func runSyncDiagnostic() {
+        print("\n")
+        print("☁️ ╔══════════════════════════════════════════════════════════╗")
+        print("☁️ ║           CLOUDKIT SYNC DIAGNOSTIC REPORT                ║")
+        print("☁️ ╚══════════════════════════════════════════════════════════╝")
+        print("☁️")
+        print("☁️ Container ID: \(PersistenceController.cloudKitContainerID)")
+        print("☁️")
+
+        // Check iCloud status
+        checkiCloudAccountStatus()
+
+        // Check zone
+        checkCloudKitZoneStatus()
+
+        // Dump local counts
+        dumpLocalRecordCounts()
+
+        // Query CloudKit
+        verifyCloudKitRecords()
+
+        print("☁️")
+        print("☁️ ════════════════════════════════════════════════════════════")
+        print("☁️ TROUBLESHOOTING STEPS:")
+        print("☁️ 1. Ensure SAME iCloud account on both devices")
+        print("☁️ 2. Check CloudKit Dashboard → Deploy Schema to Production")
+        print("☁️ 3. In CloudKit Dashboard, verify records exist in Private DB")
+        print("☁️ 4. Try: Settings → iCloud → WhoNext → Toggle OFF then ON")
+        print("☁️ 5. Check device storage isn't full")
+        print("☁️ ════════════════════════════════════════════════════════════")
     }
 }

@@ -80,12 +80,7 @@ class ConversationStateManager: ObservableObject {
         
         do {
             try viewContext.save()
-            
-            // Trigger immediate sync for new conversation
-            Task {
-                await RobustSyncManager.shared.performSync()
-            }
-            
+            // CloudKit sync happens automatically via NSPersistentCloudKitContainer
             loadConversations(for: person)
         } catch {
             errorManager.handle(error, context: "Failed to create conversation")
@@ -93,13 +88,13 @@ class ConversationStateManager: ObservableObject {
     }
     
     func deleteConversation(_ conversation: Conversation) {
-        // Use RobustSyncManager for proper deletion sync
-        Task {
-            await RobustSyncManager.shared.deleteConversation(conversation, context: viewContext)
-            // Remove from local array after successful deletion
-            await MainActor.run {
-                conversations.removeAll { $0.uuid == conversation.uuid }
-            }
+        // Delete locally - CloudKit sync handles propagation automatically
+        viewContext.delete(conversation)
+        do {
+            try viewContext.save()
+            conversations.removeAll { $0.uuid == conversation.uuid }
+        } catch {
+            errorManager.handle(error, context: "Failed to delete conversation")
         }
     }
     

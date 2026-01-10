@@ -87,6 +87,22 @@ class UserProfile: ObservableObject {
     private var lastReloadTime: Date?
     private let reloadDebounceInterval: TimeInterval = 1.0  // Debounce reloads to 1 second
 
+    // MARK: - Initial Sync State
+    @Published var isInitialSyncComplete: Bool = false
+    private var initialSyncContinuation: CheckedContinuation<Void, Never>?
+    private var hasReceivedRemoteChange = false
+
+    // MARK: - Onboarding State (stored in UserDefaults, not synced)
+    @Published var hasCompletedOnboarding: Bool {
+        didSet {
+            UserDefaults.standard.set(hasCompletedOnboarding, forKey: OnboardingKeys.hasCompletedOnboarding)
+        }
+    }
+
+    private enum OnboardingKeys {
+        static let hasCompletedOnboarding = "userProfileHasCompletedOnboarding"
+    }
+
     // MARK: - User Defaults Keys (for migration)
     private enum LegacyKeys {
         static let userName = "userProfileName"
@@ -102,6 +118,9 @@ class UserProfile: ObservableObject {
 
     // MARK: - Initialization
     private init() {
+        // Load onboarding state from UserDefaults
+        self.hasCompletedOnboarding = UserDefaults.standard.bool(forKey: OnboardingKeys.hasCompletedOnboarding)
+
         // Set up notification listener for remote changes
         setupRemoteChangeListener()
 
@@ -117,8 +136,59 @@ class UserProfile: ObservableObject {
             object: PersistenceController.shared.container.persistentStoreCoordinator,
             queue: .main
         ) { [weak self] _ in
-            self?.scheduleReload()
+            self?.handleRemoteChange()
         }
+    }
+
+    private func handleRemoteChange() {
+        // Signal initial sync completion if we were waiting
+        if !hasReceivedRemoteChange {
+            hasReceivedRemoteChange = true
+            print("👤 [UserProfile] First remote change received - CloudKit sync is active")
+            signalInitialSyncComplete()
+        }
+        scheduleReload()
+    }
+
+    private func signalInitialSyncComplete() {
+        guard !isInitialSyncComplete else { return }
+        isInitialSyncComplete = true
+        initialSyncContinuation?.resume()
+        initialSyncContinuation = nil
+    }
+
+    // MARK: - Initial Sync Waiting
+
+    /// Wait for initial CloudKit sync to complete (or timeout after 5 seconds)
+    /// Call this on app startup before relying on user profile data
+    @MainActor
+    func waitForInitialSync() async {
+        // If already synced, return immediately
+        if isInitialSyncComplete || hasReceivedRemoteChange {
+            print("👤 [UserProfile] Initial sync already complete")
+            loadFromEntity()  // Reload to pick up any remote data
+            return
+        }
+
+        print("👤 [UserProfile] Waiting for initial CloudKit sync...")
+
+        // Wait for either remote change or timeout
+        await withCheckedContinuation { continuation in
+            self.initialSyncContinuation = continuation
+
+            // Timeout after 5 seconds - CloudKit might not have any data or be slow
+            Task {
+                try? await Task.sleep(nanoseconds: 5_000_000_000)
+                if !self.isInitialSyncComplete {
+                    print("👤 [UserProfile] Initial sync timeout (5s) - proceeding with local data")
+                    self.signalInitialSyncComplete()
+                }
+            }
+        }
+
+        // Reload after sync completes
+        loadFromEntity()
+        print("👤 [UserProfile] Initial sync wait complete - profile loaded")
     }
 
     /// Debounced reload to prevent flooding during rapid CloudKit sync events
@@ -142,14 +212,36 @@ class UserProfile: ObservableObject {
     }
 
     private func performReload() {
+        // Ensure we're on the main thread for @Published property updates
+        guard Thread.isMainThread else {
+            DispatchQueue.main.async { [self] in
+                performReload()
+            }
+            return
+        }
+
         lastReloadTime = Date()
-        print("👤 [UserProfile] Remote changes detected - reloading profile")
+        print("👤 [UserProfile] Remote changes detected - checking for duplicates and reloading")
+
+        // Re-run getOrCreate which will detect and merge any duplicates from other devices
+        viewContext.perform { [self] in
+            _ = UserProfileEntity.getOrCreate(in: viewContext)
+        }
+
         loadFromEntity()
     }
 
     // MARK: - Core Data Operations
 
     private func loadFromEntity() {
+        // Ensure we're on the main thread for @Published property updates
+        guard Thread.isMainThread else {
+            DispatchQueue.main.async { [self] in
+                loadFromEntity()
+            }
+            return
+        }
+
         isLoading = true
         defer { isLoading = false }
 
@@ -431,5 +523,34 @@ class UserProfile: ObservableObject {
     /// Force refresh from Core Data (useful after sync)
     func refreshFromCoreData() {
         loadFromEntity()
+    }
+
+    /// Force sync user profile to CloudKit by touching modifiedAt
+    /// Call this after completing voice training to ensure sync
+    func forceSyncToCloud() {
+        viewContext.perform { [self] in
+            let entity = UserProfileEntity.getOrCreate(in: viewContext)
+            entity.modifiedAt = Date()
+
+            do {
+                if viewContext.hasChanges {
+                    try viewContext.save()
+                    print("👤 [UserProfile] Force sync triggered - should upload to CloudKit")
+                }
+            } catch {
+                print("👤 [UserProfile] Force sync error: \(error)")
+            }
+        }
+    }
+
+    /// Debug: Print current voice profile status
+    func debugPrintVoiceProfile() {
+        print("👤 ========== USER VOICE PROFILE STATUS ==========")
+        print("👤 Has Voice Profile: \(hasVoiceProfile)")
+        print("👤 Voice Sample Count: \(voiceSampleCount)")
+        print("👤 Voice Confidence: \(voiceConfidence)")
+        print("👤 Embedding Size: \(voiceEmbedding?.count ?? 0) floats")
+        print("👤 Last Voice Update: \(lastVoiceUpdate?.description ?? "never")")
+        print("👤 ================================================")
     }
 }

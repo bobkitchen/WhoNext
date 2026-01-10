@@ -4,6 +4,7 @@ import os
 
 /// Converts audio buffers between different PCM formats
 /// Required for compatibility with SpeechAnalyzer's expected format
+/// Thread-safe: creates a new converter for each conversion to avoid race conditions
 class BufferConverter {
     enum Error: Swift.Error {
         case failedToCreateConverter
@@ -11,8 +12,6 @@ class BufferConverter {
         case conversionFailed(NSError?)
     }
 
-    private var converter: AVAudioConverter?
-    
     /// Converts an audio buffer to the specified format
     /// - Parameters:
     ///   - buffer: The input PCM buffer to convert
@@ -20,22 +19,18 @@ class BufferConverter {
     /// - Returns: A converted PCM buffer in the target format
     func convertBuffer(_ buffer: AVAudioPCMBuffer, to format: AVAudioFormat) throws -> AVAudioPCMBuffer {
         let inputFormat = buffer.format
-        
+
         // If formats match, return original buffer
         guard inputFormat != format else {
             return buffer
         }
 
-        // Create or update converter if needed
-        if converter == nil || converter?.outputFormat != format {
-            converter = AVAudioConverter(from: inputFormat, to: format)
-            // Sacrifice quality of first samples to avoid timestamp drift
-            converter?.primeMethod = .none
-        }
-
-        guard let converter else {
+        // Create a fresh converter for each call to ensure thread safety
+        guard let converter = AVAudioConverter(from: inputFormat, to: format) else {
             throw Error.failedToCreateConverter
         }
+        // Sacrifice quality of first samples to avoid timestamp drift
+        converter.primeMethod = .none
 
         // Calculate frame capacity for output buffer
         let sampleRateRatio = converter.outputFormat.sampleRate / converter.inputFormat.sampleRate

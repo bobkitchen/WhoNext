@@ -77,7 +77,56 @@ class LiveMeeting: ObservableObject, Identifiable {
     // MARK: - Audio Recording
     var audioFilePath: String?
     var audioQuality: AudioQuality = .unknown
-    
+
+    // MARK: - User Notes (Granola-style note-taking during recording)
+    @Published var userNotes: NSAttributedString = NSAttributedString()
+
+    /// Plain text version of user notes for AI processing
+    var userNotesPlainText: String {
+        userNotes.string
+    }
+
+    /// Convert user notes to markdown for AI prompt
+    var userNotesAsMarkdown: String {
+        // Convert attributed string to markdown-like format
+        var result = ""
+        let fullRange = NSRange(location: 0, length: userNotes.length)
+
+        userNotes.enumerateAttributes(in: fullRange, options: []) { attrs, range, _ in
+            let substring = (userNotes.string as NSString).substring(with: range)
+
+            // Check for formatting
+            var prefix = ""
+            var suffix = ""
+
+            if let font = attrs[.font] as? NSFont {
+                let traits = font.fontDescriptor.symbolicTraits
+                if traits.contains(.bold) {
+                    prefix += "**"
+                    suffix = "**" + suffix
+                }
+                if traits.contains(.italic) {
+                    prefix += "_"
+                    suffix = "_" + suffix
+                }
+            }
+
+            if attrs[.underlineStyle] != nil {
+                prefix += "__"
+                suffix = "__" + suffix
+            }
+
+            if attrs[.backgroundColor] != nil {
+                prefix += "=="
+                suffix = "==" + suffix
+            }
+
+            result += prefix + substring + suffix
+        }
+
+        return result
+    }
+
     // MARK: - Computed Properties
     
     var displayTitle: String {
@@ -221,13 +270,32 @@ class LiveMeeting: ObservableObject, Identifiable {
     }
     
     // MARK: - Participant Management
-    
+
     /// Add or update an identified participant
     func addIdentifiedParticipant(_ participant: IdentifiedParticipant) {
         if let existingIndex = identifiedParticipants.firstIndex(where: { $0.id == participant.id }) {
             identifiedParticipants[existingIndex] = participant
         } else {
             identifiedParticipants.append(participant)
+        }
+    }
+
+    /// Synchronize participants with the current speaker database
+    /// Removes participants whose speaker IDs no longer exist (were merged)
+    func syncParticipants(withSpeakerIDs validSpeakerIDs: Set<Int>) {
+        let previousCount = identifiedParticipants.count
+
+        // Keep only participants whose speaker ID is still valid
+        identifiedParticipants.removeAll { participant in
+            !validSpeakerIDs.contains(participant.speakerID)
+        }
+
+        let removedCount = previousCount - identifiedParticipants.count
+        if removedCount > 0 {
+            print("🔄 [LiveMeeting] Synced participants: removed \(removedCount) merged speakers, \(identifiedParticipants.count) remaining")
+
+            // Update meeting type based on new speaker count
+            updateMeetingType(speakerCount: identifiedParticipants.count, confidence: speakerDetectionConfidence)
         }
     }
 }
@@ -258,6 +326,62 @@ enum NamingMode: String, Codable {
     case unnamed = "unnamed"          // Not yet named
 }
 
+// MARK: - Serializable Participant (for handoff between recording and review)
+
+/// A Codable struct that captures IdentifiedParticipant data for JSON serialization.
+/// Used to pass full participant attribution data from recording to the review window.
+struct SerializableParticipant: Codable, Identifiable {
+    let id: UUID
+    let name: String?
+    let confidence: Float
+    let speakerID: Int
+    let totalSpeakingTime: TimeInterval
+    let namingMode: NamingMode
+    let isCurrentUser: Bool
+    let personIdentifier: UUID?  // Link to Person record if available
+    let displayName: String
+    let voiceEmbedding: [Float]?  // Voice embedding from diarization for voice learning
+
+    /// Create from an IdentifiedParticipant with optional voice embedding
+    init(from participant: IdentifiedParticipant, voiceEmbedding: [Float]? = nil) {
+        self.id = participant.id
+        self.name = participant.name
+        self.confidence = participant.confidence
+        self.speakerID = participant.speakerID
+        self.totalSpeakingTime = participant.totalSpeakingTime
+        self.namingMode = participant.namingMode
+        self.isCurrentUser = participant.isCurrentUser
+        self.personIdentifier = participant.personRecord?.identifier ?? participant.person?.identifier
+        self.displayName = participant.displayName
+        self.voiceEmbedding = voiceEmbedding
+    }
+
+    /// Serialize an array of participants to JSON Data (without embeddings)
+    static func serialize(_ participants: [IdentifiedParticipant]) -> Data? {
+        let serializableParticipants = participants.map { SerializableParticipant(from: $0) }
+        return try? JSONEncoder().encode(serializableParticipants)
+    }
+
+    /// Serialize an array of participants with their voice embeddings from the speaker database
+    /// - Parameters:
+    ///   - participants: The identified participants
+    ///   - speakerDatabase: Dictionary mapping speaker IDs to voice embeddings
+    static func serialize(_ participants: [IdentifiedParticipant], withEmbeddingsFrom speakerDatabase: [Int: [Float]]) -> Data? {
+        let serializableParticipants = participants.map { participant in
+            SerializableParticipant(
+                from: participant,
+                voiceEmbedding: speakerDatabase[participant.speakerID]
+            )
+        }
+        return try? JSONEncoder().encode(serializableParticipants)
+    }
+
+    /// Deserialize participants from JSON Data
+    static func deserialize(from data: Data) -> [SerializableParticipant]? {
+        return try? JSONDecoder().decode([SerializableParticipant].self, from: data)
+    }
+}
+
 // MARK: - Identified Participant
 
 class IdentifiedParticipant: ObservableObject, Identifiable {
@@ -283,7 +407,8 @@ class IdentifiedParticipant: ObservableObject, Identifiable {
         } else if let person = personRecord {
             return person.name ?? "Unknown"
         } else {
-            return "Speaker \(id.uuidString.prefix(4))"
+            // Use numeric speakerID to match transcript display ("Speaker 1", "Speaker 2", etc.)
+            return "Speaker \(speakerID)"
         }
     }
     

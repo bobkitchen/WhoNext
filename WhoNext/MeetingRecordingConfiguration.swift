@@ -220,7 +220,7 @@ struct TimeBasedRule: Codable {
 
 struct AudioQualitySettings: Codable {
     var sampleRate: Double = 16000 // 16kHz for speech
-    var bitRate: Int = 32000 // 32kbps
+    var bitRate: Int = 64000 // 64kbps - minimum for reliable diarization
     var channels: Int = 1 // Mono
     var compressionEnabled: Bool = true
     

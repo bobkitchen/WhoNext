@@ -1,0 +1,104 @@
+[
+  {
+    "metadataOutputVersion" : "3.0",
+    "storagePrecision" : "Mixed (Float32, Palettized (8 bits))",
+    "outputSchema" : [
+      {
+        "hasShapeFlexibility" : "0",
+        "isOptional" : "0",
+        "dataType" : "Float32",
+        "formattedType" : "MultiArray (Float32)",
+        "shortDescription" : "",
+        "shape" : "[]",
+        "name" : "constant",
+        "type" : "MultiArray"
+      },
+      {
+        "hasShapeFlexibility" : "0",
+        "isOptional" : "0",
+        "dataType" : "Float32",
+        "formattedType" : "MultiArray (Float32 3 × 256)",
+        "shortDescription" : "",
+        "shape" : "[3, 256]",
+        "name" : "embedding",
+        "type" : "MultiArray"
+      }
+    ],
+    "modelParameters" : [
+
+    ],
+    "specificationVersion" : 7,
+    "mlProgramOperationTypeHistogram" : {
+      "Transpose" : 4,
+      "UpsampleNearestNeighbor" : 1,
+      "Squeeze" : 5,
+      "Ios16.gather" : 2,
+      "Ios16.reduceMean" : 2,
+      "Ios16.linear" : 2,
+      "Ios16.add" : 19,
+      "Ios16.realDiv" : 3,
+      "Concat" : 1,
+      "Ios16.reduceSum" : 4,
+      "Ios16.square" : 2,
+      "Pad" : 2,
+      "Ios16.log" : 1,
+      "ExpandDims" : 11,
+      "Ios16.sub" : 5,
+      "Ios16.relu" : 33,
+      "Ios16.reshape" : 1,
+      "Ios16.constexprLutToDense" : 38,
+      "Ios16.matmul" : 2,
+      "SliceByIndex" : 1001,
+      "Stack" : 1,
+      "Ios16.maximum" : 1,
+      "Ios16.conv" : 36,
+      "Ios16.sqrt" : 1,
+      "Ios16.mul" : 8
+    },
+    "computePrecision" : "Mixed (Float32, Int32)",
+    "isUpdatable" : "0",
+    "stateSchema" : [
+
+    ],
+    "availability" : {
+      "macOS" : "13.0",
+      "tvOS" : "16.0",
+      "visionOS" : "1.0",
+      "watchOS" : "9.0",
+      "iOS" : "16.0",
+      "macCatalyst" : "16.0"
+    },
+    "modelType" : {
+      "name" : "MLModelType_mlProgram"
+    },
+    "userDefinedMetadata" : {
+      "com.github.apple.coremltools.source_dialect" : "TorchScript",
+      "com.github.apple.coremltools.source" : "torch==2.6.0",
+      "com.github.apple.coremltools.version" : "8.3.0"
+    },
+    "inputSchema" : [
+      {
+        "hasShapeFlexibility" : "0",
+        "isOptional" : "0",
+        "dataType" : "Float32",
+        "formattedType" : "MultiArray (Float32 3 × 160000)",
+        "shortDescription" : "",
+        "shape" : "[3, 160000]",
+        "name" : "waveform",
+        "type" : "MultiArray"
+      },
+      {
+        "hasShapeFlexibility" : "0",
+        "isOptional" : "0",
+        "dataType" : "Float32",
+        "formattedType" : "MultiArray (Float32 3 × 589)",
+        "shortDescription" : "",
+        "shape" : "[3, 589]",
+        "name" : "mask",
+        "type" : "MultiArray"
+      }
+    ],
+    "generatedClassName" : "wespeaker_int8",
+    "method" : "predict"
+  }
+]

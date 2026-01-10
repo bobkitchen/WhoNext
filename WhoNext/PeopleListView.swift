@@ -29,12 +29,7 @@ struct PeopleListView: View {
                 viewContext.insert(person)
                 try? viewContext.save()
                 selectedPerson = person
-                
-                // Trigger sync to upload new person
-                Task {
-                    await RobustSyncManager.shared.performSync()
-                }
-                
+                // CloudKit sync happens automatically
                 window.close()
             },
             onCancel: {
@@ -141,14 +136,10 @@ struct PeopleListView: View {
         if selectedPerson == person {
             selectedPerson = nil
         }
-        
-        // Delete person and sync
+
+        // Delete person - CloudKit sync handles propagation automatically
         viewContext.delete(person)
         try? viewContext.save()
-        
-        Task {
-            await RobustSyncManager.shared.performSync()
-        }
     }
 }
 

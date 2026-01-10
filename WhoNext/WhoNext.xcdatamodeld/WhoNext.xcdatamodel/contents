@@ -1,5 +1,21 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <model type="com.apple.IDECoreDataModeler.DataModel" documentVersion="1.0" lastSavedToolsVersion="23788" systemVersion="24E248" minimumToolsVersion="Automatic" sourceLanguage="Swift" userDefinedModelVersionIdentifier="">
+    <entity name="ActionItem" representedClassName="ActionItem" syncable="YES">
+        <attribute name="assignee" optional="YES" attributeType="String"/>
+        <attribute name="completedAt" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="createdAt" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="dueDate" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="identifier" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
+        <attribute name="isCompleted" optional="YES" attributeType="Boolean" defaultValueString="NO" usesScalarValueType="YES"/>
+        <attribute name="isMyTask" optional="YES" attributeType="Boolean" defaultValueString="NO" usesScalarValueType="YES"/>
+        <attribute name="modifiedAt" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="notes" optional="YES" attributeType="String"/>
+        <attribute name="priority" optional="YES" attributeType="String" defaultValueString="medium"/>
+        <attribute name="reminderID" optional="YES" attributeType="String"/>
+        <attribute name="title" optional="YES" attributeType="String"/>
+        <relationship name="conversation" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="Conversation" inverseName="actionItems" inverseEntity="Conversation"/>
+        <relationship name="person" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="Person" inverseName="actionItems" inverseEntity="Person"/>
+    </entity>
     <entity name="Conversation" representedClassName="Conversation" syncable="YES">
         <attribute name="analysisVersion" optional="YES" attributeType="String"/>
         <attribute name="createdAt" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
@@ -20,7 +36,20 @@
         <attribute name="sentimentScore" optional="YES" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
         <attribute name="summary" optional="YES" attributeType="String"/>
         <attribute name="uuid" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
+        <relationship name="actionItems" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="ActionItem" inverseName="conversation" inverseEntity="ActionItem"/>
+        <relationship name="participants" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="ConversationParticipant" inverseName="conversation" inverseEntity="ConversationParticipant"/>
         <relationship name="person" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="Person" inverseName="conversations" inverseEntity="Person"/>
+    </entity>
+    <entity name="ConversationParticipant" representedClassName="ConversationParticipant" syncable="YES">
+        <attribute name="confidence" optional="YES" attributeType="Float" defaultValueString="0.0" usesScalarValueType="YES"/>
+        <attribute name="identifier" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
+        <attribute name="isCurrentUser" optional="YES" attributeType="Boolean" defaultValueString="NO" usesScalarValueType="YES"/>
+        <attribute name="name" optional="YES" attributeType="String"/>
+        <attribute name="namingMode" optional="YES" attributeType="String"/>
+        <attribute name="speakerID" optional="YES" attributeType="Integer 32" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="speakingTime" optional="YES" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
+        <relationship name="conversation" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="Conversation" inverseName="participants" inverseEntity="Conversation"/>
+        <relationship name="person" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="Person" inverseName="conversationParticipations" inverseEntity="Person"/>
     </entity>
     <entity name="Item" representedClassName="Item" syncable="YES">
         <attribute name="timestamp" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
@@ -36,13 +65,15 @@
         <attribute name="modifiedAt" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
         <attribute name="name" optional="YES" attributeType="String"/>
         <attribute name="notes" optional="YES" attributeType="String"/>
-        <attribute name="photo" optional="YES" attributeType="Binary" allowsExternalBinaryDataStorage="YES"/>
+        <attribute name="photo" optional="YES" attributeType="Binary"/>
         <attribute name="role" optional="YES" attributeType="String"/>
         <attribute name="scheduledConversationDate" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
         <attribute name="timezone" optional="YES" attributeType="String"/>
         <attribute name="voiceConfidence" optional="YES" attributeType="Float" defaultValueString="0.0" usesScalarValueType="YES"/>
-        <attribute name="voiceEmbeddings" optional="YES" attributeType="Binary" allowsExternalBinaryDataStorage="YES"/>
+        <attribute name="voiceEmbeddings" optional="YES" attributeType="Binary"/>
         <attribute name="voiceSampleCount" optional="YES" attributeType="Integer 32" defaultValueString="0" usesScalarValueType="YES"/>
+        <relationship name="actionItems" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="ActionItem" inverseName="person" inverseEntity="ActionItem"/>
+        <relationship name="conversationParticipations" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="ConversationParticipant" inverseName="person" inverseEntity="ConversationParticipant"/>
         <relationship name="conversations" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="Conversation" inverseName="person" inverseEntity="Conversation"/>
         <relationship name="groupMeetings" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="GroupMeeting" inverseName="attendees" inverseEntity="GroupMeeting"/>
         <relationship name="groups" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="Group" inverseName="members" inverseEntity="Group"/>
@@ -92,9 +123,9 @@
         <attribute name="modifiedAt" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
         <attribute name="name" optional="YES" attributeType="String"/>
         <attribute name="organization" optional="YES" attributeType="String"/>
-        <attribute name="photo" optional="YES" attributeType="Binary" allowsExternalBinaryDataStorage="YES"/>
+        <attribute name="photo" optional="YES" attributeType="Binary"/>
         <attribute name="voiceConfidence" optional="YES" attributeType="Float" defaultValueString="0.0" usesScalarValueType="YES"/>
-        <attribute name="voiceEmbedding" optional="YES" attributeType="Binary" allowsExternalBinaryDataStorage="YES"/>
+        <attribute name="voiceEmbedding" optional="YES" attributeType="Binary"/>
         <attribute name="voiceSampleCount" optional="YES" attributeType="Integer 32" defaultValueString="0" usesScalarValueType="YES"/>
     </entity>
 </model>

@@ -3,12 +3,11 @@ import CoreData
 import CloudKit
 import UniformTypeIdentifiers
 import EventKit
-import Supabase
 
 struct SettingsView: View {
     @Environment(\.managedObjectContext) private var viewContext
     @ObservedObject private var userProfile = UserProfile.shared
-    @State private var showingVoiceTraining = false
+    @ObservedObject private var recordingConfig = MeetingRecordingConfiguration.shared
     // Secure API key storage with @State bindings
     @State private var apiKey: String = ""
     @State private var claudeApiKey: String = ""
@@ -140,13 +139,12 @@ Best regards
         animation: .default
     ) private var conversations: FetchedResults<Conversation>
     
-    @StateObject private var robustSync = RobustSyncManager.shared
-
-    @State private var selectedTab = "general"
+    @State private var selectedTab = "profile"
     @State private var refreshTrigger = false
     @State private var diagnosticsResult: String?
     @State private var isRunningDiagnostics = false
     @State private var showSyncResetConfirmation = false
+    @State private var showForceUploadConfirmation = false
     @State private var directReportTestResult: String?
     @State private var testPersonForSync: Person?
     @State private var showForceUploadOption = false
@@ -161,59 +159,49 @@ Best regards
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
-                // Tab selector with modern design
+                // Tab selector with modern design - 5 tabs
                 HStack(spacing: 0) {
-                    TabButton(title: "General", icon: "gear", isSelected: selectedTab == "general") {
-                        selectedTab = "general"
+                    TabButton(title: "My Profile", icon: "person.crop.circle.fill", isSelected: selectedTab == "profile") {
+                        selectedTab = "profile"
                     }
-                    
-                    TabButton(title: "AI & Prompts", icon: "brain", isSelected: selectedTab == "ai") {
+
+                    TabButton(title: "AI", icon: "brain", isSelected: selectedTab == "ai") {
                         selectedTab = "ai"
                     }
-                    
-                    TabButton(title: "Email Templates", icon: "envelope", isSelected: selectedTab == "email") {
-                        selectedTab = "email"
-                    }
-                    
-                    TabButton(title: "Calendar", icon: "calendar", isSelected: selectedTab == "calendar") {
-                        selectedTab = "calendar"
-                    }
-                    
-                    TabButton(title: "Recording", icon: "record.circle", isSelected: selectedTab == "recording") {
+
+                    TabButton(title: "Recording", icon: "waveform", isSelected: selectedTab == "recording") {
                         selectedTab = "recording"
                     }
-                    
-                    TabButton(title: "Import & Export", icon: "square.and.arrow.down", isSelected: selectedTab == "import") {
-                        selectedTab = "import"
+
+                    TabButton(title: "Data & Sync", icon: "externaldrive.connected.to.line.below", isSelected: selectedTab == "data") {
+                        selectedTab = "data"
                     }
-                    
-                    TabButton(title: "Sync", icon: "arrow.triangle.2.circlepath.camera", isSelected: selectedTab == "sync") {
-                        selectedTab = "sync"
+
+                    TabButton(title: "Advanced", icon: "gearshape.2", isSelected: selectedTab == "advanced") {
+                        selectedTab = "advanced"
                     }
-                    
+
                     Spacer()
                 }
                 .padding(.bottom, 10)
-                
+
                 // Content based on selected tab
                 SwiftUI.Group {
                     switch selectedTab {
-                    case "general":
-                        generalSettingsView
+                    case "profile":
+                        MyProfileSettingsView()
                     case "ai":
                         aiSettingsView
-                    case "email":
-                        emailSettingsView
-                    case "import":
-                        importExportView
-                    case "calendar":
-                        calendarSettingsView
                     case "recording":
                         recordingSettingsView
-                    case "sync":
-                        syncSettingsView
+                    case "data":
+                        DataSyncSettingsView()
+                            .environment(\.managedObjectContext, viewContext)
+                    case "advanced":
+                        AdvancedSettingsView()
+                            .environment(\.managedObjectContext, viewContext)
                     default:
-                        generalSettingsView
+                        MyProfileSettingsView()
                     }
                 }
             }
@@ -256,29 +244,6 @@ Best regards
                 }
             }
         }
-        .alert("Recommended Model for Org Charts", isPresented: $showModelWarning) {
-            Button("Switch to GPT-5") {
-                openrouterModel = "openai/gpt-5"
-                if let fileURL = pendingFileURL {
-                    performOrgChartImport(fileURL)
-                }
-                pendingFileURL = nil
-            }
-            Button("Continue with \(openrouterModel.components(separatedBy: "/").last ?? openrouterModel)") {
-                if let fileURL = pendingFileURL {
-                    performOrgChartImport(fileURL)
-                }
-                pendingFileURL = nil
-            }
-            Button("Cancel", role: .cancel) {
-                pendingFileURL = nil
-            }
-        } message: {
-            Text("For best results with org chart imports, GPT-5 or GPT-5.2 are recommended.\n\nCurrent model: \(openrouterModel)")
-        }
-        .sheet(isPresented: $showingVoiceTraining) {
-            VoiceTrainingView()
-        }
     }
     
     // MARK: - Tab Button Component
@@ -312,221 +277,6 @@ Best regards
                 )
             }
             .buttonStyle(PlainButtonStyle())
-        }
-    }
-    
-    // MARK: - General Settings
-    private var generalSettingsView: some View {
-        VStack(alignment: .leading, spacing: 20) {
-            // User Profile Section
-            VStack(alignment: .leading, spacing: 12) {
-                Text("User Profile")
-                    .font(.headline)
-                
-                Text("Configure your profile to exclude yourself from meeting attendees and personalize the app experience.")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-                
-                HStack {
-                    Text("Name:")
-                        .frame(width: 100, alignment: .trailing)
-                    TextField("Your Name", text: .init(
-                        get: { UserProfile.shared.name },
-                        set: { UserProfile.shared.name = $0 }
-                    ))
-                    .textFieldStyle(.roundedBorder)
-                    .frame(maxWidth: 300)
-                }
-                
-                HStack {
-                    Text("Email:")
-                        .frame(width: 100, alignment: .trailing)
-                    TextField("your.email@example.com", text: .init(
-                        get: { UserProfile.shared.email },
-                        set: { UserProfile.shared.email = $0 }
-                    ))
-                    .textFieldStyle(.roundedBorder)
-                    .frame(maxWidth: 300)
-                }
-                
-                HStack {
-                    Text("Job Title:")
-                        .frame(width: 100, alignment: .trailing)
-                    TextField("Your Job Title", text: .init(
-                        get: { UserProfile.shared.jobTitle },
-                        set: { UserProfile.shared.jobTitle = $0 }
-                    ))
-                    .textFieldStyle(.roundedBorder)
-                    .frame(maxWidth: 300)
-                }
-                
-                HStack {
-                    Text("Organization:")
-                        .frame(width: 100, alignment: .trailing)
-                    TextField("Your Organization", text: .init(
-                        get: { UserProfile.shared.organization },
-                        set: { UserProfile.shared.organization = $0 }
-                    ))
-                    .textFieldStyle(.roundedBorder)
-                    .frame(maxWidth: 300)
-                }
-                
-                HStack {
-                    Spacer()
-                        .frame(width: 100)
-                    Text("Your information is used to filter you out of meeting attendee lists and personalize your experience.")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                        .frame(maxWidth: 300, alignment: .leading)
-                }
-            }
-            .padding()
-            .background(Color(NSColor.controlBackgroundColor))
-            .cornerRadius(8)
-
-            Divider()
-
-            // Voice Training Section
-            VStack(alignment: .leading, spacing: 12) {
-                Text("Voice Recognition")
-                    .font(.headline)
-
-                Text("Train the app to recognize your voice for automatic speaker identification in meetings.")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-
-                // Voice Profile Status
-                HStack {
-                    Text("Profile Status:")
-                        .frame(width: 120, alignment: .trailing)
-
-                    if userProfile.hasVoiceProfile {
-                        HStack(spacing: 8) {
-                            Image(systemName: "checkmark.circle.fill")
-                                .foregroundColor(.green)
-                            Text(userProfile.voiceProfileStatus)
-                                .foregroundColor(.secondary)
-                        }
-                    } else {
-                        HStack(spacing: 8) {
-                            Image(systemName: "exclamationmark.circle")
-                                .foregroundColor(.orange)
-                            Text("Not trained")
-                                .foregroundColor(.secondary)
-                        }
-                    }
-                }
-
-                // Training Instructions
-                if !userProfile.hasVoiceProfile || userProfile.voiceConfidence < 0.9 {
-                    HStack {
-                        Spacer()
-                            .frame(width: 120)
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text("How to train your voice:")
-                                .font(.caption)
-                                .fontWeight(.semibold)
-                            Text("• Record 3-5 voice samples (at least 5 seconds each)")
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-                            Text("• Speak naturally as you would in a meeting")
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-                            Text("• Use different sentences each time for better accuracy")
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-                        }
-                        .frame(maxWidth: 400, alignment: .leading)
-                    }
-                }
-
-                // Voice Sample Collection
-                VStack(alignment: .leading, spacing: 8) {
-                    HStack {
-                        Text("Training Samples:")
-                            .frame(width: 120, alignment: .trailing)
-
-                        VStack(alignment: .leading, spacing: 4) {
-                            if userProfile.voiceSampleCount > 0 {
-                                Text("\(userProfile.voiceSampleCount) sample\(userProfile.voiceSampleCount == 1 ? "" : "s") collected")
-                                    .font(.caption)
-
-                                if let lastUpdate = userProfile.lastVoiceUpdate {
-                                    Text("Last updated: \(lastUpdate.formatted(date: .abbreviated, time: .shortened))")
-                                        .font(.caption2)
-                                        .foregroundColor(.secondary)
-                                }
-                            } else {
-                                Text("No samples yet")
-                                    .font(.caption)
-                                    .foregroundColor(.secondary)
-                            }
-
-                            // Progress bar
-                            if userProfile.voiceSampleCount < 5 {
-                                ProgressView(value: Double(userProfile.voiceSampleCount), total: 5.0)
-                                    .frame(width: 200)
-                                Text("\(max(0, 5 - userProfile.voiceSampleCount)) more sample\(max(0, 5 - userProfile.voiceSampleCount) == 1 ? "" : "s") recommended")
-                                    .font(.caption2)
-                                    .foregroundColor(.secondary)
-                            }
-                        }
-                    }
-                }
-
-                // Action Buttons
-                HStack {
-                    Spacer()
-                        .frame(width: 120)
-
-                    HStack(spacing: 12) {
-                        Button {
-                            showingVoiceTraining = true
-                        } label: {
-                            Label(userProfile.hasVoiceProfile ? "Retrain Voice" : "Train Voice",
-                                  systemImage: "waveform.circle.fill")
-                        }
-                        .buttonStyle(.borderedProminent)
-
-                        if userProfile.hasVoiceProfile {
-                            Button(role: .destructive) {
-                                userProfile.clearVoiceProfile()
-                            } label: {
-                                Label("Clear Voice Profile", systemImage: "trash")
-                            }
-                        }
-                    }
-                }
-            }
-            .padding()
-            .background(Color(NSColor.controlBackgroundColor))
-            .cornerRadius(8)
-
-            Divider()
-
-            // Reset App Section
-            VStack(alignment: .leading, spacing: 8) {
-                Text("Warning + Danger")
-                    .font(.headline)
-                    .foregroundColor(.red)
-                Button(role: .destructive) {
-                    showResetConfirmation = true
-                } label: {
-                    Label("Reset Who You've Spoken To", systemImage: "arrow.counterclockwise")
-                }
-                .alert("Reset App", isPresented: $showResetConfirmation) {
-                    Button("Reset", role: .destructive) { resetSpokenTo() }
-                    Button("Cancel", role: .cancel) { }
-                } message: {
-                    Text("This will reset all memory of who you've spoken to and who needs to be spoken to next. Conversation records and notes will NOT be deleted.")
-                }
-                Button(role: .destructive) {
-                    deleteAllPeople()
-                } label: {
-                    Label("Delete All People", systemImage: "person.crop.circle.badge.xmark")
-                }
-                .help("Deletes all People records from both this device and iCloud. This cannot be undone!")
-            }
         }
     }
     
@@ -627,241 +377,188 @@ Best regards
             }
 
             Divider()
-            
-            // Pre-Meeting Prompt Section
-            VStack(alignment: .leading, spacing: 8) {
-                Text("Pre-Meeting Brief Prompt")
+
+            // AI Prompts & Templates Section
+            VStack(alignment: .leading, spacing: 12) {
+                Text("AI Prompts & Templates")
                     .font(.headline)
-                Text("Customize the AI prompt used for generating pre-meeting briefs")
+
+                Text("Customize the prompts used for AI-generated content. Click Customize to edit in a separate window.")
                     .font(.caption)
                     .foregroundColor(.secondary)
-                
-                TextEditor(text: $customPreMeetingPrompt)
-                    .font(.system(.body, design: .monospaced))
-                    .frame(minHeight: 200, maxHeight: 400)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 8)
-                            .stroke(Color.gray.opacity(0.2), lineWidth: 1)
+
+                VStack(spacing: 1) {
+                    // Pre-Meeting Brief
+                    PromptSettingsRow(
+                        title: "Pre-Meeting Brief",
+                        description: "AI prompt for generating pre-meeting intelligence briefs",
+                        isCustomized: DefaultPrompts.isCustomized(customPreMeetingPrompt, type: .preMeetingBrief),
+                        onCustomize: {
+                            PromptEditorWindowController.shared.openPromptEditor(
+                                type: .preMeetingBrief,
+                                currentValue: customPreMeetingPrompt
+                            ) { newValue, _ in
+                                customPreMeetingPrompt = newValue
+                            }
+                        },
+                        onReset: {
+                            showResetPromptConfirmation = true
+                            promptTypeToReset = .preMeetingBrief
+                        }
                     )
-                
-                HStack {
-                    Button("Reset to Default") {
-                        customPreMeetingPrompt = """
-You are an executive assistant preparing a pre-meeting brief. Your job is to help the user engage with this person confidently by surfacing:
-- Key personal details or preferences shared in past conversations
-- Trends or changes in topics over time
-- Any agreed tasks, deadlines, or follow-ups
-- Recent wins, challenges, or important events
-- Anything actionable or worth mentioning for the next meeting
 
-Use the provided context to be specific and actionable. Highlight details that would help the user build rapport and recall important facts. If any information is missing, state so.
+                    Divider()
+                        .padding(.horizontal)
 
-Pre-Meeting Brief:
-"""
-                    }
-                    .buttonStyle(.link)
-                    
-                    Spacer()
-                    
-                    Text("\(customPreMeetingPrompt.count) characters")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                }
-            }
-            
-            // Summarization Prompt Section
-            VStack(alignment: .leading, spacing: 8) {
-                Text("Summarization Prompt")
-                    .font(.headline)
-                Text("Customize the AI prompt used for generating meeting summaries")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-                
-                TextEditor(text: $customSummarizationPrompt)
-                    .font(.system(.body, design: .monospaced))
-                    .frame(minHeight: 200, maxHeight: 400)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 8)
-                            .stroke(Color.gray.opacity(0.2), lineWidth: 1)
+                    // Summarization
+                    PromptSettingsRow(
+                        title: "Summarization",
+                        description: "AI prompt for generating meeting summaries and minutes",
+                        isCustomized: DefaultPrompts.isCustomized(customSummarizationPrompt, type: .summarization),
+                        onCustomize: {
+                            PromptEditorWindowController.shared.openPromptEditor(
+                                type: .summarization,
+                                currentValue: customSummarizationPrompt
+                            ) { newValue, _ in
+                                customSummarizationPrompt = newValue
+                            }
+                        },
+                        onReset: {
+                            showResetPromptConfirmation = true
+                            promptTypeToReset = .summarization
+                        }
                     )
-                
-                HStack {
-                    Button("Reset to Default") {
-                        customSummarizationPrompt = """
-You are an executive assistant creating comprehensive meeting minutes. Generate detailed, actionable meeting minutes.
 
-Format your response using markdown with ## for main sections and - for bullet points:
+                    Divider()
+                        .padding(.horizontal)
 
-## Meeting Overview
-- Meeting purpose and context
-- Key themes and overall tone
-- Primary objectives discussed
-
-## Discussion Details
-- Main points raised by each participant
-- Key decisions made and rationale
-- Areas of agreement and disagreement
-- Important insights or revelations
-- Questions raised and answers provided
-
-## Action Items & Follow-ups
-- Specific tasks assigned with owners
-- Deadlines and timelines mentioned
-- Next steps and follow-up meetings
-- Dependencies and blockers identified
-
-## Outcomes & Conclusions
-- Final decisions reached
-- Issues resolved or escalated
-- Commitments made by participants
-- Success metrics or goals established
-
-## Additional Notes
-- Context for future reference
-- Relationship dynamics observed
-- Support needs identified
-- Risk factors or concerns noted
-- Strengths and positive developments
-
-Format the output in clear, professional meeting minutes suitable for distribution and follow-up preparation.
-"""
-                    }
-                    .buttonStyle(.link)
-                    
-                    Spacer()
-                    
-                    Text("\(customSummarizationPrompt.count) characters")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
+                    // Email Templates
+                    PromptSettingsRow(
+                        title: "Email Templates",
+                        description: "Templates for follow-up emails ({name}, {firstName})",
+                        isCustomized: DefaultPrompts.isCustomized(emailSubjectTemplate, type: .emailSubject) ||
+                                     DefaultPrompts.isCustomized(emailBodyTemplate, type: .emailBody),
+                        onCustomize: {
+                            PromptEditorWindowController.shared.openPromptEditor(
+                                type: .email,
+                                currentValue: emailBodyTemplate,
+                                secondaryValue: emailSubjectTemplate
+                            ) { newBody, newSubject in
+                                emailBodyTemplate = newBody
+                                if let subject = newSubject {
+                                    emailSubjectTemplate = subject
+                                }
+                            }
+                        },
+                        onReset: {
+                            // Email templates reset instantly (short content)
+                            emailSubjectTemplate = DefaultPrompts.emailSubject
+                            emailBodyTemplate = DefaultPrompts.emailBody
+                        }
+                    )
                 }
+                .background(Color(NSColor.controlBackgroundColor))
+                .cornerRadius(8)
+            }
+            .alert("Reset Prompt to Default?", isPresented: $showResetPromptConfirmation) {
+                Button("Reset", role: .destructive) {
+                    if let type = promptTypeToReset {
+                        resetPromptToDefault(type)
+                    }
+                }
+                Button("Cancel", role: .cancel) { }
+            } message: {
+                Text("This will discard your customizations and restore the default prompt.")
             }
         }
     }
-    
-    // MARK: - Email Settings
-    private var emailSettingsView: some View {
-        VStack(alignment: .leading, spacing: 20) {
-            // Email Template Section
-            VStack(alignment: .leading, spacing: 8) {
-                Text("Email Templates")
-                    .font(.headline)
-                Text("Customize the email templates used for follow-up emails. Use {name} for full name and {firstName} for first name.")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-                
-                VStack(alignment: .leading, spacing: 12) {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("Subject Template")
-                            .font(.subheadline)
-                        TextEditor(text: $emailSubjectTemplate)
-                            .font(.system(.body, design: .monospaced))
-                            .frame(height: 40)
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 8)
-                                    .stroke(Color.gray.opacity(0.2), lineWidth: 1)
-                            )
-                    }
-                    
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("Body Template")
-                            .font(.subheadline)
-                        TextEditor(text: $emailBodyTemplate)
-                            .font(.system(.body, design: .monospaced))
-                            .frame(minHeight: 120, maxHeight: 300)
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 8)
-                                    .stroke(Color.gray.opacity(0.2), lineWidth: 1)
-                            )
-                    }
-                    
-                    Button("Reset to Defaults") {
-                        emailSubjectTemplate = "1:1 - {name} + BK"
-                        emailBodyTemplate = """
-Hi {firstName},
 
-I wanted to follow up on our conversation and see how things are going.
+    @State private var showResetPromptConfirmation = false
+    @State private var promptTypeToReset: DefaultPrompts.PromptType?
 
-Would you have time for a quick chat this week?
-
-Best regards
-"""
-                    }
-                    .buttonStyle(.link)
-                }
-            }
+    private func resetPromptToDefault(_ type: DefaultPrompts.PromptType) {
+        switch type {
+        case .preMeetingBrief:
+            customPreMeetingPrompt = DefaultPrompts.preMeetingBrief
+        case .summarization:
+            customSummarizationPrompt = DefaultPrompts.summarization
+        case .emailSubject:
+            emailSubjectTemplate = DefaultPrompts.emailSubject
+        case .emailBody:
+            emailBodyTemplate = DefaultPrompts.emailBody
         }
     }
-    
-    // MARK: - Import & Export
-    private var importExportView: some View {
-        VStack(alignment: .leading, spacing: 20) {
-            // Org Chart Import Section
-            VStack(alignment: .leading, spacing: 8) {
-                Text("Import Org Chart")
-                    .font(.headline)
-                Text("Drop a file to automatically extract team member details using AI")
+}
+
+// MARK: - Prompt Settings Row
+
+struct PromptSettingsRow: View {
+    let title: String
+    let description: String
+    let isCustomized: Bool
+    let onCustomize: () -> Void
+    let onReset: () -> Void
+
+    var body: some View {
+        HStack(spacing: 12) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title)
+                    .font(.subheadline)
+                    .fontWeight(.medium)
+
+                Text(description)
                     .font(.caption)
                     .foregroundColor(.secondary)
-                
-                OrgChartDropZone(
-                    isProcessing: pdfProcessor.isProcessing,
-                    processingStatus: pdfProcessor.processingStatus
-                ) { fileURL in
-                    processOrgChartFile(fileURL)
-                }
-                .frame(height: 120)
-                
-                if let error = pdfProcessor.error {
-                    Label(error, systemImage: "xmark.circle.fill")
-                        .foregroundColor(.red)
-                }
-                
-                if let success = importSuccess {
-                    Label(success, systemImage: "checkmark.circle.fill")
-                        .foregroundColor(.green)
-                }
-                
-                if let error = importError {
-                    Label(error, systemImage: "xmark.circle.fill")
-                        .foregroundColor(.red)
-                }
+                    .lineLimit(1)
             }
-            
-            Divider()
-            
-            // CSV Import Section
-            VStack(alignment: .leading, spacing: 8) {
-                Text("Import Team Members (CSV)")
-                    .font(.headline)
-                Text("Import CSV file with columns: Name, Role, Direct Report (true/false), Timezone")
+
+            Spacer()
+
+            // Status badge
+            if isCustomized {
+                Text("Customized")
+                    .font(.caption)
+                    .foregroundColor(.green)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 2)
+                    .background(Color.green.opacity(0.1))
+                    .cornerRadius(4)
+            } else {
+                Text("Default")
                     .font(.caption)
                     .foregroundColor(.secondary)
-                
-                VStack(alignment: .leading, spacing: 12) {
-                    Button("Select CSV File") {
-                        importError = nil
-                        importSuccess = nil
-                        importCSV()
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 2)
+                    .background(Color.gray.opacity(0.1))
+                    .cornerRadius(4)
+            }
+
+            // Buttons
+            HStack(spacing: 8) {
+                if isCustomized {
+                    Button("Reset") {
+                        onReset()
                     }
-                    .buttonStyle(LiquidGlassButtonStyle(variant: .secondary, size: .medium))
-                    
-                    if let error = importError {
-                        Label(error, systemImage: "xmark.circle.fill")
-                            .foregroundColor(.red)
-                    }
-                    
-                    if let success = importSuccess {
-                        Label(success, systemImage: "checkmark.circle.fill")
-                            .foregroundColor(.green)
-                    }
+                    .buttonStyle(.bordered)
+                    .controlSize(.small)
                 }
-                .padding(.vertical, 8)
+
+                Button("Customize") {
+                    onCustomize()
+                }
+                .buttonStyle(.borderedProminent)
+                .controlSize(.small)
             }
         }
+        .padding(12)
     }
-    
-    // MARK: - Calendar Settings
-    private var calendarSettingsView: some View {
+}
+
+// MARK: - SettingsView Extension for Additional Views
+
+extension SettingsView {
+    // MARK: - Calendar Settings (Deprecated - moved to DataSyncSettingsView)
+    var calendarSettingsView: some View {
         CalendarProviderSettings()
         /*
         VStack(alignment: .leading, spacing: 20) {
@@ -942,11 +639,9 @@ Best regards
         }
         */
     }
-    
+
     // MARK: - Recording Settings
-    @ObservedObject private var recordingConfig = MeetingRecordingConfiguration.shared
-    
-    private var recordingSettingsView: some View {
+    var recordingSettingsView: some View {
         VStack(alignment: .leading, spacing: 20) {
             
             // Recording Triggers Section
@@ -1026,7 +721,6 @@ Best regards
                         Text("Bit Rate")
                         Spacer()
                         Picker("", selection: $recordingConfig.audioQuality.bitRate) {
-                            Text("32 kbps").tag(32000)
                             Text("64 kbps").tag(64000)
                             Text("128 kbps").tag(128000)
                         }
@@ -1154,50 +848,41 @@ Best regards
     // MARK: - Sync Settings
     private var syncSettingsView: some View {
         VStack(alignment: .leading, spacing: 20) {
-            // iCloud Account Status Section
+            // CloudKit Sync Status Section
             VStack(alignment: .leading, spacing: 12) {
-                Text("iCloud Status")
+                Text("iCloud Sync")
                     .font(.headline)
-                Text("CloudKit sync requires an active iCloud account")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
 
                 HStack(spacing: 12) {
-                    // Status indicator
-                    HStack(spacing: 8) {
+                    // CloudKit status indicator
+                    HStack(spacing: 10) {
                         Circle()
-                            .fill(iCloudStatusColor)
-                            .frame(width: 10, height: 10)
+                            .fill(cloudKitStatusColor)
+                            .frame(width: 12, height: 12)
 
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(iCloudStatusText)
+                        VStack(alignment: .leading, spacing: 3) {
+                            Text(cloudKitStatusText)
                                 .font(.subheadline)
-                                .foregroundColor(.primary)
+                                .fontWeight(.medium)
 
-                            if let lastChange = PersistenceController.lastRemoteChangeDate {
-                                Text("Last remote change: \(lastChange, formatter: RelativeDateTimeFormatter())")
-                                    .font(.caption)
-                                    .foregroundColor(.secondary)
-                            } else {
-                                Text("No remote changes since app launch")
-                                    .font(.caption)
-                                    .foregroundColor(.secondary)
-                            }
+                            Text("Sync happens automatically via iCloud")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
                         }
                     }
 
                     Spacer()
 
+                    // Refresh status button
                     Button("Refresh Status") {
-                        // Re-check iCloud status
                         checkCloudKitStatus()
                     }
                     .buttonStyle(LiquidGlassButtonStyle(variant: .secondary, size: .small))
                 }
 
-                // Helpful tips based on status
+                // Show troubleshooting tip only when there's an issue
                 if PersistenceController.iCloudStatus != .available {
-                    HStack {
+                    HStack(spacing: 6) {
                         Image(systemName: "exclamationmark.triangle.fill")
                             .foregroundColor(.orange)
                             .font(.caption)
@@ -1212,268 +897,156 @@ Best regards
             .background(Color(NSColor.controlBackgroundColor))
             .cornerRadius(8)
 
-            // Cloud Sync Section
-            VStack(alignment: .leading, spacing: 12) {
-                Text("Cloud Sync")
-                    .font(.headline)
-                Text("Keep your data synchronized across all devices")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-                
-                VStack(alignment: .leading, spacing: 12) {
-                    // Sync Status Row
-                    HStack(spacing: 12) {
-                        // Status indicator with better colors
-                        HStack(spacing: 8) {
-                            Circle()
-                                .fill(robustSync.isSyncing ? Color.orange : getStatusColor())
-                                .frame(width: 10, height: 10)
-                            
-                            VStack(alignment: .leading, spacing: 2) {
-                                if robustSync.isSyncing {
-                                    Text("Syncing...")
-                                        .font(.subheadline)
-                                        .foregroundColor(.primary)
-                                    if robustSync.syncProgress > 0 {
-                                        ProgressView(value: robustSync.syncProgress)
-                                            .frame(width: 150)
-                                    }
-                                } else if let lastSyncResult = robustSync.lastSyncResult {
-                                    switch lastSyncResult {
-                                    case .success(let stats):
-                                        Text("Sync completed successfully")
-                                            .font(.subheadline)
-                                            .foregroundColor(.primary)
-                                        Text("Last sync: \(stats.totalOperations) operations in \(String(format: "%.1f", stats.duration))s")
-                                            .font(.caption)
-                                            .foregroundColor(.secondary)
-                                    case .failure(let error):
-                                        Text("Sync failed")
-                                            .font(.subheadline)
-                                            .foregroundColor(.red)
-                                        Text(error.errorDescription ?? "Unknown error")
-                                            .font(.caption)
-                                            .foregroundColor(.secondary)
-                                    case .partial(let stats, let errors):
-                                        Text("Partial sync completed")
-                                            .font(.subheadline)
-                                            .foregroundColor(.orange)
-                                        Text("\(stats.totalOperations) operations, \(errors.count) errors")
-                                            .font(.caption)
-                                            .foregroundColor(.secondary)
-                                    }
-                                } else {
-                                    Text("Ready to sync")
-                                        .font(.subheadline)
-                                        .foregroundColor(.secondary)
-                                }
-                                
-                                if let lastSync = robustSync.lastSuccessfulSync {
-                                    Text("Last successful: \(lastSync, formatter: RelativeDateTimeFormatter())")
-                                        .font(.caption)
-                                        .foregroundColor(.secondary)
-                                }
-                            }
-                        }
-                        
-                        Spacer()
-                        
-                        // Sync Button
-                        Button(robustSync.isSyncing ? "Syncing..." : "Sync Now") {
-                            Task {
-                                await robustSync.performSync()
-                            }
-                        }
-                        .buttonStyle(LiquidGlassButtonStyle(variant: .primary, size: .medium))
-                        .disabled(robustSync.isSyncing)
-                    }
-                    
-                    // Feature callout
-                    HStack {
-                        Image(systemName: "checkmark.circle.fill")
-                            .foregroundColor(.green)
-                            .font(.caption)
-                        Text("Smart conflict resolution and data deduplication")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                    }
-                }
-                .padding(.vertical, 4)
-            }
-            .padding()
-            .background(Color(NSColor.controlBackgroundColor))
-            .cornerRadius(8)
-            
-            // Data Summary Section
+            // Local Data Section
             VStack(alignment: .leading, spacing: 8) {
                 Text("Local Data")
                     .font(.headline)
-                Text("Current data in your local database")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-                
-                VStack(alignment: .leading, spacing: 8) {
-                    HStack {
+
+                HStack(spacing: 24) {
+                    HStack(spacing: 6) {
+                        Image(systemName: "person.2.fill")
+                            .foregroundColor(.secondary)
+                            .font(.caption)
                         Text("People:")
-                        Spacer()
+                            .foregroundColor(.secondary)
                         Text("\(people.count)")
-                            .foregroundColor(.secondary)
+                            .fontWeight(.medium)
                     }
-                    
-                    HStack {
-                        Text("Conversations:")
-                        Spacer()
-                        Text("\(conversations.count)")
+
+                    HStack(spacing: 6) {
+                        Image(systemName: "bubble.left.and.bubble.right.fill")
                             .foregroundColor(.secondary)
-                            .id(refreshTrigger) // Force refresh when trigger changes
+                            .font(.caption)
+                        Text("Conversations:")
+                            .foregroundColor(.secondary)
+                        Text("\(conversations.count)")
+                            .fontWeight(.medium)
+                            .id(refreshTrigger)
                     }
                 }
-                .font(.caption)
-                .padding(.vertical, 8)
+                .font(.subheadline)
             }
             .padding()
             .background(Color(NSColor.controlBackgroundColor))
             .cornerRadius(8)
-            
-            // Sync Health Section
+
+            // Advanced Options (hidden by default)
             VStack(alignment: .leading, spacing: 12) {
-                Text("Sync Health")
-                    .font(.headline)
-                Text("Monitor and maintain data synchronization across your devices")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-                
-                // Main troubleshooting actions
-                HStack(spacing: 12) {
-                    Button(isRunningDiagnostics ? "Checking..." : "Check Status") {
-                        runSyncDiagnostics()
-                    }
-                    .buttonStyle(LiquidGlassButtonStyle(variant: .secondary, size: .medium))
-                    .disabled(isRunningDiagnostics)
-                    .help("Run diagnostics to check for sync issues")
-                    
-                    Button("Auto-Fix Issues") {
-                        Task {
-                            await smartSyncFix()
-                        }
-                    }
-                    .buttonStyle(LiquidGlassButtonStyle(variant: .primary, size: .medium))
-                    .help("Automatically detect and resolve common sync problems")
-                }
-                
-                // Developer/Advanced options (much more hidden)
-                if showAdvancedSyncOptions {
-                    Divider()
-                        .padding(.vertical, 8)
-                    
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("Advanced Recovery Options")
-                            .font(.subheadline)
-                            .foregroundColor(.secondary)
-                        
-                        Text("⚠️ These options should only be used when guided by support")
-                            .font(.caption)
-                            .foregroundColor(.orange)
-                            .padding(.bottom, 4)
-                        
-                        HStack(spacing: 8) {
-                            Button("Reset from Cloud") {
-                                showSyncResetConfirmation = true
-                            }
-                            .buttonStyle(LiquidGlassButtonStyle(variant: .destructive, size: .small))
-                            .help("Delete all local data and rebuild from cloud")
-                            
-                            Button("Reset Sync State") {
-                                robustSync.resetSyncState()
-                                diagnosticsResult = "✅ Sync state reset - next sync will be comprehensive"
-                            }
-                            .buttonStyle(LiquidGlassButtonStyle(variant: .secondary, size: .small))
-                            .help("Force a complete sync on next operation")
-                        }
-                        
-                        // Hide the orphaned conversations button unless there's actually an issue
-                        if diagnosticsResult?.contains("Orphaned") == true {
-                            Button("Clean Orphaned Data") {
-                                showDeleteOrphanedConfirmation = true
-                            }
-                            .buttonStyle(LiquidGlassButtonStyle(variant: .destructive, size: .small))
-                            .help("Remove conversations that aren't linked to people")
-                        }
-                        
-                        // Direct Report Sync Test
-                        Button("Test Direct Report Sync") {
-                            Task {
-                                await testDirectReportSync()
-                            }
-                        }
-                        .buttonStyle(LiquidGlassButtonStyle(variant: .secondary, size: .small))
-                        .help("Check if direct report status is syncing correctly")
-                    }
-                }
-                
                 // Toggle for advanced options
-                Button(showAdvancedSyncOptions ? "Hide Advanced Options" : "Show Advanced Options") {
-                    showAdvancedSyncOptions.toggle()
+                Button {
+                    withAnimation(.easeInOut(duration: 0.2)) {
+                        showAdvancedSyncOptions.toggle()
+                    }
+                } label: {
+                    HStack {
+                        Image(systemName: showAdvancedSyncOptions ? "chevron.down" : "chevron.right")
+                            .font(.caption)
+                            .frame(width: 12)
+                        Text("Advanced Options")
+                            .font(.subheadline)
+                        Spacer()
+                    }
+                    .foregroundColor(.secondary)
                 }
                 .buttonStyle(.plain)
-                .font(.caption)
-                .foregroundColor(.secondary)
-                .padding(.top, 4)
-                
-                // Alerts
-                .alert("Complete Reset", isPresented: $showSyncResetConfirmation) {
-                    Button("Reset", role: .destructive) {
-                        Task { await trueNuclearReset() }
-                    }
-                    Button("Cancel", role: .cancel) { }
-                } message: {
-                    Text("This will delete all local data and rebuild from the cloud. Only use if guided by support.")
-                }
-                .alert("Clean Orphaned Data", isPresented: $showDeleteOrphanedConfirmation) {
-                    Button("Clean", role: .destructive) {
-                        Task {
-                            let deletedCount = await robustSync.deleteAllOrphanedConversations(context: viewContext)
-                            diagnosticsResult = "🗑️ Cleaned \(deletedCount) orphaned conversations"
-                            refreshTrigger.toggle()
+
+                if showAdvancedSyncOptions {
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text("Use these options only if sync isn't working correctly")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+
+                        // Diagnostics
+                        Button(isRunningDiagnostics ? "Running..." : "Run Diagnostics") {
+                            runSyncDiagnostics()
+                        }
+                        .buttonStyle(LiquidGlassButtonStyle(variant: .secondary, size: .small))
+                        .disabled(isRunningDiagnostics)
+                        .help("Check CloudKit sync health and identify issues")
+
+                        // Initial setup option
+                        Divider()
+                            .padding(.vertical, 4)
+
+                        Text("Initial Setup (use once)")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+
+                        Button("Force Upload All Data") {
+                            showForceUploadConfirmation = true
+                        }
+                        .buttonStyle(LiquidGlassButtonStyle(variant: .secondary, size: .small))
+                        .help("Re-upload all local data to CloudKit - use only for initial setup")
+
+                        // Diagnostics output
+                        if let diagnosticsResult = diagnosticsResult {
+                            ScrollView {
+                                Text(diagnosticsResult)
+                                    .font(.system(.caption, design: .monospaced))
+                                    .textSelection(.enabled)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                            }
+                            .frame(maxHeight: 150)
+                            .padding(8)
+                            .background(Color(NSColor.textBackgroundColor))
+                            .cornerRadius(4)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 4)
+                                    .stroke(Color.gray.opacity(0.3), lineWidth: 1)
+                            )
                         }
                     }
-                    Button("Cancel", role: .cancel) { }
-                } message: {
-                    Text("This will remove conversations that aren't properly linked to people. This action cannot be undone.")
-                }
-                
-                if let diagnosticsResult = diagnosticsResult {
-                    ScrollView {
-                        Text(diagnosticsResult)
-                            .font(.system(.caption, design: .monospaced))
-                            .textSelection(.enabled)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                    }
-                    .frame(maxHeight: 200)
-                    .padding(8)
-                    .background(Color(NSColor.textBackgroundColor))
-                    .cornerRadius(4)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 4)
-                            .stroke(Color.gray.opacity(0.3), lineWidth: 1)
-                    )
+                    .padding(.top, 8)
+                    .transition(.opacity.combined(with: .move(edge: .top)))
                 }
             }
             .padding()
             .background(Color(NSColor.controlBackgroundColor))
             .cornerRadius(8)
         }
+        .alert("Force Upload All Data", isPresented: $showForceUploadConfirmation) {
+            Button("Upload", role: .destructive) {
+                PersistenceController.shared.forceSyncAllExistingData()
+                diagnosticsResult = "☁️ Force uploading all local data to CloudKit..."
+            }
+            Button("Cancel", role: .cancel) { }
+        } message: {
+            Text("This will re-upload ALL local data to CloudKit. Only use this for initial setup on a new device.\n\n⚠️ Warning: This can resurrect records that were deleted on other devices.")
+        }
     }
-    
-    private func getStatusColor() -> Color {
-        guard let result = robustSync.lastSyncResult else { return .gray }
-        switch result {
-        case .success:
+
+    // MARK: - CloudKit Status Helpers
+
+    private var cloudKitStatusColor: Color {
+        switch PersistenceController.iCloudStatus {
+        case .available:
             return .green
-        case .failure:
+        case .noAccount:
             return .red
-        case .partial:
+        case .restricted, .couldNotDetermine, .temporarilyUnavailable:
             return .orange
+        @unknown default:
+            return .gray
+        }
+    }
+
+    private var cloudKitStatusText: String {
+        switch PersistenceController.iCloudStatus {
+        case .available:
+            if let lastChange = PersistenceController.lastRemoteChangeDate {
+                let formatter = RelativeDateTimeFormatter()
+                formatter.unitsStyle = .abbreviated
+                return "Connected - Last change \(formatter.localizedString(for: lastChange, relativeTo: Date()))"
+            }
+            return "Connected"
+        case .noAccount:
+            return "Not Connected"
+        case .restricted:
+            return "iCloud Restricted"
+        case .couldNotDetermine, .temporarilyUnavailable:
+            return "Connection Issue"
+        @unknown default:
+            return "Unknown Status"
         }
     }
 
@@ -2070,860 +1643,6 @@ Best regards
         }
     }
     
-    private func freshStartFromCloud() async {
-        diagnosticsResult = "Starting fresh start from cloud..."
-        
-        do {
-            // Step 1: Delete ALL local people and conversations
-            diagnosticsResult = "🗑️ Clearing all local data..."
-            
-            // Delete all conversations first (due to relationships)
-            let conversationRequest: NSFetchRequest<Conversation> = NSFetchRequest<Conversation>(entityName: "Conversation")
-            let allConversations = try viewContext.fetch(conversationRequest)
-            for conversation in allConversations {
-                viewContext.delete(conversation)
-            }
-            
-            // Delete all people
-            let peopleRequest: NSFetchRequest<Person> = NSFetchRequest<Person>(entityName: "Person")
-            let allPeople = try viewContext.fetch(peopleRequest)
-            for person in allPeople {
-                viewContext.delete(person)
-            }
-            
-            // Save the deletions
-            try viewContext.save()
-            diagnosticsResult = "✅ Local data cleared. Now downloading from cloud..."
-            
-            // Step 2: Download everything fresh from Supabase
-            Task {
-                await robustSync.performSync()
-            }
-            
-            // Step 3: Save the downloaded data
-            try viewContext.save()
-            
-            diagnosticsResult = "🎉 Fresh start completed! All data downloaded from cloud. Run diagnostics to verify."
-            
-        } catch {
-            diagnosticsResult = "❌ Fresh start failed: \(error.localizedDescription)"
-        }
-    }
-    
-    private func nuclearReset() async {
-        diagnosticsResult = "☢️ NUCLEAR RESET: Completely wiping local data and rebuilding from cloud..."
-        
-        do {
-            let supabase = SupabaseConfig.shared.client
-            
-            // Step 1: Nuclear deletion of ALL Core Data
-            diagnosticsResult = "🧹 Step 1/4: Completely wiping ALL local data..."
-            
-            // Delete ALL entities in the right order (relationships first)
-            let conversationRequest: NSFetchRequest<NSFetchRequestResult> = NSFetchRequest(entityName: "Conversation")
-            let deleteConversationsRequest = NSBatchDeleteRequest(fetchRequest: conversationRequest)
-            try viewContext.execute(deleteConversationsRequest)
-            
-            let peopleRequest: NSFetchRequest<NSFetchRequestResult> = NSFetchRequest(entityName: "Person")
-            let deletePeopleRequest = NSBatchDeleteRequest(fetchRequest: peopleRequest)
-            try viewContext.execute(deletePeopleRequest)
-            
-            // Reset the context
-            viewContext.reset()
-            try viewContext.save()
-            
-            diagnosticsResult = "✅ Step 2/4: Downloading ONLY non-deleted people from cloud..."
-            
-            // Step 2: Download all people (no soft delete filtering)
-            let remotePeople: [SupabasePerson] = try await supabase
-                .from("people")
-                .select()
-                .execute()
-                .value
-            
-            // Create people with proper identifiers
-            for remotePerson in remotePeople {
-                let person = Person(context: viewContext)
-                person.identifier = UUID(uuidString: remotePerson.identifier) ?? UUID()
-                person.name = remotePerson.name
-                person.role = remotePerson.role
-                person.notes = remotePerson.notes
-                person.isDirectReport = remotePerson.isDirectReport ?? false
-                person.timezone = remotePerson.timezone
-                
-                if let dateString = remotePerson.scheduledConversationDate {
-                    person.scheduledConversationDate = ISO8601DateFormatter().date(from: dateString)
-                }
-                
-                if let photoBase64 = remotePerson.photoBase64, !photoBase64.isEmpty {
-                    person.photo = Data(base64Encoded: photoBase64)
-                }
-            }
-            
-            try viewContext.save()
-            diagnosticsResult = "✅ Step 3/4: Downloading ONLY non-deleted conversations from cloud..."
-            
-            // Step 3: Download all conversations and rebuild relationships
-            let remoteConversations: [SupabaseConversation] = try await supabase
-                .from("conversations")
-                .select()
-                .execute()
-                .value
-            
-            // Get all people for relationship building
-            let allPeopleRequest: NSFetchRequest<Person> = NSFetchRequest<Person>(entityName: "Person")
-            let allPeople = try viewContext.fetch(allPeopleRequest)
-            var peopleMap: [String: Person] = [:]
-            for person in allPeople {
-                if let identifier = person.identifier?.uuidString {
-                    peopleMap[identifier] = person
-                }
-            }
-            
-            // Create conversations with proper relationships
-            for remoteConv in remoteConversations {
-                let conversation = Conversation(context: viewContext)
-                conversation.uuid = UUID(uuidString: remoteConv.uuid) ?? UUID()
-                conversation.notes = remoteConv.notes
-                conversation.summary = remoteConv.summary
-                conversation.duration = Int32(remoteConv.duration ?? 0)
-                conversation.engagementLevel = remoteConv.engagementLevel
-                conversation.analysisVersion = remoteConv.analysisVersion
-                conversation.qualityScore = remoteConv.qualityScore
-                conversation.sentimentLabel = remoteConv.sentimentLabel
-                conversation.sentimentScore = remoteConv.sentimentScore
-                
-                if let dateString = remoteConv.date {
-                    conversation.date = ISO8601DateFormatter().date(from: dateString)
-                }
-                
-                if let lastAnalyzedString = remoteConv.lastAnalyzed {
-                    conversation.lastAnalyzed = ISO8601DateFormatter().date(from: lastAnalyzedString)
-                }
-                
-                if let lastSentimentString = remoteConv.lastSentimentAnalysis {
-                    conversation.lastSentimentAnalysis = ISO8601DateFormatter().date(from: lastSentimentString)
-                }
-                
-                // Rebuild relationship
-                if let personIdentifier = remoteConv.personIdentifier,
-                   let person = peopleMap[personIdentifier] {
-                    conversation.person = person
-                }
-            }
-            
-            try viewContext.save()
-            diagnosticsResult = "✅ Step 4/4: Clearing device attributions for proper sync..."
-            
-            // Step 4: Clear all device attributions so sync works properly
-            try await supabase
-                .from("people")
-                .update(["device_id": Optional<String>.none])
-                .not("device_id", operator: .is, value: "null") // WHERE clause: only update non-null device_ids
-                .execute()
-            
-            diagnosticsResult = "🎉 NUCLEAR RESET COMPLETE! All data rebuilt from cloud. Run diagnostics to verify."
-            
-        } catch {
-            diagnosticsResult = "❌ Nuclear reset failed: \(error.localizedDescription)"
-        }
-    }
-    
-    private func resetDeviceAttribution() async {
-        diagnosticsResult = "Resetting device attribution..."
-        
-        do {
-            // Clear device_id for ALL people in Supabase, then let each device claim their own
-            let supabase = SupabaseConfig.shared.client
-            
-            diagnosticsResult = "🧹 Clearing all device attributions in cloud..."
-            
-            // Update all people to have null device_id
-            try await supabase
-                .from("people")
-                .update(["device_id": Optional<String>.none])
-                .not("device_id", operator: .is, value: "null") // Only update non-null ones
-                .execute()
-            
-            diagnosticsResult = "✅ Device attributions cleared. Now syncing to re-establish proper attribution..."
-            
-            // Now sync - this will re-attribute people to the devices that have them locally
-            Task {
-                await robustSync.performSync()
-            }
-            
-            diagnosticsResult = "🎉 Device attribution reset completed! Run diagnostics to see the new attribution."
-            
-        } catch {
-            diagnosticsResult = "❌ Device attribution reset failed: \(error.localizedDescription)"
-        }
-    }
-    
-    private func fixConversationRelationships() async {
-        diagnosticsResult = "🔗 Analyzing conversation relationships..."
-        
-        do {
-            let supabase = SupabaseConfig.shared.client
-            
-            // Get all remote conversations with their person identifiers
-            let remoteConversations: [SupabaseConversation] = try await supabase
-                .from("conversations")
-                .select()
-                .execute()
-                .value
-            
-            // Get all local conversations and people
-            let conversationRequest: NSFetchRequest<Conversation> = NSFetchRequest<Conversation>(entityName: "Conversation")
-            let localConversations = try viewContext.fetch(conversationRequest)
-            
-            let peopleRequest: NSFetchRequest<Person> = NSFetchRequest<Person>(entityName: "Person")
-            let localPeople = try viewContext.fetch(peopleRequest)
-            
-            diagnosticsResult = "📊 Analysis: \(remoteConversations.count) remote, \(localConversations.count) local conversations, \(localPeople.count) people"
-            
-            // Create lookup maps
-            var peopleMap: [String: Person] = [:]
-            var localConvMap: [String: Conversation] = [:]
-            
-            for person in localPeople {
-                if let identifier = person.identifier?.uuidString {
-                    peopleMap[identifier] = person
-                }
-            }
-            
-            for conversation in localConversations {
-                if let uuid = conversation.uuid?.uuidString {
-                    localConvMap[uuid] = conversation
-                }
-            }
-            
-            var fixedCount = 0
-            var missingPeople = 0
-            var missingConversations = 0
-            var alreadyLinked = 0
-            
-            // Analyze and fix relationships
-            for remoteConv in remoteConversations {
-                guard let personIdentifier = remoteConv.personIdentifier else { continue }
-                
-                // Find the local conversation by UUID
-                guard let conversation = localConvMap[remoteConv.uuid] else {
-                    missingConversations += 1
-                    continue
-                }
-                
-                // Find the person by identifier
-                guard let person = peopleMap[personIdentifier] else {
-                    missingPeople += 1
-                    continue
-                }
-                
-                // Check and fix the relationship
-                if conversation.person != person {
-                    conversation.person = person
-                    fixedCount += 1
-                    print("🔗 Fixed: \(remoteConv.uuid) -> \(person.name ?? "Unknown")")
-                } else {
-                    alreadyLinked += 1
-                }
-            }
-            
-            // Handle conversations that exist locally but not remotely (orphaned without remote reference)
-            var orphanedLocalConversations = 0
-            for conversation in localConversations {
-                if conversation.person == nil {
-                    // This conversation has no person relationship
-                    let remoteExists = remoteConversations.contains { $0.uuid == conversation.uuid?.uuidString }
-                    if !remoteExists {
-                        orphanedLocalConversations += 1
-                        print("⚠️ Orphaned local conversation: \(conversation.uuid?.uuidString ?? "unknown") with no remote reference")
-                    }
-                }
-            }
-            
-            // Save the fixes
-            if fixedCount > 0 {
-                try viewContext.save()
-            }
-            
-            // Detailed results
-            var resultLines: [String] = []
-            resultLines.append("🔗 RELATIONSHIP REPAIR RESULTS:")
-            resultLines.append("   ✅ Fixed relationships: \(fixedCount)")
-            resultLines.append("   ✅ Already linked: \(alreadyLinked)")
-            resultLines.append("   ⚠️ Missing people: \(missingPeople)")
-            resultLines.append("   ⚠️ Missing conversations: \(missingConversations)")
-            resultLines.append("   ⚠️ Orphaned local conversations: \(orphanedLocalConversations)")
-            
-            if fixedCount > 0 {
-                resultLines.append("")
-                resultLines.append("🎉 Successfully fixed \(fixedCount) relationships!")
-                resultLines.append("Run diagnostics again to verify the improvements.")
-            } else if missingPeople > 0 || missingConversations > 0 {
-                resultLines.append("")
-                resultLines.append("⚠️ Some conversations couldn't be linked due to missing data.")
-                resultLines.append("Consider running 'Fresh Start' to rebuild from cloud.")
-            } else {
-                resultLines.append("")
-                resultLines.append("✅ All linkable relationships are already correct.")
-            }
-            
-            diagnosticsResult = resultLines.joined(separator: "\n")
-            
-        } catch {
-            diagnosticsResult = "❌ Failed to fix conversation relationships: \(error.localizedDescription)"
-        }
-    }
-    
-    private func advancedOrphanCleanup() async {
-        diagnosticsResult = "🧹 Starting advanced orphan cleanup analysis..."
-        
-        do {
-            let supabase = SupabaseConfig.shared.client
-            
-            // Get all remote conversations and people
-            let remoteConversations: [SupabaseConversation] = try await supabase
-                .from("conversations")
-                .select()
-                .execute()
-                .value
-            
-            let remotePeople: [SupabasePerson] = try await supabase
-                .from("people")
-                .select()
-                .execute()
-                .value
-            
-            // Get all local data
-            let conversationRequest: NSFetchRequest<Conversation> = NSFetchRequest<Conversation>(entityName: "Conversation")
-            let localConversations = try viewContext.fetch(conversationRequest)
-            
-            let peopleRequest: NSFetchRequest<Person> = NSFetchRequest<Person>(entityName: "Person")
-            let localPeople = try viewContext.fetch(peopleRequest)
-            
-            // Create lookup maps
-            let remoteConvUUIDs = Set(remoteConversations.map { $0.uuid })
-            let remotePeopleIDs = Set(remotePeople.compactMap { $0.identifier })
-            let localPeopleMap: [String: Person] = Dictionary(localPeople.compactMap { person in
-                guard let id = person.identifier?.uuidString else { return nil }
-                return (id, person)
-            }, uniquingKeysWith: { first, _ in first })
-            
-            var cleanupResults: [String] = []
-            var fixedConversations = 0
-            var removedOrphans = 0
-            
-            cleanupResults.append("🔍 ADVANCED ORPHAN ANALYSIS:")
-            cleanupResults.append("   Remote conversations: \(remoteConversations.count)")
-            cleanupResults.append("   Remote people: \(remotePeople.count)")
-            cleanupResults.append("   Local conversations: \(localConversations.count)")
-            cleanupResults.append("   Local people: \(localPeople.count)")
-            cleanupResults.append("")
-            
-            // Strategy 1: Fix conversations that exist remotely but are orphaned locally
-            for remoteConv in remoteConversations {
-                if let localConv = localConversations.first(where: { $0.uuid?.uuidString == remoteConv.uuid }),
-                   localConv.person == nil,
-                   let personId = remoteConv.personIdentifier,
-                   let person = localPeopleMap[personId] {
-                    
-                    localConv.person = person
-                    fixedConversations += 1
-                    print("🔗 Strategy 1 - Fixed: \(remoteConv.uuid) -> \(person.name ?? "Unknown")")
-                }
-            }
-            
-            // Strategy 2: Identify truly orphaned local conversations
-            var trulyOrphaned: [Conversation] = []
-            for localConv in localConversations {
-                if localConv.person == nil {
-                    let hasRemoteReference = remoteConvUUIDs.contains(localConv.uuid?.uuidString ?? "")
-                    if !hasRemoteReference {
-                        trulyOrphaned.append(localConv)
-                    }
-                }
-            }
-            
-            cleanupResults.append("📊 CLEANUP STRATEGIES:")
-            cleanupResults.append("   Strategy 1 - Remote match fixes: \(fixedConversations)")
-            cleanupResults.append("   Strategy 2 - Truly orphaned found: \(trulyOrphaned.count)")
-            cleanupResults.append("")
-            
-            // Strategy 3: Try to match orphaned conversations by date/content similarity
-            var matchedByHeuristics = 0
-            for orphan in trulyOrphaned {
-                // Try to find a person by matching conversation date with recent activity
-                if let convDate = orphan.date {
-                    let candidates = localPeople.filter { person in
-                        // Look for people who had activity around the same time
-                        if let lastContact = person.lastContactDate {
-                            let timeDiff = abs(convDate.timeIntervalSince(lastContact))
-                            return timeDiff < 86400 * 7 // Within 7 days
-                        }
-                        return false
-                    }
-                    
-                    // If we found exactly one candidate, it's likely a match
-                    if candidates.count == 1 {
-                        orphan.person = candidates.first
-                        matchedByHeuristics += 1
-                        print("🎯 Strategy 3 - Heuristic match: \(orphan.uuid?.uuidString ?? "unknown") -> \(candidates.first?.name ?? "Unknown")")
-                    }
-                }
-            }
-            
-            cleanupResults.append("   Strategy 3 - Heuristic matches: \(matchedByHeuristics)")
-            cleanupResults.append("")
-            
-            // Save all fixes
-            let totalFixed = fixedConversations + matchedByHeuristics
-            if totalFixed > 0 {
-                try viewContext.save()
-                cleanupResults.append("✅ SUCCESSFULLY FIXED \(totalFixed) ORPHANED CONVERSATIONS!")
-            } else {
-                cleanupResults.append("ℹ️ No orphaned conversations could be automatically fixed.")
-            }
-            
-            // Show remaining orphans
-            let remainingOrphans = localConversations.filter { $0.person == nil }.count
-            cleanupResults.append("")
-            cleanupResults.append("📈 FINAL STATUS:")
-            cleanupResults.append("   Remaining orphaned conversations: \(remainingOrphans)")
-            
-            if remainingOrphans > 0 {
-                cleanupResults.append("")
-                cleanupResults.append("💡 RECOMMENDATIONS:")
-                cleanupResults.append("   • Run diagnostics to see current state")
-                cleanupResults.append("   • Consider 'Fresh Start' if issues persist")
-                cleanupResults.append("   • Manual review may be needed for complex cases")
-            } else {
-                cleanupResults.append("   🎉 ALL CONVERSATIONS NOW HAVE PROPER RELATIONSHIPS!")
-            }
-            
-            diagnosticsResult = cleanupResults.joined(separator: "\n")
-            
-        } catch {
-            diagnosticsResult = "❌ Advanced orphan cleanup failed: \(error.localizedDescription)"
-        }
-    }
-    
-    private func smartSyncFix() async {
-        diagnosticsResult = "🔍 Analyzing sync issues..."
-        
-        // Step 1: Run diagnostics to identify the problem
-        let results = await SyncDiagnostics.shared.runDiagnostics(context: viewContext)
-        
-        // Parse the diagnostic results to determine the best fix
-        let diagnosticText = results.joined(separator: "\n")
-        
-        // Check for common issues and apply appropriate fixes
-        if diagnosticText.contains("Local People: 0") && diagnosticText.contains("Remote People:") {
-            let remoteCount = extractRemoteCount(from: diagnosticText, entity: "People")
-            if remoteCount > 0 {
-                diagnosticsResult = "🔄 Found \(remoteCount) people in cloud but 0 locally. Downloading from cloud..."
-                await freshStartFromCloud()
-                return
-            }
-        }
-        
-        if diagnosticText.contains("Orphaned (no person):") {
-            let orphanCount = extractOrphanCount(from: diagnosticText)
-            if orphanCount > 0 {
-                diagnosticsResult = "🔗 Found \(orphanCount) orphaned conversations. Fixing relationships..."
-                await fixConversationRelationships()
-                return
-            }
-        }
-        
-        if diagnosticText.contains("People from this device: 0") {
-            diagnosticsResult = "📱 Device attribution issue detected. Resetting device attribution..."
-            await resetDeviceAttribution()
-            return
-        }
-        
-        // If no specific issue found, just trigger a normal sync
-        diagnosticsResult = "✅ No major sync issues detected. Running normal sync..."
-        Task {
-            let result = await robustSync.performSync()
-            await MainActor.run {
-                switch result {
-                case .success(let stats):
-                    diagnosticsResult = "✅ Sync completed successfully: \(stats.totalOperations) operations"
-                case .failure(let error):
-                    diagnosticsResult = "❌ Sync failed: \(error.errorDescription ?? "Unknown error")"
-                case .partial(let stats, let errors):
-                    diagnosticsResult = "⚠️ Partial sync: \(stats.totalOperations) operations, \(errors.count) errors"
-                }
-            }
-        }
-    }
-    
-    private func extractRemoteCount(from text: String, entity: String) -> Int {
-        let pattern = "Remote \(entity): (\\d+)"
-        let regex = try? NSRegularExpression(pattern: pattern)
-        let range = NSRange(text.startIndex..<text.endIndex, in: text)
-        if let match = regex?.firstMatch(in: text, range: range),
-           let countRange = Range(match.range(at: 1), in: text) {
-            return Int(String(text[countRange])) ?? 0
-        }
-        return 0
-    }
-    
-    private func extractOrphanCount(from text: String) -> Int {
-        let pattern = "Orphaned \\(no person\\): (\\d+)"
-        let regex = try? NSRegularExpression(pattern: pattern)
-        let range = NSRange(text.startIndex..<text.endIndex, in: text)
-        if let match = regex?.firstMatch(in: text, range: range),
-           let countRange = Range(match.range(at: 1), in: text) {
-            return Int(String(text[countRange])) ?? 0
-        }
-        return 0
-    }
-    
-    private func trueNuclearReset() async {
-        var output: [String] = []
-        output.append("💥 TRUE NUCLEAR RESET - Debug Mode")
-        output.append(String(repeating: "=", count: 50))
-        
-        do {
-            let supabase = SupabaseConfig.shared.client
-            
-            // STEP 1: Show exactly what's in the cloud BEFORE we do anything
-            output.append("")
-            output.append("🔍 STEP 1: CLOUD INVENTORY")
-            
-            let allRemotePeople: [SupabasePerson] = try await supabase
-                .from("people")
-                .select()
-                .execute()
-                .value
-            
-            let nonDeletedPeople = allRemotePeople.filter { !($0.isSoftDeleted ?? false) }
-            let deletedPeople = allRemotePeople.filter { $0.isSoftDeleted ?? false }
-            
-            output.append("   Total people in cloud: \(allRemotePeople.count)")
-            output.append("   Non-deleted: \(nonDeletedPeople.count)")
-            output.append("   Deleted: \(deletedPeople.count)")
-            
-            // Show first few non-deleted people
-            output.append("")
-            output.append("📋 First 5 non-deleted people in cloud:")
-            for (i, person) in nonDeletedPeople.prefix(5).enumerated() {
-                output.append("   \(i+1). \(person.name ?? "Unknown") (ID: \(person.identifier))")
-            }
-            
-            diagnosticsResult = output.joined(separator: "\n")
-            
-            // STEP 2: Wipe local completely
-            output.append("")
-            output.append("🧹 STEP 2: WIPING LOCAL DATA")
-            
-            let conversationRequest: NSFetchRequest<NSFetchRequestResult> = NSFetchRequest(entityName: "Conversation")
-            let deleteConversationsRequest = NSBatchDeleteRequest(fetchRequest: conversationRequest)
-            try viewContext.execute(deleteConversationsRequest)
-            
-            let peopleRequest: NSFetchRequest<NSFetchRequestResult> = NSFetchRequest(entityName: "Person")
-            let deletePeopleRequest = NSBatchDeleteRequest(fetchRequest: peopleRequest)
-            try viewContext.execute(deletePeopleRequest)
-            
-            viewContext.reset()
-            try viewContext.save()
-            
-            output.append("   ✅ All local data deleted")
-            diagnosticsResult = output.joined(separator: "\n")
-            
-            // STEP 3: Download exactly what we found in step 1
-            output.append("")
-            output.append("📥 STEP 3: DOWNLOADING NON-DELETED PEOPLE")
-            output.append("   Creating \(nonDeletedPeople.count) people locally...")
-            
-            var createdCount = 0
-            for remotePerson in nonDeletedPeople {
-                let person = Person(context: viewContext)
-                person.identifier = UUID(uuidString: remotePerson.identifier) ?? UUID()
-                person.name = remotePerson.name
-                person.role = remotePerson.role
-                person.notes = remotePerson.notes
-                person.isDirectReport = remotePerson.isDirectReport ?? false
-                person.timezone = remotePerson.timezone
-                
-                if let dateString = remotePerson.scheduledConversationDate {
-                    person.scheduledConversationDate = ISO8601DateFormatter().date(from: dateString)
-                }
-                
-                if let photoBase64 = remotePerson.photoBase64, !photoBase64.isEmpty {
-                    person.photo = Data(base64Encoded: photoBase64)
-                }
-                
-                createdCount += 1
-            }
-            
-            try viewContext.save()
-            output.append("   ✅ Created \(createdCount) people locally")
-            diagnosticsResult = output.joined(separator: "\n")
-            
-            // STEP 4: Download conversations
-            output.append("")
-            output.append("📥 STEP 4: DOWNLOADING CONVERSATIONS")
-            
-            let allRemoteConversations: [SupabaseConversation] = try await supabase
-                .from("conversations")
-                .select()
-                .execute()
-                .value
-            
-            let nonDeletedConversations = allRemoteConversations.filter { !($0.isSoftDeleted ?? false) }
-            
-            output.append("   Total conversations in cloud: \(allRemoteConversations.count)")
-            output.append("   Non-deleted: \(nonDeletedConversations.count)")
-            output.append("   Creating \(nonDeletedConversations.count) conversations locally...")
-            
-            // Get all people for relationship building
-            let allLocalPeopleRequest: NSFetchRequest<Person> = NSFetchRequest<Person>(entityName: "Person")
-            let allLocalPeople = try viewContext.fetch(allLocalPeopleRequest)
-            var peopleMap: [String: Person] = [:]
-            for person in allLocalPeople {
-                if let identifier = person.identifier?.uuidString {
-                    peopleMap[identifier] = person
-                }
-            }
-            
-            var conversationsCreated = 0
-            var conversationsLinked = 0
-            
-            for remoteConv in nonDeletedConversations {
-                let conversation = Conversation(context: viewContext)
-                conversation.uuid = UUID(uuidString: remoteConv.uuid) ?? UUID()
-                conversation.notes = remoteConv.notes
-                conversation.summary = remoteConv.summary
-                conversation.duration = Int32(remoteConv.duration ?? 0)
-                
-                if let dateString = remoteConv.date {
-                    conversation.date = ISO8601DateFormatter().date(from: dateString)
-                }
-                
-                // Link to person
-                if let personIdentifier = remoteConv.personIdentifier,
-                   let person = peopleMap[personIdentifier] {
-                    conversation.person = person
-                    conversationsLinked += 1
-                }
-                
-                conversationsCreated += 1
-            }
-            
-            try viewContext.save()
-            
-            output.append("   ✅ Created \(conversationsCreated) conversations")
-            output.append("   ✅ Linked \(conversationsLinked) to people")
-            
-            // STEP 5: Final verification
-            output.append("")
-            output.append("🎯 STEP 5: FINAL VERIFICATION")
-            
-            let finalPeopleRequest: NSFetchRequest<Person> = NSFetchRequest<Person>(entityName: "Person")
-            let finalPeopleCount = try viewContext.count(for: finalPeopleRequest)
-            
-            let finalConversationRequest: NSFetchRequest<Conversation> = NSFetchRequest<Conversation>(entityName: "Conversation")
-            let finalConversationCount = try viewContext.count(for: finalConversationRequest)
-            
-            output.append("   Final local people: \(finalPeopleCount)")
-            output.append("   Final local conversations: \(finalConversationCount)")
-            output.append("")
-            
-            if finalPeopleCount == nonDeletedPeople.count {
-                output.append("✅ SUCCESS: Local count matches cloud non-deleted count!")
-            } else {
-                output.append("❌ MISMATCH: Local (\(finalPeopleCount)) != Cloud non-deleted (\(nonDeletedPeople.count))")
-            }
-            
-            output.append("")
-            output.append("🎉 TRUE NUCLEAR RESET COMPLETE!")
-            output.append("This device should now have EXACTLY \(nonDeletedPeople.count) people.")
-            
-            diagnosticsResult = output.joined(separator: "\n")
-            
-        } catch {
-            output.append("")
-            output.append("❌ TRUE NUCLEAR RESET FAILED: \(error.localizedDescription)")
-            diagnosticsResult = output.joined(separator: "\n")
-        }
-    }
-    
-    // MARK: - Direct Report Sync Test
-    private func testDirectReportSync() async {
-        var output: [String] = []
-        output.append("🧪 DIRECT REPORT SYNC TEST")
-        output.append(String(repeating: "=", count: 50))
-        
-        do {
-            let supabase = SupabaseConfig.shared.client
-            
-            // STEP 1: Find a local person with isDirectReport = true
-            output.append("")
-            output.append("🔍 STEP 1: FINDING LOCAL DIRECT REPORTS")
-            
-            let directReportRequest: NSFetchRequest<Person> = NSFetchRequest<Person>(entityName: "Person")
-            directReportRequest.predicate = NSPredicate(format: "isDirectReport == true")
-            let localDirectReports = try viewContext.fetch(directReportRequest)
-            
-            output.append("   Found \(localDirectReports.count) local direct reports:")
-            for person in localDirectReports.prefix(5) {
-                output.append("   • \(person.name ?? "Unknown") - Local: \(person.isDirectReport)")
-            }
-            
-            if localDirectReports.isEmpty {
-                output.append("")
-                output.append("❌ NO DIRECT REPORTS FOUND LOCALLY")
-                output.append("💡 Try setting someone as a direct report first, then run this test")
-                diagnosticsResult = output.joined(separator: "\n")
-                return
-            }
-            
-            // Select the first direct report for testing
-            let testPerson = localDirectReports.first!
-            let personIdentifier = testPerson.identifier?.uuidString ?? ""
-            
-            output.append("")
-            output.append("🎯 TESTING PERSON: \(testPerson.name ?? "Unknown")")
-            output.append("   Local ID: \(personIdentifier)")
-            output.append("   Local isDirectReport: \(testPerson.isDirectReport)")
-            
-            diagnosticsResult = output.joined(separator: "\n")
-            
-            // STEP 2: Check what's in the remote Supabase database
-            output.append("")
-            output.append("☁️ STEP 2: CHECKING REMOTE DATABASE")
-            
-            let remotePeople: [SupabasePerson] = try await supabase
-                .from("people")
-                .select()
-                .eq("identifier", value: personIdentifier)
-                .execute()
-                .value
-            
-            if let remotePerson = remotePeople.first {
-                output.append("   Found in remote database:")
-                output.append("   • Name: \(remotePerson.name ?? "Unknown")")
-                output.append("   • Remote isDirectReport: \(remotePerson.isDirectReport ?? false)")
-                output.append("   • Device ID: \(remotePerson.deviceId ?? "none")")
-                output.append("   • Updated at: \(remotePerson.updatedAt ?? "unknown")")
-                
-                // STEP 3: Compare values
-                output.append("")
-                output.append("🔄 STEP 3: COMPARISON")
-                
-                let localValue = testPerson.isDirectReport
-                let remoteValue = remotePerson.isDirectReport ?? false
-                
-                if localValue == remoteValue {
-                    output.append("   ✅ VALUES MATCH!")
-                    output.append("   Local: \(localValue), Remote: \(remoteValue)")
-                } else {
-                    output.append("   ❌ MISMATCH DETECTED!")
-                    output.append("   Local: \(localValue)")
-                    output.append("   Remote: \(remoteValue)")
-                    output.append("")
-                    output.append("🔧 SYNC OPTIONS:")
-                    output.append("   A) Force Upload (update remote with local value)")
-                    output.append("   B) Force Download (update local with remote value)")
-                }
-                
-            } else {
-                output.append("   ❌ PERSON NOT FOUND IN REMOTE DATABASE")
-                output.append("   This person may need to be synced to the cloud first")
-                output.append("")
-                output.append("💡 Try running a full sync first")
-            }
-            
-            // STEP 4: Additional diagnostics
-            output.append("")
-            output.append("📊 STEP 4: ADDITIONAL DIAGNOSTICS")
-            
-            // Count all local direct reports
-            let allDirectReportsRequest: NSFetchRequest<Person> = NSFetchRequest<Person>(entityName: "Person")
-            allDirectReportsRequest.predicate = NSPredicate(format: "isDirectReport == true")
-            let localDirectReportCount = try viewContext.count(for: allDirectReportsRequest)
-            
-            // Count remote direct reports
-            let allRemotePeople: [SupabasePerson] = try await supabase
-                .from("people")
-                .select()
-                .eq("is_direct_report", value: true)
-                .execute()
-                .value
-            
-            output.append("   Total local direct reports: \(localDirectReportCount)")
-            output.append("   Total remote direct reports: \(allRemotePeople.count)")
-            
-            if localDirectReportCount != allRemotePeople.count {
-                output.append("")
-                output.append("⚠️ DIRECT REPORT COUNT MISMATCH")
-                output.append("   This suggests sync issues with direct report status")
-                
-                // STEP 5: Find the discrepancies
-                output.append("")
-                output.append("🔍 STEP 5: FINDING DISCREPANCIES")
-                
-                // Get all local direct report identifiers
-                let localDirectReports = try viewContext.fetch(allDirectReportsRequest)
-                let localIdentifiers = Set(localDirectReports.compactMap { $0.identifier?.uuidString })
-                
-                // Get all remote direct report identifiers
-                let remoteIdentifiers = Set(allRemotePeople.map { $0.identifier })
-                
-                // Find people who are direct reports remotely but not locally
-                let onlyRemote = remoteIdentifiers.subtracting(localIdentifiers)
-                let onlyLocal = localIdentifiers.subtracting(remoteIdentifiers)
-                
-                if !onlyRemote.isEmpty {
-                    output.append("   🌐 People marked as direct reports ONLY in remote:")
-                    for identifier in onlyRemote {
-                        if let remotePerson = allRemotePeople.first(where: { $0.identifier == identifier }) {
-                            output.append("     • \(remotePerson.name ?? "Unknown") (ID: \(identifier))")
-                        }
-                    }
-                }
-                
-                if !onlyLocal.isEmpty {
-                    output.append("   💾 People marked as direct reports ONLY locally:")
-                    for identifier in onlyLocal {
-                        if let localPerson = localDirectReports.first(where: { $0.identifier?.uuidString == identifier }) {
-                            output.append("     • \(localPerson.name ?? "Unknown") (ID: \(identifier))")
-                        }
-                    }
-                }
-                
-                // Check for people who exist in both but have different direct report status
-                let commonIdentifiers = localIdentifiers.intersection(remoteIdentifiers)
-                var statusMismatches: [String] = []
-                
-                for identifier in commonIdentifiers {
-                    if let localPerson = localDirectReports.first(where: { $0.identifier?.uuidString == identifier }),
-                       let remotePerson = allRemotePeople.first(where: { $0.identifier == identifier }) {
-                        let localStatus = localPerson.isDirectReport
-                        let remoteStatus = remotePerson.isDirectReport ?? false
-                        if localStatus != remoteStatus {
-                            statusMismatches.append("     • \(localPerson.name ?? "Unknown"): Local=\(localStatus), Remote=\(remoteStatus)")
-                        }
-                    }
-                }
-                
-                if !statusMismatches.isEmpty {
-                    output.append("   ⚠️ Status mismatches for existing people:")
-                    statusMismatches.forEach { output.append($0) }
-                }
-            }
-            
-            diagnosticsResult = output.joined(separator: "\n")
-            
-        } catch {
-            output.append("")
-            output.append("❌ DIRECT REPORT SYNC TEST FAILED:")
-            output.append("   \(error.localizedDescription)")
-            diagnosticsResult = output.joined(separator: "\n")
-        }
-    }
 }
 
 struct OrgChartDropZone: View {

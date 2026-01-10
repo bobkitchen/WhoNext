@@ -126,10 +126,7 @@ struct NewConversationWindow: View {
         newConversation.modifiedAt = Date() // Set initial modification timestamp
         do {
             try viewContext.save()
-            
-            // Trigger sync to upload new conversation
-            RobustSyncManager.shared.triggerSync()
-            
+            // CloudKit sync happens automatically via NSPersistentCloudKitContainer
             isPresented = false
         } catch {
             print("Failed to save conversation: \(error)")

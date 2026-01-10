@@ -31,9 +31,9 @@ struct UpcomingMeetingsView: View {
                     subtitle: "Your calendar is clear for this week"
                 )
             } else {
+                // Adaptive columns: minimum 280pt (fits 2-3 cards), maximum 400pt
                 LazyVGrid(columns: [
-                    GridItem(.flexible(), spacing: 16),
-                    GridItem(.flexible(), spacing: 16)
+                    GridItem(.adaptive(minimum: 280, maximum: 400), spacing: 16)
                 ], spacing: 16) {
                     ForEach(upcomingMeetingsThisWeek, id: \.id) { meeting in
                         EnhancedMeetingCard(

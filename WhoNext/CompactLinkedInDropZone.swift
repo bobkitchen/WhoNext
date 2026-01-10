@@ -16,27 +16,6 @@ struct CompactLinkedInDropZone: View {
 
     var body: some View {
         VStack(spacing: 12) {
-            // Header
-            HStack {
-                Image(systemName: "doc.badge.plus")
-                    .font(.system(size: 14, weight: .medium))
-                    .foregroundColor(.accentColor)
-                Text("Import LinkedIn Profile")
-                    .font(.system(size: 14, weight: .semibold))
-                    .foregroundColor(.primary)
-                Spacer()
-
-                if !droppedFiles.isEmpty && !processor.isProcessing {
-                    Button(action: clearFiles) {
-                        Image(systemName: "xmark.circle.fill")
-                            .font(.system(size: 12))
-                            .foregroundColor(.secondary)
-                    }
-                    .buttonStyle(.plain)
-                    .help("Clear selected files")
-                }
-            }
-
             // Drop Zone - Square aspect ratio
             ZStack {
                 RoundedRectangle(cornerRadius: 12)
@@ -173,9 +152,21 @@ struct CompactLinkedInDropZone: View {
 
     private var filesReadyView: some View {
         VStack(spacing: 10) {
-            Image(systemName: "checkmark.circle.fill")
-                .font(.system(size: 24))
-                .foregroundColor(.green)
+            ZStack(alignment: .topTrailing) {
+                Image(systemName: "checkmark.circle.fill")
+                    .font(.system(size: 24))
+                    .foregroundColor(.green)
+
+                // Clear button overlay
+                Button(action: clearFiles) {
+                    Image(systemName: "xmark.circle.fill")
+                        .font(.system(size: 14))
+                        .foregroundColor(.secondary)
+                }
+                .buttonStyle(.plain)
+                .help("Clear selected files")
+                .offset(x: 30, y: -5)
+            }
 
             VStack(spacing: 4) {
                 Text("\(droppedFiles.count) PDF\(droppedFiles.count > 1 ? "s" : "") ready")

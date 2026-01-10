@@ -124,6 +124,60 @@ for try await result in transcriber.results {
 3. **Must use the AsyncStream pattern** - The working apps use AsyncStream<AnalyzerInput> for streaming
 4. **Asset management is required** - Must call AssetInventory.allocate() before transcription
 
+### Speaker Attribution Pipeline - ALL PHASES COMPLETE (January 2026)
+
+**Problem**: ~80% of speaker attribution data was lost between recording and save. The app built rich IdentifiedParticipant objects during recording but discarded most data at handoff.
+
+**Phase 1 Complete - Data Handoff Fix**:
+- ✅ Created `SerializableParticipant` struct in `LiveMeeting.swift` for JSON serialization
+- ✅ Updated `MeetingRecordingEngine.swift` to serialize full participant data to UserDefaults
+- ✅ Fixed `TranscriptImportWindowView.swift` to deserialize and use participant data
+- ✅ Removed hardcoded "Known Participants:" prefix - now shows "Participants:" with "(You)" for current user
+- ✅ Updated `TranscriptProcessor.swift` to accept pre-identified participants
+- ✅ Added `ParticipantInfo.isCurrentUser`, `confidence`, `speakerID`, and `voiceEmbedding` fields
+- ✅ Fixed hardcoded duration (was 30) - now uses actual recording duration
+- ✅ Updated `TranscriptReviewView.swift` participant card to show "(You)" badge for current user
+
+**Phase 2 Complete - Core Data Persistence**:
+- ✅ Added `ConversationParticipant` entity to Core Data model with:
+  - `identifier`, `name`, `speakerID`, `speakingTime`
+  - `isCurrentUser`, `confidence`, `namingMode`
+  - Relationship to `Conversation` (to-one, inverse: participants)
+  - Relationship to `Person` (optional to-one, inverse: conversationParticipations)
+- ✅ Created `ConversationParticipant.swift` NSManagedObject subclass with factory methods
+- ✅ Added `participants` relationship to `Conversation` (to-many with cascade delete)
+- ✅ Added `conversationParticipations` relationship to `Person` (to-many)
+- ✅ Added convenience accessors: `participantsArray`, `currentUserParticipant`, `externalParticipants`
+- ✅ Updated `TranscriptReviewView.saveConversation()` to create ConversationParticipant records
+
+**Phase 3 Complete - Voice Learning**:
+- ✅ Added `voiceEmbedding: [Float]?` to `SerializableParticipant` and `ParticipantInfo`
+- ✅ Updated `MeetingRecordingEngine.processMeeting()` to include voice embeddings from DiarizationManager
+- ✅ Added voice embedding methods to `Person`: `addVoiceEmbedding()`, `averageVoiceEmbedding`, `voiceSimilarity(to:)`
+- ✅ Updated `TranscriptReviewView` to save voice embeddings to Person records when saving
+- ✅ Voice confidence and sample count automatically updated on each save
+
+**Full Data Pipeline Now**:
+```
+Recording                    Handoff                     Review/Save
+─────────────────────────────────────────────────────────────────────
+IdentifiedParticipant[]  →  SerializableParticipant[]  →  ParticipantInfo[]
+  + isCurrentUser ✅           + isCurrentUser ✅           + isCurrentUser ✅
+  + speakingTime ✅            + speakingTime ✅            + speakingTime ✅
+  + confidence ✅              + confidence ✅              + confidence ✅
+  + voiceEmbedding ✅          + voiceEmbedding ✅          + voiceEmbedding ✅
+                                                                   ↓
+                                                    ConversationParticipant (Core Data)
+                                                    + Person.voiceEmbeddings updated
+```
+
+**Voice Learning Flow**:
+1. Recording: DiarizationManager produces speaker embeddings
+2. Handoff: Embeddings serialized with participant data to UserDefaults
+3. Review: User confirms/links participants to Person records
+4. Save: Voice embeddings added to Person.voiceEmbeddings for future matching
+5. Future: Person.voiceSimilarity(to:) used to auto-identify speakers
+
 ### Build Issues
 - Build may fail with standard Xcode if macOS 26 SDK is not available
 - Must use Xcode beta at `/Applications/Xcode-beta.app`

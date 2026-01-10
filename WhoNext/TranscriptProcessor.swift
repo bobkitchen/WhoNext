@@ -28,17 +28,59 @@ struct TranscriptData {
 }
 
 struct ParticipantInfo: Identifiable, Hashable {
-    let id = UUID()
+    let id: UUID
     let name: String
     let speakingTime: TimeInterval // in seconds
     let messageCount: Int
     let detectedSentiment: String
     let existingPersonId: UUID?
-    
+    let isCurrentUser: Bool  // True if user identified this as themselves during recording
+    let confidence: Float    // Voice match confidence (0-1)
+    let speakerID: Int       // Original speaker ID from diarization
+    let voiceEmbedding: [Float]?  // Voice embedding for voice learning
+
+    init(
+        id: UUID = UUID(),
+        name: String,
+        speakingTime: TimeInterval = 0,
+        messageCount: Int = 0,
+        detectedSentiment: String = "neutral",
+        existingPersonId: UUID? = nil,
+        isCurrentUser: Bool = false,
+        confidence: Float = 0,
+        speakerID: Int = 0,
+        voiceEmbedding: [Float]? = nil
+    ) {
+        self.id = id
+        self.name = name
+        self.speakingTime = speakingTime
+        self.messageCount = messageCount
+        self.detectedSentiment = detectedSentiment
+        self.existingPersonId = existingPersonId
+        self.isCurrentUser = isCurrentUser
+        self.confidence = confidence
+        self.speakerID = speakerID
+        self.voiceEmbedding = voiceEmbedding
+    }
+
+    /// Create from a SerializableParticipant (pre-identified during recording)
+    init(from serializable: SerializableParticipant) {
+        self.id = serializable.id
+        self.name = serializable.displayName
+        self.speakingTime = serializable.totalSpeakingTime
+        self.messageCount = 0  // Will be calculated from transcript
+        self.detectedSentiment = "neutral"
+        self.existingPersonId = serializable.personIdentifier
+        self.isCurrentUser = serializable.isCurrentUser
+        self.confidence = serializable.confidence
+        self.speakerID = serializable.speakerID
+        self.voiceEmbedding = serializable.voiceEmbedding
+    }
+
     func hash(into hasher: inout Hasher) {
         hasher.combine(name)
     }
-    
+
     static func == (lhs: ParticipantInfo, rhs: ParticipantInfo) -> Bool {
         return lhs.name == rhs.name
     }
@@ -52,6 +94,8 @@ struct ProcessedTranscript {
     let sentimentAnalysis: ContextualSentiment
     let suggestedTitle: String
     let originalTranscript: TranscriptData
+    let preIdentifiedParticipants: [SerializableParticipant]?  // Pre-identified from recording
+    let userNotes: String?  // User notes taken during recording (Granola-style)
 }
 
 struct ContextualSentiment {
@@ -84,48 +128,110 @@ struct SentimentScore {
     let confidence: Double
 }
 
+// MARK: - Processing Phase (for accurate progress tracking)
+
+enum TranscriptProcessingPhase: Int, CaseIterable {
+    case idle = 0
+    case analyzing = 1
+    case participants = 2
+    case summary = 3
+    case actions = 4
+    case sentiment = 5
+    case finalizing = 6
+    case complete = 7
+
+    var title: String {
+        switch self {
+        case .idle: return ""
+        case .analyzing: return "Analyzing transcript format"
+        case .participants: return "Identifying participants"
+        case .summary: return "Generating meeting summary"
+        case .actions: return "Extracting action items"
+        case .sentiment: return "Analyzing sentiment"
+        case .finalizing: return "Finalizing"
+        case .complete: return "Complete"
+        }
+    }
+}
+
 // MARK: - TranscriptProcessor
 
 @MainActor
 class TranscriptProcessor: ObservableObject {
     @Published var isProcessing = false
     @Published var processingStatus = ""
-    
+    @Published var currentPhase: TranscriptProcessingPhase = .idle
+
     private let hybridAI = HybridAIService()
-    
+
     init() {
     }
-    
+
+    /// Cancel ongoing processing
+    func cancelProcessing() {
+        isProcessing = false
+        processingStatus = ""
+        currentPhase = .idle
+    }
+
     // MARK: - Public Methods
-    
-    func processTranscript(_ rawText: String) async -> ProcessedTranscript? {
+
+    /// Process a transcript with optional pre-identified participants from recording
+    /// - Parameters:
+    ///   - rawText: The raw transcript text
+    ///   - preIdentifiedParticipants: Optional participants already identified during recording
+    ///   - userNotes: Optional user notes taken during recording (Granola-style)
+    /// - Returns: A ProcessedTranscript or nil on failure
+    func processTranscript(_ rawText: String, preIdentifiedParticipants: [SerializableParticipant]? = nil, userNotes: String? = nil) async -> ProcessedTranscript? {
         isProcessing = true
-        
+        currentPhase = .analyzing
+        print("📊 TranscriptProcessor: Starting processing")
+
         do {
             // Step 1: Parse and detect format
+            currentPhase = .analyzing
             processingStatus = "Analyzing transcript format..."
+            print("📊 TranscriptProcessor: Phase 1 - Analyzing")
             let transcriptData = parseTranscript(rawText)
-            
-            // Step 2: Extract participants
+
+            // Step 2: Extract participants (use pre-identified if available)
+            currentPhase = .participants
             processingStatus = "Identifying participants..."
-            let participants = await extractParticipants(from: transcriptData)
-            
-            // Step 3: Generate summary
+            print("📊 TranscriptProcessor: Phase 2 - Participants")
+            let participants: [ParticipantInfo]
+            if let preIdentified = preIdentifiedParticipants, !preIdentified.isEmpty {
+                // Use pre-identified participants from recording
+                participants = preIdentified.map { ParticipantInfo(from: $0) }
+                print("📝 Using \(participants.count) pre-identified participants from recording")
+            } else {
+                // Fall back to extraction from transcript
+                participants = await extractParticipants(from: transcriptData)
+            }
+
+            // Step 3: Generate summary (incorporating user notes if provided)
+            currentPhase = .summary
             processingStatus = "Generating summary..."
-            let summary = await generateSummary(from: transcriptData, participants: participants)
-            
+            print("📊 TranscriptProcessor: Phase 3 - Summary")
+            let summary = await generateSummary(from: transcriptData, participants: participants, userNotes: userNotes)
+
             // Step 4: Extract action items
+            currentPhase = .actions
             processingStatus = "Extracting action items..."
+            print("📊 TranscriptProcessor: Phase 4 - Actions")
             let actionItems = await extractActionItems(from: transcriptData)
-            
+
             // Step 5: Analyze sentiment with full context
+            currentPhase = .sentiment
             processingStatus = "Analyzing sentiment..."
+            print("📊 TranscriptProcessor: Phase 5 - Sentiment")
             let sentimentAnalysis = await analyzeContextualSentiment(from: transcriptData, participants: participants)
-            
+
             // Step 6: Generate suggested title
+            currentPhase = .finalizing
             processingStatus = "Finalizing..."
+            print("📊 TranscriptProcessor: Phase 6 - Finalizing")
             let suggestedTitle = await generateTitle(from: summary, participants: participants)
-            
+
             let processedTranscript = ProcessedTranscript(
                 summary: summary,
                 participants: participants,
@@ -133,16 +239,22 @@ class TranscriptProcessor: ObservableObject {
                 actionItems: actionItems,
                 sentimentAnalysis: sentimentAnalysis,
                 suggestedTitle: suggestedTitle,
-                originalTranscript: transcriptData
+                originalTranscript: transcriptData,
+                preIdentifiedParticipants: preIdentifiedParticipants,
+                userNotes: userNotes
             )
-            
+
+            currentPhase = .complete
             isProcessing = false
             processingStatus = "Complete"
+            print("📊 TranscriptProcessor: Processing complete!")
             return processedTranscript
-            
+
         } catch {
             ErrorManager.shared.handle(error, context: "Failed to process transcript")
+            currentPhase = .idle
             isProcessing = false
+            print("📊 TranscriptProcessor: Processing failed with error: \(error)")
             return nil
         }
     }
@@ -463,11 +575,12 @@ class TranscriptProcessor: ObservableObject {
         return Double(matchingComponents) / Double(maxComponents)
     }
     
-    private func generateSummary(from transcript: TranscriptData, participants: [ParticipantInfo]) async -> String {
+    private func generateSummary(from transcript: TranscriptData, participants: [ParticipantInfo], userNotes: String? = nil) async -> String {
         let participantNames = participants.map { $0.name }.joined(separator: ", ")
-        
+
         do {
-            let response = try await hybridAI.generateMeetingSummary(transcript: transcript.rawText)
+            // Use enhanced summary generation that incorporates user notes if available
+            let response = try await hybridAI.generateMeetingSummary(transcript: transcript.rawText, userNotes: userNotes)
             return response.isEmpty ? "Unable to generate summary" : response
         } catch {
             print("Failed to generate summary: \(error)")

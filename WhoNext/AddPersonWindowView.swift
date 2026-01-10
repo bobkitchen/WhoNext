@@ -230,6 +230,8 @@ struct AddPersonWindowView: View {
         }
         .sheet(isPresented: $showingLinkedInSearch) {
             LinkedInSearchWindow(
+                personName: editingName,
+                personRole: editingRole,
                 onDataExtracted: { profileData in
                     populateFromLinkedInData(profileData)
                     showingLinkedInSearch = false
@@ -389,9 +391,7 @@ struct AddPersonWindowView: View {
 
         do {
             try viewContext.save()
-
-            // Trigger immediate sync for new person
-            RobustSyncManager.shared.triggerSync()
+            // CloudKit sync happens automatically via NSPersistentCloudKitContainer
         } catch {
             print("Failed to save person: \(error)")
         }

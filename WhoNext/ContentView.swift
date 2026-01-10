@@ -13,8 +13,10 @@ struct ContentView: View {
     @Environment(\.managedObjectContext) private var viewContext
     @Environment(\.openWindow) private var openWindow
     @StateObject private var appStateManager: AppStateManager
+    @ObservedObject private var userProfile = UserProfile.shared
     @State private var searchText = ""
     @State private var showingNewConversationSheet = false
+    @State private var showingOnboarding = false
     @State private var columnVisibility: NavigationSplitViewVisibility = .all
     @State private var selectedItem: NavigationItem = .home
     @State private var people: [Person] = []
@@ -84,26 +86,33 @@ struct ContentView: View {
             ToolbarItem(placement: .navigation) {
                 LeftToolbarActions(appState: appStateManager)
             }
-            
+
             // Center: Main navigation (Insights/People/Analytics) with liquid glass styling
             ToolbarItem(placement: .principal) {
                 CenterNavigationView(appState: appStateManager)
             }
-            
-            // Far right: Monitoring window toggle
+
+            // Far right: Record Meeting button
             ToolbarItem(placement: .automatic) {
-                Button(action: {
-                    UnifiedRecordingStatusWindowManager.shared.toggle()
-                }) {
-                    Image(systemName: UnifiedRecordingStatusWindowManager.shared.isVisible ? "waveform.circle.fill" : "waveform.circle")
-                        .font(.system(size: 18))
-                        .foregroundColor(MeetingRecordingEngine.shared.isRecording ? .red : .green)
-                        .help(UnifiedRecordingStatusWindowManager.shared.isVisible ? "Hide Recording Monitor" : "Show Recording Monitor")
-                }
-                .buttonStyle(.borderless)
+                RecordMeetingToolbarButton()
+            }
+
+            // Far right: Monitoring status indicator (replaces floating window toggle)
+            ToolbarItem(placement: .automatic) {
+                MonitoringIndicator()
             }
         }
         .errorAlert(appStateManager.errorManager)
+        .sheet(isPresented: $showingOnboarding) {
+            OnboardingView()
+                .frame(minWidth: 600, minHeight: 500)
+        }
+        .onAppear {
+            // Show onboarding if user hasn't completed it yet
+            if !userProfile.hasCompletedOnboarding {
+                showingOnboarding = true
+            }
+        }
     }
     
     private func fetchPeople() {
@@ -119,5 +128,42 @@ struct ContentView: View {
         }
         
         appStateManager.setLoadingPeople(false)
+    }
+}
+
+// MARK: - Record Meeting Toolbar Button
+
+/// Toolbar button for starting/stopping meeting recording
+/// Visible across all tabs for quick access - larger, more prominent design
+struct RecordMeetingToolbarButton: View {
+    @ObservedObject private var recordingEngine = MeetingRecordingEngine.shared
+
+    var body: some View {
+        Button(action: {
+            // Ensure we're on the main thread for UI updates
+            Task { @MainActor in
+                if recordingEngine.isRecording {
+                    recordingEngine.manualStopRecording()
+                } else {
+                    recordingEngine.manualStartRecording()
+                    // Open the recording window when starting
+                    RecordingWindowManager.shared.show()
+                }
+            }
+        }) {
+            HStack(spacing: 6) {
+                Image(systemName: recordingEngine.isRecording ? "stop.circle.fill" : "record.circle.fill")
+                    .font(.system(size: 16, weight: .medium))
+                Text(recordingEngine.isRecording ? "STOP" : "RECORD")
+                    .font(.system(size: 13, weight: .semibold))
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 6)
+            .foregroundColor(recordingEngine.isRecording ? .white : .red)
+            .background(recordingEngine.isRecording ? Color.red : Color.red.opacity(0.12))
+            .clipShape(Capsule())
+        }
+        .buttonStyle(.plain)
+        .help(recordingEngine.isRecording ? "Stop Recording" : "Start Recording")
     }
 }

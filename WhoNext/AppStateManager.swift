@@ -97,10 +97,7 @@ class AppStateManager: ObservableObject {
         
         do {
             try viewContext.save()
-            
-            // Trigger immediate sync for new person
-            RobustSyncManager.shared.triggerSync()
-            
+            // CloudKit sync happens automatically via NSPersistentCloudKitContainer
             invalidatePeopleCache() // Invalidate cache when new person is added
             return person
         } catch {

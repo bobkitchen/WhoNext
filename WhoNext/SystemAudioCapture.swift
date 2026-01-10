@@ -74,6 +74,35 @@ class SystemAudioCapture: NSObject, ObservableObject {
     private var audioBuffersContinuation: AsyncStream<(mic: AVAudioPCMBuffer?, system: AVAudioPCMBuffer?)>.Continuation?
     private var mixedAudioContinuation: AsyncStream<AVAudioPCMBuffer>.Continuation?
 
+    // MARK: - First Buffer Synchronization
+    // Used to ensure detection doesn't start until audio is actually flowing
+    private var hasReceivedFirstBuffer = false
+    private var firstBufferContinuation: CheckedContinuation<Void, Never>?
+
+    /// Waits until the first valid audio buffer is received
+    /// Call this after startCapture() to ensure audio is flowing before starting detection
+    func waitForFirstBuffer() async {
+        // If we already have a buffer, return immediately
+        if hasReceivedFirstBuffer {
+            return
+        }
+
+        // Wait for the first buffer with a timeout
+        await withCheckedContinuation { continuation in
+            self.firstBufferContinuation = continuation
+
+            // Timeout after 3 seconds to avoid hanging indefinitely
+            Task {
+                try? await Task.sleep(nanoseconds: 3_000_000_000)
+                if !self.hasReceivedFirstBuffer {
+                    print("⚠️ [AudioCapture] Timeout waiting for first buffer, proceeding anyway")
+                    self.firstBufferContinuation?.resume()
+                    self.firstBufferContinuation = nil
+                }
+            }
+        }
+    }
+
     // MARK: - Initialization
     override init() {
         // Create audio format for speech processing (16kHz, mono)
@@ -146,13 +175,15 @@ class SystemAudioCapture: NSObject, ObservableObject {
     /// Stop capturing audio
     func stopCapture() {
         guard isCapturing else { return }
-        
+
         print("🛑 Stopping audio capture...")
-        
-        // Stop audio engine
+
+        // Stop audio engine first
         audioEngine?.stop()
+
+        // Remove tap before releasing engine
         audioEngine?.inputNode.removeTap(onBus: 0)
-        
+
         // Stop screen capture stream
         if #available(macOS 13.0, *) {
             stream?.stopCapture { error in
@@ -169,12 +200,22 @@ class SystemAudioCapture: NSObject, ObservableObject {
         audioBuffersContinuation = nil
         mixedAudioContinuation = nil
 
+        // Reset first buffer tracking for next capture session
+        hasReceivedFirstBuffer = false
+        firstBufferContinuation = nil
+
+        // CRITICAL: Release audio session to restore normal audio behavior
+        // This allows Bluetooth devices (AirPods) to switch back to A2DP profile
+        releaseAudioSession()
+
         DispatchQueue.main.async {
             self.isCapturing = false
             self.microphoneLevel = 0.0
             self.systemAudioLevel = 0.0
             self.captureMode = .none
         }
+
+        print("✅ Audio capture fully stopped and resources released")
     }
     
     /// Get the next audio chunk for processing
@@ -199,42 +240,90 @@ class SystemAudioCapture: NSObject, ObservableObject {
     }
     
     // MARK: - Private Methods - Microphone Capture
-    
+
+    /// Configure audio session for recording (macOS 14+)
+    private func configureAudioSession() {
+        if #available(macOS 14.0, *) {
+            // Use AVAudioApplication for macOS 14+ to properly configure audio behavior
+            let audioApp = AVAudioApplication.shared
+            do {
+                // Set recording configuration that minimizes impact on playback
+                try audioApp.setInputMuted(false)
+                print("✅ Audio application configured for recording")
+            } catch {
+                print("⚠️ Could not configure audio application: \(error)")
+            }
+        }
+
+        // Note: On macOS, when using Bluetooth headphones (AirPods), the system
+        // automatically switches from A2DP (high quality stereo) to HFP (hands-free
+        // profile with mic support). This can change audio characteristics.
+        // This is OS-level behavior and cannot be fully prevented, but we ensure
+        // proper cleanup when stopping to restore normal operation.
+    }
+
+    /// Release audio session configuration
+    private func releaseAudioSession() {
+        if #available(macOS 14.0, *) {
+            // Reset any audio application state
+            print("🔄 Audio session released")
+        }
+
+        // Force release of audio resources to allow Bluetooth profile to switch back
+        audioEngine?.reset()
+        audioEngine = nil
+        inputNode = nil
+        mixerNode = nil
+
+        print("✅ Audio resources fully released")
+    }
+
     private func setupMicrophoneCapture() throws {
+        // Configure audio session before setting up the engine
+        configureAudioSession()
+
         audioEngine = AVAudioEngine()
         guard let audioEngine = audioEngine else {
             throw AudioCaptureError.audioEngineInitFailed
         }
-        
+
         inputNode = audioEngine.inputNode
         mixerNode = AVAudioMixerNode()
         audioEngine.attach(mixerNode!)
-        
+
         // Connect input to mixer
         let inputFormat = inputNode!.outputFormat(forBus: 0)
         audioEngine.connect(inputNode!, to: mixerNode!, format: inputFormat)
-        
+
         // Install tap on input node to capture microphone audio
         inputNode!.installTap(onBus: 0, bufferSize: bufferSize, format: inputFormat) { [weak self] buffer, time in
             self?.processMicrophoneBuffer(buffer)
         }
-        
+
         print("✅ Microphone capture configured")
     }
-    
+
     private func startAudioEngine() throws {
         guard let audioEngine = audioEngine else { return }
-        
+
         audioEngine.prepare()
         try audioEngine.start()
-        
+
         print("✅ Audio engine started")
     }
     
     private func processMicrophoneBuffer(_ buffer: AVAudioPCMBuffer) {
+        // Signal first buffer received (for sync with detection startup)
+        if !hasReceivedFirstBuffer {
+            hasReceivedFirstBuffer = true
+            firstBufferContinuation?.resume()
+            firstBufferContinuation = nil
+            print("✅ [AudioCapture] First buffer received, audio is flowing")
+        }
+
         // Store buffer for analysis
         microphoneBuffer = buffer
-        
+
         // Calculate audio level for UI
         let level = calculateAudioLevel(buffer)
         

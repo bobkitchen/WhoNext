@@ -31,6 +31,9 @@ struct PersonDetailView: View {
     @State private var preMeetingBriefWindowController: PreMeetingBriefWindowController?
     @State private var profileWindowController: ProfileWindowController?
     @State private var showLinkedInImport = false
+    @State private var showAddActionItem = false
+    @State private var actionItemsRefreshID = UUID()
+    @State private var showingPhotoPopover = false
 
     init(person: Person) {
         self.person = person
@@ -48,6 +51,7 @@ struct PersonDetailView: View {
                 notesView
                 sentimentAnalyticsView
                 preMeetingBriefView
+                actionItemsView
                 conversationsView
             }
             .padding(32)
@@ -68,11 +72,14 @@ struct PersonDetailView: View {
             closePreMeetingBriefWindow()
             closeProfileWindow()
         }
+        .sheet(isPresented: $showingPhotoPopover) {
+            PersonPhotoPopover(person: person)
+        }
     }
-    
+
     private var headerView: some View {
         HStack(alignment: .top, spacing: 24) {
-            // Enhanced Avatar with liquid glass styling
+            // Enhanced Avatar with liquid glass styling - clickable when photo exists
             ZStack {
                 if let data = person.photo, let image = NSImage(data: data) {
                     Image(nsImage: image)
@@ -85,6 +92,11 @@ struct PersonDetailView: View {
                                 .stroke(.primary.opacity(0.1), lineWidth: 1)
                         }
                         .shadow(color: .black.opacity(0.1), radius: 4, x: 0, y: 2)
+                        .contentShape(Circle())
+                        .onTapGesture {
+                            showingPhotoPopover = true
+                        }
+                        .help("Click to see larger photo")
                 } else {
                     Circle()
                         .fill(Color.accentColor.opacity(0.15))
@@ -486,9 +498,9 @@ struct PersonDetailView: View {
                     Text("Pre-Meeting Brief")
                         .font(.system(size: 16, weight: .semibold))
                         .foregroundColor(.primary)
-                    
+
                     Spacer()
-                    
+
                     if let brief = preMeetingBrief[person.identifier ?? UUID()], !brief.isEmpty {
                         HStack(spacing: 8) {
                             // Pop Out button
@@ -510,7 +522,7 @@ struct PersonDetailView: View {
                                 )
                             }
                             .buttonStyle(PlainButtonStyle())
-                            
+
                             // Copy button
                             Button(action: {
                                 copyToClipboard(brief)
@@ -560,7 +572,115 @@ struct PersonDetailView: View {
             EmptyView()
         }
     }
-    
+
+    // MARK: - Action Items Section
+
+    private var personActionItems: [ActionItem] {
+        ActionItem.fetchForPerson(person, in: viewContext)
+    }
+
+    private var pendingActionItems: [ActionItem] {
+        personActionItems.filter { !$0.isCompleted }
+    }
+
+    @ViewBuilder
+    private var actionItemsView: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            HStack {
+                HStack(spacing: 8) {
+                    Image(systemName: "checklist")
+                        .font(.system(size: 14))
+                        .foregroundColor(.orange)
+                    Text("Action Items")
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundColor(.primary)
+
+                    if !pendingActionItems.isEmpty {
+                        Text("\(pendingActionItems.count)")
+                            .font(.system(size: 11, weight: .semibold))
+                            .foregroundColor(.white)
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 2)
+                            .background(Color.orange)
+                            .clipShape(Capsule())
+                    }
+                }
+
+                Spacer()
+
+                // Add button
+                Button(action: { showAddActionItem = true }) {
+                    HStack(spacing: 4) {
+                        Image(systemName: "plus")
+                            .font(.system(size: 10))
+                        Text("Add")
+                            .font(.system(size: 12, weight: .medium))
+                    }
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 6)
+                    .background(Color.orange)
+                    .clipShape(RoundedRectangle(cornerRadius: 6))
+                }
+                .buttonStyle(PlainButtonStyle())
+            }
+
+            if personActionItems.isEmpty {
+                // Empty State
+                VStack(spacing: 12) {
+                    Image(systemName: "checkmark.circle")
+                        .font(.system(size: 28))
+                        .foregroundColor(.secondary.opacity(0.5))
+
+                    Text("No action items")
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundColor(.secondary)
+
+                    Text("Add action items or they'll appear here from meetings")
+                        .font(.system(size: 12))
+                        .foregroundColor(.secondary)
+                        .multilineTextAlignment(.center)
+
+                    Button(action: { showAddActionItem = true }) {
+                        HStack(spacing: 6) {
+                            Image(systemName: "plus")
+                                .font(.system(size: 12))
+                            Text("Add Action Item")
+                                .font(.system(size: 13, weight: .medium))
+                        }
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 8)
+                        .background(Color.orange)
+                        .clipShape(RoundedRectangle(cornerRadius: 8))
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                    .padding(.top, 4)
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 20)
+            } else {
+                // Action Items List
+                LazyVStack(spacing: 8) {
+                    ForEach(personActionItems) { item in
+                        PersonActionItemRow(item: item)
+                    }
+                }
+            }
+        }
+        .padding(16)
+        .background(Color(nsColor: .controlBackgroundColor).opacity(0.3))
+        .cornerRadius(12)
+        .id(actionItemsRefreshID)
+        .sheet(isPresented: $showAddActionItem) {
+            AddPersonActionItemView(person: person) {
+                // Refresh the list after adding
+                actionItemsRefreshID = UUID()
+            }
+            .environment(\.managedObjectContext, viewContext)
+        }
+    }
+
     @ViewBuilder
     private var conversationsView: some View {
         VStack(alignment: .leading, spacing: 16) {
@@ -1391,5 +1511,447 @@ struct ProfileWindow: View {
             .background(Color(nsColor: .windowBackgroundColor))
         }
         .frame(minWidth: 600, minHeight: 400)
+    }
+}
+
+// MARK: - Person Action Item Row
+
+struct PersonActionItemRow: View {
+    @ObservedObject var item: ActionItem
+    @Environment(\.managedObjectContext) private var viewContext
+
+    var body: some View {
+        HStack(spacing: 12) {
+            // Completion checkbox
+            Button(action: toggleCompletion) {
+                Image(systemName: item.isCompleted ? "checkmark.circle.fill" : "circle")
+                    .font(.system(size: 18))
+                    .foregroundColor(item.isCompleted ? .green : .secondary)
+            }
+            .buttonStyle(.plain)
+
+            // Content
+            VStack(alignment: .leading, spacing: 4) {
+                Text(item.title ?? "Untitled")
+                    .font(.system(size: 14, weight: .medium))
+                    .strikethrough(item.isCompleted)
+                    .foregroundColor(item.isCompleted ? .secondary : .primary)
+
+                HStack(spacing: 8) {
+                    // Priority badge
+                    PersonActionPriorityBadge(priority: item.priorityEnum)
+
+                    // Due date
+                    if let dueText = item.formattedDueDate {
+                        HStack(spacing: 2) {
+                            Image(systemName: "calendar")
+                            Text(dueText)
+                        }
+                        .font(.caption)
+                        .foregroundColor(item.isOverdue ? .red : .secondary)
+                    }
+
+                    // From conversation
+                    if let conversation = item.conversation, let date = conversation.date {
+                        HStack(spacing: 2) {
+                            Image(systemName: "bubble.left")
+                            Text(conversationDateFormatter.string(from: date))
+                        }
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                    }
+                }
+            }
+
+            Spacer()
+
+            // Reminder indicator
+            if item.reminderID != nil {
+                Image(systemName: "bell.fill")
+                    .font(.caption)
+                    .foregroundColor(.orange)
+            }
+        }
+        .padding(12)
+        .background(Color(nsColor: .controlBackgroundColor))
+        .cornerRadius(8)
+        .overlay(
+            RoundedRectangle(cornerRadius: 8)
+                .stroke(item.isOverdue ? Color.red.opacity(0.5) : Color.clear, lineWidth: 1)
+        )
+        .contextMenu {
+            Button(item.isCompleted ? "Mark Incomplete" : "Mark Complete") {
+                toggleCompletion()
+            }
+            Divider()
+            Button("Send to Reminders") {
+                sendToReminders()
+            }
+            Divider()
+            Button("Delete", role: .destructive) {
+                deleteItem()
+            }
+        }
+    }
+
+    private func toggleCompletion() {
+        withAnimation {
+            item.toggleCompletion()
+            try? viewContext.save()
+
+            // Sync to Apple Reminders if linked
+            if item.reminderID != nil {
+                Task {
+                    await RemindersIntegration.shared.updateReminderCompletion(for: item)
+                }
+            }
+        }
+    }
+
+    private func sendToReminders() {
+        Task {
+            await RemindersIntegration.shared.createReminder(from: item)
+        }
+    }
+
+    private func deleteItem() {
+        withAnimation {
+            viewContext.delete(item)
+            try? viewContext.save()
+        }
+    }
+
+    private var conversationDateFormatter: DateFormatter {
+        let formatter = DateFormatter()
+        formatter.dateStyle = .short
+        return formatter
+    }
+}
+
+// MARK: - Person Action Priority Badge
+
+struct PersonActionPriorityBadge: View {
+    let priority: ActionItem.Priority
+
+    var body: some View {
+        Text(priority.displayName)
+            .font(.system(size: 10, weight: .medium))
+            .padding(.horizontal, 6)
+            .padding(.vertical, 2)
+            .background(backgroundColor)
+            .foregroundColor(foregroundColor)
+            .cornerRadius(4)
+    }
+
+    private var backgroundColor: Color {
+        switch priority {
+        case .high: return Color.red.opacity(0.2)
+        case .medium: return Color.orange.opacity(0.2)
+        case .low: return Color.blue.opacity(0.2)
+        }
+    }
+
+    private var foregroundColor: Color {
+        switch priority {
+        case .high: return .red
+        case .medium: return .orange
+        case .low: return .blue
+        }
+    }
+}
+
+// MARK: - Add Person Action Item View
+
+struct AddPersonActionItemView: View {
+    @Environment(\.managedObjectContext) private var viewContext
+    @Environment(\.dismiss) private var dismiss
+
+    @FetchRequest(
+        sortDescriptors: [NSSortDescriptor(keyPath: \Person.name, ascending: true)],
+        predicate: NSPredicate(format: "isSoftDeleted == NO OR isSoftDeleted == nil"),
+        animation: .default
+    )
+    private var allPeople: FetchedResults<Person>
+
+    let person: Person
+    let onSave: () -> Void
+
+    @State private var title = ""
+    @State private var notes = ""
+    @State private var dueDate: Date = Date()
+    @State private var hasDueDate = false
+    @State private var priority: ActionItem.Priority = .medium
+    @State private var ownerSelection: String = "them"
+    @State private var customAssignee = ""
+    @State private var sendToReminders = false
+    @State private var showingSuggestions = false
+
+    private var isMyTask: Bool {
+        ownerSelection == "me"
+    }
+
+    private var assignee: String? {
+        switch ownerSelection {
+        case "me": return nil
+        case "them": return person.name
+        case "other": return customAssignee.isEmpty ? nil : customAssignee
+        default: return nil
+        }
+    }
+
+    /// People matching the search query, excluding the current person
+    private var matchingPeople: [Person] {
+        guard !customAssignee.isEmpty else { return [] }
+        let query = customAssignee.lowercased()
+        return allPeople.filter { p in
+            p.identifier != person.identifier &&
+            (p.name?.lowercased().contains(query) == true ||
+             p.role?.lowercased().contains(query) == true)
+        }
+    }
+
+    var body: some View {
+        VStack(spacing: 0) {
+            // Header
+            HStack {
+                Button("Cancel") { dismiss() }
+                    .buttonStyle(.plain)
+                    .foregroundColor(.secondary)
+
+                Spacer()
+
+                Text("New Action Item")
+                    .font(.headline)
+
+                Spacer()
+
+                Button("Save") { saveItem() }
+                    .buttonStyle(.borderedProminent)
+                    .tint(.orange)
+                    .disabled(title.trimmingCharacters(in: .whitespaces).isEmpty)
+            }
+            .padding()
+
+            Divider()
+
+            // Form
+            ScrollView {
+                VStack(alignment: .leading, spacing: 20) {
+                    // Title
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("What needs to be done?")
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                        TextField("Action item title...", text: $title)
+                            .textFieldStyle(.plain)
+                            .font(.title3)
+                            .padding(12)
+                            .background(Color(nsColor: .controlBackgroundColor))
+                            .cornerRadius(8)
+                    }
+
+                    // Owner picker
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Who is responsible?")
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                        Picker("Owner", selection: $ownerSelection) {
+                            Text("Me").tag("me")
+                            Text(person.name ?? "Them").tag("them")
+                            Text("Other...").tag("other")
+                        }
+                        .pickerStyle(.segmented)
+                        .onChange(of: ownerSelection) { _, newValue in
+                            // Auto-enable reminders when "Me" is selected
+                            if newValue == "me" {
+                                sendToReminders = true
+                            } else {
+                                sendToReminders = false
+                            }
+                        }
+
+                        // Custom assignee field when "Other" is selected
+                        if ownerSelection == "other" {
+                            VStack(alignment: .leading, spacing: 4) {
+                                TextField("Search contacts or enter name...", text: $customAssignee)
+                                    .textFieldStyle(.plain)
+                                    .padding(12)
+                                    .background(Color(nsColor: .controlBackgroundColor))
+                                    .cornerRadius(8)
+                                    .onChange(of: customAssignee) { _, _ in
+                                        showingSuggestions = !customAssignee.isEmpty && !matchingPeople.isEmpty
+                                    }
+
+                                // Suggestions dropdown
+                                if showingSuggestions && !matchingPeople.isEmpty {
+                                    VStack(alignment: .leading, spacing: 0) {
+                                        ForEach(matchingPeople.prefix(5)) { suggestedPerson in
+                                            Button(action: {
+                                                customAssignee = suggestedPerson.name ?? ""
+                                                showingSuggestions = false
+                                            }) {
+                                                HStack(spacing: 10) {
+                                                    // Avatar
+                                                    if let data = suggestedPerson.photo, let image = NSImage(data: data) {
+                                                        Image(nsImage: image)
+                                                            .resizable()
+                                                            .aspectRatio(contentMode: .fill)
+                                                            .frame(width: 28, height: 28)
+                                                            .clipShape(Circle())
+                                                    } else {
+                                                        Circle()
+                                                            .fill(Color.accentColor.opacity(0.15))
+                                                            .frame(width: 28, height: 28)
+                                                            .overlay {
+                                                                Text(suggestedPerson.initials)
+                                                                    .font(.system(size: 10, weight: .medium))
+                                                                    .foregroundColor(.accentColor)
+                                                            }
+                                                    }
+
+                                                    VStack(alignment: .leading, spacing: 2) {
+                                                        Text(suggestedPerson.name ?? "Unknown")
+                                                            .font(.subheadline)
+                                                            .fontWeight(.medium)
+                                                            .foregroundColor(.primary)
+                                                        if let role = suggestedPerson.role, !role.isEmpty {
+                                                            Text(role)
+                                                                .font(.caption)
+                                                                .foregroundColor(.secondary)
+                                                        }
+                                                    }
+
+                                                    Spacer()
+                                                }
+                                                .padding(.horizontal, 12)
+                                                .padding(.vertical, 8)
+                                                .contentShape(Rectangle())
+                                            }
+                                            .buttonStyle(.plain)
+                                            .background(Color(nsColor: .controlBackgroundColor).opacity(0.5))
+
+                                            if suggestedPerson.id != matchingPeople.prefix(5).last?.id {
+                                                Divider()
+                                                    .padding(.leading, 50)
+                                            }
+                                        }
+                                    }
+                                    .background(Color(nsColor: .controlBackgroundColor))
+                                    .cornerRadius(8)
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 8)
+                                            .stroke(Color.secondary.opacity(0.2), lineWidth: 1)
+                                    )
+                                    .shadow(color: .black.opacity(0.1), radius: 4, y: 2)
+                                }
+                            }
+                        }
+                    }
+
+                    // Priority
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Priority")
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                        Picker("Priority", selection: $priority) {
+                            ForEach(ActionItem.Priority.allCases, id: \.self) { p in
+                                HStack {
+                                    Circle()
+                                        .fill(priorityColor(p))
+                                        .frame(width: 8, height: 8)
+                                    Text(p.displayName)
+                                }
+                                .tag(p)
+                            }
+                        }
+                        .pickerStyle(.segmented)
+                    }
+
+                    // Due Date
+                    VStack(alignment: .leading, spacing: 8) {
+                        Toggle("Set Due Date", isOn: $hasDueDate)
+                            .font(.subheadline)
+
+                        if hasDueDate {
+                            DatePicker("Due Date", selection: $dueDate, displayedComponents: [.date, .hourAndMinute])
+                                .labelsHidden()
+                        }
+                    }
+
+                    // Notes
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Notes (optional)")
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                        TextEditor(text: $notes)
+                            .font(.body)
+                            .frame(minHeight: 60)
+                            .padding(8)
+                            .background(Color(nsColor: .controlBackgroundColor))
+                            .cornerRadius(8)
+                    }
+
+                    // Send to Reminders toggle
+                    Toggle(isOn: $sendToReminders) {
+                        HStack {
+                            Image(systemName: "bell.fill")
+                                .foregroundColor(.orange)
+                            Text("Also create Apple Reminder")
+                        }
+                    }
+                    .font(.subheadline)
+
+                    // Context info
+                    HStack {
+                        Image(systemName: "person.fill")
+                            .foregroundColor(.blue)
+                        Text("Linked to: \(person.name ?? "Unknown")")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                    .padding(.top, 8)
+                }
+                .padding(24)
+            }
+        }
+        .frame(width: 420, height: 560)
+    }
+
+    private func priorityColor(_ priority: ActionItem.Priority) -> Color {
+        switch priority {
+        case .high: return .red
+        case .medium: return .orange
+        case .low: return .blue
+        }
+    }
+
+    private func saveItem() {
+        let item = ActionItem.create(
+            in: viewContext,
+            title: title.trimmingCharacters(in: .whitespaces),
+            dueDate: hasDueDate ? dueDate : nil,
+            priority: priority,
+            assignee: assignee,
+            isMyTask: isMyTask,
+            conversation: nil,
+            person: person
+        )
+        item.notes = notes.isEmpty ? nil : notes
+
+        do {
+            try viewContext.save()
+
+            // Send to Reminders if requested
+            if sendToReminders {
+                Task {
+                    await RemindersIntegration.shared.createReminder(from: item)
+                }
+            }
+
+            onSave()
+            dismiss()
+        } catch {
+            print("Failed to save action item: \(error)")
+        }
     }
 }

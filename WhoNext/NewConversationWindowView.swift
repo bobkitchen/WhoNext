@@ -213,9 +213,7 @@ struct NewConversationWindowView: View {
                 newConversation.person = person
                 do {
                     try viewContext.save()
-                    
-                    // Trigger immediate sync for new conversation
-                    RobustSyncManager.shared.triggerSync()
+                    // CloudKit sync happens automatically via NSPersistentCloudKitContainer
                 } catch {
                     ErrorManager.shared.handle(error, context: "Failed to save conversation")
                 }

@@ -4,6 +4,8 @@ import EventKit
 struct CalendarProviderSettings: View {
     @ObservedObject private var calendarService = CalendarService.shared
     @State private var isLoadingCalendars = false
+    @State private var isRefreshing = false
+    @State private var showRefreshConfirmation = false
     @State private var showingGoogleSignIn = false
     @State private var errorMessage: String?
     @State private var showingError = false
@@ -254,6 +256,66 @@ struct CalendarProviderSettings: View {
                     Text("Events will be fetched from: \(calendar.title)")
                         .font(.caption)
                         .foregroundColor(.secondary)
+                }
+
+                // Refresh Events Button
+                HStack(spacing: 12) {
+                    Button {
+                        refreshCalendarEvents()
+                    } label: {
+                        HStack(spacing: 6) {
+                            if isRefreshing {
+                                ProgressView()
+                                    .scaleEffect(0.7)
+                            } else {
+                                Image(systemName: "arrow.clockwise")
+                            }
+                            Text(isRefreshing ? "Refreshing..." : "Refresh Events")
+                        }
+                    }
+                    .buttonStyle(.bordered)
+                    .disabled(isRefreshing)
+
+                    if showRefreshConfirmation {
+                        Label("Updated", systemImage: "checkmark.circle.fill")
+                            .font(.caption)
+                            .foregroundColor(.green)
+                            .transition(.opacity.combined(with: .scale))
+                    }
+                }
+                .padding(.top, 8)
+            }
+        }
+    }
+
+    // MARK: - Refresh Events
+
+    private func refreshCalendarEvents() {
+        isRefreshing = true
+        showRefreshConfirmation = false
+
+        Task {
+            // Re-fetch calendars and events
+            do {
+                try await calendarService.fetchAvailableCalendars()
+            } catch {
+                // Continue even if calendar fetch fails
+            }
+
+            // Fetch upcoming meetings
+            calendarService.fetchUpcomingMeetings(daysAhead: 14)
+
+            await MainActor.run {
+                isRefreshing = false
+                withAnimation {
+                    showRefreshConfirmation = true
+                }
+
+                // Hide confirmation after 3 seconds
+                DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
+                    withAnimation {
+                        showRefreshConfirmation = false
+                    }
                 }
             }
         }

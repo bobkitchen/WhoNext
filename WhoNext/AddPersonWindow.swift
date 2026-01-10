@@ -246,9 +246,16 @@ struct AddPersonWindow: View {
             }
         }
         .sheet(isPresented: $showingLinkedInWindow) {
-            LinkedInSearchWindow(onDataExtracted: { data in
-                populateFormFields(with: data)
-            }, onClose: { showingLinkedInWindow = false })
+            LinkedInSearchWindow(
+                personName: editingName,
+                personRole: editingRole,
+                onDataExtracted: { data in
+                    populateFormFields(with: data)
+                },
+                onClose: {
+                    showingLinkedInWindow = false
+                }
+            )
         }
         .onAppear {
             // Set default timezone to user's current timezone

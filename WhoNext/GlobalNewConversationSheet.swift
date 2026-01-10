@@ -130,10 +130,7 @@ struct GlobalNewConversationSheet: View {
         newConversation.person = person
         do {
             try viewContext.save()
-            
-            // Trigger sync to upload new conversation
-            RobustSyncManager.shared.triggerSync()
-            
+            // CloudKit sync happens automatically via NSPersistentCloudKitContainer
             isPresented = false
             notes = ""
             date = Date()
