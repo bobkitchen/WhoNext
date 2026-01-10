@@ -20,7 +20,8 @@ struct MeetingsView: View {
     ) private var people: FetchedResults<Person>
     
     @State private var showingRecordingSettings = false
-    
+    @State private var isRefreshingCalendar = false
+
     // MARK: - Phase 4: UI Overhaul - Meeting Filters
     enum MeetingFilter: String, CaseIterable {
         case all = "All"
@@ -48,19 +49,27 @@ struct MeetingsView: View {
             MeetingsHeaderView(
                 selectedFilter: $selectedFilter,
                 todaysCount: todaysMeetings.count,
-                thisWeeksCount: thisWeeksMeetings.count,
-                onRecordMeeting: {
-                    // Start manual recording immediately
-                    recordingEngine.manualStartRecording()
-                }
+                thisWeeksCount: thisWeeksMeetings.count
             )
             
             ScrollView(.vertical, showsIndicators: true) {
                 VStack(alignment: .leading, spacing: 24) {
-                    // Statistics Dashboard
-                    StatisticsCardsView()
-                        .padding(.bottom, 8)
-                        .smoothTransition()
+                    // Statistics Dashboard - New actionable cards
+                    StatisticsCardsView(
+                        onNavigateToPeople: {
+                            selectedTab = .people
+                        },
+                        onNavigateToPerson: { person in
+                            selectedPerson = person
+                            selectedPersonID = person.identifier
+                            selectedTab = .people
+                        },
+                        onNavigateToInsights: {
+                            selectedTab = .insights
+                        }
+                    )
+                    .padding(.bottom, 8)
+                    .smoothTransition()
 
                     // Today's Meetings Section
                     todaysMeetingsSection
@@ -89,26 +98,57 @@ struct MeetingsView: View {
             }
         }
     }
-    
+
+    // MARK: - Calendar Refresh
+
+    private func refreshCalendar() {
+        isRefreshingCalendar = true
+        calendarService.fetchUpcomingMeetings()
+
+        // Stop the animation after a brief delay
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+            isRefreshingCalendar = false
+        }
+    }
+
     // MARK: - Today's Meetings
     private var todaysMeetingsSection: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Button(action: { withAnimation { isTodayExpanded.toggle() } }) {
-                HStack {
-                    SectionHeaderView(
-                        icon: "calendar.badge.clock",
-                        title: "Today's Meetings",
-                        count: todaysMeetings.count
-                    )
-                    Spacer()
+            HStack {
+                Button(action: { withAnimation { isTodayExpanded.toggle() } }) {
+                    HStack {
+                        SectionHeaderView(
+                            icon: "calendar.badge.clock",
+                            title: "Today's Meetings",
+                            count: todaysMeetings.count
+                        )
+                        Spacer()
+                    }
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+
+                // Refresh Calendar Button
+                Button(action: refreshCalendar) {
+                    Image(systemName: "arrow.clockwise")
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundColor(.secondary)
+                        .rotationEffect(.degrees(isRefreshingCalendar ? 360 : 0))
+                        .animation(isRefreshingCalendar ? .linear(duration: 1).repeatForever(autoreverses: false) : .default, value: isRefreshingCalendar)
+                }
+                .buttonStyle(.plain)
+                .help("Refresh calendar")
+                .padding(.trailing, 8)
+
+                // Collapse/Expand Arrow
+                Button(action: { withAnimation { isTodayExpanded.toggle() } }) {
                     Image(systemName: "chevron.right")
                         .font(.system(size: 14, weight: .semibold))
                         .foregroundColor(.secondary)
                         .rotationEffect(.degrees(isTodayExpanded ? 90 : 0))
                 }
-                .contentShape(Rectangle())
+                .buttonStyle(.plain)
             }
-            .buttonStyle(.plain)
             
             if isTodayExpanded {
                 VStack(alignment: .leading, spacing: 12) {
@@ -437,30 +477,25 @@ struct MeetingsView: View {
     }
 }
 
-// MARK: - Masonry Grid Helper
+// MARK: - Responsive Grid Helper
 struct MasonryGrid<Data: RandomAccessCollection, Content: View>: View where Data.Element: Identifiable {
     let data: Data
     let content: (Data.Element) -> Content
-    
+
+    // Adaptive columns: minimum 280pt (fits 2-3 cards), maximum 400pt to prevent overly wide cards
+    private let columns = [
+        GridItem(.adaptive(minimum: 280, maximum: 400), spacing: 16)
+    ]
+
     init(_ data: Data, @ViewBuilder content: @escaping (Data.Element) -> Content) {
         self.data = data
         self.content = content
     }
-    
+
     var body: some View {
-        HStack(alignment: .top, spacing: 16) {
-            // Left Column
-            LazyVStack(spacing: 16) {
-                ForEach(Array(data.enumerated()).filter { $0.offset % 2 == 0 }.map { $0.element }) { item in
-                    content(item)
-                }
-            }
-            
-            // Right Column
-            LazyVStack(spacing: 16) {
-                ForEach(Array(data.enumerated()).filter { $0.offset % 2 != 0 }.map { $0.element }) { item in
-                    content(item)
-                }
+        LazyVGrid(columns: columns, spacing: 16) {
+            ForEach(Array(data), id: \.id) { item in
+                content(item)
             }
         }
     }

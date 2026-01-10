@@ -7,9 +7,12 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		7A1234562DBC08000089D3DA /* Supabase in Frameworks */ = {isa = PBXBuildFile; productRef = 7A1234552DBC08000089D3DA /* Supabase */; };
 		7A1FD56D2DBC07E30089D3DA /* Down in Frameworks */ = {isa = PBXBuildFile; productRef = 7A1FD56C2DBC07E30089D3DA /* Down */; };
 		7A5791692D9940CC0018E162 /* SwiftCSV in Frameworks */ = {isa = PBXBuildFile; productRef = 7A5791682D9940CC0018E162 /* SwiftCSV */; };
+		7AA712D02F0EA08C008468EA /* CloudKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 7AA712CF2F0EA08C008468EA /* CloudKit.framework */; };
+		7AA719C72F125CB1008468EA /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 7AA719C62F125CB1008468EA /* WidgetKit.framework */; };
+		7AA719C92F125CB1008468EA /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 7AA719C82F125CB1008468EA /* SwiftUI.framework */; };
+		7AA719D62F125CB3008468EA /* WhoNextWidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 7AA719C52F125CB1008468EA /* WhoNextWidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		7AABCDEF2DBC09000089D3DA /* FluidAudio in Frameworks */ = {isa = PBXBuildFile; productRef = 7AABCDEE2DBC09000089D3DA /* FluidAudio */; };
 /* End PBXBuildFile section */
 
@@ -28,15 +31,47 @@
 			remoteGlobalIDString = 7AA52C312D97D8E700C2B563;
 			remoteInfo = WhoNext;
 		};
+		7AA719D42F125CB3008468EA /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 7AA52C2A2D97D8E700C2B563 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 7AA719C42F125CB1008468EA;
+			remoteInfo = WhoNextWidgetExtension;
+		};
 /* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		7AA719DB2F125CB3008468EA /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				7AA719D62F125CB3008468EA /* WhoNextWidgetExtension.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
 		7AA52C322D97D8E700C2B563 /* WhoNext.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = WhoNext.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		7AA52C482D97D8E800C2B563 /* WhoNextTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = WhoNextTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		7AA52C522D97D8E800C2B563 /* WhoNextUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = WhoNextUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		7AA712CF2F0EA08C008468EA /* CloudKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CloudKit.framework; path = System/Library/Frameworks/CloudKit.framework; sourceTree = SDKROOT; };
+		7AA719C52F125CB1008468EA /* WhoNextWidgetExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = WhoNextWidgetExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		7AA719C62F125CB1008468EA /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
+		7AA719C82F125CB1008468EA /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		7AA719DA2F125CB3008468EA /* Exceptions for "WhoNextWidget" folder in "WhoNextWidgetExtension" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 7AA719C42F125CB1008468EA /* WhoNextWidgetExtension */;
+		};
 		7AE02BC02DBA87A200BC241F /* Exceptions for "WhoNext" folder in "WhoNext" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
@@ -65,6 +100,14 @@
 			path = WhoNextUITests;
 			sourceTree = "<group>";
 		};
+		7AA719CA2F125CB1008468EA /* WhoNextWidget */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				7AA719DA2F125CB3008468EA /* Exceptions for "WhoNextWidget" folder in "WhoNextWidgetExtension" target */,
+			);
+			path = WhoNextWidget;
+			sourceTree = "<group>";
+		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -72,9 +115,9 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				7AA712D02F0EA08C008468EA /* CloudKit.framework in Frameworks */,
 				7A5791692D9940CC0018E162 /* SwiftCSV in Frameworks */,
 				7A1FD56D2DBC07E30089D3DA /* Down in Frameworks */,
-				7A1234562DBC08000089D3DA /* Supabase in Frameworks */,
 				7AABCDEF2DBC09000089D3DA /* FluidAudio in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -93,6 +136,15 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		7AA719C22F125CB1008468EA /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				7AA719C92F125CB1008468EA /* SwiftUI.framework in Frameworks */,
+				7AA719C72F125CB1008468EA /* WidgetKit.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -102,6 +154,8 @@
 				7AA52C342D97D8E700C2B563 /* WhoNext */,
 				7AA52C4B2D97D8E800C2B563 /* WhoNextTests */,
 				7AA52C552D97D8E800C2B563 /* WhoNextUITests */,
+				7AA719CA2F125CB1008468EA /* WhoNextWidget */,
+				7AA712CE2F0EA08C008468EA /* Frameworks */,
 				7AA52C332D97D8E700C2B563 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -112,8 +166,19 @@
 				7AA52C322D97D8E700C2B563 /* WhoNext.app */,
 				7AA52C482D97D8E800C2B563 /* WhoNextTests.xctest */,
 				7AA52C522D97D8E800C2B563 /* WhoNextUITests.xctest */,
+				7AA719C52F125CB1008468EA /* WhoNextWidgetExtension.appex */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		7AA712CE2F0EA08C008468EA /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				7AA712CF2F0EA08C008468EA /* CloudKit.framework */,
+				7AA719C62F125CB1008468EA /* WidgetKit.framework */,
+				7AA719C82F125CB1008468EA /* SwiftUI.framework */,
+			);
+			name = Frameworks;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -126,10 +191,12 @@
 				7AA52C2E2D97D8E700C2B563 /* Sources */,
 				7AA52C2F2D97D8E700C2B563 /* Frameworks */,
 				7AA52C302D97D8E700C2B563 /* Resources */,
+				7AA719DB2F125CB3008468EA /* Embed Foundation Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				7AA719D52F125CB3008468EA /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				7AA52C342D97D8E700C2B563 /* WhoNext */,
@@ -138,7 +205,6 @@
 			packageProductDependencies = (
 				7A5791682D9940CC0018E162 /* SwiftCSV */,
 				7A1FD56C2DBC07E30089D3DA /* Down */,
-				7A1234552DBC08000089D3DA /* Supabase */,
 				7AABCDEE2DBC09000089D3DA /* FluidAudio */,
 			);
 			productName = WhoNext;
@@ -191,6 +257,28 @@
 			productReference = 7AA52C522D97D8E800C2B563 /* WhoNextUITests.xctest */;
 			productType = "com.apple.product-type.bundle.ui-testing";
 		};
+		7AA719C42F125CB1008468EA /* WhoNextWidgetExtension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 7AA719D72F125CB3008468EA /* Build configuration list for PBXNativeTarget "WhoNextWidgetExtension" */;
+			buildPhases = (
+				7AA719C12F125CB1008468EA /* Sources */,
+				7AA719C22F125CB1008468EA /* Frameworks */,
+				7AA719C32F125CB1008468EA /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				7AA719CA2F125CB1008468EA /* WhoNextWidget */,
+			);
+			name = WhoNextWidgetExtension;
+			packageProductDependencies = (
+			);
+			productName = WhoNextWidgetExtension;
+			productReference = 7AA719C52F125CB1008468EA /* WhoNextWidgetExtension.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -198,7 +286,7 @@
 			isa = PBXProject;
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
-				LastSwiftUpdateCheck = 1620;
+				LastSwiftUpdateCheck = 2620;
 				LastUpgradeCheck = 2600;
 				TargetAttributes = {
 					7AA52C312D97D8E700C2B563 = {
@@ -211,6 +299,9 @@
 					7AA52C512D97D8E800C2B563 = {
 						CreatedOnToolsVersion = 16.2;
 						TestTargetID = 7AA52C312D97D8E700C2B563;
+					};
+					7AA719C42F125CB1008468EA = {
+						CreatedOnToolsVersion = 26.2;
 					};
 				};
 			};
@@ -226,7 +317,6 @@
 			packageReferences = (
 				7A5791672D9940CC0018E162 /* XCRemoteSwiftPackageReference "SwiftCSV" */,
 				7A1FD56B2DBC07E30089D3DA /* XCRemoteSwiftPackageReference "Down" */,
-				7A1234542DBC08000089D3DA /* XCRemoteSwiftPackageReference "supabase-swift" */,
 				7AABCDED2DBC09000089D3DA /* XCRemoteSwiftPackageReference "FluidAudio" */,
 			);
 			preferredProjectObjectVersion = 77;
@@ -237,6 +327,7 @@
 				7AA52C312D97D8E700C2B563 /* WhoNext */,
 				7AA52C472D97D8E800C2B563 /* WhoNextTests */,
 				7AA52C512D97D8E800C2B563 /* WhoNextUITests */,
+				7AA719C42F125CB1008468EA /* WhoNextWidgetExtension */,
 			);
 		};
 /* End PBXProject section */
@@ -257,6 +348,13 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		7AA52C502D97D8E800C2B563 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		7AA719C32F125CB1008468EA /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -287,6 +385,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		7AA719C12F125CB1008468EA /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
@@ -299,6 +404,11 @@
 			isa = PBXTargetDependency;
 			target = 7AA52C312D97D8E700C2B563 /* WhoNext */;
 			targetProxy = 7AA52C532D97D8E800C2B563 /* PBXContainerItemProxy */;
+		};
+		7AA719D52F125CB3008468EA /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 7AA719C42F125CB1008468EA /* WhoNextWidgetExtension */;
+			targetProxy = 7AA719D42F125CB3008468EA /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -434,11 +544,13 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
 				CODE_SIGN_ENTITLEMENTS = WhoNext/WhoNext.entitlements;
+				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 001;
+				CURRENT_PROJECT_VERSION = 007;
 				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_ASSET_PATHS = "\"WhoNext/Preview Content\"";
+				DEVELOPMENT_TEAM = ZW6EQ2JWKC;
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_INCOMING_NETWORK_CONNECTIONS = NO;
@@ -469,6 +581,7 @@
 				MARKETING_VERSION = .7;
 				PRODUCT_BUNDLE_IDENTIFIER = com.bobk.WhoNext;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
 			};
@@ -481,11 +594,13 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
 				CODE_SIGN_ENTITLEMENTS = WhoNext/WhoNext.entitlements;
+				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 001;
+				CURRENT_PROJECT_VERSION = 007;
 				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_ASSET_PATHS = "\"WhoNext/Preview Content\"";
+				DEVELOPMENT_TEAM = ZW6EQ2JWKC;
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_INCOMING_NETWORK_CONNECTIONS = NO;
@@ -516,6 +631,7 @@
 				MARKETING_VERSION = .7;
 				PRODUCT_BUNDLE_IDENTIFIER = com.bobk.WhoNext;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
 			};
@@ -591,6 +707,76 @@
 			};
 			name = Release;
 		};
+		7AA719D82F125CB3008468EA /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_ENTITLEMENTS = WhoNextWidget/WhoNextWidgetExtension.entitlements;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = ZW6EQ2JWKC;
+				ENABLE_APP_SANDBOX = YES;
+				ENABLE_HARDENED_RUNTIME = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = WhoNextWidget/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = WhoNextWidget;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@executable_path/../../../../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 26.1;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.bobk.WhoNext.WhoNextWidget;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "";
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		7AA719D92F125CB3008468EA /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_ENTITLEMENTS = WhoNextWidget/WhoNextWidgetExtension.entitlements;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = ZW6EQ2JWKC;
+				ENABLE_APP_SANDBOX = YES;
+				ENABLE_HARDENED_RUNTIME = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = WhoNextWidget/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = WhoNextWidget;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@executable_path/../../../../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 26.1;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.bobk.WhoNext.WhoNextWidget;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "";
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -630,17 +816,18 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
+		7AA719D72F125CB3008468EA /* Build configuration list for PBXNativeTarget "WhoNextWidgetExtension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				7AA719D82F125CB3008468EA /* Debug */,
+				7AA719D92F125CB3008468EA /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
-		7A1234542DBC08000089D3DA /* XCRemoteSwiftPackageReference "supabase-swift" */ = {
-			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/supabase/supabase-swift";
-			requirement = {
-				kind = upToNextMajorVersion;
-				minimumVersion = 2.0.0;
-			};
-		};
 		7A1FD56B2DBC07E30089D3DA /* XCRemoteSwiftPackageReference "Down" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/iwasrobbed/Down";
@@ -662,17 +849,12 @@
 			repositoryURL = "https://github.com/FluidInference/FluidAudio.git";
 			requirement = {
 				kind = upToNextMajorVersion;
-				minimumVersion = 0.3.0;
+				minimumVersion = 0.9.0;
 			};
 		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
-		7A1234552DBC08000089D3DA /* Supabase */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = 7A1234542DBC08000089D3DA /* XCRemoteSwiftPackageReference "supabase-swift" */;
-			productName = Supabase;
-		};
 		7A1FD56C2DBC07E30089D3DA /* Down */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 7A1FD56B2DBC07E30089D3DA /* XCRemoteSwiftPackageReference "Down" */;

@@ -20,125 +20,43 @@ struct AnalyticsDashboardView: View {
     @State private var overdueWindowController: NSWindowController?
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 40) {
-            // Sentiment Analysis Section
-            VStack(alignment: .leading, spacing: 16) {
-                Text("Relationship Health")
-                    .font(.title2)
-                    .fontWeight(.bold)
+        VStack(alignment: .leading, spacing: 32) {
+            // Section 1: Week at a Glance (NEW)
+            WeekAtGlanceView()
+                .padding(.horizontal, 32)
 
-                let allMetrics = ConversationMetricsCalculator.shared.calculateAllPersonMetrics(context: self.viewContext)
-                // Filter out current user from analytics
-                let metrics = allMetrics.filter { !$0.person.isCurrentUser }
-                let stats = computeAggregateStats(from: metrics)
-                
-                // Aggregate Statistics
-                LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 3), spacing: 16) {
-                    StatCardView(
-                        title: "Avg Duration",
-                        value: String(format: "%.1f min", stats.averageDuration),
-                        icon: "clock.fill",
-                        color: .blue
-                    )
-                    
-                    StatCardView(
-                        title: "Total Conversations",
-                        value: "\(stats.totalConversations)",
-                        icon: "bubble.left.and.bubble.right.fill",
-                        color: .green
-                    )
-                    
-                    StatCardView(
-                        title: "Avg Health Score",
-                        value: String(format: "%.1f", stats.averageHealthScore),
-                        icon: "heart.fill",
-                        color: .red
-                    )
+            // Section 2: Relationship Health (Simplified)
+            RelationshipHealthSummaryView(
+                onViewDeclining: {
+                    chatInput = "Tell me about my declining relationships and what I should do"
+                    isChatFocused = true
                 }
-                
-                // Priority Insights
-                VStack(alignment: .leading, spacing: 16) {
-                    Text("Priority Insights")
+            )
+            .padding(.horizontal, 32)
+
+            // Section 3: Health Score Trends
+            let allMetrics = ConversationMetricsCalculator.shared.calculateAllPersonMetrics(context: self.viewContext)
+            let metrics = allMetrics.filter { !$0.person.isCurrentUser }
+
+            if !metrics.isEmpty {
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("Health Score Trends")
                         .font(.title2)
-                        .fontWeight(.semibold)
-                    
-                    HStack(spacing: 16) {
-                        // Low Health Score Alert
-                        Button(action: {
-                            chatInput = "Tell me about my low health relationships and what I should do"
-                            isChatFocused = true
-                        }) {
-                            HStack(spacing: 12) {
-                                Image(systemName: "exclamationmark.triangle.fill")
-                                    .foregroundColor(.red)
-                                    .font(.title2)
-                                
-                                VStack(alignment: .leading, spacing: 4) {
-                                    Text("Low Health Score Alert")
-                                        .font(.headline)
-                                        .foregroundColor(.primary)
-                                    Text("4 relationships showing health scores")
-                                        .font(.caption)
-                                        .foregroundColor(.secondary)
-                                }
-                                
-                                Spacer()
-                            }
-                            .padding(16)
-                            .background(Color(NSColor.controlBackgroundColor))
-                            .cornerRadius(12)
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 12)
-                                    .stroke(Color.red.opacity(0.3), lineWidth: 1)
-                            )
-                        }
-                        .buttonStyle(.plain)
-                        
-                        // Overdue Conversations
-                        Button(action: {
-                            chatInput = "Who haven't I talked to recently and when should I reach out?"
-                            isChatFocused = true
-                        }) {
-                            HStack(spacing: 12) {
-                                Image(systemName: "clock.fill")
-                                    .foregroundColor(.orange)
-                                    .font(.title2)
-                                
-                                VStack(alignment: .leading, spacing: 4) {
-                                    Text("Overdue Conversations")
-                                        .font(.headline)
-                                        .foregroundColor(.primary)
-                                    Text("2 people haven't been contacted in 30+ days")
-                                        .font(.caption)
-                                        .foregroundColor(.secondary)
-                                }
-                                
-                                Spacer()
-                            }
-                            .padding(16)
-                            .background(Color(NSColor.controlBackgroundColor))
-                            .cornerRadius(12)
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 12)
-                                    .stroke(Color.orange.opacity(0.3), lineWidth: 1)
-                            )
-                        }
-                        .buttonStyle(.plain)
-                    }
+                        .fontWeight(.bold)
+
+                    HealthScoreGraphView(healthScoreData: generateHealthScoreData(from: metrics))
                 }
-                
-                // Health Score Graph
-                if !metrics.isEmpty {
-                    VStack(alignment: .leading, spacing: 12) {
-                        Text("Health Score Graph")
-                            .font(.headline)
-                            .fontWeight(.semibold)
-                        
-                        HealthScoreGraphView(healthScoreData: generateHealthScoreData(from: metrics))
-                    }
-                    .padding(.top, 8)
-                }
+                .padding(.horizontal, 32)
             }
+
+            // Section 4: Action Items Hub (NEW)
+            ActionItemsHubView(
+                onViewAll: {
+                    // Navigate to action items or prompt AI
+                    chatInput = "Show me all my pending action items"
+                    isChatFocused = true
+                }
+            )
             .padding(.horizontal, 32)
             
             // Timeline Section
