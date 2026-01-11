@@ -83,48 +83,68 @@ class VoicePrintManager: ObservableObject {
     /// Find matching person for a given embedding
     func findMatchingPerson(for embedding: [Float]) -> (Person?, Float)? {
         guard embedding.count == embeddingDimension else {
-            print("[VoicePrintManager] Invalid embedding dimension for matching")
+            print("[VoicePrintManager] ❌ Invalid embedding dimension: \(embedding.count), expected \(embeddingDimension)")
             return nil
         }
-        
-        // Now re-enabled since Core Data model is updated
+
         let context = persistenceController.container.viewContext
         let request: NSFetchRequest<Person> = Person.fetchRequest()
         request.predicate = NSPredicate(format: "voiceEmbeddings != nil")
-        
+
         do {
             let people = try context.fetch(request)
+
+            if people.isEmpty {
+                print("[VoicePrintManager] ⚠️ No people with voice embeddings in database - voice learning not started yet")
+                return nil
+            }
+
+            print("[VoicePrintManager] 🔍 Searching \(people.count) people with voice data...")
+
             var bestMatch: (Person, Float)?
-            
+            var allMatches: [(String, Float)] = []  // For debug logging
+
             for person in people {
                 guard let storedData = person.voiceEmbeddings,
                       let storedEmbedding = deserializeEmbedding(from: storedData) else {
+                    print("[VoicePrintManager] ⚠️ Could not deserialize embedding for \(person.wrappedName)")
                     continue
                 }
-                
+
                 // Calculate cosine similarity
                 let similarity = cosineSimilarity(embedding, storedEmbedding)
-                
-                // Apply confidence weighting
+
+                // Apply confidence weighting based on voice sample count
                 let weightedSimilarity = similarity * person.voiceConfidence
-                
+
+                allMatches.append((person.wrappedName, weightedSimilarity))
+
                 if weightedSimilarity > minimumConfidenceThreshold {
                     if bestMatch == nil || weightedSimilarity > bestMatch!.1 {
                         bestMatch = (person, weightedSimilarity)
                     }
                 }
             }
-            
+
+            // Log all comparisons for debugging
+            let sortedMatches = allMatches.sorted { $0.1 > $1.1 }
+            for (name, score) in sortedMatches.prefix(3) {
+                let status = score >= minimumConfidenceThreshold ? "✓" : "✗"
+                print("[VoicePrintManager]   \(status) \(name): \(String(format: "%.1f%%", score * 100))")
+            }
+
             if let match = bestMatch {
                 lastMatchConfidence = match.1
-                print("[VoicePrintManager] Found match: \(match.0.wrappedName) with confidence \(match.1)")
+                print("[VoicePrintManager] ✅ Best match: \(match.0.wrappedName) with confidence \(String(format: "%.1f%%", match.1 * 100))")
                 return match
+            } else {
+                print("[VoicePrintManager] ❌ No match above \(String(format: "%.0f%%", minimumConfidenceThreshold * 100)) threshold")
             }
-            
+
         } catch {
-            print("[VoicePrintManager] Error searching for matches: \(error)")
+            print("[VoicePrintManager] ❌ Error searching for matches: \(error)")
         }
-        
+
         return nil
     }
     
@@ -183,8 +203,51 @@ class VoicePrintManager: ObservableObject {
         return matches
     }
     
-    // MARK: - Progressive Learning
-    
+    // MARK: - Progressive Learning with Feedback Loop
+
+    /// Save embedding with boosted weight when user confirms a voice match
+    /// This improves learning speed when users validate auto-identifications
+    func saveEmbeddingWithFeedback(_ embedding: [Float], for person: Person, wasConfirmed: Bool) {
+        guard embedding.count == embeddingDimension else {
+            print("[VoicePrintManager] Invalid embedding dimension: \(embedding.count)")
+            return
+        }
+
+        // Determine learning weight based on feedback
+        let feedbackBoost: Float = wasConfirmed ? 1.5 : 1.0  // 50% boost for confirmed matches
+
+        if let existingData = person.voiceEmbeddings,
+           let existingEmbedding = deserializeEmbedding(from: existingData) {
+            // Weighted average with feedback boost
+            let baseWeight = min(0.3, 1.0 / Float(person.voiceSampleCount + 1))
+            let effectiveWeight = min(baseWeight * feedbackBoost, 0.5)  // Cap at 50%
+
+            let mergedEmbedding = zip(existingEmbedding, embedding).map { existing, new in
+                existing * (1 - effectiveWeight) + new * effectiveWeight
+            }
+            saveEmbedding(mergedEmbedding, for: person)
+
+            if wasConfirmed {
+                // Boost confidence for confirmed matches
+                person.voiceConfidence = min(person.voiceConfidence + 0.1, 1.0)
+                print("[VoicePrintManager] ✅ Boosted learning for \(person.wrappedName) (confirmed match)")
+            }
+        } else {
+            saveEmbedding(embedding, for: person)
+        }
+    }
+
+    /// Record negative feedback when a voice match was incorrect
+    /// This doesn't change the embedding but logs for potential future use
+    func recordIncorrectMatch(for person: Person, incorrectEmbedding: [Float]) {
+        // For now, just log the incorrect match
+        // Future: could track embeddings that should NOT match this person
+        print("[VoicePrintManager] ⚠️ Incorrect match recorded for \(person.wrappedName)")
+
+        // Slightly reduce confidence when mistakes happen (cap at minimum 0.3)
+        person.voiceConfidence = max(person.voiceConfidence - 0.05, 0.3)
+    }
+
     /// Update confidence for a person based on sample count and quality
     func updateConfidence(for person: Person, with newEmbedding: [Float]? = nil) {
         // Base confidence on number of samples

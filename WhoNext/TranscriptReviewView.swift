@@ -601,10 +601,20 @@ struct TranscriptReviewView: View {
                 }
 
                 // Save voice embedding to Person for future voice recognition
+                // Use feedback-aware learning: boost if user confirmed a voice suggestion
                 if let person = linkedPerson, let embedding = participant.voiceEmbedding, !embedding.isEmpty {
-                    person.addVoiceEmbedding(embedding)
+                    // Check if this was a confirmed voice match (user accepted the suggestion)
+                    // High confidence (>= 0.7) indicates it was auto-suggested by voice
+                    let wasVoiceSuggestion = participant.confidence >= 0.7
+                    let userAcceptedSuggestion = wasVoiceSuggestion && (participantReplacements[participant.name] == nil)
+
+                    // Use feedback-aware saving for boosted learning
+                    let voicePrintManager = VoicePrintManager()
+                    voicePrintManager.saveEmbeddingWithFeedback(embedding, for: person, wasConfirmed: userAcceptedSuggestion)
+
                     voiceEmbeddingsSaved += 1
-                    print("🎤 Saved voice embedding for \(person.name ?? "Unknown") (confidence: \(person.voiceConfidence), samples: \(person.voiceSampleCount))")
+                    let feedbackType = userAcceptedSuggestion ? "confirmed" : "new"
+                    print("🎤 Saved voice embedding for \(person.name ?? "Unknown") (\(feedbackType), confidence: \(person.voiceConfidence), samples: \(person.voiceSampleCount))")
                 }
             }
 

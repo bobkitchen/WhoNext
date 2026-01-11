@@ -79,7 +79,17 @@ struct PersonSearchField: View {
             Image(systemName: "link.circle.fill")
                 .foregroundColor(.green)
                 .font(.system(size: 14))
-                .help("Linked to person record")
+                .help("Linked to person record - voice recognized")
+        case .suggestedByVoice:
+            Image(systemName: "waveform.circle.fill")
+                .foregroundColor(.orange)
+                .font(.system(size: 14))
+                .help("Voice match suggested - tap to confirm")
+        case .namedByUser:
+            Image(systemName: "person.crop.circle.fill")
+                .foregroundColor(.blue)
+                .font(.system(size: 14))
+                .help("Named by user")
         case .transcriptOnly:
             Image(systemName: "doc.text.fill")
                 .foregroundColor(.gray)

@@ -321,9 +321,11 @@ struct TranscriptSegment: Identifiable, Codable {
 // MARK: - Naming Mode
 
 enum NamingMode: String, Codable {
-    case linkedToPerson = "linked"    // Has Person record, learning voice
-    case transcriptOnly = "transcript" // Named but no Person record
-    case unnamed = "unnamed"          // Not yet named
+    case linkedToPerson = "linked"        // Has Person record, auto-identified via voice with high confidence
+    case suggestedByVoice = "suggested"   // Tentative voice match (70-80% confidence), awaiting confirmation
+    case namedByUser = "user"             // Explicitly named by user during review
+    case transcriptOnly = "transcript"    // Named but no Person record
+    case unnamed = "unnamed"              // Not yet named
 }
 
 // MARK: - Serializable Participant (for handoff between recording and review)

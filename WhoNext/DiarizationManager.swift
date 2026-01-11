@@ -58,9 +58,36 @@ class DiarizationManager: ObservableObject {
     private var speakerProfileEmbeddings: [String: [Float]] = [:] // Speaker ID -> averaged profile embedding
     private let maxEmbeddingsPerSpeaker: Int = 20 // Keep last N embeddings for averaging
 
+    // Speaker stabilization - prevents rapid label switching using hysteresis
+    private let speakerStabilizer = SpeakerStabilizer(requiredConsecutive: 2, hysteresisWindowSeconds: 1.5)
+
+    // PHASE 2: Dynamic speaker count constraints
+    // Evidence-based speaker acceptance prevents phantom speakers
+    // (removed stream cap - evidence thresholds are sufficient)
+    private let maxSpeakersGlobal: Int = 12     // Hard cap on total speakers
+    private var candidateAppearances: [String: Int] = [:]  // Candidate speaker -> appearance count
+    private var candidateDuration: [String: Float] = [:]   // Candidate speaker -> total duration
+    private let minAppearancesForNewSpeaker: Int = 3       // Require 3+ appearances
+    private let minDurationForNewSpeaker: Float = 20.0     // Require 20s+ total duration
+
+    // PHASE 2: Overlap speech detection
+    private var overlapDetector: OverlapDetector?
+
+    // PHASE 2: Track overlap frames for centroid protection
+    private var lastMicBuffer: AVAudioPCMBuffer?
+    private var lastSystemBuffer: AVAudioPCMBuffer?
+    private var currentOverlapRatio: Float = 0.0
+
     // PHASE 3: Confidence tracking
     @Published private(set) var speakerConfidence: Float = 0.0 // 0-1 confidence in speaker count
     @Published private(set) var speakerCountRange: (min: Int, max: Int) = (0, 0) // Estimated range
+
+    // User voice identification - tracks which speaker ID matches the current user
+    @Published private(set) var userSpeakerId: String? = nil
+    @Published private(set) var userSpeakerConfidence: Float = 0.0
+
+    // Diarization quality metrics for debugging and tuning
+    @Published private(set) var diarizationMetrics = DiarizationMetrics()
 
     // Store complete audio for post-recording refinement
     private var completeRecordingAudio: [Float] = []
@@ -144,6 +171,10 @@ class DiarizationManager: ObservableObject {
             // Create FluidAudio diarizer with our config
             fluidDiarizer = DiarizerManager(config: config)
             fluidDiarizer?.initialize(models: models)
+
+            // Initialize overlap detector for centroid protection
+            overlapDetector = OverlapDetector()
+            print("🔊 [DiarizationManager] Overlap detector initialized")
 
             isInitialized = true
             print("✅ [DiarizationManager] FluidAudio diarizer initialized successfully")
@@ -289,9 +320,12 @@ class DiarizationManager: ObservableObject {
                 timings: result.timings
             )
 
-            // POST-PROCESSING PIPELINE (Phase 1 & 3)
+            // POST-PROCESSING PIPELINE (Phase 1, 2 & 3)
+            // Step 0: Apply dynamic speaker constraints (Phase 2)
+            var processedResult = applyDynamicSpeakerConstraints(to: adjustedResult)
+
             // Step 1: Merge similar speakers that pyannote over-segmented
-            var processedResult = mergeSimilarSpeakers(in: adjustedResult)
+            processedResult = mergeSimilarSpeakers(in: processedResult)
 
             // Step 2: Enforce minimum segment duration
             // TUNED: 0.6s allows quick exchanges ("Yes", "No", "Okay") to be properly attributed
@@ -300,6 +334,9 @@ class DiarizationManager: ObservableObject {
 
             // Step 3: Smooth rapid speaker switches (A-B-A pattern within 2s = likely noise)
             processedResult = smoothRapidSpeakerSwitches(in: processedResult, windowSeconds: 2.0)
+
+            // Step 3.5: Apply speaker stabilization with hysteresis
+            processedResult = applySpeakerStabilization(to: processedResult)
 
             // Step 4: Accumulate speaker embeddings for profile building
             accumulateSpeakerEmbeddings(from: processedResult)
@@ -325,6 +362,9 @@ class DiarizationManager: ObservableObject {
             await MainActor.run {
                 self.lastResult = processedResult
                 self.updateCurrentSpeakers(from: processedResult)
+
+                // Update metrics
+                self.diarizationMetrics.update(from: processedResult)
             }
 
         } catch {
@@ -352,6 +392,9 @@ class DiarizationManager: ObservableObject {
             await performPostRecordingRefinement()
         }
 
+        // Log final metrics summary
+        print(diarizationMetrics.summary)
+
         return lastResult
     }
 
@@ -378,6 +421,15 @@ class DiarizationManager: ObservableObject {
             processedResult = enforceMinimumSegmentDuration(in: processedResult, minDuration: 0.6)
             processedResult = smoothRapidSpeakerSwitches(in: processedResult, windowSeconds: 2.0)
             processedResult = matchAgainstAccumulatedProfiles(in: processedResult)
+
+            // Phase 2: AHC reclustering with cannot-link constraints
+            print("🔄 [DiarizationManager] Running AHC reclustering on post-refinement segments...")
+            let reclusteredSegments = performAHCReclustering(processedResult.segments)
+            processedResult = DiarizationResult(
+                segments: reclusteredSegments,
+                speakerDatabase: processedResult.speakerDatabase,
+                timings: processedResult.timings
+            )
 
             // Final merge pass with accumulated profiles
             processedResult = finalProfileBasedMerge(in: processedResult)
@@ -614,6 +666,7 @@ class DiarizationManager: ObservableObject {
     }
 
     /// Identify if any detected speakers match the current user's voice profile
+    /// Sets userSpeakerId when user's voice is confidently detected
     private func identifyUserSpeaker(in result: DiarizationResult) {
         // Check if user has a trained voice profile
         guard UserProfile.shared.hasVoiceProfile,
@@ -621,23 +674,60 @@ class DiarizationManager: ObservableObject {
             return
         }
 
+        // Track the best match for the user
+        var bestMatchSpeakerId: String? = nil
+        var bestMatchConfidence: Float = 0.0
+        var bestMatchDuration: Float = 0.0
+
         // Check each speaker's embedding against the user's voice profile
+        // Group by speaker to find the speaker with most consistent user-matching segments
+        var speakerMatches: [String: (totalDuration: Float, avgConfidence: Float, matchCount: Int)] = [:]
+
         for segment in result.segments {
             let (matches, confidence) = UserProfile.shared.matchesUserVoice(segment.embedding)
+            let duration = segment.endTimeSeconds - segment.startTimeSeconds
 
-            if matches {
-                print("🎤 [DiarizationManager] ✅ IDENTIFIED USER SPEAKING!")
-                print("   Speaker ID: \(segment.speakerId)")
-                print("   Confidence: \(String(format: "%.1f%%", confidence * 100))")
-                print("   Time: \(String(format: "%.1f", segment.startTimeSeconds))s - \(String(format: "%.1f", segment.endTimeSeconds))s")
-
-                // TODO: Mark this segment as belonging to the user
-                // This could be used to:
-                // 1. Automatically exclude user from participant list
-                // 2. Show "You" instead of speaker number in transcript
-                // 3. Filter out user's speaking time from meeting analytics
+            if matches && confidence > 0.7 {  // At least 70% confidence
+                let speakerId = segment.speakerId
+                var current = speakerMatches[speakerId] ?? (0, 0, 0)
+                current.totalDuration += duration
+                current.avgConfidence = (current.avgConfidence * Float(current.matchCount) + confidence) / Float(current.matchCount + 1)
+                current.matchCount += 1
+                speakerMatches[speakerId] = current
             }
         }
+
+        // Find the speaker with most matching segments (by duration)
+        for (speakerId, stats) in speakerMatches {
+            if stats.totalDuration > bestMatchDuration {
+                bestMatchDuration = stats.totalDuration
+                bestMatchConfidence = stats.avgConfidence
+                bestMatchSpeakerId = speakerId
+            }
+        }
+
+        // Update user speaker ID if we have a confident match
+        if let matchedId = bestMatchSpeakerId, bestMatchConfidence >= 0.75, bestMatchDuration >= 3.0 {
+            // Only update if this is a new match or higher confidence than existing
+            if userSpeakerId == nil || bestMatchConfidence > userSpeakerConfidence {
+                userSpeakerId = matchedId
+                userSpeakerConfidence = bestMatchConfidence
+
+                print("🎤 [DiarizationManager] ✅ USER SPEAKER IDENTIFIED!")
+                print("   Speaker ID: \(matchedId)")
+                print("   Confidence: \(String(format: "%.1f%%", bestMatchConfidence * 100))")
+                print("   Total matching duration: \(String(format: "%.1f", bestMatchDuration))s")
+            }
+        }
+    }
+
+    /// Check if a given speaker ID is the current user
+    func isUserSpeaker(_ speakerId: String) -> Bool {
+        guard let userId = userSpeakerId else { return false }
+        // Handle both "1" and "speaker_1" formats
+        let normalizedUserId = userId.hasPrefix("speaker_") ? userId : "speaker_\(userId)"
+        let normalizedCheckId = speakerId.hasPrefix("speaker_") ? speakerId : "speaker_\(speakerId)"
+        return normalizedUserId == normalizedCheckId || userId == speakerId
     }
 
     /// Compare two audio segments to determine if they're the same speaker
@@ -655,43 +745,110 @@ class DiarizationManager: ObservableObject {
     // MARK: - Utility Methods
     
     /// Convert AVAudioPCMBuffer to Float array at 16kHz mono
+    /// Uses AVAudioConverter for proper anti-aliased resampling
     private func convertBufferToFloatArray(_ buffer: AVAudioPCMBuffer) -> [Float]? {
+        let sourceFormat = buffer.format
+        let sourceSampleRate = sourceFormat.sampleRate
+        let targetSampleRate = Double(sampleRate)
+
+        // Target format: 16kHz mono Float32
+        guard let targetFormat = AVAudioFormat(
+            commonFormat: .pcmFormatFloat32,
+            sampleRate: targetSampleRate,
+            channels: 1,
+            interleaved: false
+        ) else {
+            print("⚠️ [DiarizationManager] Failed to create target format")
+            return nil
+        }
+
+        // If source is already 16kHz mono, just extract samples
+        if sourceSampleRate == targetSampleRate && sourceFormat.channelCount == 1 {
+            guard let channelData = buffer.floatChannelData else { return nil }
+            return Array(UnsafeBufferPointer(start: channelData[0], count: Int(buffer.frameLength)))
+        }
+
+        // Use AVAudioConverter for proper resampling with anti-aliasing
+        guard let converter = AVAudioConverter(from: sourceFormat, to: targetFormat) else {
+            print("⚠️ [DiarizationManager] Failed to create audio converter")
+            // Fallback to simple conversion if converter fails
+            return convertBufferToFloatArrayFallback(buffer)
+        }
+
+        // Calculate output frame count
+        let ratio = targetSampleRate / sourceSampleRate
+        let outputFrameCapacity = AVAudioFrameCount(ceil(Double(buffer.frameLength) * ratio))
+
+        guard let outputBuffer = AVAudioPCMBuffer(
+            pcmFormat: targetFormat,
+            frameCapacity: outputFrameCapacity
+        ) else {
+            print("⚠️ [DiarizationManager] Failed to create output buffer")
+            return convertBufferToFloatArrayFallback(buffer)
+        }
+
+        var error: NSError?
+        let inputBlock: AVAudioConverterInputBlock = { _, outStatus in
+            outStatus.pointee = .haveData
+            return buffer
+        }
+
+        let status = converter.convert(to: outputBuffer, error: &error, withInputFrom: inputBlock)
+
+        if status == .error || error != nil {
+            print("⚠️ [DiarizationManager] Conversion error: \(error?.localizedDescription ?? "unknown")")
+            return convertBufferToFloatArrayFallback(buffer)
+        }
+
+        guard let channelData = outputBuffer.floatChannelData else { return nil }
+        return Array(UnsafeBufferPointer(start: channelData[0], count: Int(outputBuffer.frameLength)))
+    }
+
+    /// Fallback conversion using linear interpolation (better than nearest-neighbor)
+    private func convertBufferToFloatArrayFallback(_ buffer: AVAudioPCMBuffer) -> [Float]? {
         guard let channelData = buffer.floatChannelData else { return nil }
-        
+
         let frameCount = Int(buffer.frameLength)
         let channelCount = Int(buffer.format.channelCount)
         let sourceSampleRate = buffer.format.sampleRate
-        
-        var samples: [Float] = []
-        
-        if sourceSampleRate != Double(sampleRate) {
-            // Downsample to 16kHz
-            let ratio = sourceSampleRate / Double(sampleRate)
-            let targetFrameCount = Int(Double(frameCount) / ratio)
-            
-            for frame in 0..<targetFrameCount {
-                let sourceFrame = Int(Double(frame) * ratio)
-                if sourceFrame < frameCount {
-                    // Average all channels to mono
-                    var sample: Float = 0.0
-                    for channel in 0..<channelCount {
-                        sample += channelData[channel][sourceFrame]
-                    }
-                    samples.append(sample / Float(channelCount))
-                }
+        let targetSampleRate = Double(sampleRate)
+
+        // First, convert to mono
+        var monoSamples = [Float](repeating: 0, count: frameCount)
+        for frame in 0..<frameCount {
+            var sample: Float = 0.0
+            for channel in 0..<channelCount {
+                sample += channelData[channel][frame]
             }
-        } else {
-            // Already at 16kHz, just convert to mono
-            for frame in 0..<frameCount {
-                var sample: Float = 0.0
-                for channel in 0..<channelCount {
-                    sample += channelData[channel][frame]
-                }
-                samples.append(sample / Float(channelCount))
+            monoSamples[frame] = sample / Float(channelCount)
+        }
+
+        // If sample rates match, return mono samples
+        if abs(sourceSampleRate - targetSampleRate) < 0.1 {
+            return monoSamples
+        }
+
+        // Resample using linear interpolation (better than nearest-neighbor)
+        let ratio = sourceSampleRate / targetSampleRate
+        let targetFrameCount = Int(Double(frameCount) / ratio)
+        var resampledSamples = [Float](repeating: 0, count: targetFrameCount)
+
+        for frame in 0..<targetFrameCount {
+            let sourcePosition = Double(frame) * ratio
+            let sourceFrame = Int(sourcePosition)
+            let fraction = Float(sourcePosition - Double(sourceFrame))
+
+            if sourceFrame + 1 < frameCount {
+                // Linear interpolation between adjacent samples
+                let sample0 = monoSamples[sourceFrame]
+                let sample1 = monoSamples[sourceFrame + 1]
+                resampledSamples[frame] = sample0 + fraction * (sample1 - sample0)
+            } else if sourceFrame < frameCount {
+                resampledSamples[frame] = monoSamples[sourceFrame]
             }
         }
-        
-        return samples
+
+        return resampledSamples
     }
     
     // MARK: - Reset and Cleanup
@@ -721,6 +878,26 @@ class DiarizationManager: ObservableObject {
 
         // Phase 2: Clear complete recording audio
         completeRecordingAudio.removeAll()
+
+        // Phase 2: Clear dynamic speaker constraints
+        candidateAppearances.removeAll()
+        candidateDuration.removeAll()
+
+        // Phase 2: Reset overlap detector
+        overlapDetector?.reset()
+        lastMicBuffer = nil
+        lastSystemBuffer = nil
+        currentOverlapRatio = 0.0
+
+        // Reset speaker stabilizer
+        speakerStabilizer.reset()
+
+        // Reset user speaker identification
+        userSpeakerId = nil
+        userSpeakerConfidence = 0.0
+
+        // Reset metrics
+        diarizationMetrics.reset()
 
         print("🔄 [DiarizationManager] Reset complete")
     }
@@ -918,9 +1095,58 @@ class DiarizationManager: ObservableObject {
         )
     }
 
+    /// Apply speaker stabilization with hysteresis to prevent rapid label switching
+    private func applySpeakerStabilization(to result: DiarizationResult) -> DiarizationResult {
+        guard result.segments.count > 1 else { return result }
+
+        let sortedSegments = result.segments.sorted { $0.startTimeSeconds < $1.startTimeSeconds }
+
+        // Convert to tuples for stabilizer
+        let segmentTuples = sortedSegments.map { segment in
+            (speakerId: segment.speakerId,
+             startTime: segment.startTimeSeconds,
+             endTime: segment.endTimeSeconds)
+        }
+
+        // Apply temporal smoothing from stabilizer
+        let smoothed = speakerStabilizer.temporalSmooth(
+            segments: segmentTuples,
+            minDurationForChange: 0.5
+        )
+
+        // Rebuild segments with stabilized speaker IDs
+        var stabilizedSegments: [TimedSpeakerSegment] = []
+        for (index, (speakerId, startTime, endTime)) in smoothed.enumerated() {
+            if index < sortedSegments.count {
+                let original = sortedSegments[index]
+                let stabilized = TimedSpeakerSegment(
+                    speakerId: speakerId,
+                    embedding: original.embedding,
+                    startTimeSeconds: startTime,
+                    endTimeSeconds: endTime,
+                    qualityScore: original.qualityScore
+                )
+                stabilizedSegments.append(stabilized)
+            }
+        }
+
+        // Log stabilization stats periodically
+        let stats = speakerStabilizer.stabilizationStats
+        if stats.temporalSmooths > 0 {
+            print("   📊 Stabilization: \(stats.temporalSmooths) temporal smooths applied")
+        }
+
+        return DiarizationResult(
+            segments: stabilizedSegments,
+            speakerDatabase: result.speakerDatabase,
+            timings: result.timings
+        )
+    }
+
     // MARK: - Phase 3: Speaker Profile Accumulation
 
     /// PHASE 3: Accumulate speaker embeddings to build better profiles over time
+    /// Uses strict gating to prevent poisoning centroids with poor-quality or overlap segments
     private func accumulateSpeakerEmbeddings(from result: DiarizationResult) {
         for segment in result.segments {
             let speakerId = segment.speakerId
@@ -930,16 +1156,18 @@ class DiarizationManager: ObservableObject {
                 accumulatedSpeakerEmbeddings[speakerId] = []
             }
 
-            // Only add embeddings from segments with reasonable quality and duration
-            let duration = segment.endTimeSeconds - segment.startTimeSeconds
-            if duration >= 1.0 && segment.qualityScore > 0.5 {
+            // Apply strict gating criteria
+            if shouldUpdateCentroid(segment: segment, allSegments: result.segments) {
                 accumulatedSpeakerEmbeddings[speakerId]?.append(segment.embedding)
+                diarizationMetrics.acceptedCentroidUpdates += 1
 
                 // Keep only the most recent embeddings
                 if let count = accumulatedSpeakerEmbeddings[speakerId]?.count,
                    count > maxEmbeddingsPerSpeaker {
                     accumulatedSpeakerEmbeddings[speakerId]?.removeFirst(count - maxEmbeddingsPerSpeaker)
                 }
+            } else {
+                diarizationMetrics.gatedCentroidUpdates += 1
             }
         }
 
@@ -949,6 +1177,373 @@ class DiarizationManager: ObservableObject {
                 speakerProfileEmbeddings[speakerId] = averaged
             }
         }
+    }
+
+    /// Determine if a segment should contribute to centroid update
+    /// Uses strict gating to prevent poisoning speaker profiles
+    private func shouldUpdateCentroid(segment: TimedSpeakerSegment, allSegments: [TimedSpeakerSegment]) -> Bool {
+        let duration = segment.endTimeSeconds - segment.startTimeSeconds
+
+        // Gate 1: Minimum duration (1.5 seconds for reliable embeddings)
+        guard duration >= 1.5 else { return false }
+
+        // Gate 2: High quality score (> 0.6)
+        guard segment.qualityScore > 0.6 else { return false }
+
+        // Gate 3: No overlap with other speakers (check segment-level overlap)
+        let hasSegmentOverlap = allSegments.contains { other in
+            guard other.speakerId != segment.speakerId else { return false }
+            // Check if segments overlap in time
+            let overlaps = segment.startTimeSeconds < other.endTimeSeconds &&
+                          segment.endTimeSeconds > other.startTimeSeconds
+            return overlaps
+        }
+        guard !hasSegmentOverlap else { return false }
+
+        // Gate 4: No real-time overlap detected (mic + system audio active together)
+        if currentOverlapRatio > 0.3 {
+            // More than 30% overlap in recent audio - skip centroid update
+            return false
+        }
+
+        // Gate 5: Confident assignment (check distance margin to other speakers)
+        if let speakerDB = previousSpeakerDatabase, !speakerDB.isEmpty {
+            let margin = calculateAssignmentMargin(for: segment, speakerDatabase: speakerDB)
+            guard margin > 0.15 else { return false }  // Require 15% margin over second-best
+        }
+
+        return true
+    }
+
+    // MARK: - Phase 2: Dynamic Speaker Count Constraints
+
+    /// Track a candidate speaker and determine if it should become an official speaker
+    /// Requires repeated evidence before accepting a new speaker to prevent phantom speakers
+    private func trackCandidateSpeaker(_ speakerId: String, duration: Float) {
+        candidateAppearances[speakerId, default: 0] += 1
+        candidateDuration[speakerId, default: 0] += duration
+
+        // Log candidate tracking
+        if candidateAppearances[speakerId]! == minAppearancesForNewSpeaker {
+            print("👤 [DiarizationManager] Candidate \(speakerId) reached \(minAppearancesForNewSpeaker) appearances")
+        }
+    }
+
+    /// Determine if a candidate speaker should be promoted to official speaker
+    /// Returns false if constraints prevent creating a new speaker
+    private func shouldCreateNewSpeaker(candidateId: String) -> Bool {
+        // Check global hard cap
+        guard knownSpeakers.count < maxSpeakersGlobal else {
+            print("⚠️ [DiarizationManager] Rejecting \(candidateId): global cap (\(maxSpeakersGlobal)) reached")
+            return false
+        }
+
+        let appearances = candidateAppearances[candidateId] ?? 0
+        let totalDuration = candidateDuration[candidateId] ?? 0
+
+        // Accept if EITHER condition is met:
+        // - 3+ appearances (frequent speaker, even if brief each time)
+        // - 20+ seconds total (substantial voice sample, even if continuous)
+        let hasEnoughAppearances = appearances >= minAppearancesForNewSpeaker
+        let hasEnoughDuration = totalDuration >= minDurationForNewSpeaker
+
+        guard hasEnoughAppearances || hasEnoughDuration else {
+            return false
+        }
+
+        print("✅ [DiarizationManager] Accepting new speaker \(candidateId): \(appearances) appearances, \(String(format: "%.1f", totalDuration))s total")
+        return true
+    }
+
+    /// Apply dynamic speaker constraints to a diarization result
+    /// Filters out speakers that don't meet the evidence threshold
+    private func applyDynamicSpeakerConstraints(to result: DiarizationResult) -> DiarizationResult {
+        var approvedSpeakers: Set<String> = Set(knownSpeakers)  // Start with already-known speakers
+        var filteredSegments: [TimedSpeakerSegment] = []
+
+        // First pass: track all candidates
+        for segment in result.segments {
+            let speakerId = segment.speakerId
+            let duration = segment.endTimeSeconds - segment.startTimeSeconds
+
+            if !approvedSpeakers.contains(speakerId) {
+                trackCandidateSpeaker(speakerId, duration: duration)
+
+                if shouldCreateNewSpeaker(candidateId: speakerId) {
+                    approvedSpeakers.insert(speakerId)
+                }
+            }
+        }
+
+        // Second pass: filter segments
+        var suppressedSegments = 0
+        for segment in result.segments {
+            if approvedSpeakers.contains(segment.speakerId) {
+                filteredSegments.append(segment)
+            } else {
+                // Find closest approved speaker to reassign
+                if let reassigned = reassignToClosestSpeaker(segment, approvedSpeakers: approvedSpeakers, speakerDB: result.speakerDatabase) {
+                    filteredSegments.append(reassigned)
+                    suppressedSegments += 1
+                }
+            }
+        }
+
+        if suppressedSegments > 0 {
+            print("   📉 Dynamic constraints: reassigned \(suppressedSegments) segments from unapproved speakers")
+        }
+
+        // Update speaker database to only include approved speakers
+        var filteredDB: [String: [Float]] = [:]
+        if let db = result.speakerDatabase {
+            for speakerId in approvedSpeakers {
+                if let embedding = db[speakerId] {
+                    filteredDB[speakerId] = embedding
+                }
+            }
+        }
+
+        return DiarizationResult(
+            segments: filteredSegments,
+            speakerDatabase: filteredDB,
+            timings: result.timings
+        )
+    }
+
+    /// Reassign a segment to the closest approved speaker
+    private func reassignToClosestSpeaker(_ segment: TimedSpeakerSegment,
+                                          approvedSpeakers: Set<String>,
+                                          speakerDB: [String: [Float]]?) -> TimedSpeakerSegment? {
+        guard let db = speakerDB, !approvedSpeakers.isEmpty else { return nil }
+
+        var bestMatch: String?
+        var bestDistance: Float = Float.infinity
+
+        for speakerId in approvedSpeakers {
+            guard let embedding = db[speakerId] else { continue }
+            let distance = cosineDistance(segment.embedding, embedding)
+            if distance < bestDistance {
+                bestDistance = distance
+                bestMatch = speakerId
+            }
+        }
+
+        guard let matchedSpeaker = bestMatch, bestDistance < 0.6 else {
+            // No close match found - drop the segment
+            return nil
+        }
+
+        return TimedSpeakerSegment(
+            speakerId: matchedSpeaker,
+            embedding: segment.embedding,
+            startTimeSeconds: segment.startTimeSeconds,
+            endTimeSeconds: segment.endTimeSeconds,
+            qualityScore: segment.qualityScore * 0.8  // Reduce quality score for reassigned segments
+        )
+    }
+
+    // MARK: - Phase 2: Overlap Detection Integration
+
+    /// Update overlap state from audio buffers
+    /// Called from MeetingRecordingEngine when processing two-stream audio
+    func updateOverlapState(micBuffer: AVAudioPCMBuffer?, systemBuffer: AVAudioPCMBuffer?) {
+        lastMicBuffer = micBuffer
+        lastSystemBuffer = systemBuffer
+
+        if let detector = overlapDetector {
+            let result = detector.detectOverlap(micBuffer: micBuffer, systemBuffer: systemBuffer)
+            currentOverlapRatio = result.overlapRatio
+
+            if result.isOverlapping {
+                diarizationMetrics.gatedCentroidUpdates += 1
+                print("🔄 [DiarizationManager] Overlap detected (ratio: \(String(format: "%.2f", result.overlapRatio))) - gating centroids")
+            }
+        }
+    }
+
+    /// Get current overlap statistics
+    var overlapStats: OverlapStats? {
+        return overlapDetector?.stats
+    }
+
+    // MARK: - Phase 2: Post-Pass AHC Reclustering
+
+    /// Agglomerative Hierarchical Clustering (AHC) for post-pass speaker merging
+    /// Uses average linkage with cannot-link constraints for simultaneous speakers
+    private func performAHCReclustering(_ segments: [TimedSpeakerSegment]) -> [TimedSpeakerSegment] {
+        guard !segments.isEmpty else { return segments }
+
+        // Get unique speakers and their embeddings
+        var speakerEmbeddings: [String: [Float]] = [:]
+        for segment in segments {
+            if speakerEmbeddings[segment.speakerId] == nil {
+                speakerEmbeddings[segment.speakerId] = segment.embedding
+            } else {
+                // Average with existing embedding
+                if let existing = speakerEmbeddings[segment.speakerId],
+                   let averaged = averageEmbeddings([existing, segment.embedding]) {
+                    speakerEmbeddings[segment.speakerId] = averaged
+                }
+            }
+        }
+
+        let speakerIds = Array(speakerEmbeddings.keys).sorted()
+        guard speakerIds.count > 1 else { return segments }
+
+        print("🔄 [DiarizationManager] AHC reclustering: \(speakerIds.count) speakers")
+
+        // Build cannot-link constraints (speakers that overlap in time can't be merged)
+        var cannotLink: Set<Set<String>> = []
+        for segment1 in segments {
+            for segment2 in segments {
+                if segment1.speakerId != segment2.speakerId {
+                    // Check if these segments overlap
+                    let overlaps = segment1.startTimeSeconds < segment2.endTimeSeconds &&
+                                  segment1.endTimeSeconds > segment2.startTimeSeconds
+                    if overlaps {
+                        cannotLink.insert(Set([segment1.speakerId, segment2.speakerId]))
+                    }
+                }
+            }
+        }
+
+        print("   📊 Cannot-link constraints: \(cannotLink.count) pairs")
+
+        // Build distance matrix
+        var distanceMatrix: [[Float]] = Array(repeating: Array(repeating: Float.infinity, count: speakerIds.count), count: speakerIds.count)
+        for i in 0..<speakerIds.count {
+            distanceMatrix[i][i] = 0
+            for j in (i+1)..<speakerIds.count {
+                let id1 = speakerIds[i]
+                let id2 = speakerIds[j]
+
+                // Check cannot-link constraint
+                if cannotLink.contains(Set([id1, id2])) {
+                    distanceMatrix[i][j] = Float.infinity
+                    distanceMatrix[j][i] = Float.infinity
+                } else if let emb1 = speakerEmbeddings[id1], let emb2 = speakerEmbeddings[id2] {
+                    let distance = cosineDistance(emb1, emb2)
+                    distanceMatrix[i][j] = distance
+                    distanceMatrix[j][i] = distance
+                }
+            }
+        }
+
+        // Perform AHC with average linkage
+        let mergeThreshold: Float = 0.4  // Merge if distance < 0.4
+        var clusters: [[String]] = speakerIds.map { [$0] }
+
+        var merged = true
+        while merged && clusters.count > 1 {
+            merged = false
+            var bestI = -1, bestJ = -1
+            var bestDistance: Float = Float.infinity
+
+            // Find the closest pair of clusters
+            for i in 0..<clusters.count {
+                for j in (i+1)..<clusters.count {
+                    let distance = averageLinkageDistance(clusters[i], clusters[j], distanceMatrix: distanceMatrix, speakerIds: speakerIds)
+                    if distance < bestDistance {
+                        bestDistance = distance
+                        bestI = i
+                        bestJ = j
+                    }
+                }
+            }
+
+            // Merge if below threshold
+            if bestDistance < mergeThreshold && bestI >= 0 && bestJ >= 0 {
+                let mergedCluster = clusters[bestI] + clusters[bestJ]
+                clusters.remove(at: bestJ)
+                clusters.remove(at: bestI)
+                clusters.append(mergedCluster)
+                merged = true
+                print("   🔗 AHC: merged cluster (distance: \(String(format: "%.3f", bestDistance)))")
+            }
+        }
+
+        // Build merge map from clusters
+        var mergeMap: [String: String] = [:]
+        for cluster in clusters {
+            let canonicalId = cluster.sorted().first!
+            for id in cluster {
+                mergeMap[id] = canonicalId
+            }
+        }
+
+        // Check if any merging happened
+        let uniqueTargets = Set(mergeMap.values)
+        if uniqueTargets.count == speakerIds.count {
+            print("   ℹ️ AHC: no speakers merged")
+            return segments
+        }
+
+        print("   ✅ AHC: \(speakerIds.count) → \(uniqueTargets.count) speakers")
+
+        // Apply merge map to segments
+        var reclusteredSegments: [TimedSpeakerSegment] = []
+        for segment in segments {
+            let mergedId = mergeMap[segment.speakerId] ?? segment.speakerId
+            let reclusteredSegment = TimedSpeakerSegment(
+                speakerId: mergedId,
+                embedding: segment.embedding,
+                startTimeSeconds: segment.startTimeSeconds,
+                endTimeSeconds: segment.endTimeSeconds,
+                qualityScore: segment.qualityScore
+            )
+            reclusteredSegments.append(reclusteredSegment)
+        }
+
+        return reclusteredSegments
+    }
+
+    /// Calculate average linkage distance between two clusters
+    private func averageLinkageDistance(_ cluster1: [String], _ cluster2: [String],
+                                         distanceMatrix: [[Float]], speakerIds: [String]) -> Float {
+        var totalDistance: Float = 0
+        var count: Float = 0
+
+        for id1 in cluster1 {
+            guard let i = speakerIds.firstIndex(of: id1) else { continue }
+            for id2 in cluster2 {
+                guard let j = speakerIds.firstIndex(of: id2) else { continue }
+                let distance = distanceMatrix[i][j]
+                if distance < Float.infinity {
+                    totalDistance += distance
+                    count += 1
+                }
+            }
+        }
+
+        return count > 0 ? totalDistance / count : Float.infinity
+    }
+
+    /// Calculate assignment margin (difference between best and second-best speaker match)
+    private func calculateAssignmentMargin(for segment: TimedSpeakerSegment,
+                                            speakerDatabase: [String: [Float]]) -> Float {
+        var distances: [(String, Float)] = []
+
+        for (speakerId, embedding) in speakerDatabase {
+            let distance = cosineDistance(segment.embedding, embedding)
+            distances.append((speakerId, distance))
+        }
+
+        distances.sort { $0.1 < $1.1 }
+
+        guard distances.count >= 2 else {
+            return 1.0  // Only one speaker, maximum margin
+        }
+
+        let bestDistance = distances[0].1
+        let secondBestDistance = distances[1].1
+
+        // Margin is the relative difference between best and second-best
+        // Larger margin = more confident assignment
+        if secondBestDistance > 0 {
+            return (secondBestDistance - bestDistance) / secondBestDistance
+        }
+
+        return 0
     }
 
     /// PHASE 3: Match segments against accumulated speaker profiles for consistency
@@ -1364,6 +1959,102 @@ enum DiarizationError: LocalizedError {
             return "Invalid audio format for diarization"
         case .insufficientAudio:
             return "Not enough audio for reliable diarization (minimum 3 seconds required)"
+        }
+    }
+}
+
+// MARK: - Diarization Quality Metrics
+
+/// Metrics for monitoring and tuning diarization quality
+struct DiarizationMetrics {
+    /// History of speaker counts over time - spikes indicate phantom speakers
+    var speakerCountOverTime: [Int] = []
+
+    /// Average segment duration (seconds) - low values indicate fragmentation
+    var avgSegmentDuration: Float = 0
+
+    /// Number of speaker switches per minute - high values indicate instability
+    var flipRate: Float = 0
+
+    /// Total segments processed
+    var totalSegments: Int = 0
+
+    /// Number of segments that were reassigned by post-pass processing
+    var reassignedSegments: Int = 0
+
+    /// Reassignment rate (0-1)
+    var reassignmentRate: Float {
+        totalSegments > 0 ? Float(reassignedSegments) / Float(totalSegments) : 0
+    }
+
+    /// Number of gated (rejected) centroid updates
+    var gatedCentroidUpdates: Int = 0
+
+    /// Number of accepted centroid updates
+    var acceptedCentroidUpdates: Int = 0
+
+    /// Centroid update gating rate
+    var centroidGatingRate: Float {
+        let total = gatedCentroidUpdates + acceptedCentroidUpdates
+        return total > 0 ? Float(gatedCentroidUpdates) / Float(total) : 0
+    }
+
+    /// Total meeting duration processed (seconds)
+    var totalDurationProcessed: Float = 0
+
+    /// Summary description for logging
+    var summary: String {
+        """
+        📊 Diarization Metrics:
+        - Total segments: \(totalSegments)
+        - Avg segment duration: \(String(format: "%.2f", avgSegmentDuration))s
+        - Flip rate: \(String(format: "%.1f", flipRate)) switches/min
+        - Reassignment rate: \(Int(reassignmentRate * 100))%
+        - Centroid gating rate: \(Int(centroidGatingRate * 100))%
+        - Speaker count history: \(speakerCountOverTime.suffix(10).map { String($0) }.joined(separator: "→"))
+        """
+    }
+
+    mutating func reset() {
+        speakerCountOverTime.removeAll()
+        avgSegmentDuration = 0
+        flipRate = 0
+        totalSegments = 0
+        reassignedSegments = 0
+        gatedCentroidUpdates = 0
+        acceptedCentroidUpdates = 0
+        totalDurationProcessed = 0
+    }
+
+    mutating func update(from result: DiarizationResult) {
+        let segments = result.segments
+
+        // Update total segments
+        totalSegments = segments.count
+
+        // Calculate average segment duration
+        if !segments.isEmpty {
+            let totalDuration = segments.reduce(0.0) { $0 + ($1.endTimeSeconds - $1.startTimeSeconds) }
+            avgSegmentDuration = totalDuration / Float(segments.count)
+            totalDurationProcessed = segments.last?.endTimeSeconds ?? 0
+        }
+
+        // Record speaker count
+        speakerCountOverTime.append(result.speakerCount)
+        if speakerCountOverTime.count > 100 {
+            speakerCountOverTime.removeFirst()
+        }
+
+        // Calculate flip rate (speaker switches per minute)
+        if segments.count > 1 && totalDurationProcessed > 0 {
+            var switches = 0
+            for i in 1..<segments.count {
+                if segments[i].speakerId != segments[i-1].speakerId {
+                    switches += 1
+                }
+            }
+            let durationMinutes = totalDurationProcessed / 60.0
+            flipRate = durationMinutes > 0 ? Float(switches) / durationMinutes : 0
         }
     }
 }
