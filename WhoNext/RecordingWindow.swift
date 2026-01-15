@@ -222,9 +222,28 @@ struct RecordingWindowView: View {
                     .font(.subheadline)
                     .foregroundColor(.secondary)
                     .lineLimit(1)
+
+                // Meeting type badge (convert from LiveMeeting.MeetingType to MeetingTypeBadge.MeetingType)
+                MeetingTypeBadge(type: convertMeetingType(meeting.meetingType))
             }
 
             Spacer()
+
+            // Speaker count indicator
+            if recordingEngine.detectedSpeakerCount > 0 {
+                HStack(spacing: 4) {
+                    Image(systemName: "person.2.fill")
+                        .font(.caption)
+                    Text("\(recordingEngine.detectedSpeakerCount)")
+                        .font(.caption)
+                        .fontWeight(.medium)
+                }
+                .foregroundColor(.secondary)
+                .padding(.horizontal, 8)
+                .padding(.vertical, 4)
+                .background(Color.secondary.opacity(0.1))
+                .clipShape(Capsule())
+            }
 
             // Duration
             Text(formattedDuration)
@@ -390,6 +409,18 @@ struct RecordingWindowView: View {
             return String(format: "%02d:%02d", minutes, seconds)
         }
     }
+
+    /// Convert LiveMeeting.MeetingType to MeetingTypeBadge.MeetingType
+    private func convertMeetingType(_ type: MeetingType) -> MeetingTypeBadge.MeetingType {
+        switch type {
+        case .oneOnOne:
+            return .oneOnOne
+        case .group:
+            return .group
+        case .unknown:
+            return .unknown
+        }
+    }
 }
 
 // MARK: - Notes Formatting Toolbar
@@ -520,16 +551,23 @@ struct ParticipantRow: View {
                 )
 
             VStack(alignment: .leading, spacing: 1) {
-                Text(participant.displayName)
-                    .font(.caption)
-                    .fontWeight(.medium)
-                    .lineLimit(1)
+                HStack(spacing: 4) {
+                    Text(participant.displayName)
+                        .font(.caption)
+                        .fontWeight(.medium)
+                        .lineLimit(1)
 
-                if participant.isCurrentUser {
-                    Text("(You)")
-                        .font(.caption2)
-                        .foregroundColor(.secondary)
+                    if participant.isCurrentUser {
+                        Text("(You)")
+                            .font(.caption2)
+                            .foregroundColor(.secondary)
+                    }
                 }
+
+                // Speaking time
+                Text(formattedSpeakingTime)
+                    .font(.caption2)
+                    .foregroundColor(.secondary)
             }
 
             Spacer()
@@ -556,6 +594,17 @@ struct ParticipantRow: View {
         let colors: [Color] = [.blue, .green, .orange, .purple, .pink, .cyan]
         let index = abs(participant.speakerID.hashValue) % colors.count
         return colors[index]
+    }
+
+    private var formattedSpeakingTime: String {
+        let time = participant.totalSpeakingTime
+        if time < 60 {
+            return String(format: "%.0fs", time)
+        } else {
+            let minutes = Int(time) / 60
+            let seconds = Int(time) % 60
+            return String(format: "%d:%02d", minutes, seconds)
+        }
     }
 }
 
