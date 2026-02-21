@@ -1,0 +1,15 @@
+# Build artifacts
+.build/
+DerivedData/
+*.o
+*.tar.gz
+
+# Xcode
+xcuserdata/
+*.xcuserstate
+
+# macOS
+.DS_Store
+
+# SQL scripts (one-off)
+*.sql

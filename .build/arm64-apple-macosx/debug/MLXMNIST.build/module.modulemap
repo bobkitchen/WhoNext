@@ -1,4 +1,0 @@
-module MLXMNIST {
-    header "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/MLXMNIST.build/MLXMNIST-Swift.h"
-    requires objc
-}

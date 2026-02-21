@@ -1,4 +1,0 @@
-module Hub {
-    header "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/Hub.build/Hub-Swift.h"
-    requires objc
-}

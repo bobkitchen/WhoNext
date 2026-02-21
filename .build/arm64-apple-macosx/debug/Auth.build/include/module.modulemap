@@ -1,3 +1,0 @@
-module Auth {
-    header "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/Auth.build/include/Auth-Swift.h"
-}

@@ -1,4 +1,0 @@
-module IssueReporting {
-    header "/Users/bobkitchen/Documents/GitHub/WhoNext/.build/arm64-apple-macosx/debug/IssueReporting.build/IssueReporting-Swift.h"
-    requires objc
-}
