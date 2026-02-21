@@ -144,7 +144,7 @@ class MeetingTypeDetector: ObservableObject {
         }
         
         // Try to match with expected participants if available
-        let matches = voicePrintManager.matchToAttendees(embeddings, attendeeNames: meeting.expectedParticipants)
+        let matches = await voicePrintManager.matchToAttendees(embeddings, attendeeNames: meeting.expectedParticipants)
         
         // Update meeting with identified participants
         for (speakerId, person) in matches {

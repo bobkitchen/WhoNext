@@ -36,7 +36,7 @@ struct ParticipantInfo: Identifiable, Hashable {
     let existingPersonId: UUID?
     let isCurrentUser: Bool  // True if user identified this as themselves during recording
     let confidence: Float    // Voice match confidence (0-1)
-    let speakerID: Int       // Original speaker ID from diarization
+    let speakerID: String    // Original speaker ID from diarization
     let voiceEmbedding: [Float]?  // Voice embedding for voice learning
 
     init(
@@ -48,7 +48,7 @@ struct ParticipantInfo: Identifiable, Hashable {
         existingPersonId: UUID? = nil,
         isCurrentUser: Bool = false,
         confidence: Float = 0,
-        speakerID: Int = 0,
+        speakerID: String = "",
         voiceEmbedding: [Float]? = nil
     ) {
         self.id = id

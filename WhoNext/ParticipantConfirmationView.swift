@@ -457,7 +457,7 @@ struct ParticipantConfirmationView: View {
         Task {
             for speaker in results.speakers {
                 if let embedding = speaker.averageEmbedding,
-                   let match = voicePrintManager.findMatchingPerson(for: embedding) {
+                   let match = await voicePrintManager.findMatchingPerson(for: embedding) {
                     await MainActor.run {
                         speakerAssignments[speaker.speakerId] = match.0
                     }
@@ -481,7 +481,7 @@ struct ParticipantConfirmationView: View {
             }
             
             // Match to expected attendees
-            let matches = voicePrintManager.matchToAttendees(embeddings, attendeeNames: meeting.expectedParticipants)
+            let matches = await voicePrintManager.matchToAttendees(embeddings, attendeeNames: meeting.expectedParticipants)
             
             await MainActor.run {
                 for (speakerId, person) in matches {
