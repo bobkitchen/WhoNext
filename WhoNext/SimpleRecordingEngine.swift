@@ -45,7 +45,9 @@ class SimpleRecordingEngine: ObservableObject {
 
     #if canImport(FluidAudio)
     private let diarizationManager = DiarizationManager(enableRealTimeProcessing: true)
+    private let systemDiarizationManager = DiarizationManager(enableRealTimeProcessing: true)
     private let diarizationBuffer = DiarizationBuffer()
+    private let systemDiarizationBuffer = DiarizationBuffer()
     private let segmentAligner = SegmentAligner()
     private let voicePrintManager = VoicePrintManager()
     #endif
@@ -111,6 +113,9 @@ class SimpleRecordingEngine: ObservableObject {
             try await diarizationManager.initialize()
             print("[SimpleRecordingEngine] Pre-warmed diarization manager")
 
+            try await systemDiarizationManager.initialize()
+            print("[SimpleRecordingEngine] Pre-warmed system diarization manager")
+
             await voicePrintManager.warmCache()
             print("[SimpleRecordingEngine] Pre-warmed voice print cache")
             #endif
@@ -175,6 +180,14 @@ class SimpleRecordingEngine: ObservableObject {
             await diarizationBuffer.reset()
             segmentAligner.reset()
             diarizationManager.reset()
+            do {
+                try await systemDiarizationManager.initialize()
+                print("[SimpleRecordingEngine] System diarization manager initialized")
+            } catch {
+                print("[SimpleRecordingEngine] System diarization initialization failed: \(error)")
+            }
+            await systemDiarizationBuffer.reset()
+            systemDiarizationManager.reset()
             detectedSpeakerCount = 0
             backfillCursor = 0
             #endif
@@ -245,6 +258,11 @@ class SimpleRecordingEngine: ObservableObject {
         }
         // Get final diarization results
         _ = await diarizationManager.finishProcessing()
+
+        if let (finalSysDiarChunk, sysStartTime) = await systemDiarizationBuffer.flush() {
+            await processSystemDiarizationChunk(finalSysDiarChunk, startTime: sysStartTime)
+        }
+        _ = await systemDiarizationManager.finishProcessing()
         #endif
 
         // Update state for processing phase
@@ -270,6 +288,7 @@ class SimpleRecordingEngine: ObservableObject {
 
         #if canImport(FluidAudio)
         let diarBuffer = diarizationBuffer
+        let systemDiarBuffer = systemDiarizationBuffer
         #endif
 
         // Process mic and system audio concurrently
@@ -294,7 +313,7 @@ class SimpleRecordingEngine: ObservableObject {
                 }
             }
 
-            // System stream processor (for transcription)
+            // System stream processor (for transcription AND diarization)
             group.addTask {
                 for await audioBuffer in systemStream {
                     guard !Task.isCancelled else { break }
@@ -303,15 +322,17 @@ class SimpleRecordingEngine: ObservableObject {
                     if let chunk = await buffer.addBuffer(audioBuffer, isMic: false) {
                         await self.transcribeChunk(chunk)
                     }
+
+                    #if canImport(FluidAudio)
+                    // Also feed to system diarization buffer
+                    let elapsed = await MainActor.run { self.recordingDuration }
+                    if let (diarChunk, startTime) = await systemDiarBuffer.addBuffer(audioBuffer, recordingElapsed: elapsed) {
+                        await self.processSystemDiarizationChunk(diarChunk, startTime: startTime)
+                    }
+                    #endif
                 }
             }
 
-            #if canImport(FluidAudio)
-            // Diarization stream processor (parallel pipeline, uses mic audio)
-            // Note: We process the same micStream data for diarization
-            // since multiple consumers of an AsyncStream isn't supported,
-            // we'll process diarization from the mic processor task
-            #endif
         }
 
         print("[SimpleRecordingEngine] Audio stream processing ended")
@@ -441,6 +462,53 @@ class SimpleRecordingEngine: ObservableObject {
             backfillSpeakerLabels()
         } else {
             print("[SimpleRecordingEngine] No diarization result yet (isEnabled: \(diarizationManager.isEnabled), isProcessing: \(diarizationManager.isProcessing))")
+        }
+    }
+
+    /// Process a system audio diarization chunk through the FluidAudio pipeline
+    private func processSystemDiarizationChunk(_ chunk: [Float], startTime: TimeInterval) async {
+        print("[SimpleRecordingEngine] Processing system diarization chunk: \(chunk.count) samples at \(String(format: "%.1f", startTime))s")
+
+        let format = AVAudioFormat(standardFormatWithSampleRate: 16000, channels: 1)!
+        guard let buffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: AVAudioFrameCount(chunk.count)) else {
+            print("[SimpleRecordingEngine] Failed to create audio buffer for system diarization")
+            return
+        }
+
+        buffer.frameLength = AVAudioFrameCount(chunk.count)
+        if let channelData = buffer.floatChannelData {
+            for i in 0..<chunk.count {
+                channelData[0][i] = chunk[i]
+            }
+        }
+
+        await systemDiarizationManager.processAudioBuffer(buffer)
+
+        if let error = systemDiarizationManager.lastError {
+            print("[SimpleRecordingEngine] System diarization error: \(error.localizedDescription)")
+        }
+
+        if let result = systemDiarizationManager.lastResult {
+            print("[SimpleRecordingEngine] System diarization result: \(result.segments.count) segments, \(result.speakerCount) speakers")
+            segmentAligner.updateSystemDiarizationResults(result)
+
+            // Update total speaker count (mic + system)
+            let totalSpeakers = diarizationManager.totalSpeakerCount + systemDiarizationManager.totalSpeakerCount
+            if totalSpeakers != detectedSpeakerCount {
+                print("[SimpleRecordingEngine] Total speaker count changed: \(detectedSpeakerCount) -> \(totalSpeakers)")
+            }
+            detectedSpeakerCount = totalSpeakers
+            updateMeetingType(speakerCount: totalSpeakers)
+            await updateParticipants(from: result)
+
+            // Sync with all valid speaker IDs from both streams
+            var allValidIDs = Set(result.segments.map { $0.speakerId })
+            if let micResult = diarizationManager.lastResult {
+                allValidIDs.formUnion(micResult.segments.map { $0.speakerId })
+            }
+            currentMeeting?.syncParticipants(withSpeakerIDs: allValidIDs)
+
+            backfillSpeakerLabels()
         }
     }
 
