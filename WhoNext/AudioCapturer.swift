@@ -295,6 +295,7 @@ private class AudioStreamOutput: NSObject, SCStreamOutput {
     /// Cached converter for resampling (created lazily based on source format)
     private var cachedConverter: AVAudioConverter?
     private var cachedSourceFormat: AVAudioFormat?
+    private let converterLock = NSLock()
 
     init(handler: @escaping (AVAudioPCMBuffer) -> Void) {
         self.handler = handler
@@ -443,6 +444,9 @@ private class AudioStreamOutput: NSObject, SCStreamOutput {
         }
 
         // Use AVAudioConverter for proper sample rate conversion (anti-aliased)
+        converterLock.lock()
+        defer { converterLock.unlock() }
+
         if cachedConverter == nil || cachedSourceFormat?.sampleRate != sourceSampleRate {
             cachedConverter = AVAudioConverter(from: sourceMonoFormat, to: targetFormat)
             cachedSourceFormat = sourceMonoFormat
