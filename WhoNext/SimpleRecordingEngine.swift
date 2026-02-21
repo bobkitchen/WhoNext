@@ -359,8 +359,7 @@ class SimpleRecordingEngine: ObservableObject {
         if let speaker = segmentAligner.dominantSpeaker(for: segmentStart, duration: chunkDuration) {
             speakerID = speaker
             // Use user-assigned name if available, otherwise format from speaker ID
-            let numericId = SegmentAligner.parseNumericId(speaker)
-            if let participant = currentMeeting?.identifiedParticipants.first(where: { $0.speakerID == numericId }),
+            if let participant = currentMeeting?.identifiedParticipants.first(where: { $0.speakerID == speaker }),
                let userName = participant.name, participant.namingMode == .namedByUser {
                 speakerName = userName
             } else {
@@ -435,7 +434,7 @@ class SimpleRecordingEngine: ObservableObject {
             await updateParticipants(from: result)
 
             // Sync participants: remove any whose speaker IDs were merged away
-            let validSpeakerIDs = Set(result.segments.map { SegmentAligner.parseNumericId($0.speakerId) })
+            let validSpeakerIDs = Set(result.segments.map { $0.speakerId })
             currentMeeting?.syncParticipants(withSpeakerIDs: validSpeakerIDs)
 
             // Backfill speaker labels into transcript segments that arrived before diarization
@@ -460,9 +459,8 @@ class SimpleRecordingEngine: ObservableObject {
             // Query the aligner for who was speaking at this segment's time
             if let speaker = segmentAligner.dominantSpeaker(for: segment.timestamp, duration: 5.0) {
                 // Use user-assigned name if available
-                let numericId = SegmentAligner.parseNumericId(speaker)
                 let speakerName: String
-                if let participant = meeting.identifiedParticipants.first(where: { $0.speakerID == numericId }),
+                if let participant = meeting.identifiedParticipants.first(where: { $0.speakerID == speaker }),
                    let userName = participant.name, participant.namingMode == .namedByUser {
                     speakerName = userName
                 } else {
@@ -512,17 +510,14 @@ class SimpleRecordingEngine: ObservableObject {
         let uniqueSpeakers = segmentAligner.getUniqueSpeakers()
 
         for speakerId in uniqueSpeakers {
-            // Convert string speakerId to numeric ID (e.g., "speaker_0" -> 0)
-            let numericId = SegmentAligner.parseNumericId(speakerId)
-
-            // Check if we already have this participant (by numeric speakerID)
-            if let existingParticipant = meeting.identifiedParticipants.first(where: { $0.speakerID == numericId }) {
+            // Check if we already have this participant (by string speakerID)
+            if let existingParticipant = meeting.identifiedParticipants.first(where: { $0.speakerID == speakerId }) {
                 // Update speaking time for existing participant
                 existingParticipant.totalSpeakingTime = speakingTimes[speakerId] ?? 0
             } else {
                 // Add new participant
                 let participant = IdentifiedParticipant()
-                participant.speakerID = numericId
+                participant.speakerID = speakerId
                 participant.confidence = 1.0
                 participant.isCurrentUser = false
                 participant.totalSpeakingTime = speakingTimes[speakerId] ?? 0
@@ -605,8 +600,7 @@ class SimpleRecordingEngine: ObservableObject {
         // Build participant data with voice embeddings
         let serializableParticipants = meeting.identifiedParticipants.map { participant in
             #if canImport(FluidAudio)
-            let speakerIdString = "\(participant.speakerID)"
-            let embedding = speakerEmbeddings[speakerIdString]
+            let embedding = speakerEmbeddings[participant.speakerID]
             return SerializableParticipant(from: participant, voiceEmbedding: embedding)
             #else
             return SerializableParticipant(from: participant, voiceEmbedding: nil)
@@ -628,7 +622,6 @@ class SimpleRecordingEngine: ObservableObject {
         if let participantData = try? JSONEncoder().encode(serializableParticipants) {
             defaults.set(participantData, forKey: "PendingRecordedParticipants")
         }
-        defaults.synchronize()
 
         print("[SimpleRecordingEngine] Saved meeting data to UserDefaults (\(meeting.identifiedParticipants.count) participants)")
     }

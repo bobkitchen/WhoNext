@@ -326,7 +326,7 @@ class LiveMeeting: ObservableObject, Identifiable {
 
     /// Synchronize participants with the current speaker database
     /// Removes participants whose speaker IDs no longer exist (were merged)
-    func syncParticipants(withSpeakerIDs validSpeakerIDs: Set<Int>) {
+    func syncParticipants(withSpeakerIDs validSpeakerIDs: Set<String>) {
         let previousCount = identifiedParticipants.count
 
         // Keep only participants whose speaker ID is still valid
@@ -390,7 +390,7 @@ struct SerializableParticipant: Codable, Identifiable {
     let id: UUID
     let name: String?
     let confidence: Float
-    let speakerID: Int
+    let speakerID: String
     let totalSpeakingTime: TimeInterval
     let namingMode: NamingMode
     let isCurrentUser: Bool
@@ -422,7 +422,7 @@ struct SerializableParticipant: Codable, Identifiable {
     /// - Parameters:
     ///   - participants: The identified participants
     ///   - speakerDatabase: Dictionary mapping speaker IDs to voice embeddings
-    static func serialize(_ participants: [IdentifiedParticipant], withEmbeddingsFrom speakerDatabase: [Int: [Float]]) -> Data? {
+    static func serialize(_ participants: [IdentifiedParticipant], withEmbeddingsFrom speakerDatabase: [String: [Float]]) -> Data? {
         let serializableParticipants = participants.map { participant in
             SerializableParticipant(
                 from: participant,
@@ -448,7 +448,7 @@ class IdentifiedParticipant: ObservableObject, Identifiable {
     @Published var voicePrint: VoicePrint?
     @Published var personRecord: Person?
     @Published var person: Person?  // Alias for personRecord
-    @Published var speakerID: Int = 0
+    @Published var speakerID: String = ""
     @Published var isCurrentlySpeaking: Bool = false
     @Published var totalSpeakingTime: TimeInterval = 0
     @Published var lastSpokeAt: Date?
@@ -464,7 +464,7 @@ class IdentifiedParticipant: ObservableObject, Identifiable {
             return person.name ?? "Unknown"
         } else {
             // Use SegmentAligner.formatSpeakerName for consistent 1-based display
-            return SegmentAligner.formatSpeakerName("\(speakerID)")
+            return SegmentAligner.formatSpeakerName(speakerID)
         }
     }
     
