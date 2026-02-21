@@ -3,6 +3,7 @@ import CoreData
 import SwiftUI
 
 /// Manages the assignment of meetings to individuals, groups, or mixed audiences
+@MainActor
 class MeetingAssignmentManager: ObservableObject {
     
     // MARK: - Singleton
@@ -451,7 +452,7 @@ struct AssignmentRule: Identifiable, Codable {
     let assignmentType: AssignmentType
     let targetGroup: String? // Group name if assigning to specific group
     
-    func matches(_ meeting: LiveMeeting) -> Bool {
+    @MainActor func matches(_ meeting: LiveMeeting) -> Bool {
         switch condition {
         case .titleContains(let text):
             return meeting.calendarTitle?.contains(text) ?? false

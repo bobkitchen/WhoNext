@@ -69,17 +69,17 @@ class AppleCalendarProvider: CalendarProvider {
             .sorted { $0.startDate < $1.startDate }
         
         return events.map { event in
-            // Extract attendee information including emails
-            let attendeeInfo = event.attendees?.compactMap { attendee in
-                // Try to extract email from URL (mailto:)
+            // Extract attendee information - prefer display name over email
+            let attendeeInfo = event.attendees?.compactMap { attendee -> String? in
+                // Prefer display name for better UI presentation and Person matching
+                if let name = attendee.name, !name.isEmpty {
+                    return name
+                }
+                // Fall back to email if no name
                 let urlString = attendee.url.absoluteString
                 if urlString.hasPrefix("mailto:") {
                     let email = String(urlString.dropFirst(7)) // Remove "mailto:"
                     return email
-                }
-                // Fall back to name if no email
-                if let name = attendee.name, !name.isEmpty {
-                    return name
                 }
                 return nil
             }

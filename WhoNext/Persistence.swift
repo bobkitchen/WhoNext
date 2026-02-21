@@ -268,36 +268,104 @@ struct PersistenceController {
 
     // MARK: - CloudKit Error Handling
 
+    /// Translate CKError code to human-readable description
+    private func translateCKErrorCode(_ code: Int) -> String {
+        switch code {
+        case 0: return "internalError - Internal CloudKit error"
+        case 1: return "partialFailure - Some operations failed"
+        case 2: return "networkUnavailable - No network connection"
+        case 3: return "networkFailure - Network request failed"
+        case 4: return "badContainer - Invalid container ID"
+        case 5: return "serviceUnavailable - CloudKit service down"
+        case 6: return "requestRateLimited - Too many requests"
+        case 7: return "missingEntitlement - Missing iCloud entitlement"
+        case 8: return "notAuthenticated - Not signed into iCloud"
+        case 9: return "permissionFailure - Permission denied"
+        case 10: return "unknownItem - Record/zone doesn't exist"
+        case 11: return "invalidArguments - Invalid query parameters"
+        case 12: return "resultsTruncated - Results were truncated"
+        case 13: return "serverRecordChanged - Conflict detected"
+        case 14: return "serverRejectedRequest - Server rejected request"
+        case 15: return "assetFileNotFound - Binary asset missing"
+        case 16: return "assetFileModified - Asset was modified"
+        case 17: return "incompatibleVersion - Schema version mismatch"
+        case 18: return "constraintViolation - Unique constraint failed"
+        case 19: return "operationCancelled - Operation was cancelled"
+        case 20: return "changeTokenExpired - Need to re-sync"
+        case 21: return "batchRequestFailed - Batch operation failed"
+        case 22: return "zoneBusy - Zone is temporarily busy"
+        case 23: return "badDatabase - Invalid database"
+        case 24: return "quotaExceeded - iCloud storage full"
+        case 25: return "zoneNotFound - Zone doesn't exist"
+        case 26: return "limitExceeded - Request limit exceeded"
+        case 27: return "userDeletedZone - User deleted the zone"
+        case 28: return "tooManyParticipants - Too many shares"
+        case 29: return "alreadyShared - Already shared"
+        case 30: return "referenceViolation - Reference constraint failed"
+        case 31: return "managedAccountRestricted - MDM restriction"
+        case 32: return "participantMayNeedVerification - Needs verification"
+        case 33: return "serverResponseLost - Response was lost"
+        case 34: return "assetNotAvailable - Asset not downloaded"
+        case 35: return "accountTemporarilyUnavailable - Account temp unavailable"
+        default: return "unknown (\(code))"
+        }
+    }
+
     /// Handle specific CloudKit errors with appropriate user feedback
     private func handleCloudKitError(_ error: Error) {
+        let nsError = error as NSError
+
+        // Log the raw error details first
+        print("☁️ [CloudKit] ❌ ERROR DETAILS:")
+        print("☁️ [CloudKit]   Domain: \(nsError.domain)")
+        print("☁️ [CloudKit]   Code: \(nsError.code) - \(translateCKErrorCode(nsError.code))")
+        print("☁️ [CloudKit]   Description: \(nsError.localizedDescription)")
+
+        // Log underlying errors if present
+        if let underlying = nsError.userInfo[NSUnderlyingErrorKey] as? NSError {
+            print("☁️ [CloudKit]   Underlying: \(underlying.domain) code \(underlying.code)")
+        }
+
         if let ckError = error as? CKError {
             switch ckError.code {
             case .quotaExceeded:
                 print("☁️ [CloudKit] ❌ QUOTA EXCEEDED - iCloud storage is full")
                 print("☁️ [CloudKit] → User needs to free up iCloud storage or upgrade plan")
-                // TODO: Show user alert about storage
 
             case .networkFailure, .networkUnavailable:
                 print("☁️ [CloudKit] ⚠️ Network error - will retry automatically")
-                // NSPersistentCloudKitContainer will retry automatically
 
             case .partialFailure:
                 print("☁️ [CloudKit] ⚠️ Partial failure - some records synced")
                 if let partialErrors = ckError.userInfo[CKPartialErrorsByItemIDKey] as? [AnyHashable: Error] {
-                    for (recordID, recordError) in partialErrors {
-                        print("☁️ [CloudKit]   - \(recordID): \(recordError.localizedDescription)")
+                    print("☁️ [CloudKit]   Partial errors (\(partialErrors.count) items):")
+                    for (recordID, recordError) in partialErrors.prefix(5) {
+                        let recordNSError = recordError as NSError
+                        print("☁️ [CloudKit]   - \(recordID): code \(recordNSError.code) - \(translateCKErrorCode(recordNSError.code))")
+                    }
+                    if partialErrors.count > 5 {
+                        print("☁️ [CloudKit]   ... and \(partialErrors.count - 5) more errors")
                     }
                 }
 
             case .notAuthenticated:
                 print("☁️ [CloudKit] ❌ NOT AUTHENTICATED - user needs to sign in to iCloud")
-                // TODO: Show user alert to sign in
 
             case .serverResponseLost:
                 print("☁️ [CloudKit] ⚠️ Server response lost - will retry")
 
             case .zoneBusy:
                 print("☁️ [CloudKit] ⚠️ CloudKit server busy - will retry")
+
+            case .zoneNotFound:
+                print("☁️ [CloudKit] ❌ ZONE NOT FOUND - The CloudKit zone doesn't exist!")
+                print("☁️ [CloudKit] → This is likely the root cause of sync failures")
+                print("☁️ [CloudKit] → Try 'Repair Sync' in Settings to recreate the zone")
+
+            case .unknownItem:
+                print("☁️ [CloudKit] ❌ UNKNOWN ITEM - Record or zone doesn't exist in CloudKit")
+                print("☁️ [CloudKit] → Schema may not be deployed or zone is missing")
+                print("☁️ [CloudKit] → Try 'Repair Sync' in Settings")
 
             case .operationCancelled:
                 print("☁️ [CloudKit] ⚠️ Operation cancelled")
@@ -309,11 +377,15 @@ struct PersistenceController {
             case .assetFileNotFound:
                 print("☁️ [CloudKit] ⚠️ Asset file not found - binary data issue")
 
+            case .invalidArguments:
+                print("☁️ [CloudKit] ❌ INVALID ARGUMENTS - Query or schema issue")
+                print("☁️ [CloudKit] → Check if schema is deployed to Production")
+
             default:
                 print("☁️ [CloudKit] ⚠️ CloudKit error (\(ckError.code.rawValue)): \(ckError.localizedDescription)")
             }
         } else {
-            print("☁️ [CloudKit] ⚠️ Sync error: \(error.localizedDescription)")
+            print("☁️ [CloudKit] ⚠️ Non-CKError sync error: \(error.localizedDescription)")
         }
     }
 
@@ -611,6 +683,112 @@ struct PersistenceController {
         }
     }
 
+    /// Repair orphaned conversations that reference non-existent Person records
+    /// These can cause CloudKit sync failures (CKError 2 - unknownItem)
+    func repairOrphanedConversations() -> (deleted: Int, fixed: Int) {
+        let context = container.viewContext
+        var deletedCount = 0
+        var fixedCount = 0
+
+        context.performAndWait {
+            print("☁️ [CloudKit] Checking for orphaned conversations...")
+
+            let convRequest = NSFetchRequest<Conversation>(entityName: "Conversation")
+            guard let conversations = try? context.fetch(convRequest) else {
+                print("☁️ [CloudKit] Could not fetch conversations")
+                return
+            }
+
+            for conversation in conversations {
+                // Check if person relationship is broken (fault that can't resolve)
+                if conversation.person == nil {
+                    // Conversation has no person - check if it has any useful data
+                    let hasNotes = !(conversation.notes?.isEmpty ?? true)
+                    let hasSummary = !(conversation.summary?.isEmpty ?? true)
+
+                    if hasNotes || hasSummary {
+                        // Has content but no person - this is an orphan we should keep track of
+                        // Set modifiedAt to trigger a clean sync
+                        conversation.modifiedAt = Date()
+                        fixedCount += 1
+                        print("☁️ [CloudKit] Fixed orphan with content: \(conversation.summary?.prefix(30) ?? "no summary")")
+                    } else {
+                        // Empty orphan - delete it
+                        context.delete(conversation)
+                        deletedCount += 1
+                        print("☁️ [CloudKit] Deleted empty orphan conversation")
+                    }
+                }
+            }
+
+            if context.hasChanges {
+                do {
+                    try context.save()
+                    print("☁️ [CloudKit] ✅ Orphan repair saved: deleted \(deletedCount), fixed \(fixedCount)")
+                } catch {
+                    print("☁️ [CloudKit] ❌ Error saving orphan repairs: \(error)")
+                }
+            } else {
+                print("☁️ [CloudKit] No orphaned conversations found")
+            }
+        }
+
+        return (deleted: deletedCount, fixed: fixedCount)
+    }
+
+    /// Purge all persistent history - this clears sync tracking metadata
+    /// This is needed when sync gets into a corrupted state
+    func purgePersistentHistory() async {
+        let context = container.newBackgroundContext()
+
+        await context.perform {
+            print("☁️ [CloudKit] Purging persistent history transactions...")
+
+            do {
+                // Delete all history before the current date - this clears sync metadata
+                let deleteRequest = NSPersistentHistoryChangeRequest.deleteHistory(before: Date())
+                try context.execute(deleteRequest)
+                print("☁️ [CloudKit] ✅ Purged persistent history")
+            } catch {
+                print("☁️ [CloudKit] ⚠️ Error purging history: \(error.localizedDescription)")
+            }
+        }
+    }
+
+    /// Delete ALL orphaned conversations (use with caution)
+    func deleteAllOrphanedConversations() -> Int {
+        let context = container.viewContext
+        var deletedCount = 0
+
+        context.performAndWait {
+            print("☁️ [CloudKit] Deleting ALL orphaned conversations...")
+
+            let convRequest = NSFetchRequest<Conversation>(entityName: "Conversation")
+            guard let conversations = try? context.fetch(convRequest) else {
+                print("☁️ [CloudKit] Could not fetch conversations")
+                return
+            }
+
+            for conversation in conversations {
+                if conversation.person == nil {
+                    context.delete(conversation)
+                    deletedCount += 1
+                }
+            }
+
+            if context.hasChanges {
+                do {
+                    try context.save()
+                    print("☁️ [CloudKit] ✅ Deleted \(deletedCount) orphaned conversations")
+                } catch {
+                    print("☁️ [CloudKit] ❌ Error deleting orphans: \(error)")
+                }
+            }
+        }
+
+        return deletedCount
+    }
+
     /// Comprehensive sync diagnostic
     func runSyncDiagnostic() {
         print("\n")
@@ -642,5 +820,210 @@ struct PersistenceController {
         print("☁️ 4. Try: Settings → iCloud → WhoNext → Toggle OFF then ON")
         print("☁️ 5. Check device storage isn't full")
         print("☁️ ════════════════════════════════════════════════════════════")
+    }
+
+    // MARK: - Zone Repair and Reset
+
+    /// Check if CloudKit zone exists (async version)
+    func checkZoneExistsAsync() async -> Bool {
+        let ckContainer = CKContainer(identifier: PersistenceController.cloudKitContainerID)
+        let privateDB = ckContainer.privateCloudDatabase
+        let zoneID = CKRecordZone.ID(zoneName: "com.apple.coredata.cloudkit.zone", ownerName: CKCurrentUserDefaultName)
+
+        do {
+            _ = try await privateDB.recordZone(for: zoneID)
+            print("☁️ [CloudKit] ✅ Zone exists")
+            return true
+        } catch {
+            let ckError = error as? CKError
+            if ckError?.code == .zoneNotFound {
+                print("☁️ [CloudKit] ❌ Zone NOT found - needs to be created")
+            } else {
+                print("☁️ [CloudKit] ⚠️ Zone check error: \(error.localizedDescription)")
+            }
+            return false
+        }
+    }
+
+    /// Create CloudKit zone if it doesn't exist
+    func createCloudKitZoneIfNeeded() async throws {
+        let zoneExists = await checkZoneExistsAsync()
+        if zoneExists {
+            print("☁️ [CloudKit] Zone already exists, no action needed")
+            return
+        }
+
+        print("☁️ [CloudKit] Creating CloudKit zone...")
+        let ckContainer = CKContainer(identifier: PersistenceController.cloudKitContainerID)
+        let privateDB = ckContainer.privateCloudDatabase
+        let zone = CKRecordZone(zoneName: "com.apple.coredata.cloudkit.zone")
+
+        do {
+            let savedZone = try await privateDB.save(zone)
+            print("☁️ [CloudKit] ✅ Zone created: \(savedZone.zoneID.zoneName)")
+        } catch {
+            print("☁️ [CloudKit] ❌ Failed to create zone: \(error)")
+            throw error
+        }
+    }
+
+    /// Repair CloudKit sync - tries to fix common issues
+    func repairCloudKitSync() async throws {
+        print("☁️ [CloudKit] ═══════════════════════════════════════════════")
+        print("☁️ [CloudKit] Starting CloudKit Sync Repair...")
+        print("☁️ [CloudKit] ═══════════════════════════════════════════════")
+
+        // Step 1: Check iCloud account status
+        print("☁️ [CloudKit] Step 1: Checking iCloud account...")
+        let status = try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<CKAccountStatus, Error>) in
+            CKContainer(identifier: PersistenceController.cloudKitContainerID).accountStatus { status, error in
+                if let error = error {
+                    continuation.resume(throwing: error)
+                } else {
+                    continuation.resume(returning: status)
+                }
+            }
+        }
+
+        guard status == .available else {
+            print("☁️ [CloudKit] ❌ iCloud not available (status: \(status.rawValue))")
+            throw NSError(domain: "CloudKitRepair", code: 1, userInfo: [NSLocalizedDescriptionKey: "iCloud account not available. Please sign in to iCloud."])
+        }
+        print("☁️ [CloudKit] ✅ iCloud account available")
+
+        // Step 2: Check/create zone
+        print("☁️ [CloudKit] Step 2: Checking CloudKit zone...")
+        try await createCloudKitZoneIfNeeded()
+
+        // Step 3: Re-initialize schema
+        print("☁️ [CloudKit] Step 3: Re-initializing schema...")
+        #if DEBUG
+        do {
+            // Clear the initialization flag
+            UserDefaults.standard.removeObject(forKey: "CloudKitSchemaInitialized_v1")
+
+            // Re-initialize
+            try container.initializeCloudKitSchema(options: [])
+            UserDefaults.standard.set(true, forKey: "CloudKitSchemaInitialized_v1")
+            print("☁️ [CloudKit] ✅ Schema re-initialized")
+        } catch {
+            print("☁️ [CloudKit] ⚠️ Schema initialization warning: \(error.localizedDescription)")
+            // Don't throw - this is sometimes expected
+        }
+        #else
+        print("☁️ [CloudKit] ⚠️ Schema initialization skipped (not DEBUG build)")
+        #endif
+
+        // Step 4: Repair orphaned conversations (can cause sync failures)
+        print("☁️ [CloudKit] Step 4: Repairing orphaned conversations...")
+        let orphanResult = repairOrphanedConversations()
+        print("☁️ [CloudKit] ✅ Orphan repair: deleted \(orphanResult.deleted), fixed \(orphanResult.fixed)")
+
+        // Step 5: Force sync all records
+        print("☁️ [CloudKit] Step 5: Forcing sync of all records...")
+        forceSyncAllExistingData()
+
+        print("☁️ [CloudKit] ═══════════════════════════════════════════════")
+        print("☁️ [CloudKit] ✅ Repair complete! Wait 1-2 minutes for sync.")
+        print("☁️ [CloudKit] ═══════════════════════════════════════════════")
+    }
+
+    /// Nuclear option: Reset CloudKit sync completely
+    /// WARNING: This deletes ALL CloudKit data and re-uploads from this device
+    func resetCloudKitSync() async throws {
+        print("☁️ [CloudKit] ═══════════════════════════════════════════════")
+        print("☁️ [CloudKit] ⚠️ NUCLEAR RESET: Deleting CloudKit zone...")
+        print("☁️ [CloudKit] ═══════════════════════════════════════════════")
+
+        let ckContainer = CKContainer(identifier: PersistenceController.cloudKitContainerID)
+        let privateDB = ckContainer.privateCloudDatabase
+        let zoneID = CKRecordZone.ID(zoneName: "com.apple.coredata.cloudkit.zone", ownerName: CKCurrentUserDefaultName)
+
+        // Step 1: Delete the zone (removes all cloud data)
+        print("☁️ [CloudKit] Step 1: Deleting CloudKit zone...")
+        do {
+            try await privateDB.deleteRecordZone(withID: zoneID)
+            print("☁️ [CloudKit] ✅ Zone deleted")
+        } catch {
+            let ckError = error as? CKError
+            if ckError?.code == .zoneNotFound {
+                print("☁️ [CloudKit] Zone didn't exist, continuing...")
+            } else {
+                print("☁️ [CloudKit] ⚠️ Zone deletion warning: \(error.localizedDescription)")
+                // Continue anyway
+            }
+        }
+
+        // Step 2: Wait a moment for CloudKit to process
+        print("☁️ [CloudKit] Step 2: Waiting for CloudKit to process...")
+        try await Task.sleep(nanoseconds: 2_000_000_000) // 2 seconds
+
+        // Step 3: Clear local sync metadata and purge persistent history
+        print("☁️ [CloudKit] Step 3: Clearing local sync metadata...")
+        UserDefaults.standard.removeObject(forKey: "CloudKitSchemaInitialized_v1")
+
+        // Purge ALL persistent history - this is where sync metadata lives
+        print("☁️ [CloudKit] Step 3b: Purging persistent history...")
+        await purgePersistentHistory()
+
+        // Step 4: Create new zone
+        print("☁️ [CloudKit] Step 4: Creating new zone...")
+        let zone = CKRecordZone(zoneName: "com.apple.coredata.cloudkit.zone")
+        _ = try await privateDB.save(zone)
+        print("☁️ [CloudKit] ✅ New zone created")
+
+        // Step 5: Re-initialize schema
+        print("☁️ [CloudKit] Step 5: Initializing schema...")
+        #if DEBUG
+        try container.initializeCloudKitSchema(options: [])
+        UserDefaults.standard.set(true, forKey: "CloudKitSchemaInitialized_v1")
+        print("☁️ [CloudKit] ✅ Schema initialized")
+        #endif
+
+        // Step 6: Clean up orphaned conversations before uploading
+        print("☁️ [CloudKit] Step 6: Cleaning orphaned conversations...")
+        let deletedOrphans = deleteAllOrphanedConversations()
+        print("☁️ [CloudKit] ✅ Deleted \(deletedOrphans) orphaned conversations")
+
+        // Step 7: Force sync all records
+        print("☁️ [CloudKit] Step 7: Uploading all local data...")
+        forceSyncAllExistingData()
+
+        print("☁️ [CloudKit] ═══════════════════════════════════════════════")
+        print("☁️ [CloudKit] ✅ RESET COMPLETE!")
+        print("☁️ [CloudKit] All data from THIS device will be uploaded.")
+        print("☁️ [CloudKit] Other devices will receive data after sync.")
+        print("☁️ [CloudKit] ═══════════════════════════════════════════════")
+    }
+
+    /// Get detailed sync status for UI display
+    @MainActor
+    static func getDetailedSyncStatus() -> (status: String, isError: Bool, actionHint: String?) {
+        switch syncProgress {
+        case .idle:
+            return ("Idle", false, nil)
+        case .setup:
+            return ("Setting up sync...", false, nil)
+        case .importing:
+            return ("Importing from iCloud...", false, nil)
+        case .exporting:
+            return ("Exporting to iCloud...", false, nil)
+        case .completed(let date):
+            let formatter = RelativeDateTimeFormatter()
+            return ("Synced \(formatter.localizedString(for: date, relativeTo: Date()))", false, nil)
+        case .failed(let message):
+            // Provide actionable hints based on the error
+            var hint: String? = nil
+            if message.contains("2") || message.lowercased().contains("unknown") {
+                hint = "Try 'Repair Sync' to fix zone issues"
+            } else if message.lowercased().contains("network") {
+                hint = "Check your internet connection"
+            } else if message.lowercased().contains("quota") {
+                hint = "Free up iCloud storage space"
+            } else if message.lowercased().contains("auth") {
+                hint = "Sign in to iCloud in System Settings"
+            }
+            return ("Failed: \(message)", true, hint)
+        }
     }
 }

@@ -17,7 +17,7 @@ public class Person: NSManagedObject {
     @NSManaged public var scheduledConversationDate: Date?
     @NSManaged public var timezone: String?
     @NSManaged public var conversations: NSSet?  // Legacy single-person relationship
-    @NSManaged public var conversationParticipations: NSSet?  // New: all conversation participations
+    // conversationParticipations removed - ConversationParticipant entity disabled
 
     // Sync-related timestamp fields
     @NSManaged public var createdAt: Date?
@@ -93,21 +93,8 @@ extension Person: Identifiable {
     }
 }
 
-// MARK: - Conversation Participations
-
-extension Person {
-
-    /// All conversation participations as an array (sorted by conversation date descending)
-    public var conversationParticipationsArray: [ConversationParticipant] {
-        let set = conversationParticipations as? Set<ConversationParticipant> ?? []
-        return set.sorted { ($0.conversation?.date ?? .distantPast) > ($1.conversation?.date ?? .distantPast) }
-    }
-
-    /// Total speaking time across all conversations
-    public var totalSpeakingTime: Double {
-        conversationParticipationsArray.reduce(0) { $0 + $1.speakingTime }
-    }
-}
+// MARK: - Conversation Participations (Disabled - ConversationParticipant entity removed)
+// TODO: Re-enable when ConversationParticipant is deployed to CloudKit Production
 
 // MARK: - Voice Embedding Management
 
@@ -121,23 +108,28 @@ extension Person {
 
     /// Add a new voice embedding sample to this person
     /// - Parameter embedding: The voice embedding array from diarization
+    /// Thread-safe: performs work on the managed object context's queue
     public func addVoiceEmbedding(_ embedding: [Float]) {
-        var embeddings = storedVoiceEmbeddings ?? []
-        embeddings.append(embedding)
+        guard let context = managedObjectContext else { return }
 
-        // Keep only the last 10 samples for efficiency
-        if embeddings.count > 10 {
-            embeddings = Array(embeddings.suffix(10))
-        }
+        context.performAndWait {
+            var embeddings = self.storedVoiceEmbeddings ?? []
+            embeddings.append(embedding)
 
-        // Encode and save
-        if let data = try? JSONEncoder().encode(embeddings) {
-            voiceEmbeddings = data
-            voiceSampleCount = Int32(embeddings.count)
-            lastVoiceUpdate = Date()
+            // Keep only the last 10 samples for efficiency
+            if embeddings.count > 10 {
+                embeddings = Array(embeddings.suffix(10))
+            }
 
-            // Increase confidence based on sample count
-            voiceConfidence = min(Float(embeddings.count) * 0.1, 1.0)
+            // Encode and save
+            if let data = try? JSONEncoder().encode(embeddings) {
+                self.voiceEmbeddings = data
+                self.voiceSampleCount = Int32(embeddings.count)
+                self.lastVoiceUpdate = Date()
+
+                // Increase confidence based on sample count
+                self.voiceConfidence = min(Float(embeddings.count) * 0.1, 1.0)
+            }
         }
     }
 

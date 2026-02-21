@@ -118,23 +118,13 @@ actor AudioChunkBuffer {
         let hasSystem = !systemBuffer.isEmpty && systemBuffer.contains { abs($0) > 0.001 }
 
         if hasMic && hasSystem {
-            // Both sources have audio - mix them
+            // Both sources have audio - mix with equal gain to prevent clipping
             for i in 0..<outputLength {
                 let micSample = i < micBuffer.count ? micBuffer[i] : 0
                 let systemSample = i < systemBuffer.count ? systemBuffer[i] : 0
 
-                // Mix without halving (old bug!) - use peak normalization instead
-                let rawMix = micSample + systemSample
-                mixed[i] = rawMix
-            }
-
-            // Apply soft clipping if needed (prevents harsh distortion)
-            let peak = mixed.max { abs($0) < abs($1) }.map { abs($0) } ?? 0
-            if peak > 0.95 {
-                let scale = 0.95 / peak
-                for i in 0..<mixed.count {
-                    mixed[i] *= scale
-                }
+                // Apply 0.5 gain to each source to keep mixed signal in [-1, 1]
+                mixed[i] = micSample * 0.5 + systemSample * 0.5
             }
 
         } else if hasMic {

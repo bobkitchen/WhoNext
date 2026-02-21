@@ -57,6 +57,15 @@ class LeakageDetector: ObservableObject {
     /// Statistics for debugging/tuning
     @Published private(set) var stats = LeakageStats()
 
+    /// Operating mode based on audio stream availability
+    enum OperatingMode {
+        case twoStream    // Normal: mic vs system correlation
+        case singleStream // Fallback: energy-based detection only
+    }
+
+    /// Current operating mode (set by MeetingRecordingEngine based on system audio availability)
+    @Published var operatingMode: OperatingMode = .twoStream
+
     // MARK: - Computed Properties
 
     private var bufferCapacity: Int {
@@ -140,6 +149,21 @@ class LeakageDetector: ObservableObject {
 
         stats.speechFrames += 1
 
+        // SINGLE-STREAM FALLBACK MODE
+        // When system audio is unavailable, we can't do correlation-based detection
+        // Fall back to simple energy-based detection (less accurate but still functional)
+        if operatingMode == .singleStream {
+            // In single-stream mode, assume any mic audio above threshold is genuine ME speech
+            // This is less accurate but prevents the system from failing completely
+            stats.genuineFrames += 1
+            return MEDetectionResult(
+                isGenuineME: true,
+                confidence: 0.6,  // Lower confidence since we can't verify with correlation
+                reason: .highEnergyRatio  // Reason: energy above threshold
+            )
+        }
+
+        // TWO-STREAM MODE (normal operation)
         // Step 2: Check if we have enough system audio to correlate
         guard systemAudioBuffer.count >= micSamples.count + maxLagSamples else {
             // Not enough system audio yet, assume genuine (conservative)

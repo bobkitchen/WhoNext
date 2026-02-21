@@ -176,10 +176,19 @@ class CalendarService: ObservableObject {
 
                 if let otherName = otherParticipant {
                     participantName = otherName
+                    print("🔍 Widget: 1:1 meeting '\(meeting.title)' - other participant: '\(otherName)'")
 
                     // Try to find matching Person in Core Data and get their photo
                     if let person = findPerson(byName: otherName) {
-                        participantPhotoData = SharedMeeting.createThumbnail(from: person.photo)
+                        print("✅ Widget: Found Person '\(person.name ?? "?")' for '\(otherName)'")
+                        if person.photo != nil {
+                            participantPhotoData = SharedMeeting.createThumbnail(from: person.photo)
+                            print("📸 Widget: Found photo for '\(person.name ?? "?")'")
+                        } else {
+                            print("⚠️ Widget: Person '\(person.name ?? "?")' has no photo")
+                        }
+                    } else {
+                        print("⚠️ Widget: No Person found for '\(otherName)'")
                     }
                 }
             }
@@ -233,26 +242,69 @@ class CalendarService: ObservableObject {
         print("🔄 Widget Sync: Requested widget timeline reload")
     }
 
-    /// Find a Person in Core Data by name (for widget participant photos)
+    /// Find a Person in Core Data by name or email (for widget participant photos)
     private func findPerson(byName name: String) -> Person? {
         let context = PersistenceController.shared.container.viewContext
-        let fetchRequest: NSFetchRequest<Person> = Person.fetchRequest()
 
-        // Search against the 'name' property (Person entity uses single 'name' field)
-        // Try exact match first, then contains match for partial names
-        fetchRequest.predicate = NSPredicate(
-            format: "name ==[cd] %@ OR name CONTAINS[cd] %@",
-            name, name
-        )
-        fetchRequest.fetchLimit = 1
+        // First, try exact name match
+        let exactRequest: NSFetchRequest<Person> = Person.fetchRequest()
+        exactRequest.predicate = NSPredicate(format: "name ==[cd] %@", name)
+        exactRequest.fetchLimit = 1
 
-        do {
-            let results = try context.fetch(fetchRequest)
-            return results.first
-        } catch {
-            print("⚠️ Widget Sync: Failed to fetch person: \(error)")
-            return nil
+        if let exactMatch = try? context.fetch(exactRequest).first {
+            return exactMatch
         }
+
+        // If the input looks like an email, try matching by email
+        if name.contains("@") {
+            let emailRequest: NSFetchRequest<Person> = Person.fetchRequest()
+            emailRequest.predicate = NSPredicate(format: "email ==[cd] %@", name)
+            emailRequest.fetchLimit = 1
+
+            if let emailMatch = try? context.fetch(emailRequest).first {
+                return emailMatch
+            }
+
+            // Also try extracting the name part from email (before @) for partial matching
+            let namePart = name.split(separator: "@").first.map(String.init) ?? ""
+            if !namePart.isEmpty {
+                let partialRequest: NSFetchRequest<Person> = Person.fetchRequest()
+                // e.g., "alice.lastname" -> try matching Person names containing "alice" or "lastname"
+                let nameParts = namePart.replacingOccurrences(of: ".", with: " ")
+                    .split(separator: " ")
+                    .map(String.init)
+
+                if let firstName = nameParts.first, firstName.count >= 3 {
+                    partialRequest.predicate = NSPredicate(format: "name CONTAINS[cd] %@", firstName)
+                    partialRequest.fetchLimit = 1
+
+                    if let partialMatch = try? context.fetch(partialRequest).first {
+                        return partialMatch
+                    }
+                }
+            }
+        }
+
+        // Try fuzzy/partial name match as last resort
+        let fuzzyRequest: NSFetchRequest<Person> = Person.fetchRequest()
+        fuzzyRequest.predicate = NSPredicate(format: "name CONTAINS[cd] %@", name)
+        fuzzyRequest.fetchLimit = 1
+
+        if let fuzzyMatch = try? context.fetch(fuzzyRequest).first {
+            return fuzzyMatch
+        }
+
+        // Try matching first word of the name
+        let firstName = name.split(separator: " ").first.map(String.init) ?? ""
+        if firstName.count >= 3 && firstName != name {
+            let firstNameRequest: NSFetchRequest<Person> = Person.fetchRequest()
+            firstNameRequest.predicate = NSPredicate(format: "name BEGINSWITH[cd] %@", firstName)
+            firstNameRequest.fetchLimit = 1
+
+            return try? context.fetch(firstNameRequest).first
+        }
+
+        return nil
     }
 
     /// Extract Teams meeting URL from notes and convert to msteams:// scheme

@@ -743,12 +743,65 @@ extension SettingsView {
                 Text("Configure transcription preferences")
                     .font(.caption)
                     .foregroundColor(.secondary)
-                
+
                 VStack(alignment: .leading, spacing: 8) {
-                    Toggle("Use Local Transcription (Parakeet)", isOn: $recordingConfig.transcriptionSettings.useLocalTranscription)
-                        .help("Process transcription locally for privacy")
+                    Toggle("Use Local Transcription", isOn: $recordingConfig.transcriptionSettings.useLocalTranscription)
+                        .help("Process transcription locally using on-device models")
+
+                    // Transcription Engine Selector (only shown when local transcription is enabled)
+                    if recordingConfig.transcriptionSettings.useLocalTranscription {
+                        VStack(alignment: .leading, spacing: 8) {
+                            HStack {
+                                Text("Transcription Engine")
+                                Spacer()
+                                Picker("", selection: $recordingConfig.transcriptionSettings.transcriptionEngine) {
+                                    ForEach(TranscriptionEngineType.allCases, id: \.self) { engine in
+                                        Text(engine.displayName).tag(engine)
+                                    }
+                                }
+                                .pickerStyle(.menu)
+                                .frame(width: 180)
+                            }
+                            .padding(.leading, 20)
+
+                            // Engine description
+                            HStack {
+                                Spacer()
+                                Text(recordingConfig.transcriptionSettings.transcriptionEngine.description)
+                                    .font(.caption2)
+                                    .foregroundColor(.secondary)
+                            }
+                            .padding(.leading, 20)
+
+                            // WhisperKit Model Selector (only shown when WhisperKit is selected)
+                            if recordingConfig.transcriptionSettings.transcriptionEngine == .whisperKit {
+                                HStack {
+                                    Text("Whisper Model")
+                                    Spacer()
+                                    Picker("", selection: $recordingConfig.transcriptionSettings.whisperModel) {
+                                        Text("Tiny (Fast)").tag("tiny.en")
+                                        Text("Base (Balanced)").tag("base.en")
+                                        Text("Small (Accurate)").tag("small.en")
+                                        Text("Large (Best)").tag("large-v3")
+                                    }
+                                    .pickerStyle(.menu)
+                                    .frame(width: 150)
+                                }
+                                .padding(.leading, 20)
+
+                                HStack {
+                                    Spacer()
+                                    Text(whisperModelDescription(recordingConfig.transcriptionSettings.whisperModel))
+                                        .font(.caption2)
+                                        .foregroundColor(.secondary)
+                                }
+                                .padding(.leading, 20)
+                            }
+                        }
+                    }
+
                     Toggle("Whisper API Refinement", isOn: $recordingConfig.transcriptionSettings.whisperRefinementEnabled)
-                        .help("Use OpenAI Whisper for higher accuracy")
+                        .help("Use OpenAI Whisper for higher accuracy (online)")
                     Toggle("Speaker Diarization", isOn: $recordingConfig.transcriptionSettings.speakerDiarizationEnabled)
                         .help("Identify different speakers in the conversation")
                     
@@ -1133,6 +1186,23 @@ extension SettingsView {
             return .blue   // Good range
         default:
             return .orange // Edge of safe range
+        }
+    }
+
+    // MARK: - WhisperKit Model Helpers
+
+    private func whisperModelDescription(_ model: String) -> String {
+        switch model {
+        case "tiny.en":
+            return "~30 MB • Fastest • Lower accuracy"
+        case "base.en":
+            return "~70 MB • Good balance (Recommended)"
+        case "small.en":
+            return "~200 MB • Better accuracy"
+        case "large-v3":
+            return "~1.5 GB • Best accuracy • Slowest"
+        default:
+            return "Select a model"
         }
     }
 

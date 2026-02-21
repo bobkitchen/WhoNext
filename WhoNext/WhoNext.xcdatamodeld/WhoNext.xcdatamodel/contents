@@ -37,19 +37,7 @@
         <attribute name="summary" optional="YES" attributeType="String"/>
         <attribute name="uuid" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
         <relationship name="actionItems" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="ActionItem" inverseName="conversation" inverseEntity="ActionItem"/>
-        <relationship name="participants" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="ConversationParticipant" inverseName="conversation" inverseEntity="ConversationParticipant"/>
         <relationship name="person" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="Person" inverseName="conversations" inverseEntity="Person"/>
-    </entity>
-    <entity name="ConversationParticipant" representedClassName="ConversationParticipant" syncable="YES">
-        <attribute name="confidence" optional="YES" attributeType="Float" defaultValueString="0.0" usesScalarValueType="YES"/>
-        <attribute name="identifier" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
-        <attribute name="isCurrentUser" optional="YES" attributeType="Boolean" defaultValueString="NO" usesScalarValueType="YES"/>
-        <attribute name="name" optional="YES" attributeType="String"/>
-        <attribute name="namingMode" optional="YES" attributeType="String"/>
-        <attribute name="speakerID" optional="YES" attributeType="Integer 32" defaultValueString="0" usesScalarValueType="YES"/>
-        <attribute name="speakingTime" optional="YES" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
-        <relationship name="conversation" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="Conversation" inverseName="participants" inverseEntity="Conversation"/>
-        <relationship name="person" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="Person" inverseName="conversationParticipations" inverseEntity="Person"/>
     </entity>
     <entity name="Item" representedClassName="Item" syncable="YES">
         <attribute name="timestamp" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
@@ -73,7 +61,6 @@
         <attribute name="voiceEmbeddings" optional="YES" attributeType="Binary"/>
         <attribute name="voiceSampleCount" optional="YES" attributeType="Integer 32" defaultValueString="0" usesScalarValueType="YES"/>
         <relationship name="actionItems" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="ActionItem" inverseName="person" inverseEntity="ActionItem"/>
-        <relationship name="conversationParticipations" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="ConversationParticipant" inverseName="person" inverseEntity="ConversationParticipant"/>
         <relationship name="conversations" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="Conversation" inverseName="person" inverseEntity="Conversation"/>
         <relationship name="groupMeetings" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="GroupMeeting" inverseName="attendees" inverseEntity="GroupMeeting"/>
         <relationship name="groups" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="Group" inverseName="members" inverseEntity="Group"/>

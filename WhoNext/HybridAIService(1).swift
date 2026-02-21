@@ -399,18 +399,31 @@ class HybridAIService: ObservableObject {
             fallthrough
         case .openRouter, .openAI:
             let prompt = """
-            Extract the names of all SPEAKERS/PARTICIPANTS from this meeting transcript.
-            Only include people who are actually speaking in the meeting, not people mentioned in conversation.
-            Look for names that appear before colons (Name:) or in speaker labels.
-            Do NOT include names that are only mentioned within the conversation content.
-            
-            Return only a JSON array of actual speaker names as strings.
-            
+            Extract ONLY the names of ACTUAL SPEAKERS from this meeting transcript.
+
+            CRITICAL RULES:
+            1. A speaker is ONLY someone whose name appears at the START of a line followed by a colon
+               Example of a SPEAKER: "Bob: I think we should..."  → Bob IS a speaker
+               Example of a SPEAKER: "Sarah: That's a good point" → Sarah IS a speaker
+
+            2. DO NOT include names that are merely MENTIONED within someone else's speech
+               Example of NOT a speaker: "Bob: I talked to Sarah yesterday" → Sarah is NOT a speaker
+               Example of NOT a speaker: "Let's check with Mike about this" → Mike is NOT a speaker
+
+            3. Look for patterns like:
+               - "Name:" at the start of lines
+               - "Speaker 1:", "Speaker 2:", etc.
+               - "[Name]:" in transcript format
+
+            4. If a name only appears INSIDE the text of what someone said, they are NOT a speaker
+
+            Return only a JSON array of actual speaker names (people who have lines starting with their name).
+
             Transcript:
             \(transcript)
-            
+
             Example response: ["John Smith", "Jane Doe"]
-            
+
             Only return the JSON array, nothing else.
             """
             
@@ -780,28 +793,41 @@ Be concrete and actionable.
     
     func extractParticipants(from transcript: String) async throws -> [String] {
         let prompt = """
-        Extract the names of all SPEAKERS/PARTICIPANTS from this meeting transcript.
-        Only include people who are actually speaking in the meeting, not people mentioned in conversation.
-        Look for names that appear before colons (Name:) or in speaker labels.
-        Do NOT include names that are only mentioned within the conversation content.
-        
-        Return only a JSON array of actual speaker names as strings.
-        
+        Extract ONLY the names of ACTUAL SPEAKERS from this meeting transcript.
+
+        CRITICAL RULES:
+        1. A speaker is ONLY someone whose name appears at the START of a line followed by a colon
+           Example of a SPEAKER: "Bob: I think we should..."  → Bob IS a speaker
+           Example of a SPEAKER: "Sarah: That's a good point" → Sarah IS a speaker
+
+        2. DO NOT include names that are merely MENTIONED within someone else's speech
+           Example of NOT a speaker: "Bob: I talked to Sarah yesterday" → Sarah is NOT a speaker
+           Example of NOT a speaker: "Let's check with Mike about this" → Mike is NOT a speaker
+
+        3. Look for patterns like:
+           - "Name:" at the start of lines
+           - "Speaker 1:", "Speaker 2:", etc.
+           - "[Name]:" in transcript format
+
+        4. If a name only appears INSIDE the text of what someone said, they are NOT a speaker
+
+        Return only a JSON array of actual speaker names (people who have lines starting with their name).
+
         Transcript:
         \(transcript)
-        
+
         Example response: ["John Smith", "Jane Doe"]
-        
+
         Only return the JSON array, nothing else.
         """
-        
+
         let response = try await sendMessage(prompt, context: "")
-        
+
         // Try to parse JSON response
         guard let data = response.data(using: .utf8) else {
             throw HybridAIError.allProvidersFailed
         }
-        
+
         let decoder = JSONDecoder()
         return try decoder.decode([String].self, from: data)
     }

@@ -3,6 +3,9 @@ import Foundation
 import FoundationModels
 #endif
 
+/// Type alias for calendar event parameter
+typealias CalendarEvent = UpcomingMeeting
+
 /// Service for integrating Apple's Foundation Models framework with WhoNext
 /// Provides structured meeting data generation, tool calling, and stateful sessions
 @available(macOS 26.0, *)
@@ -221,12 +224,13 @@ class FoundationModelsService: ObservableObject {
         // Build context-aware prompt
         var contextPrefix = ""
         if let event = calendarEvent {
+            let durationMinutes = event.duration.map { Int($0 / 60) } ?? 0
             contextPrefix = """
             Meeting Context:
             - Title: \(event.title)
-            - Scheduled Duration: \(Int(event.duration / 60)) minutes
+            - Scheduled Duration: \(durationMinutes) minutes
             - Expected Participants: \(event.attendees?.joined(separator: ", ") ?? "Unknown")
-            
+
             """
         }
         

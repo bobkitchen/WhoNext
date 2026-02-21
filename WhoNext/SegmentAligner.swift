@@ -18,6 +18,9 @@ class SegmentAligner {
 
     /// Track unique speakers seen
     private var knownSpeakers: Set<String> = []
+
+    /// Track last returned speaker for stabilizer continuity
+    private var lastReturnedSpeaker: String?
     #endif
 
     /// Lock for thread-safe access
@@ -70,7 +73,8 @@ class SegmentAligner {
 
         // Run through stabilizer to prevent rapid switching
         if let speaker = speaker {
-            let stabilized = stabilizer.stabilize(rawLabel: speaker, currentLabel: nil)
+            let stabilized = stabilizer.stabilize(rawLabel: speaker, currentLabel: lastReturnedSpeaker)
+            lastReturnedSpeaker = stabilized
             return stabilized
         }
 
@@ -128,6 +132,7 @@ class SegmentAligner {
         allSegments.removeAll()
         knownSpeakers.removeAll()
         stabilizer.reset()
+        lastReturnedSpeaker = nil
         #endif
 
         print("[SegmentAligner] Reset")

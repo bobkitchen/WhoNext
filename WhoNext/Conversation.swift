@@ -49,51 +49,5 @@ extension Conversation: Identifiable {
     }
 }
 
-// MARK: - Participants Accessors
-
-extension Conversation {
-
-    /// All participants as a sorted array (by speaking time descending)
-    public var participantsArray: [ConversationParticipant] {
-        let set = participants as? Set<ConversationParticipant> ?? []
-        return set.sorted { $0.speakingTime > $1.speakingTime }
-    }
-
-    /// Add a participant to this conversation
-    @objc(addParticipantsObject:)
-    public func addToParticipants(_ value: ConversationParticipant) {
-        let items = mutableSetValue(forKey: "participants")
-        items.add(value)
-    }
-
-    /// Remove a participant from this conversation
-    @objc(removeParticipantsObject:)
-    public func removeFromParticipants(_ value: ConversationParticipant) {
-        let items = mutableSetValue(forKey: "participants")
-        items.remove(value)
-    }
-
-    /// Add multiple participants to this conversation
-    @objc(addParticipants:)
-    public func addToParticipants(_ values: NSSet) {
-        let items = mutableSetValue(forKey: "participants")
-        items.union(values as Set<NSObject>)
-    }
-
-    /// Remove multiple participants from this conversation
-    @objc(removeParticipants:)
-    public func removeFromParticipants(_ values: NSSet) {
-        let items = mutableSetValue(forKey: "participants")
-        items.minus(values as Set<NSObject>)
-    }
-
-    /// The participant identified as the current user (if any)
-    public var currentUserParticipant: ConversationParticipant? {
-        participantsArray.first { $0.isCurrentUser }
-    }
-
-    /// External participants (excluding current user)
-    public var externalParticipants: [ConversationParticipant] {
-        participantsArray.filter { !$0.isCurrentUser }
-    }
-}
+// MARK: - Participants Accessors (Disabled - ConversationParticipant entity removed)
+// TODO: Re-enable when ConversationParticipant is deployed to CloudKit Production

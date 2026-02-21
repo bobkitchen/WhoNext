@@ -13,6 +13,11 @@ struct DataSyncSettingsView: View {
     @State private var isRunningDiagnostics = false
     @State private var showForceUploadConfirmation = false
     @State private var showAdvancedSyncOptions = false
+    @State private var showRepairSyncConfirmation = false
+    @State private var showResetSyncConfirmation = false
+    @State private var showDeleteOrphansConfirmation = false
+    @State private var isRepairingSyncOrResetting = false
+    @State private var repairResetStatusMessage: String?
     @StateObject private var pdfProcessor = OrgChartProcessor()
     @State private var showModelWarning = false
     @State private var pendingFileURL: URL?
@@ -98,6 +103,30 @@ struct DataSyncSettingsView: View {
             Button("Cancel", role: .cancel) { }
         } message: {
             Text("This will re-upload ALL local data to CloudKit. Only use this for initial setup on a new device.\n\nWarning: This can resurrect records that were deleted on other devices.")
+        }
+        .alert("Repair CloudKit Sync?", isPresented: $showRepairSyncConfirmation) {
+            Button("Repair", role: .destructive) {
+                performRepairSync()
+            }
+            Button("Cancel", role: .cancel) { }
+        } message: {
+            Text("This will attempt to fix common sync issues:\n\n• Check iCloud account status\n• Verify/create CloudKit zone\n• Re-initialize sync schema\n• Force sync all records\n\nThis is safe to run and won't delete data.")
+        }
+        .alert("Reset CloudKit Sync?", isPresented: $showResetSyncConfirmation) {
+            Button("Reset", role: .destructive) {
+                performResetSync()
+            }
+            Button("Cancel", role: .cancel) { }
+        } message: {
+            Text("NUCLEAR OPTION: This will completely reset CloudKit sync:\n\n• Delete the CloudKit zone (removes ALL cloud data)\n• Clear local sync metadata\n• Re-create zone and schema\n• Re-upload all local data\n\n⚠️ Other devices will need to re-sync from scratch. Use only as a last resort!")
+        }
+        .alert("Delete Orphaned Conversations?", isPresented: $showDeleteOrphansConfirmation) {
+            Button("Delete All Orphans", role: .destructive) {
+                performDeleteOrphans()
+            }
+            Button("Cancel", role: .cancel) { }
+        } message: {
+            Text("This will delete all conversations that are not linked to any person.\n\nOrphaned conversations can cause CloudKit sync failures (CKError 2).\n\nNote: Any orphaned conversations with notes/transcripts will be permanently deleted.")
         }
     }
 
@@ -242,19 +271,63 @@ struct DataSyncSettingsView: View {
                         .font(.caption)
                         .foregroundColor(.secondary)
 
+                    // Row 1: Diagnostics and Force Upload
                     HStack(spacing: 12) {
                         Button(isRunningDiagnostics ? "Running..." : "Run Diagnostics") {
                             runSyncDiagnostics()
                         }
                         .buttonStyle(.bordered)
                         .controlSize(.small)
-                        .disabled(isRunningDiagnostics)
+                        .disabled(isRunningDiagnostics || isRepairingSyncOrResetting)
 
                         Button("Force Upload All") {
                             showForceUploadConfirmation = true
                         }
                         .buttonStyle(.bordered)
                         .controlSize(.small)
+                        .disabled(isRepairingSyncOrResetting)
+                    }
+
+                    // Row 2: Repair and Reset
+                    HStack(spacing: 12) {
+                        Button(isRepairingSyncOrResetting ? "Working..." : "Repair Sync") {
+                            showRepairSyncConfirmation = true
+                        }
+                        .buttonStyle(.bordered)
+                        .controlSize(.small)
+                        .tint(.orange)
+                        .disabled(isRepairingSyncOrResetting)
+
+                        Button("Delete Orphans") {
+                            showDeleteOrphansConfirmation = true
+                        }
+                        .buttonStyle(.bordered)
+                        .controlSize(.small)
+                        .tint(.purple)
+                        .disabled(isRepairingSyncOrResetting)
+
+                        Button("Reset CloudKit") {
+                            showResetSyncConfirmation = true
+                        }
+                        .buttonStyle(.bordered)
+                        .controlSize(.small)
+                        .tint(.red)
+                        .disabled(isRepairingSyncOrResetting)
+                    }
+
+                    // Status message for repair/reset operations
+                    if let statusMessage = repairResetStatusMessage {
+                        HStack {
+                            if isRepairingSyncOrResetting {
+                                ProgressView()
+                                    .scaleEffect(0.7)
+                                    .frame(width: 16, height: 16)
+                            }
+                            Text(statusMessage)
+                                .font(.caption)
+                                .foregroundColor(statusMessage.contains("✅") ? .green : (statusMessage.contains("❌") ? .red : .secondary))
+                        }
+                        .padding(.vertical, 4)
                     }
 
                     if let diagnosticsResult = diagnosticsResult {
@@ -553,6 +626,80 @@ struct DataSyncSettingsView: View {
                 diagnosticsResult = results.joined(separator: "\n")
                 isRunningDiagnostics = false
             }
+        }
+    }
+
+    private func performRepairSync() {
+        guard !isRepairingSyncOrResetting else { return }
+
+        isRepairingSyncOrResetting = true
+        repairResetStatusMessage = "Repairing sync..."
+        diagnosticsResult = nil
+
+        Task {
+            do {
+                try await PersistenceController.shared.repairCloudKitSync()
+
+                await MainActor.run {
+                    repairResetStatusMessage = "✅ Repair completed successfully! Check diagnostics for details."
+                    isRepairingSyncOrResetting = false
+
+                    // Auto-run diagnostics after repair to show results
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+                        runSyncDiagnostics()
+                    }
+                }
+            } catch {
+                await MainActor.run {
+                    repairResetStatusMessage = "❌ Repair failed: \(error.localizedDescription)"
+                    isRepairingSyncOrResetting = false
+                }
+            }
+        }
+    }
+
+    private func performResetSync() {
+        guard !isRepairingSyncOrResetting else { return }
+
+        isRepairingSyncOrResetting = true
+        repairResetStatusMessage = "Resetting CloudKit sync (this may take a moment)..."
+        diagnosticsResult = nil
+
+        Task {
+            do {
+                try await PersistenceController.shared.resetCloudKitSync()
+
+                await MainActor.run {
+                    repairResetStatusMessage = "✅ Reset completed! All local data is being re-uploaded to CloudKit."
+                    isRepairingSyncOrResetting = false
+
+                    // Auto-run diagnostics after reset
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+                        runSyncDiagnostics()
+                    }
+                }
+            } catch {
+                await MainActor.run {
+                    repairResetStatusMessage = "❌ Reset failed: \(error.localizedDescription)"
+                    isRepairingSyncOrResetting = false
+                }
+            }
+        }
+    }
+
+    private func performDeleteOrphans() {
+        isRepairingSyncOrResetting = true
+        repairResetStatusMessage = "Deleting orphaned conversations..."
+        diagnosticsResult = nil
+
+        let deletedCount = PersistenceController.shared.deleteAllOrphanedConversations()
+
+        repairResetStatusMessage = "✅ Deleted \(deletedCount) orphaned conversations"
+        isRepairingSyncOrResetting = false
+
+        // Auto-run diagnostics after deleting orphans
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+            runSyncDiagnostics()
         }
     }
 

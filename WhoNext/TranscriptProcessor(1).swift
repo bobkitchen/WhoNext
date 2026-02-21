@@ -96,6 +96,7 @@ struct ProcessedTranscript {
     let originalTranscript: TranscriptData
     let preIdentifiedParticipants: [SerializableParticipant]?  // Pre-identified from recording
     let userNotes: String?  // User notes taken during recording (Granola-style)
+    let recordingDuration: TimeInterval  // Actual recording duration in seconds
 }
 
 struct ContextualSentiment {
@@ -182,7 +183,7 @@ class TranscriptProcessor: ObservableObject {
     ///   - preIdentifiedParticipants: Optional participants already identified during recording
     ///   - userNotes: Optional user notes taken during recording (Granola-style)
     /// - Returns: A ProcessedTranscript or nil on failure
-    func processTranscript(_ rawText: String, preIdentifiedParticipants: [SerializableParticipant]? = nil, userNotes: String? = nil) async -> ProcessedTranscript? {
+    func processTranscript(_ rawText: String, preIdentifiedParticipants: [SerializableParticipant]? = nil, userNotes: String? = nil, recordingDuration: TimeInterval = 0) async -> ProcessedTranscript? {
         isProcessing = true
         currentPhase = .analyzing
         print("📊 TranscriptProcessor: Starting processing")
@@ -241,7 +242,8 @@ class TranscriptProcessor: ObservableObject {
                 suggestedTitle: suggestedTitle,
                 originalTranscript: transcriptData,
                 preIdentifiedParticipants: preIdentifiedParticipants,
-                userNotes: userNotes
+                userNotes: userNotes,
+                recordingDuration: recordingDuration
             )
 
             currentPhase = .complete
@@ -378,7 +380,7 @@ class TranscriptProcessor: ObservableObject {
         // Filter out common non-names
         let invalidNames = ["Meeting", "Transcript", "Zoom", "Teams", "Recording", "Host", "Participant", "Unknown", "System", "Admin", "Moderator"]
         let trimmedName = name.trimmingCharacters(in: .whitespacesAndNewlines)
-        
+
         // Basic validation
         guard !trimmedName.isEmpty,
               trimmedName.count >= 2,
@@ -389,13 +391,13 @@ class TranscriptProcessor: ObservableObject {
               !trimmedName.allSatisfy({ $0.isNumber }) else {
             return false
         }
-        
+
         // Must contain at least one letter and be a reasonable name length
         guard trimmedName.contains(where: { $0.isLetter }),
               trimmedName.count <= 30 else { // Shorter max length for names
             return false
         }
-        
+
         // Should not contain quotes or other punctuation that suggests it's content, not a name
         guard !trimmedName.contains("\""),
               !trimmedName.contains("'"),
@@ -404,8 +406,115 @@ class TranscriptProcessor: ObservableObject {
               !trimmedName.contains(".") else {
             return false
         }
-        
+
         return true
+    }
+
+    // MARK: - Participant Validation
+
+    /// Validates that extracted participant names actually appear as speaker labels in the transcript
+    /// This prevents names mentioned in conversation from being incorrectly identified as participants
+    private func validateParticipantsAsSpeakers(_ participants: [String], in transcript: String) -> [String] {
+        let lines = transcript.components(separatedBy: .newlines)
+        var validatedParticipants: [String] = []
+
+        // Build a set of actual speaker labels from the transcript
+        var actualSpeakerLabels = Set<String>()
+
+        for line in lines {
+            let trimmedLine = line.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !trimmedLine.isEmpty else { continue }
+
+            // Check for "Name:" pattern at the start of line
+            if let colonIndex = trimmedLine.firstIndex(of: ":") {
+                let potentialLabel = String(trimmedLine[..<colonIndex])
+                    .trimmingCharacters(in: .whitespacesAndNewlines)
+
+                // Validate it looks like a speaker label (not a timestamp or URL)
+                if isValidParticipantName(potentialLabel) {
+                    actualSpeakerLabels.insert(potentialLabel.lowercased())
+                    print("🔍 Found speaker label: '\(potentialLabel)'")
+                }
+            }
+
+            // Also check for "[Name]" pattern
+            if let bracketPattern = try? NSRegularExpression(pattern: "^\\[([^\\]]+)\\]") {
+                let range = NSRange(trimmedLine.startIndex..., in: trimmedLine)
+                if let match = bracketPattern.firstMatch(in: trimmedLine, range: range),
+                   let nameRange = Range(match.range(at: 1), in: trimmedLine) {
+                    let potentialLabel = String(trimmedLine[nameRange])
+                        .trimmingCharacters(in: .whitespacesAndNewlines)
+                    if isValidParticipantName(potentialLabel) {
+                        actualSpeakerLabels.insert(potentialLabel.lowercased())
+                        print("🔍 Found bracketed speaker label: '\(potentialLabel)'")
+                    }
+                }
+            }
+        }
+
+        print("🔍 Actual speaker labels found in transcript: \(actualSpeakerLabels)")
+
+        // Validate each extracted participant against actual speaker labels
+        for participant in participants {
+            let participantLower = participant.lowercased()
+
+            // Check for exact match
+            if actualSpeakerLabels.contains(participantLower) {
+                validatedParticipants.append(participant)
+                print("✅ Validated participant: '\(participant)' (exact match)")
+                continue
+            }
+
+            // Check if participant name is contained in any speaker label (for "Speaker 1" vs "Speaker")
+            var foundMatch = false
+            for label in actualSpeakerLabels {
+                if label.contains(participantLower) || participantLower.contains(label) {
+                    validatedParticipants.append(participant)
+                    print("✅ Validated participant: '\(participant)' (partial match with '\(label)')")
+                    foundMatch = true
+                    break
+                }
+            }
+
+            if !foundMatch {
+                print("❌ Rejected participant: '\(participant)' (not found as speaker label)")
+            }
+        }
+
+        return validatedParticipants
+    }
+
+    /// Constrains participant count based on voice analysis metadata if available
+    private func constrainByVoiceAnalysis(_ participants: [String], transcript: String) -> [String] {
+        // Check for voice analysis metadata
+        guard transcript.contains("[Voice Analysis:") else {
+            return participants
+        }
+
+        // Extract speaker count from metadata
+        let voiceSpeakerCount: Int
+        if let match = transcript.range(of: #"\[Voice Analysis: (\d+) speaker"#, options: .regularExpression) {
+            let numberPart = transcript[match]
+            if let number = numberPart.firstMatch(of: /\d+/) {
+                voiceSpeakerCount = Int(number.output) ?? 0
+            } else {
+                voiceSpeakerCount = 0
+            }
+        } else {
+            voiceSpeakerCount = 0
+        }
+
+        guard voiceSpeakerCount > 0 else { return participants }
+
+        print("🎤 Voice analysis detected \(voiceSpeakerCount) speaker(s)")
+
+        // If we have more participants than voice-detected speakers, trim to match
+        if participants.count > voiceSpeakerCount {
+            print("⚠️ Trimming participants from \(participants.count) to \(voiceSpeakerCount) based on voice analysis")
+            return Array(participants.prefix(voiceSpeakerCount))
+        }
+
+        return participants
     }
     
     private func estimateDuration(from text: String) -> TimeInterval? {
@@ -459,19 +568,38 @@ class TranscriptProcessor: ObservableObject {
         // Otherwise, proceed with normal AI extraction
         do {
             print("🔍 Attempting AI participant extraction...")
-            let participantNames = try await hybridAI.extractParticipants(from: transcript.rawText)
+            var participantNames = try await hybridAI.extractParticipants(from: transcript.rawText)
             print("🔍 AI returned \(participantNames.count) participants: \(participantNames)")
+
+            // CRITICAL: Validate that extracted names actually appear as speaker labels
+            // This prevents names mentioned in conversation from being incorrectly identified
+            participantNames = validateParticipantsAsSpeakers(participantNames, in: transcript.rawText)
+            print("🔍 After validation: \(participantNames.count) participants: \(participantNames)")
+
+            // Constrain by voice analysis speaker count if available
+            participantNames = constrainByVoiceAnalysis(participantNames, transcript: transcript.rawText)
+            print("🔍 After voice constraint: \(participantNames.count) participants: \(participantNames)")
+
             if !participantNames.isEmpty {
                 return await createParticipantInfoWithMatching(from: participantNames)
             }
         } catch {
             print("🔍 AI participant extraction failed: \(error)")
         }
-        
+
         print("🔍 Falling back to manual parsing...")
         // Fallback to simple parsing based on transcript format
-        let fallbackNames = extractParticipantNames(from: transcript.rawText, format: transcript.detectedFormat)
+        var fallbackNames = extractParticipantNames(from: transcript.rawText, format: transcript.detectedFormat)
         print("🔍 Manual parsing found \(fallbackNames.count) participants: \(fallbackNames)")
+
+        // Also validate manual parsing results
+        fallbackNames = validateParticipantsAsSpeakers(fallbackNames, in: transcript.rawText)
+        print("🔍 After validation: \(fallbackNames.count) participants: \(fallbackNames)")
+
+        // Constrain by voice analysis
+        fallbackNames = constrainByVoiceAnalysis(fallbackNames, transcript: transcript.rawText)
+        print("🔍 After voice constraint: \(fallbackNames.count) participants: \(fallbackNames)")
+
         return await createParticipantInfoWithMatching(from: fallbackNames)
     }
     

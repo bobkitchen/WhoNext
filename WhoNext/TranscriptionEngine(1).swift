@@ -95,10 +95,10 @@ class TranscriptionEngine: ObservableObject {
 
     // MARK: - Transcription
 
-    /// Transcribe an audio chunk
+    /// Transcribe an audio chunk (internal implementation)
     /// - Parameter audioChunk: Float array of audio samples at 16kHz
     /// - Returns: Transcription result, or nil if no valid speech
-    func transcribe(audioChunk: [Float]) async throws -> EngineTranscriptionResult? {
+    func transcribeInternal(audioChunk: [Float]) async throws -> EngineTranscriptionResult? {
         guard isReady else {
             throw TranscriptionEngineError.notReady
         }

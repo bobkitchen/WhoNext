@@ -5,16 +5,21 @@ import AVFoundation
 /// Manages voice embeddings and speaker identification
 /// Links DiarizationManager speaker embeddings to Person records
 class VoicePrintManager: ObservableObject {
-    
+
     // MARK: - Properties
-    
+
     private let persistenceController: PersistenceController
     private let embeddingDimension = 256 // Standard dimension for speaker embeddings
     private let minimumConfidenceThreshold: Float = 0.7
     private let highConfidenceThreshold: Float = 0.9
-    
+
+    // MARK: - Embedding Cache (avoids repeated Core Data fetches)
+    private var cachedPeopleEmbeddings: [(person: Person, embedding: [Float])]?
+    private var cacheTimestamp: Date = .distantPast
+    private let cacheValidityInterval: TimeInterval = 30.0  // Cache valid for 30 seconds
+
     // MARK: - Published Properties
-    
+
     @Published var isProcessing = false
     @Published var lastMatchConfidence: Float = 0.0
     
@@ -53,6 +58,8 @@ class VoicePrintManager: ObservableObject {
         // Save context
         do {
             try context.save()
+            // Invalidate cache so next lookup picks up the new embedding
+            invalidateCache()
             print("[VoicePrintManager] Saved voice embedding for \(person.wrappedName)")
         } catch {
             print("[VoicePrintManager] Error saving embedding: \(error)")
@@ -80,69 +87,90 @@ class VoicePrintManager: ObservableObject {
         }
     }
     
-    /// Find matching person for a given embedding
-    func findMatchingPerson(for embedding: [Float]) -> (Person?, Float)? {
-        guard embedding.count == embeddingDimension else {
-            print("[VoicePrintManager] ❌ Invalid embedding dimension: \(embedding.count), expected \(embeddingDimension)")
-            return nil
-        }
-
+    /// Refresh the embeddings cache from Core Data
+    private func refreshEmbeddingsCache() {
         let context = persistenceController.container.viewContext
         let request: NSFetchRequest<Person> = Person.fetchRequest()
         request.predicate = NSPredicate(format: "voiceEmbeddings != nil")
 
         do {
             let people = try context.fetch(request)
-
-            if people.isEmpty {
-                print("[VoicePrintManager] ⚠️ No people with voice embeddings in database - voice learning not started yet")
-                return nil
-            }
-
-            print("[VoicePrintManager] 🔍 Searching \(people.count) people with voice data...")
-
-            var bestMatch: (Person, Float)?
-            var allMatches: [(String, Float)] = []  // For debug logging
+            var cached: [(person: Person, embedding: [Float])] = []
 
             for person in people {
-                guard let storedData = person.voiceEmbeddings,
-                      let storedEmbedding = deserializeEmbedding(from: storedData) else {
-                    print("[VoicePrintManager] ⚠️ Could not deserialize embedding for \(person.wrappedName)")
-                    continue
-                }
-
-                // Calculate cosine similarity
-                let similarity = cosineSimilarity(embedding, storedEmbedding)
-
-                // Apply confidence weighting based on voice sample count
-                let weightedSimilarity = similarity * person.voiceConfidence
-
-                allMatches.append((person.wrappedName, weightedSimilarity))
-
-                if weightedSimilarity > minimumConfidenceThreshold {
-                    if bestMatch == nil || weightedSimilarity > bestMatch!.1 {
-                        bestMatch = (person, weightedSimilarity)
-                    }
+                if let storedData = person.voiceEmbeddings,
+                   let embedding = deserializeEmbedding(from: storedData) {
+                    cached.append((person: person, embedding: embedding))
                 }
             }
 
-            // Log all comparisons for debugging
-            let sortedMatches = allMatches.sorted { $0.1 > $1.1 }
-            for (name, score) in sortedMatches.prefix(3) {
-                let status = score >= minimumConfidenceThreshold ? "✓" : "✗"
-                print("[VoicePrintManager]   \(status) \(name): \(String(format: "%.1f%%", score * 100))")
-            }
-
-            if let match = bestMatch {
-                lastMatchConfidence = match.1
-                print("[VoicePrintManager] ✅ Best match: \(match.0.wrappedName) with confidence \(String(format: "%.1f%%", match.1 * 100))")
-                return match
-            } else {
-                print("[VoicePrintManager] ❌ No match above \(String(format: "%.0f%%", minimumConfidenceThreshold * 100)) threshold")
-            }
-
+            cachedPeopleEmbeddings = cached
+            cacheTimestamp = Date()
+            print("[VoicePrintManager] 📦 Refreshed cache with \(cached.count) people")
         } catch {
-            print("[VoicePrintManager] ❌ Error searching for matches: \(error)")
+            print("[VoicePrintManager] ❌ Error refreshing cache: \(error)")
+            cachedPeopleEmbeddings = nil
+        }
+    }
+
+    /// Invalidate the cache (call after saving new embeddings)
+    func invalidateCache() {
+        cachedPeopleEmbeddings = nil
+        cacheTimestamp = .distantPast
+    }
+
+    /// Find matching person for a given embedding (uses caching to avoid repeated Core Data fetches)
+    func findMatchingPerson(for embedding: [Float]) -> (Person?, Float)? {
+        guard embedding.count == embeddingDimension else {
+            print("[VoicePrintManager] ❌ Invalid embedding dimension: \(embedding.count), expected \(embeddingDimension)")
+            return nil
+        }
+
+        // Check if cache needs refresh
+        let now = Date()
+        if cachedPeopleEmbeddings == nil || now.timeIntervalSince(cacheTimestamp) > cacheValidityInterval {
+            refreshEmbeddingsCache()
+        }
+
+        guard let cached = cachedPeopleEmbeddings, !cached.isEmpty else {
+            print("[VoicePrintManager] ⚠️ No people with voice embeddings in database - voice learning not started yet")
+            return nil
+        }
+
+        print("[VoicePrintManager] 🔍 Searching \(cached.count) cached voice embeddings...")
+
+        var bestMatch: (Person, Float)?
+        var allMatches: [(String, Float)] = []  // For debug logging
+
+        for (person, storedEmbedding) in cached {
+            // Calculate cosine similarity
+            let similarity = cosineSimilarity(embedding, storedEmbedding)
+
+            // Apply confidence weighting based on voice sample count
+            let weightedSimilarity = similarity * person.voiceConfidence
+
+            allMatches.append((person.wrappedName, weightedSimilarity))
+
+            if weightedSimilarity > minimumConfidenceThreshold {
+                if bestMatch == nil || weightedSimilarity > bestMatch!.1 {
+                    bestMatch = (person, weightedSimilarity)
+                }
+            }
+        }
+
+        // Log all comparisons for debugging
+        let sortedMatches = allMatches.sorted { $0.1 > $1.1 }
+        for (name, score) in sortedMatches.prefix(3) {
+            let status = score >= minimumConfidenceThreshold ? "✓" : "✗"
+            print("[VoicePrintManager]   \(status) \(name): \(String(format: "%.1f%%", score * 100))")
+        }
+
+        if let match = bestMatch {
+            lastMatchConfidence = match.1
+            print("[VoicePrintManager] ✅ Best match: \(match.0.wrappedName) with confidence \(String(format: "%.1f%%", match.1 * 100))")
+            return match
+        } else {
+            print("[VoicePrintManager] ❌ No match above \(String(format: "%.0f%%", minimumConfidenceThreshold * 100)) threshold")
         }
 
         return nil

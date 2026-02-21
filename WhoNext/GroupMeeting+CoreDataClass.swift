@@ -125,9 +125,20 @@ public class GroupMeeting: NSManagedObject, @unchecked Sendable {
     // MARK: - Audio Management
     
     /// Returns the URL for the audio file if it exists
+    /// Supports both relative paths (preferred) and legacy absolute paths
     var audioFileURL: URL? {
         guard let audioFilePath = audioFilePath else { return nil }
-        return URL(fileURLWithPath: audioFilePath)
+
+        // Check if it's an absolute path (legacy)
+        if audioFilePath.hasPrefix("/") {
+            return URL(fileURLWithPath: audioFilePath)
+        }
+
+        // Relative path - resolve against Documents directory
+        guard let documentsURL = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first else {
+            return nil
+        }
+        return documentsURL.appendingPathComponent(audioFilePath)
     }
     
     /// Checks if the audio file exists

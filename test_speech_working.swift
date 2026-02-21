@@ -3,11 +3,11 @@ import Speech
 import AVFoundation
 
 // Test if the new Speech APIs are available
-@available(macOS 26.0, *)
+@available(macOS 15.0, *)
 func testAPIs() async {
-    print("Testing macOS 26 Speech APIs...")
-    print("Using SDK: /Library/Developer/CommandLineTools/SDKs/MacOSX26.0.sdk")
-    print("Swift version: 6.2")
+    print("Testing macOS 15 Speech APIs...")
+    print("Using SDK: macOS 15+")
+    print("Swift version: 6.0+")
     
     // Test 1: Check SpeechTranscriber
     print("\n1. Testing SpeechTranscriber...")
@@ -72,8 +72,8 @@ func testAPIs() async {
 }
 
 // Main entry point
-if #available(macOS 26.0, *) {
+if #available(macOS 15.0, *) {
     await testAPIs()
 } else {
-    print("This test requires macOS 26.0 or later")
+    print("This test requires macOS 15.0 or later")
 }

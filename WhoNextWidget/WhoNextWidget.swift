@@ -316,7 +316,16 @@ struct ParticipantAvatar: View {
     }
 
     private func initials(from name: String) -> String {
-        let words = name.split(separator: " ")
+        // If it looks like an email, extract initials from the name part
+        var workingName = name
+        if name.contains("@") {
+            // Extract name part before @ and split by . or _
+            let namePart = name.split(separator: "@").first.map(String.init) ?? name
+            workingName = namePart.replacingOccurrences(of: ".", with: " ")
+                .replacingOccurrences(of: "_", with: " ")
+        }
+
+        let words = workingName.split(separator: " ")
         if words.count >= 2 {
             return String(words[0].prefix(1) + words[1].prefix(1)).uppercased()
         } else if let first = words.first {

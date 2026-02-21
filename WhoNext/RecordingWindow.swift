@@ -174,6 +174,11 @@ struct RecordingWindowView: View {
             // Header with recording status
             recordingHeader
 
+            // Mic-only mode warning
+            if recordingEngine.isMicOnlyMode {
+                micOnlyWarning
+            }
+
             Divider()
 
             // Main content area
@@ -272,6 +277,28 @@ struct RecordingWindowView: View {
         .background(Color(NSColor.windowBackgroundColor))
     }
 
+    // MARK: - Mic-Only Warning
+
+    private var micOnlyWarning: some View {
+        HStack(spacing: 8) {
+            Image(systemName: "exclamationmark.triangle.fill")
+                .foregroundColor(.orange)
+            Text("Microphone only - Screen recording permission required for system audio")
+                .font(.caption)
+                .foregroundColor(.orange)
+            Spacer()
+            Button("Open Settings") {
+                NSWorkspace.shared.open(URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture")!)
+            }
+            .font(.caption)
+            .buttonStyle(.plain)
+            .foregroundColor(.blue)
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 8)
+        .background(Color.orange.opacity(0.1))
+    }
+
     // MARK: - Transcript Section
 
     private var transcriptSection: some View {
@@ -324,7 +351,15 @@ struct RecordingWindowView: View {
 
                 if let meeting = recordingEngine.currentMeeting {
                     ForEach(meeting.identifiedParticipants, id: \.speakerID) { participant in
-                        ParticipantRow(participant: participant)
+                        ParticipantRow(participant: participant) { newName in
+                            // Backfill the user-assigned name into existing transcript segments for this speaker
+                            let speakerId = "\(participant.speakerID)"
+                            for i in 0..<meeting.transcript.count {
+                                if meeting.transcript[i].speakerID == speakerId {
+                                    meeting.transcript[i].speakerName = newName
+                                }
+                            }
+                        }
                     }
                 } else {
                     Text("No participants detected")
@@ -535,7 +570,11 @@ struct TranscriptSegmentRow: View {
 }
 
 struct ParticipantRow: View {
-    let participant: IdentifiedParticipant
+    @ObservedObject var participant: IdentifiedParticipant
+    var onRename: ((String) -> Void)?
+
+    @State private var isEditing = false
+    @State private var editName = ""
 
     var body: some View {
         HStack(spacing: 8) {
@@ -551,16 +590,27 @@ struct ParticipantRow: View {
                 )
 
             VStack(alignment: .leading, spacing: 1) {
-                HStack(spacing: 4) {
-                    Text(participant.displayName)
+                if isEditing {
+                    TextField("Enter name", text: $editName, onCommit: commitName)
                         .font(.caption)
-                        .fontWeight(.medium)
-                        .lineLimit(1)
+                        .textFieldStyle(.plain)
+                        .onExitCommand { isEditing = false }
+                } else {
+                    HStack(spacing: 4) {
+                        Text(participant.displayName)
+                            .font(.caption)
+                            .fontWeight(.medium)
+                            .lineLimit(1)
+                            .onTapGesture {
+                                editName = participant.name ?? ""
+                                isEditing = true
+                            }
 
-                    if participant.isCurrentUser {
-                        Text("(You)")
-                            .font(.caption2)
-                            .foregroundColor(.secondary)
+                        if participant.isCurrentUser {
+                            Text("(You)")
+                                .font(.caption2)
+                                .foregroundColor(.secondary)
+                        }
                     }
                 }
 
@@ -579,6 +629,16 @@ struct ParticipantRow: View {
                     .foregroundColor(.green)
             }
         }
+    }
+
+    private func commitName() {
+        let trimmed = editName.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !trimmed.isEmpty {
+            participant.name = trimmed
+            participant.namingMode = .namedByUser
+            onRename?(trimmed)
+        }
+        isEditing = false
     }
 
     private var initials: String {

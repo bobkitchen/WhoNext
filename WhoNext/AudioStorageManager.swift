@@ -42,11 +42,21 @@ class AudioStorageManager {
     func createAudioFile(for meetingID: UUID) throws -> URL {
         let fileName = "\(meetingID.uuidString).m4a"
         let fileURL = getAudioDirectory().appendingPathComponent(fileName)
-        
+
         // Create parent directory if needed
         try fileManager.createDirectory(at: getAudioDirectory(), withIntermediateDirectories: true)
-        
+
         return fileURL
+    }
+
+    /// Get the relative path for storage in Core Data (relative to Documents directory)
+    func relativePath(for meetingID: UUID) -> String {
+        return "\(audioDirectory)/\(meetingID.uuidString).m4a"
+    }
+
+    /// Resolve a relative path to an absolute URL
+    func resolveRelativePath(_ relativePath: String) -> URL {
+        return documentsURL.appendingPathComponent(relativePath)
     }
     
     /// Compress an audio file after recording

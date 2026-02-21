@@ -449,19 +449,26 @@ Generate a comprehensive pre-meeting brief following the format above.
                 // Prepare a more structured prompt
                 // Keep prompt professional to avoid triggering safety guardrails
                 let prompt = """
-                Please identify all participants who spoke in this business meeting transcript.
-                
-                \(voiceAnalysisInfo)List only the names of people who actively participated in the conversation.
-                Do not include people who were only mentioned but did not speak.
-                
-                If the same speaker name appears multiple times in the transcript (e.g., "Bob: text1" and "Bob: text2"), 
-                this is the SAME person speaking multiple times, not different people.
-                
+                Please identify ONLY the actual speakers from this business meeting transcript.
+
+                \(voiceAnalysisInfo)CRITICAL RULES:
+                1. A speaker is ONLY someone whose name appears at the START of a line followed by a colon
+                   Example: "Bob: I think we should..." → Bob IS a speaker
+                   Example: "Sarah: That's a good point" → Sarah IS a speaker
+
+                2. DO NOT include names that are merely MENTIONED within someone else's speech
+                   Example: "Bob: I talked to Sarah yesterday" → Sarah is NOT a speaker (only mentioned)
+                   Example: "Let's check with Mike about this" → Mike is NOT a speaker (only mentioned)
+
+                3. Look for patterns like "Name:" at the start of lines
+
+                4. If a name only appears INSIDE the text of what someone said, they are NOT a speaker
+
                 Meeting Transcript:
                 \(truncateContextForFoundationModels(transcript))
-                
-                Please list each UNIQUE participant's name on a separate line.
-                Do not repeat the same name multiple times.
+
+                List each UNIQUE speaker's name on a separate line.
+                Only include names that appear before colons as speaker labels.
                 """
                 
                 print("🤖 [AppleIntelligence] Extracting participants from transcript...")

@@ -29,6 +29,9 @@ class SimpleRecordingEngine: ObservableObject {
     @Published var micLevel: Float = 0
     @Published var systemLevel: Float = 0
 
+    // Audio capture mode (mic-only if screen recording permission denied)
+    @Published var isMicOnlyMode: Bool = false
+
     // Speaker diarization state
     @Published var detectedSpeakerCount: Int = 0
 
@@ -36,7 +39,7 @@ class SimpleRecordingEngine: ObservableObject {
 
     private let audioCapturer = AudioCapturer()
     private let chunkBuffer = AudioChunkBuffer()
-    private let transcriber = TranscriptionEngine()
+    private var transcriber: (any TranscriptionEngineProtocol)?
 
     // MARK: - Diarization Components
 
@@ -44,6 +47,7 @@ class SimpleRecordingEngine: ObservableObject {
     private let diarizationManager = DiarizationManager(enableRealTimeProcessing: true)
     private let diarizationBuffer = DiarizationBuffer()
     private let segmentAligner = SegmentAligner()
+    private let voicePrintManager = VoicePrintManager()
     #endif
 
     // MARK: - Private State
@@ -75,6 +79,14 @@ class SimpleRecordingEngine: ObservableObject {
                 self?.systemLevel = level
             }
             .store(in: &cancellables)
+
+        // Forward capture mode changes
+        audioCapturer.$captureMode
+            .receive(on: RunLoop.main)
+            .sink { [weak self] mode in
+                self?.isMicOnlyMode = (mode == .microphoneOnly)
+            }
+            .store(in: &cancellables)
     }
 
     // MARK: - Pre-warming
@@ -82,10 +94,13 @@ class SimpleRecordingEngine: ObservableObject {
     /// Initialize transcription engine and diarization ahead of time
     func preWarm() async {
         do {
-            // Load WhisperKit model
-            let model = MeetingRecordingConfiguration.shared.transcriptionSettings.whisperModel
-            try await transcriber.initialize(model: model)
-            print("[SimpleRecordingEngine] Pre-warmed transcriber with model: \(model)")
+            // Create transcription engine based on settings
+            let settings = MeetingRecordingConfiguration.shared.transcriptionSettings
+            transcriber = TranscriptionManagerFactory.createEngine(for: settings)
+            try await transcriber?.initialize()
+
+            let engineName = settings.transcriptionEngine.displayName
+            print("[SimpleRecordingEngine] Pre-warmed transcriber with engine: \(engineName)")
 
             // Initialize diarization
             #if canImport(FluidAudio)
@@ -122,10 +137,15 @@ class SimpleRecordingEngine: ObservableObject {
 
         do {
             // Ensure transcriber is ready
-            if !transcriber.isReady {
-                let model = MeetingRecordingConfiguration.shared.transcriptionSettings.whisperModel
-                try await transcriber.initialize(model: model)
+            if transcriber == nil || transcriber?.isReady != true {
+                let settings = MeetingRecordingConfiguration.shared.transcriptionSettings
+                transcriber = TranscriptionManagerFactory.createEngine(for: settings)
+                try await transcriber?.initialize()
+                print("[SimpleRecordingEngine] Transcriber initialized: \(settings.transcriptionEngine.displayName)")
             }
+
+            // Reset transcription state for new recording (important for Parakeet decoder state)
+            transcriber?.resetState()
 
             // Create new meeting
             let meeting = LiveMeeting()
@@ -189,6 +209,12 @@ class SimpleRecordingEngine: ObservableObject {
 
         print("[SimpleRecordingEngine] Stopping recording...")
 
+        // Ensure state is always cleaned up, even if finalization throws
+        defer {
+            isRecording = false
+            recordingState = .idle
+        }
+
         // Cancel processing task
         recordingTask?.cancel()
         recordingTask = nil
@@ -213,8 +239,7 @@ class SimpleRecordingEngine: ObservableObject {
         _ = await diarizationManager.finishProcessing()
         #endif
 
-        // Update state
-        isRecording = false
+        // Update state for processing phase
         recordingState = .processing
 
         // Finalize meeting
@@ -222,7 +247,6 @@ class SimpleRecordingEngine: ObservableObject {
             await finalizeMeeting(meeting)
         }
 
-        recordingState = .idle
         print("[SimpleRecordingEngine] Recording stopped")
     }
 
@@ -249,22 +273,14 @@ class SimpleRecordingEngine: ObservableObject {
 
                     // Add to chunk buffer for transcription
                     if let chunk = await buffer.addBuffer(audioBuffer, isMic: true) {
-                        await MainActor.run {
-                            Task {
-                                await self.transcribeChunk(chunk)
-                            }
-                        }
+                        await self.transcribeChunk(chunk)
                     }
 
                     #if canImport(FluidAudio)
                     // Also feed to diarization buffer (parallel pipeline)
                     let elapsed = await MainActor.run { self.recordingDuration }
                     if let (diarChunk, startTime) = await diarBuffer.addBuffer(audioBuffer, recordingElapsed: elapsed) {
-                        await MainActor.run {
-                            Task {
-                                await self.processDiarizationChunk(diarChunk, startTime: startTime)
-                            }
-                        }
+                        await self.processDiarizationChunk(diarChunk, startTime: startTime)
                     }
                     #endif
                 }
@@ -277,11 +293,7 @@ class SimpleRecordingEngine: ObservableObject {
 
                     // Add to chunk buffer for transcription
                     if let chunk = await buffer.addBuffer(audioBuffer, isMic: false) {
-                        await MainActor.run {
-                            Task {
-                                await self.transcribeChunk(chunk)
-                            }
-                        }
+                        await self.transcribeChunk(chunk)
                     }
                 }
             }
@@ -297,50 +309,74 @@ class SimpleRecordingEngine: ObservableObject {
         print("[SimpleRecordingEngine] Audio stream processing ended")
     }
 
-    private func transcribeChunk(_ chunk: [Float]) async {
+    /// Perform transcription work off the main actor, then update UI on MainActor
+    private nonisolated func transcribeChunkInBackground(_ chunk: [Float], transcriber: any TranscriptionEngineProtocol) async -> (text: String, confidence: Float)? {
         do {
-            // Log chunk stats
-            let stats = await chunkBuffer.getStats()
-            print("[SimpleRecordingEngine] Transcribing chunk: \(chunk.count) samples")
-            print("[SimpleRecordingEngine] Buffer stats: \(stats.description)")
-
-            // Transcribe
             if let result = try await transcriber.transcribe(audioChunk: chunk) {
-                // Query speaker from diarization
-                var speakerID: String? = nil
-                var speakerName: String? = nil
-
-                #if canImport(FluidAudio)
-                // Query the segment aligner for the dominant speaker during this transcript window
-                // Transcription chunks are ~15 seconds, query from the start of this segment
-                let segmentStart = max(0, recordingDuration - 15.0)
-                if let speaker = segmentAligner.dominantSpeaker(for: segmentStart, duration: 15.0) {
-                    speakerID = speaker
-                    speakerName = SegmentAligner.formatSpeakerName(speaker)
-                    print("[SimpleRecordingEngine] Speaker identified: \(speakerName ?? "unknown")")
-                }
-                #endif
-
-                // Convert to TranscriptSegment for LiveMeeting
-                let segment = TranscriptSegment(
-                    text: result.text,
-                    timestamp: recordingDuration,  // Seconds from start
-                    speakerID: speakerID,
-                    speakerName: speakerName,
-                    confidence: result.confidence,
-                    isFinalized: true
-                )
-
-                // Add to meeting
-                currentMeeting?.transcript.append(segment)
-                currentMeeting?.wordCount += result.text.split(separator: " ").count
-
-                let speakerInfo = speakerName ?? "unknown speaker"
-                print("[SimpleRecordingEngine] Added segment (\(speakerInfo)): \"\(result.text.prefix(50))...\"")
+                return (text: result.text, confidence: result.confidence)
             }
         } catch {
             print("[SimpleRecordingEngine] Transcription error: \(error)")
         }
+        return nil
+    }
+
+    private func transcribeChunk(_ chunk: [Float]) async {
+        guard let transcriber else {
+            print("[SimpleRecordingEngine] Transcriber not initialized")
+            return
+        }
+
+        // Log chunk stats
+        let stats = await chunkBuffer.getStats()
+        print("[SimpleRecordingEngine] Transcribing chunk: \(chunk.count) samples")
+        print("[SimpleRecordingEngine] Buffer stats: \(stats.description)")
+
+        // Perform heavy transcription work off MainActor
+        guard let result = await transcribeChunkInBackground(chunk, transcriber: transcriber) else {
+            return
+        }
+
+        // Back on MainActor for UI updates
+        // Query speaker from diarization
+        var speakerID: String? = nil
+        var speakerName: String? = nil
+
+        #if canImport(FluidAudio)
+        // Use the chunk's actual timestamp rather than global recordingDuration.
+        // The transcription chunk corresponds to approximately the last chunkDuration
+        // of audio. Query the dominant speaker for that time window.
+        let chunkDuration: TimeInterval = 10.0
+        let segmentStart = max(0, recordingDuration - chunkDuration)
+        if let speaker = segmentAligner.dominantSpeaker(for: segmentStart, duration: chunkDuration) {
+            speakerID = speaker
+            // Use user-assigned name if available, otherwise format from speaker ID
+            let numericId = SegmentAligner.parseNumericId(speaker)
+            if let participant = currentMeeting?.identifiedParticipants.first(where: { $0.speakerID == numericId }),
+               let userName = participant.name, participant.namingMode == .namedByUser {
+                speakerName = userName
+            } else {
+                speakerName = SegmentAligner.formatSpeakerName(speaker)
+            }
+            print("[SimpleRecordingEngine] Speaker identified: \(speakerName ?? "unknown")")
+        }
+        #endif
+
+        // Create segment and update meeting on MainActor
+        let segment = TranscriptSegment(
+            text: result.text,
+            timestamp: recordingDuration,
+            speakerID: speakerID,
+            speakerName: speakerName,
+            confidence: result.confidence,
+            isFinalized: true
+        )
+
+        currentMeeting?.transcript.append(segment)
+        currentMeeting?.wordCount += result.text.split(separator: " ").count
+
+        let speakerInfo = speakerName ?? "unknown speaker"
+        print("[SimpleRecordingEngine] Added segment (\(speakerInfo)): \"\(result.text.prefix(50))...\"")
     }
 
     // MARK: - Diarization Processing
@@ -369,25 +405,76 @@ class SimpleRecordingEngine: ObservableObject {
         // Process through DiarizationManager
         await diarizationManager.processAudioBuffer(buffer)
 
+        // Check for diarization errors
+        if let error = diarizationManager.lastError {
+            print("[SimpleRecordingEngine] Diarization error: \(error.localizedDescription)")
+            // Don't return - still try to use any partial results
+        }
+
         // Update segment aligner with latest results
         if let result = diarizationManager.lastResult {
             print("[SimpleRecordingEngine] Diarization result: \(result.segments.count) segments, \(result.speakerCount) speakers")
             segmentAligner.updateDiarizationResults(result)
 
-            // Update detected speaker count
+            // Always update participants and meeting type from latest results,
+            // since speaker merging can reduce the count between chunks.
             let speakerCount = diarizationManager.totalSpeakerCount
             if speakerCount != detectedSpeakerCount {
-                detectedSpeakerCount = speakerCount
-                print("[SimpleRecordingEngine] Speaker count updated: \(speakerCount)")
-
-                // Update meeting type
-                updateMeetingType(speakerCount: speakerCount)
-
-                // Update participants
-                updateParticipants(from: result)
+                print("[SimpleRecordingEngine] Speaker count changed: \(detectedSpeakerCount) -> \(speakerCount)")
             }
+            detectedSpeakerCount = speakerCount
+            updateMeetingType(speakerCount: speakerCount)
+            updateParticipants(from: result)
+
+            // Sync participants: remove any whose speaker IDs were merged away
+            let validSpeakerIDs = Set(result.segments.map { SegmentAligner.parseNumericId($0.speakerId) })
+            currentMeeting?.syncParticipants(withSpeakerIDs: validSpeakerIDs)
+
+            // Backfill speaker labels into transcript segments that arrived before diarization
+            backfillSpeakerLabels()
         } else {
             print("[SimpleRecordingEngine] No diarization result yet (isEnabled: \(diarizationManager.isEnabled), isProcessing: \(diarizationManager.isProcessing))")
+        }
+    }
+
+    /// Backfill speaker labels into transcript segments that arrived before diarization caught up.
+    /// Iterates segments where speakerID is nil and queries the segmentAligner for the dominant
+    /// speaker at each segment's timestamp. This follows the pattern used by Otter, Fireflies,
+    /// and Read.ai: speaker processing runs with some delay, and labels are backfilled.
+    private func backfillSpeakerLabels() {
+        guard let meeting = currentMeeting else { return }
+
+        var backfilledCount = 0
+        for i in 0..<meeting.transcript.count {
+            let segment = meeting.transcript[i]
+            guard segment.speakerID == nil else { continue }
+
+            // Query the aligner for who was speaking at this segment's time
+            if let speaker = segmentAligner.dominantSpeaker(for: segment.timestamp, duration: 5.0) {
+                // Use user-assigned name if available
+                let numericId = SegmentAligner.parseNumericId(speaker)
+                let speakerName: String
+                if let participant = meeting.identifiedParticipants.first(where: { $0.speakerID == numericId }),
+                   let userName = participant.name, participant.namingMode == .namedByUser {
+                    speakerName = userName
+                } else {
+                    speakerName = SegmentAligner.formatSpeakerName(speaker)
+                }
+                meeting.transcript[i] = TranscriptSegment(
+                    id: segment.id,
+                    text: segment.text,
+                    timestamp: segment.timestamp,
+                    speakerID: speaker,
+                    speakerName: speakerName,
+                    confidence: segment.confidence,
+                    isFinalized: segment.isFinalized
+                )
+                backfilledCount += 1
+            }
+        }
+
+        if backfilledCount > 0 {
+            print("[SimpleRecordingEngine] Backfilled speaker labels for \(backfilledCount) transcript segments")
         }
     }
 
@@ -403,7 +490,7 @@ class SimpleRecordingEngine: ObservableObject {
         // Don't set type for 0 or 1 speakers (could be solo or not yet determined)
     }
 
-    /// Update participants from diarization results
+    /// Update participants from diarization results, attempting voice-based identification
     private func updateParticipants(from result: DiarizationResult) {
         guard let meeting = currentMeeting else { return }
 
@@ -423,10 +510,23 @@ class SimpleRecordingEngine: ObservableObject {
                 // Add new participant
                 let participant = IdentifiedParticipant()
                 participant.speakerID = numericId
-                participant.name = nil  // Will show as "Speaker N" via displayName
                 participant.confidence = 1.0
-                participant.isCurrentUser = false  // TODO: Match against user voice profile
+                participant.isCurrentUser = false
                 participant.totalSpeakingTime = speakingTimes[speakerId] ?? 0
+
+                // Attempt voice-based identification using VoicePrintManager
+                if let embedding = result.speakerDatabase?[speakerId] {
+                    if let match = voicePrintManager.findMatchingPerson(for: embedding),
+                       let matchedPerson = match.0,
+                       match.1 > 0.80 {
+                        participant.name = matchedPerson.wrappedName
+                        participant.namingMode = .suggestedByVoice
+                        participant.personRecord = matchedPerson
+                        participant.person = matchedPerson
+                        participant.confidence = match.1
+                        print("[SimpleRecordingEngine] 🎤 Voice match: \(matchedPerson.wrappedName) (confidence: \(String(format: "%.0f%%", match.1 * 100)))")
+                    }
+                }
 
                 meeting.identifiedParticipants.append(participant)
                 print("[SimpleRecordingEngine] Added participant: \(participant.displayName)")
@@ -473,22 +573,13 @@ class SimpleRecordingEngine: ObservableObject {
     }
 
     private func saveToUserDefaults(_ meeting: LiveMeeting) {
-        // Save transcript
-        if let transcriptData = try? JSONEncoder().encode(meeting.transcript) {
-            UserDefaults.standard.set(transcriptData, forKey: "pendingTranscript")
-        }
-
-        // Save meeting title
-        UserDefaults.standard.set(meeting.calendarTitle, forKey: "pendingMeetingTitle")
-
-        // Save duration
-        UserDefaults.standard.set(meeting.duration, forKey: "pendingRecordingDuration")
+        // Build transcript as plain text (matching reader's expected format)
+        let transcriptText = meeting.getFullTranscriptText()
 
         // Get voice embeddings from diarization results
         #if canImport(FluidAudio)
         var speakerEmbeddings: [String: [Float]] = [:]
         if let result = diarizationManager.lastResult {
-            // Extract average embedding per speaker from their segments
             for segment in result.segments {
                 if speakerEmbeddings[segment.speakerId] == nil {
                     speakerEmbeddings[segment.speakerId] = segment.embedding
@@ -497,11 +588,10 @@ class SimpleRecordingEngine: ObservableObject {
         }
         #endif
 
-        // Save participant data with voice embeddings
+        // Build participant data with voice embeddings
         let serializableParticipants = meeting.identifiedParticipants.map { participant in
             #if canImport(FluidAudio)
-            // Convert numeric speakerID back to string format for embedding lookup
-            let speakerIdString = "speaker_\(participant.speakerID)"
+            let speakerIdString = "\(participant.speakerID)"
             let embedding = speakerEmbeddings[speakerIdString]
             return SerializableParticipant(from: participant, voiceEmbedding: embedding)
             #else
@@ -509,9 +599,22 @@ class SimpleRecordingEngine: ObservableObject {
             #endif
         }
 
-        if let participantData = try? JSONEncoder().encode(serializableParticipants) {
-            UserDefaults.standard.set(participantData, forKey: "pendingParticipants")
+        // Get user notes as plain text
+        let userNotes = meeting.userNotesPlainText
+
+        // Write all keys atomically using correct keys matching TranscriptImportWindowView reader
+        let defaults = UserDefaults.standard
+        defaults.set(transcriptText, forKey: "PendingRecordedTranscript")
+        defaults.set(meeting.calendarTitle, forKey: "PendingRecordedTitle")
+        defaults.set(meeting.startTime, forKey: "PendingRecordedDate")
+        defaults.set(meeting.duration, forKey: "PendingRecordedDuration")
+        if !userNotes.isEmpty {
+            defaults.set(userNotes, forKey: "PendingRecordedUserNotes")
         }
+        if let participantData = try? JSONEncoder().encode(serializableParticipants) {
+            defaults.set(participantData, forKey: "PendingRecordedParticipants")
+        }
+        defaults.synchronize()
 
         print("[SimpleRecordingEngine] Saved meeting data to UserDefaults (\(meeting.identifiedParticipants.count) participants)")
     }

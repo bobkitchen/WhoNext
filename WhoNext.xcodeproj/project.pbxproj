@@ -14,6 +14,7 @@
 		7AA719C92F125CB1008468EA /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 7AA719C82F125CB1008468EA /* SwiftUI.framework */; };
 		7AA719D62F125CB3008468EA /* WhoNextWidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 7AA719C52F125CB1008468EA /* WhoNextWidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		7AABCDEF2DBC09000089D3DA /* FluidAudio in Frameworks */ = {isa = PBXBuildFile; productRef = 7AABCDEE2DBC09000089D3DA /* FluidAudio */; };
+		7AFD8D3F2F168024005A497C /* WhisperKit in Frameworks */ = {isa = PBXBuildFile; productRef = 7AWHISPER2F150001008468EA /* WhisperKit */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -115,6 +116,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				7AFD8D3F2F168024005A497C /* WhisperKit in Frameworks */,
 				7AA712D02F0EA08C008468EA /* CloudKit.framework in Frameworks */,
 				7A5791692D9940CC0018E162 /* SwiftCSV in Frameworks */,
 				7A1FD56D2DBC07E30089D3DA /* Down in Frameworks */,
@@ -206,6 +208,7 @@
 				7A5791682D9940CC0018E162 /* SwiftCSV */,
 				7A1FD56C2DBC07E30089D3DA /* Down */,
 				7AABCDEE2DBC09000089D3DA /* FluidAudio */,
+				7AWHISPER2F150001008468EA /* WhisperKit */,
 			);
 			productName = WhoNext;
 			productReference = 7AA52C322D97D8E700C2B563 /* WhoNext.app */;
@@ -318,6 +321,7 @@
 				7A5791672D9940CC0018E162 /* XCRemoteSwiftPackageReference "SwiftCSV" */,
 				7A1FD56B2DBC07E30089D3DA /* XCRemoteSwiftPackageReference "Down" */,
 				7AABCDED2DBC09000089D3DA /* XCRemoteSwiftPackageReference "FluidAudio" */,
+				7AWHISPER2F150000008468EA /* XCRemoteSwiftPackageReference "WhisperKit" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 7AA52C332D97D8E700C2B563 /* Products */;
@@ -852,6 +856,14 @@
 				minimumVersion = 0.9.0;
 			};
 		};
+		7AWHISPER2F150000008468EA /* XCRemoteSwiftPackageReference "WhisperKit" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/argmaxinc/WhisperKit.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 0.9.0;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -869,6 +881,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 7AABCDED2DBC09000089D3DA /* XCRemoteSwiftPackageReference "FluidAudio" */;
 			productName = FluidAudio;
+		};
+		7AWHISPER2F150001008468EA /* WhisperKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 7AWHISPER2F150000008468EA /* XCRemoteSwiftPackageReference "WhisperKit" */;
+			productName = WhisperKit;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

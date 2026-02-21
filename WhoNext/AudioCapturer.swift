@@ -292,6 +292,10 @@ private class AudioStreamOutput: NSObject, SCStreamOutput {
     private let handler: (AVAudioPCMBuffer) -> Void
     private var logCounter = 0
 
+    /// Cached converter for resampling (created lazily based on source format)
+    private var cachedConverter: AVAudioConverter?
+    private var cachedSourceFormat: AVAudioFormat?
+
     init(handler: @escaping (AVAudioPCMBuffer) -> Void) {
         self.handler = handler
     }
@@ -324,19 +328,24 @@ private class AudioStreamOutput: NSObject, SCStreamOutput {
         let frameCount = CMSampleBufferGetNumSamples(sampleBuffer)
         let sourceSampleRate = asbd.mSampleRate
         let targetSampleRate: Double = 16000.0
+        let channelCount = Int(asbd.mChannelsPerFrame)
 
         // Log format occasionally
         if logCounter % 500 == 0 {
-            print("[AudioStreamOutput] System audio format: \(asbd.mSampleRate)Hz, \(asbd.mChannelsPerFrame) ch, \(asbd.mBitsPerChannel) bits, flags: \(asbd.mFormatFlags)")
+            print("[AudioStreamOutput] System audio format: \(sourceSampleRate)Hz, \(channelCount) ch, \(asbd.mBitsPerChannel) bits, flags: \(asbd.mFormatFlags)")
         }
         logCounter += 1
 
-        // Calculate output frame count after resampling
-        let resampleRatio = targetSampleRate / sourceSampleRate
-        let outputFrameCount = Int(Double(frameCount) * resampleRatio)
+        // Create source format (mono float at source rate) for intermediate buffer
+        guard let sourceMonoFormat = AVAudioFormat(
+            standardFormatWithSampleRate: sourceSampleRate,
+            channels: 1
+        ) else {
+            return nil
+        }
 
-        // Create a float format for output (16kHz mono)
-        guard let floatFormat = AVAudioFormat(
+        // Create target format (16kHz mono)
+        guard let targetFormat = AVAudioFormat(
             standardFormatWithSampleRate: targetSampleRate,
             channels: 1
         ) else {
@@ -364,28 +373,18 @@ private class AudioStreamOutput: NSObject, SCStreamOutput {
             return nil
         }
 
-        // ScreenCaptureKit typically delivers 32-bit float audio
-        // But we need to handle various formats
-
         let isFloat = (asbd.mFormatFlags & kAudioFormatFlagIsFloat) != 0
         let is32Bit = asbd.mBitsPerChannel == 32
         let is16Bit = asbd.mBitsPerChannel == 16
-        let channelCount = Int(asbd.mChannelsPerFrame)
 
-        // First convert to float array at source sample rate
+        // First convert to mono float array at source sample rate
         var sourceFloats = [Float](repeating: 0, count: frameCount)
 
-        // Convert based on source format
         if isFloat && is32Bit {
-            // 32-bit float
             let floatData = data.withMemoryRebound(to: Float.self, capacity: frameCount * channelCount) { $0 }
-
             if channelCount == 1 {
-                for i in 0..<frameCount {
-                    sourceFloats[i] = floatData[i]
-                }
+                memcpy(&sourceFloats, floatData, frameCount * MemoryLayout<Float>.size)
             } else {
-                // Downmix stereo to mono
                 for i in 0..<frameCount {
                     var sum: Float = 0
                     for ch in 0..<channelCount {
@@ -395,15 +394,12 @@ private class AudioStreamOutput: NSObject, SCStreamOutput {
                 }
             }
         } else if is16Bit {
-            // 16-bit integer - convert to float
             let int16Data = data.withMemoryRebound(to: Int16.self, capacity: frameCount * channelCount) { $0 }
-
             if channelCount == 1 {
                 for i in 0..<frameCount {
                     sourceFloats[i] = Float(int16Data[i]) / 32768.0
                 }
             } else {
-                // Downmix stereo to mono
                 for i in 0..<frameCount {
                     var sum: Float = 0
                     for ch in 0..<channelCount {
@@ -413,19 +409,16 @@ private class AudioStreamOutput: NSObject, SCStreamOutput {
                 }
             }
         } else if is32Bit {
-            // 32-bit integer - convert to float
             let int32Data = data.withMemoryRebound(to: Int32.self, capacity: frameCount * channelCount) { $0 }
-
             if channelCount == 1 {
                 for i in 0..<frameCount {
-                    sourceFloats[i] = Float(int32Data[i]) / Float(Int32.max)
+                    sourceFloats[i] = Float(int32Data[i]) / 2147483648.0
                 }
             } else {
-                // Downmix stereo to mono
                 for i in 0..<frameCount {
                     var sum: Float = 0
                     for ch in 0..<channelCount {
-                        sum += Float(int32Data[i * channelCount + ch]) / Float(Int32.max)
+                        sum += Float(int32Data[i * channelCount + ch]) / 2147483648.0
                     }
                     sourceFloats[i] = sum / Float(channelCount)
                 }
@@ -435,35 +428,46 @@ private class AudioStreamOutput: NSObject, SCStreamOutput {
             return nil
         }
 
-        // Now resample from source rate to 16kHz using linear interpolation
-        var resampledFloats = [Float](repeating: 0, count: outputFrameCount)
-
-        for i in 0..<outputFrameCount {
-            let sourcePosition = Double(i) / resampleRatio
-            let sourceIndex = Int(sourcePosition)
-            let fraction = Float(sourcePosition - Double(sourceIndex))
-
-            if sourceIndex + 1 < frameCount {
-                // Linear interpolation
-                resampledFloats[i] = sourceFloats[sourceIndex] * (1 - fraction) + sourceFloats[sourceIndex + 1] * fraction
-            } else if sourceIndex < frameCount {
-                resampledFloats[i] = sourceFloats[sourceIndex]
-            }
-        }
-
-        // Create output buffer
-        guard let outputBuffer = AVAudioPCMBuffer(pcmFormat: floatFormat, frameCapacity: AVAudioFrameCount(outputFrameCount)) else {
+        // Create source buffer at source sample rate (mono)
+        guard let sourceBuffer = AVAudioPCMBuffer(pcmFormat: sourceMonoFormat, frameCapacity: AVAudioFrameCount(frameCount)) else {
             return nil
         }
-        outputBuffer.frameLength = AVAudioFrameCount(outputFrameCount)
+        sourceBuffer.frameLength = AVAudioFrameCount(frameCount)
+        if let channelData = sourceBuffer.floatChannelData {
+            memcpy(channelData[0], &sourceFloats, frameCount * MemoryLayout<Float>.size)
+        }
 
-        guard let outputData = outputBuffer.floatChannelData?[0] else {
+        // If already at target rate, return directly
+        if abs(sourceSampleRate - targetSampleRate) < 1.0 {
+            return sourceBuffer
+        }
+
+        // Use AVAudioConverter for proper sample rate conversion (anti-aliased)
+        if cachedConverter == nil || cachedSourceFormat?.sampleRate != sourceSampleRate {
+            cachedConverter = AVAudioConverter(from: sourceMonoFormat, to: targetFormat)
+            cachedSourceFormat = sourceMonoFormat
+        }
+
+        guard let converter = cachedConverter else {
             return nil
         }
 
-        // Copy resampled data to output buffer
-        for i in 0..<outputFrameCount {
-            outputData[i] = resampledFloats[i]
+        let ratio = targetSampleRate / sourceSampleRate
+        let outputFrameCount = AVAudioFrameCount(Double(frameCount) * ratio)
+
+        guard let outputBuffer = AVAudioPCMBuffer(pcmFormat: targetFormat, frameCapacity: outputFrameCount) else {
+            return nil
+        }
+
+        var error: NSError?
+        let conversionStatus = converter.convert(to: outputBuffer, error: &error) { _, outStatus in
+            outStatus.pointee = .haveData
+            return sourceBuffer
+        }
+
+        if conversionStatus == .error || error != nil {
+            // Fallback: return source buffer without resampling rather than returning nil
+            return sourceBuffer
         }
 
         return outputBuffer

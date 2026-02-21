@@ -83,38 +83,45 @@ class MeetingRecordingConfiguration: ObservableObject {
         // Auto-save when settings change
         $isEnabled.sink { [weak self] _ in
             self?.saveSettings()
-            self?.applySettings()
+            Task { @MainActor in
+                self?.applySettings()
+            }
         }.store(in: &cancellables)
-        
+
         $autoRecordingEnabled.sink { [weak self] _ in
             self?.saveSettings()
-            self?.applySettings()
+            Task { @MainActor in
+                self?.applySettings()
+            }
         }.store(in: &cancellables)
-        
+
         $confidenceThreshold.sink { [weak self] _ in
             self?.saveSettings()
-            self?.applySettings()
+            Task { @MainActor in
+                self?.applySettings()
+            }
         }.store(in: &cancellables)
     }
     
     private var cancellables = Set<AnyCancellable>()
     
     // MARK: - Apply Settings
-    
+
+    @MainActor
     private func applySettings() {
         // Apply settings to the recording engine
         let engine = MeetingRecordingEngine.shared
-        
+
         if isEnabled && autoRecordingEnabled {
             engine.autoRecordEnabled = true
-            
+
             // Start monitoring if not already
             if !engine.isMonitoring {
                 engine.startMonitoring()
             }
         } else {
             engine.autoRecordEnabled = false
-            
+
             // Stop monitoring if no manual recording is active
             if !engine.isRecording {
                 engine.stopMonitoring()
@@ -238,6 +245,30 @@ struct AudioQualitySettings: Codable {
     }
 }
 
+// MARK: - Transcription Engine Selection
+
+/// Available transcription engines
+enum TranscriptionEngineType: String, Codable, CaseIterable {
+    case whisperKit = "whisperkit"
+    case parakeet = "parakeet"
+
+    var displayName: String {
+        switch self {
+        case .whisperKit: return "WhisperKit"
+        case .parakeet: return "Parakeet TDT v3"
+        }
+    }
+
+    var description: String {
+        switch self {
+        case .whisperKit:
+            return "OpenAI Whisper via WhisperKit. Good accuracy, moderate speed."
+        case .parakeet:
+            return "NVIDIA Parakeet via FluidAudio. Fast (~209x RTF), multilingual."
+        }
+    }
+}
+
 // MARK: - Transcription Settings
 
 struct TranscriptionSettings: Codable {
@@ -248,6 +279,10 @@ struct TranscriptionSettings: Codable {
     var languageCode: String = "en-US"
     var punctuationEnabled: Bool = true
     var profanityFilterEnabled: Bool = false
+    var whisperModel: String = "base.en"  // WhisperKit model: tiny.en, base.en, small.en, large-v3
+
+    // Transcription engine selection (NEW)
+    var transcriptionEngine: TranscriptionEngineType = .parakeet  // Default to Parakeet for speed
     
     mutating func loadFromUserDefaults() {
         if let data = UserDefaults.standard.data(forKey: "transcriptionSettings"),

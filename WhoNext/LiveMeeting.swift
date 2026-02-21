@@ -30,6 +30,7 @@ enum MeetingType: String, Codable {
 }
 
 /// Represents a meeting currently being recorded and transcribed
+@MainActor
 class LiveMeeting: ObservableObject, Identifiable {
     
     // MARK: - Identification
@@ -303,14 +304,24 @@ class LiveMeeting: ObservableObject, Identifiable {
 // MARK: - Transcript Segment
 
 struct TranscriptSegment: Identifiable, Codable {
-    let id = UUID()
+    let id: UUID
     let text: String
     let timestamp: TimeInterval // Seconds from start of recording
     let speakerID: String?
     var speakerName: String? // Made mutable for live editing
     let confidence: Float
-    let isFinalized: Bool // true if refined by Whisper, false if from Parakeet
-    
+    let isFinalized: Bool // true if refined by Whisper, false if initial transcript
+
+    init(id: UUID = UUID(), text: String, timestamp: TimeInterval, speakerID: String?, speakerName: String?, confidence: Float, isFinalized: Bool) {
+        self.id = id
+        self.text = text
+        self.timestamp = timestamp
+        self.speakerID = speakerID
+        self.speakerName = speakerName
+        self.confidence = confidence
+        self.isFinalized = isFinalized
+    }
+
     var formattedTimestamp: String {
         let minutes = Int(timestamp) / 60
         let seconds = Int(timestamp) % 60
@@ -409,8 +420,8 @@ class IdentifiedParticipant: ObservableObject, Identifiable {
         } else if let person = personRecord {
             return person.name ?? "Unknown"
         } else {
-            // Use numeric speakerID to match transcript display ("Speaker 1", "Speaker 2", etc.)
-            return "Speaker \(speakerID)"
+            // Use SegmentAligner.formatSpeakerName for consistent 1-based display
+            return SegmentAligner.formatSpeakerName("\(speakerID)")
         }
     }
     
@@ -475,12 +486,20 @@ class IdentifiedParticipant: ObservableObject, Identifiable {
 // MARK: - Voice Print
 
 struct VoicePrint: Codable {
-    let id = UUID()
+    let id: UUID
     let createdAt: Date
     let sampleCount: Int
     let mfccFeatures: [Float] // Mel-frequency cepstral coefficients
     let spectrogramHash: String // Hash of spectrogram for quick comparison
-    
+
+    init(id: UUID = UUID(), createdAt: Date, sampleCount: Int, mfccFeatures: [Float], spectrogramHash: String) {
+        self.id = id
+        self.createdAt = createdAt
+        self.sampleCount = sampleCount
+        self.mfccFeatures = mfccFeatures
+        self.spectrogramHash = spectrogramHash
+    }
+
     func similarity(to other: VoicePrint) -> Float {
         // Calculate cosine similarity between MFCC features
         guard mfccFeatures.count == other.mfccFeatures.count else { return 0 }

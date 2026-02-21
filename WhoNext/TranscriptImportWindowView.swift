@@ -467,7 +467,7 @@ struct TranscriptImportWindowView: View {
         Task {
             let preIdentified = identifiedParticipants.isEmpty ? nil : identifiedParticipants
             // Pass user notes from recording to be incorporated into AI summary
-            if let processed = await processor.processTranscript(transcriptText, preIdentifiedParticipants: preIdentified, userNotes: userNotesFromRecording) {
+            if let processed = await processor.processTranscript(transcriptText, preIdentifiedParticipants: preIdentified, userNotes: userNotesFromRecording, recordingDuration: recordingDuration) {
                 await MainActor.run {
                     print("📊 TranscriptImportView: Processing succeeded, showing review screen")
                     processedTranscript = processed
