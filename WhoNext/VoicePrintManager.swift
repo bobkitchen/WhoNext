@@ -9,7 +9,11 @@ class VoicePrintManager: ObservableObject {
     // MARK: - Properties
 
     private let persistenceController: PersistenceController
-    private let embeddingDimension = 256 // Standard dimension for speaker embeddings
+    /// Embedding dimension — learned from the first embedding saved, defaults to 256
+    private var embeddingDimension: Int {
+        let stored = UserDefaults.standard.integer(forKey: "VoicePrintEmbeddingDimension")
+        return stored != 0 ? stored : 256
+    }
     private let minimumConfidenceThreshold: Float = 0.7
     private let highConfidenceThreshold: Float = 0.9
 
@@ -33,11 +37,20 @@ class VoicePrintManager: ObservableObject {
     
     /// Save or update voice embedding for a person
     func saveEmbedding(_ embedding: [Float], for person: Person) {
-        guard embedding.count == embeddingDimension else {
-            print("[VoicePrintManager] Invalid embedding dimension: \(embedding.count), expected \(embeddingDimension)")
-            return
+        // Record actual dimension on first save; warn on mismatch
+        let storedDim = embeddingDimension
+        if embedding.count != storedDim {
+            if UserDefaults.standard.integer(forKey: "VoicePrintEmbeddingDimension") == 0 {
+                // First embedding ever — record the dimension
+                UserDefaults.standard.set(embedding.count, forKey: "VoicePrintEmbeddingDimension")
+                print("[VoicePrintManager] 📐 Learned embedding dimension: \(embedding.count)")
+            } else {
+                print("[VoicePrintManager] ⚠️ Embedding dimension changed: \(embedding.count) vs stored \(storedDim). Updating.")
+                UserDefaults.standard.set(embedding.count, forKey: "VoicePrintEmbeddingDimension")
+                invalidateCache()
+            }
         }
-        
+
         let context = persistenceController.container.viewContext
         
         // Serialize embedding to Data
@@ -121,8 +134,8 @@ class VoicePrintManager: ObservableObject {
 
     /// Find matching person for a given embedding (uses caching to avoid repeated Core Data fetches)
     func findMatchingPerson(for embedding: [Float]) -> (Person?, Float)? {
-        guard embedding.count == embeddingDimension else {
-            print("[VoicePrintManager] ❌ Invalid embedding dimension: \(embedding.count), expected \(embeddingDimension)")
+        guard !embedding.isEmpty else {
+            print("[VoicePrintManager] ❌ Empty embedding")
             return nil
         }
 
@@ -143,6 +156,12 @@ class VoicePrintManager: ObservableObject {
         var allMatches: [(String, Float)] = []  // For debug logging
 
         for (person, storedEmbedding) in cached {
+            // Skip mismatched dimensions instead of silently failing
+            guard embedding.count == storedEmbedding.count else {
+                print("[VoicePrintManager] ⚠️ Dimension mismatch for \(person.wrappedName): \(embedding.count) vs \(storedEmbedding.count), skipping")
+                continue
+            }
+
             // Calculate cosine similarity
             let similarity = cosineSimilarity(embedding, storedEmbedding)
 
@@ -236,8 +255,8 @@ class VoicePrintManager: ObservableObject {
     /// Save embedding with boosted weight when user confirms a voice match
     /// This improves learning speed when users validate auto-identifications
     func saveEmbeddingWithFeedback(_ embedding: [Float], for person: Person, wasConfirmed: Bool) {
-        guard embedding.count == embeddingDimension else {
-            print("[VoicePrintManager] Invalid embedding dimension: \(embedding.count)")
+        guard !embedding.isEmpty else {
+            print("[VoicePrintManager] Empty embedding in feedback save")
             return
         }
 
