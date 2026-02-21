@@ -192,6 +192,7 @@ class DiarizationManager: ObservableObject {
     @Published private(set) var lastResult: DiarizationResult?
     @Published private(set) var currentSpeakers: [String] = []
     @Published private(set) var totalSpeakerCount: Int = 0  // Track total unique speakers seen
+    @Published private(set) var userSpeakerId: String?
     
     // Chunk management for streaming
     // Increased to 10 seconds for better speaker consistency across chunks
@@ -466,27 +467,21 @@ class DiarizationManager: ObservableObject {
 
     /// Identify if any detected speakers match the current user's voice profile
     private func identifyUserSpeaker(in result: DiarizationResult) {
-        // Check if user has a trained voice profile
         guard UserProfile.shared.hasVoiceProfile,
               UserProfile.shared.voiceEmbedding != nil else {
             return
         }
 
-        // Check each speaker's embedding against the user's voice profile
+        // Only identify once per recording session
+        guard userSpeakerId == nil else { return }
+
         for segment in result.segments {
             let (matches, confidence) = UserProfile.shared.matchesUserVoice(segment.embedding)
 
             if matches {
-                print("🎤 [DiarizationManager] ✅ IDENTIFIED USER SPEAKING!")
-                print("   Speaker ID: \(segment.speakerId)")
-                print("   Confidence: \(String(format: "%.1f%%", confidence * 100))")
-                print("   Time: \(String(format: "%.1f", segment.startTimeSeconds))s - \(String(format: "%.1f", segment.endTimeSeconds))s")
-
-                // TODO: Mark this segment as belonging to the user
-                // This could be used to:
-                // 1. Automatically exclude user from participant list
-                // 2. Show "You" instead of speaker number in transcript
-                // 3. Filter out user's speaking time from meeting analytics
+                userSpeakerId = segment.speakerId
+                print("🎤 [DiarizationManager] ✅ IDENTIFIED USER as speaker \(segment.speakerId) (confidence: \(String(format: "%.1f%%", confidence * 100)))")
+                break  // Found the user, stop searching
             }
         }
     }
@@ -730,6 +725,7 @@ class DiarizationManager: ObservableObject {
         isProcessing = false
         streamPosition = 0.0
         currentSpeakers.removeAll()
+        userSpeakerId = nil
         speakerDistances.removeAll()
         resamplingConverter = nil
         resamplingSourceFormat = nil

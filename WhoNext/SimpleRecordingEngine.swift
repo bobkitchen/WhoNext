@@ -604,6 +604,19 @@ class SimpleRecordingEngine: ObservableObject {
                     }
                 }
 
+                // Check if this speaker is the current user (identified by voice profile)
+                if let userSpkId = diarizationManager.userSpeakerId {
+                    // SegmentAligner prefixes mic speakers with "mic_", so compare with prefix
+                    if speakerId == "mic_\(userSpkId)" {
+                        participant.isCurrentUser = true
+                        if participant.name == nil {
+                            participant.name = UserProfile.shared.displayName
+                            participant.namingMode = .linkedToPerson
+                        }
+                        print("[SimpleRecordingEngine] 👤 Auto-identified current user as speaker \(speakerId)")
+                    }
+                }
+
                 meeting.identifiedParticipants.append(participant)
                 print("[SimpleRecordingEngine] Added participant: \(participant.displayName)")
             }
