@@ -9,7 +9,7 @@ class TranscriptImportWindowManager: ObservableObject {
     
     private init() {}
     
-    func presentWindow() {
+    func presentWindow(isFromRecording: Bool = false) {
         // Close existing window if it exists to ensure fresh state
         if let existingController = windowController {
             existingController.close()
@@ -27,7 +27,7 @@ class TranscriptImportWindowManager: ObservableObject {
             defer: false
         )
         
-        window.title = "Import Transcript"
+        window.title = isFromRecording ? "Review Meeting" : "Import Transcript"
         window.contentViewController = hostingController
         window.center()
         

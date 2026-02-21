@@ -23,7 +23,7 @@ struct TranscriptData {
     let rawText: String
     let detectedFormat: TranscriptFormat
     let participants: [String]
-    let timestamp: Date
+    var timestamp: Date
     let estimatedDuration: TimeInterval?
 }
 
@@ -93,7 +93,7 @@ struct ProcessedTranscript {
     let actionItems: [String]
     let sentimentAnalysis: ContextualSentiment
     let suggestedTitle: String
-    let originalTranscript: TranscriptData
+    var originalTranscript: TranscriptData
     let preIdentifiedParticipants: [SerializableParticipant]?  // Pre-identified from recording
     let userNotes: String?  // User notes taken during recording (Granola-style)
     let recordingDuration: TimeInterval  // Actual recording duration in seconds
@@ -209,29 +209,28 @@ class TranscriptProcessor: ObservableObject {
                 participants = await extractParticipants(from: transcriptData)
             }
 
-            // Step 3: Generate summary (incorporating user notes if provided)
+            // Step 3: Generate summary first (title depends on it)
             currentPhase = .summary
             processingStatus = "Generating summary..."
             print("📊 TranscriptProcessor: Phase 3 - Summary")
             let summary = await generateSummary(from: transcriptData, participants: participants, userNotes: userNotes)
 
-            // Step 4: Extract action items
+            // Step 4: Run action items, sentiment, and title in parallel
             currentPhase = .actions
-            processingStatus = "Extracting action items..."
-            print("📊 TranscriptProcessor: Phase 4 - Actions")
-            let actionItems = await extractActionItems(from: transcriptData)
+            processingStatus = "Extracting details..."
+            print("📊 TranscriptProcessor: Phase 4 - Parallel (actions + sentiment + title)")
 
-            // Step 5: Analyze sentiment with full context
-            currentPhase = .sentiment
-            processingStatus = "Analyzing sentiment..."
-            print("📊 TranscriptProcessor: Phase 5 - Sentiment")
-            let sentimentAnalysis = await analyzeContextualSentiment(from: transcriptData, participants: participants)
+            async let actionItemsFuture = extractActionItems(from: transcriptData)
+            async let sentimentFuture = analyzeContextualSentiment(from: transcriptData, participants: participants)
+            async let titleFuture = generateTitle(from: summary, participants: participants)
 
-            // Step 6: Generate suggested title
+            let actionItems = await actionItemsFuture
+            let sentimentAnalysis = await sentimentFuture
+            let suggestedTitle = await titleFuture
+
             currentPhase = .finalizing
             processingStatus = "Finalizing..."
-            print("📊 TranscriptProcessor: Phase 6 - Finalizing")
-            let suggestedTitle = await generateTitle(from: summary, participants: participants)
+            print("📊 TranscriptProcessor: Phase 5 - Finalizing")
 
             let processedTranscript = ProcessedTranscript(
                 summary: summary,

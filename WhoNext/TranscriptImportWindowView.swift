@@ -371,86 +371,61 @@ struct TranscriptImportWindowView: View {
     // MARK: - Helper Functions
 
     private func loadPendingTranscript() {
-        // Check if we have a pending recorded transcript
-        if let pendingTranscript = UserDefaults.standard.string(forKey: "PendingRecordedTranscript"),
-           !pendingTranscript.isEmpty {
-            // Load the recorded transcript
-            transcriptText = pendingTranscript
-            isFromRecording = true
-            hasStartedAutoProcessing = true  // Set immediately to avoid showing manual import view briefly
-
-            // Load additional metadata
-            if let title = UserDefaults.standard.string(forKey: "PendingRecordedTitle") {
-                recordingTitle = title
-            }
-            if let date = UserDefaults.standard.object(forKey: "PendingRecordedDate") as? Date {
-                recordingDate = date
-            }
-            recordingDuration = UserDefaults.standard.double(forKey: "PendingRecordedDuration")
-
-            // Load user notes taken during recording (Granola-style)
-            if let userNotes = UserDefaults.standard.string(forKey: "PendingRecordedUserNotes"), !userNotes.isEmpty {
-                userNotesFromRecording = userNotes
-                print("📝 Loaded user notes from recording: \(userNotes.prefix(100))...")
-            }
-
-            // Load full participant data from recording
-            if let participantData = UserDefaults.standard.data(forKey: "PendingRecordedParticipants"),
-               let participants = SerializableParticipant.deserialize(from: participantData) {
-                identifiedParticipants = participants
-
-                // Build participant info with proper labels
-                var participantLabels: [String] = []
-                for participant in participants {
-                    if participant.isCurrentUser {
-                        if let name = participant.name, !name.isEmpty {
-                            participantLabels.append("\(name) (You)")
-                        } else {
-                            participantLabels.append("You")
-                        }
-                    } else if let name = participant.name {
-                        participantLabels.append(name)
-                    } else {
-                        participantLabels.append(participant.displayName)
-                    }
-                }
-
-                if !participantLabels.isEmpty {
-                    let participantInfo = "Participants: \(participantLabels.joined(separator: ", "))\n\n"
-                    transcriptText = participantInfo + transcriptText
-                    print("📝 Including identified participants: \(participantLabels.joined(separator: ", "))")
-                }
-            } else {
-                // Fallback to legacy name-only format
-                let participantNames = UserDefaults.standard.stringArray(forKey: "PendingRecordedParticipantNames") ?? []
-                if !participantNames.isEmpty {
-                    let participantInfo = "Participants: \(participantNames.joined(separator: ", "))\n\n"
-                    transcriptText = participantInfo + transcriptText
-                    print("📝 Including participant names (legacy): \(participantNames.joined(separator: ", "))")
-                }
-            }
-
-            // Clear the pending data
-            UserDefaults.standard.removeObject(forKey: "PendingRecordedTranscript")
-            UserDefaults.standard.removeObject(forKey: "PendingRecordedTitle")
-            UserDefaults.standard.removeObject(forKey: "PendingRecordedDate")
-            UserDefaults.standard.removeObject(forKey: "PendingRecordedDuration")
-            UserDefaults.standard.removeObject(forKey: "PendingRecordedParticipants")
-            UserDefaults.standard.removeObject(forKey: "PendingRecordedParticipantNames")
-            UserDefaults.standard.removeObject(forKey: "PendingRecordedUserNotes")
-
-            print("📝 Loaded recorded transcript: \(transcriptText.prefix(100))...")
-
-            // Auto-start processing for recordings
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                startProcessing()
-            }
-        } else {
-            // Normal import flow
+        // Consume pending meeting data from in-memory handoff (replaces UserDefaults IPC)
+        guard let meeting = MeetingHandoff.shared.consume() else {
+            // Normal import flow (no pending recording)
             transcriptText = ""
             processedTranscript = nil
             isFromRecording = false
+            return
         }
+
+        // Load the recorded transcript
+        transcriptText = meeting.transcript
+        isFromRecording = true
+        hasStartedAutoProcessing = true
+        recordingTitle = meeting.title
+        recordingDate = meeting.date
+        recordingDuration = meeting.duration
+
+        // Load user notes taken during recording
+        if let userNotes = meeting.userNotes, !userNotes.isEmpty {
+            userNotesFromRecording = userNotes
+            print("📝 Loaded user notes from recording: \(userNotes.prefix(100))...")
+        }
+
+        // Load participant data from recording
+        let participants = meeting.participants
+        if !participants.isEmpty {
+            identifiedParticipants = participants
+
+            // Build participant info with proper labels
+            var participantLabels: [String] = []
+            for participant in participants {
+                if participant.isCurrentUser {
+                    if let name = participant.name, !name.isEmpty {
+                        participantLabels.append("\(name) (You)")
+                    } else {
+                        participantLabels.append("You")
+                    }
+                } else if let name = participant.name {
+                    participantLabels.append(name)
+                } else {
+                    participantLabels.append(participant.displayName)
+                }
+            }
+
+            if !participantLabels.isEmpty {
+                let participantInfo = "Participants: \(participantLabels.joined(separator: ", "))\n\n"
+                transcriptText = participantInfo + transcriptText
+                print("📝 Including identified participants: \(participantLabels.joined(separator: ", "))")
+            }
+        }
+
+        print("📝 Loaded recorded transcript from MeetingHandoff: \(transcriptText.prefix(100))...")
+
+        // Start processing immediately (no delay needed with in-memory handoff)
+        startProcessing()
     }
 
     private func startProcessing() {
@@ -467,7 +442,11 @@ struct TranscriptImportWindowView: View {
         Task {
             let preIdentified = identifiedParticipants.isEmpty ? nil : identifiedParticipants
             // Pass user notes from recording to be incorporated into AI summary
-            if let processed = await processor.processTranscript(transcriptText, preIdentifiedParticipants: preIdentified, userNotes: userNotesFromRecording, recordingDuration: recordingDuration) {
+            if var processed = await processor.processTranscript(transcriptText, preIdentifiedParticipants: preIdentified, userNotes: userNotesFromRecording, recordingDuration: recordingDuration) {
+                // Stamp the actual recording date onto the transcript data
+                if isFromRecording {
+                    processed.originalTranscript.timestamp = recordingDate
+                }
                 await MainActor.run {
                     print("📊 TranscriptImportView: Processing succeeded, showing review screen")
                     processedTranscript = processed

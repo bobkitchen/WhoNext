@@ -255,10 +255,9 @@ struct RecordingWindowView: View {
                 .font(.system(size: 16, weight: .medium, design: .monospaced))
                 .foregroundColor(.primary)
 
-            // Stop button
+            // Stop button (finalizeMeeting handles window transition)
             Button(action: {
                 recordingEngine.manualStopRecording()
-                RecordingWindowManager.shared.hide()
             }) {
                 HStack(spacing: 4) {
                     Image(systemName: "stop.circle.fill")

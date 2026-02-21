@@ -650,20 +650,21 @@ class SimpleRecordingEngine: ObservableObject {
         meeting.duration = recordingDuration
         meeting.isRecording = false
 
-        // Store meeting data for handoff to review UI
-        saveToUserDefaults(meeting)
+        // Store meeting data for in-memory handoff to review UI
+        storeMeetingHandoff(meeting)
         meeting.cleanupFlushFile()
 
-        // Show transcript import window
-        DispatchQueue.main.async {
-            TranscriptImportWindowManager.shared.presentWindow()
+        // Window transition: show review window BEFORE hiding recording window (no gap/flash)
+        await MainActor.run {
+            TranscriptImportWindowManager.shared.presentWindow(isFromRecording: true)
+            RecordingWindowManager.shared.hide()
         }
 
         print("[SimpleRecordingEngine] Meeting finalized: \(meeting.transcript.count) segments, \(meeting.wordCount) words")
     }
 
-    private func saveToUserDefaults(_ meeting: LiveMeeting) {
-        // Build transcript as plain text (matching reader's expected format)
+    private func storeMeetingHandoff(_ meeting: LiveMeeting) {
+        // Build transcript as plain text
         let transcriptText = meeting.getFullTranscriptText()
 
         // Get voice embeddings from diarization results
@@ -691,20 +692,18 @@ class SimpleRecordingEngine: ObservableObject {
         // Get user notes as plain text
         let userNotes = meeting.userNotesPlainText
 
-        // Write all keys atomically using correct keys matching TranscriptImportWindowView reader
-        let defaults = UserDefaults.standard
-        defaults.set(transcriptText, forKey: "PendingRecordedTranscript")
-        defaults.set(meeting.calendarTitle, forKey: "PendingRecordedTitle")
-        defaults.set(meeting.startTime, forKey: "PendingRecordedDate")
-        defaults.set(meeting.duration, forKey: "PendingRecordedDuration")
-        if !userNotes.isEmpty {
-            defaults.set(userNotes, forKey: "PendingRecordedUserNotes")
-        }
-        if let participantData = try? JSONEncoder().encode(serializableParticipants) {
-            defaults.set(participantData, forKey: "PendingRecordedParticipants")
-        }
+        // Store in-memory via MeetingHandoff singleton (replaces UserDefaults IPC)
+        let pending = MeetingHandoff.PendingMeeting(
+            transcript: transcriptText,
+            title: meeting.calendarTitle ?? "",
+            date: meeting.startTime,
+            duration: meeting.duration,
+            participants: serializableParticipants,
+            userNotes: userNotes.isEmpty ? nil : userNotes
+        )
+        MeetingHandoff.shared.store(pending)
 
-        print("[SimpleRecordingEngine] Saved meeting data to UserDefaults (\(meeting.identifiedParticipants.count) participants)")
+        print("[SimpleRecordingEngine] Stored meeting handoff (\(meeting.identifiedParticipants.count) participants)")
     }
 
     // MARK: - Monitoring (Simplified)
