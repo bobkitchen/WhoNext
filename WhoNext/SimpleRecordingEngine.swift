@@ -110,6 +110,9 @@ class SimpleRecordingEngine: ObservableObject {
             #if canImport(FluidAudio)
             try await diarizationManager.initialize()
             print("[SimpleRecordingEngine] Pre-warmed diarization manager")
+
+            await voicePrintManager.warmCache()
+            print("[SimpleRecordingEngine] Pre-warmed voice print cache")
             #endif
         } catch {
             print("[SimpleRecordingEngine] Pre-warm failed: \(error)")
@@ -429,7 +432,7 @@ class SimpleRecordingEngine: ObservableObject {
             }
             detectedSpeakerCount = speakerCount
             updateMeetingType(speakerCount: speakerCount)
-            updateParticipants(from: result)
+            await updateParticipants(from: result)
 
             // Sync participants: remove any whose speaker IDs were merged away
             let validSpeakerIDs = Set(result.segments.map { SegmentAligner.parseNumericId($0.speakerId) })
@@ -501,7 +504,7 @@ class SimpleRecordingEngine: ObservableObject {
     }
 
     /// Update participants from diarization results, attempting voice-based identification
-    private func updateParticipants(from result: DiarizationResult) {
+    private func updateParticipants(from result: DiarizationResult) async {
         guard let meeting = currentMeeting else { return }
 
         // Get speaking times per speaker
@@ -526,7 +529,7 @@ class SimpleRecordingEngine: ObservableObject {
 
                 // Attempt voice-based identification using VoicePrintManager
                 if let embedding = result.speakerDatabase?[speakerId] {
-                    if let match = voicePrintManager.findMatchingPerson(for: embedding),
+                    if let match = await voicePrintManager.findMatchingPerson(for: embedding),
                        let matchedPerson = match.0,
                        match.1 > 0.80 {
                         participant.name = matchedPerson.wrappedName
