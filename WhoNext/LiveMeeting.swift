@@ -210,31 +210,66 @@ class LiveMeeting: ObservableObject, Identifiable {
 
     // MARK: - Memory Management
 
-    private var flushedSegments: [TranscriptSegment] = [] // Segments saved to disk
-    private var lastFlushTime: Date?
+    private var flushedSegmentCount: Int = 0
+    private var flushFilePath: URL?
     private let maxSegmentsInMemory = 100
 
-    /// Flush old transcript segments to reduce memory usage during long meetings
+    /// Get or create the flush file path for this meeting
+    private func getFlushFilePath() -> URL {
+        if let path = flushFilePath { return path }
+        let cacheDir = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first!
+        let path = cacheDir.appendingPathComponent("meeting_\(id.uuidString)_segments.json")
+        flushFilePath = path
+        return path
+    }
+
+    /// Flush old transcript segments to disk to reduce memory usage during long meetings
     func flushOldSegments() {
         guard transcript.count > maxSegmentsInMemory else { return }
 
-        // Move older segments to flushed array (would be written to disk in production)
         let segmentsToFlush = transcript.count - maxSegmentsInMemory
         let oldSegments = Array(transcript.prefix(segmentsToFlush))
 
-        // In production, write to disk here
-        flushedSegments.append(contentsOf: oldSegments)
+        // Write to disk
+        let filePath = getFlushFilePath()
+        do {
+            var existing: [TranscriptSegment] = []
+            if FileManager.default.fileExists(atPath: filePath.path) {
+                let data = try Data(contentsOf: filePath)
+                existing = (try? JSONDecoder().decode([TranscriptSegment].self, from: data)) ?? []
+            }
+            existing.append(contentsOf: oldSegments)
+            let data = try JSONEncoder().encode(existing)
+            try data.write(to: filePath, options: .atomic)
+            flushedSegmentCount = existing.count
+        } catch {
+            print("⚠️ [LiveMeeting] Failed to flush segments to disk: \(error)")
+            return // Don't remove from memory if disk write failed
+        }
 
         // Keep only recent segments in memory
         transcript = Array(transcript.suffix(maxSegmentsInMemory))
-
-        lastFlushTime = Date()
-        print("💾 Flushed \(segmentsToFlush) transcript segments to disk, keeping \(transcript.count) in memory")
+        print("💾 [LiveMeeting] Flushed \(segmentsToFlush) segments to disk (\(flushedSegmentCount) total on disk), keeping \(transcript.count) in memory")
     }
 
-    /// Get full transcript including flushed segments
+    /// Get full transcript including flushed segments from disk
     func getFullTranscriptText() -> String {
-        let allSegments = flushedSegments + transcript
+        var allSegments: [TranscriptSegment] = []
+
+        // Read flushed segments from disk
+        if let filePath = flushFilePath,
+           FileManager.default.fileExists(atPath: filePath.path) {
+            do {
+                let data = try Data(contentsOf: filePath)
+                let flushed = try JSONDecoder().decode([TranscriptSegment].self, from: data)
+                allSegments.append(contentsOf: flushed)
+            } catch {
+                print("⚠️ [LiveMeeting] Failed to read flushed segments: \(error)")
+            }
+        }
+
+        allSegments.append(contentsOf: transcript)
+
         return allSegments.map { segment in
             if let speaker = segment.speakerName {
                 return "\(speaker): \(segment.text)"
@@ -242,6 +277,14 @@ class LiveMeeting: ObservableObject, Identifiable {
                 return segment.text
             }
         }.joined(separator: "\n")
+    }
+
+    /// Clean up flush file after meeting is finalized
+    func cleanupFlushFile() {
+        guard let filePath = flushFilePath else { return }
+        try? FileManager.default.removeItem(at: filePath)
+        flushFilePath = nil
+        flushedSegmentCount = 0
     }
     
     // MARK: - Meeting Type Detection

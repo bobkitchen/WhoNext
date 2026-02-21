@@ -573,6 +573,7 @@ class SimpleRecordingEngine: ObservableObject {
 
         // Store meeting data for handoff to review UI
         saveToUserDefaults(meeting)
+        meeting.cleanupFlushFile()
 
         // Show transcript import window
         DispatchQueue.main.async {
