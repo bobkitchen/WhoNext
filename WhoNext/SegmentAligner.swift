@@ -44,9 +44,23 @@ class SegmentAligner {
         // Replace with latest segments (DiarizationManager maintains cumulative history)
         allSegments = result.segments
 
+        // Defensive cap matching DiarizationManager's 5000
+        if allSegments.count > 5000 {
+            allSegments = Array(allSegments.suffix(5000))
+            print("[SegmentAligner] ⚠️ Segment cap hit: trimmed to 5000")
+        }
+
         // Track known speakers
         for segment in result.segments {
             knownSpeakers.insert(segment.speakerId)
+        }
+
+        // Cap known speakers (no real meeting has 100 speakers)
+        if knownSpeakers.count > 100 {
+            // Keep only speakers present in current segments
+            let activeIds = Set(allSegments.map { $0.speakerId })
+            knownSpeakers = knownSpeakers.intersection(activeIds)
+            print("[SegmentAligner] ⚠️ Speaker cap hit: pruned to \(knownSpeakers.count) active speakers")
         }
 
         print("[SegmentAligner] Updated with \(result.segments.count) segments, \(knownSpeakers.count) unique speakers")
