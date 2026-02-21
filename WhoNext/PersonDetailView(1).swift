@@ -3,6 +3,27 @@ import CoreData
 import UniformTypeIdentifiers
 import AppKit
 
+// MARK: - PersonTimelineEntry
+
+enum PersonTimelineEntry: Identifiable {
+    case conversation(Conversation)
+    case groupMeeting(GroupMeeting)
+
+    var id: UUID {
+        switch self {
+        case .conversation(let c): return c.uuid ?? UUID()
+        case .groupMeeting(let g): return g.identifier ?? UUID()
+        }
+    }
+
+    var date: Date? {
+        switch self {
+        case .conversation(let c): return c.date
+        case .groupMeeting(let g): return g.date
+        }
+    }
+}
+
 struct PersonDetailView: View {
     @ObservedObject var person: Person
     @Environment(\.managedObjectContext) private var viewContext
@@ -12,17 +33,24 @@ struct PersonDetailView: View {
     private var conversationManager: ConversationStateManager {
         return appStateManager.conversationManager
     }
-    
+
     private var conversations: [Conversation] {
         // Try to get from conversation manager first
         let managerConversations = conversationManager.getConversations(for: person)
         if !managerConversations.isEmpty {
             return managerConversations
         }
-        
+
         // Fallback to direct Core Data access if manager is empty
         return (person.conversations?.allObjects as? [Conversation] ?? [])
             .sorted { ($0.date ?? Date.distantPast) > ($1.date ?? Date.distantPast) }
+    }
+
+    private var timelineItems: [PersonTimelineEntry] {
+        let conversationItems = conversations.map { PersonTimelineEntry.conversation($0) }
+        let groupItems = person.groupMeetingsArray.map { PersonTimelineEntry.groupMeeting($0) }
+        return (conversationItems + groupItems)
+            .sorted { ($0.date ?? .distantPast) > ($1.date ?? .distantPast) }
     }
 
     @State private var preMeetingBrief: [UUID: String] = [:]
@@ -61,6 +89,10 @@ struct PersonDetailView: View {
         }
         .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("ConversationSaved"))) { _ in
             // Reload conversations when new ones are saved
+            conversationManager.loadConversations(for: person)
+        }
+        .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("GroupMeetingSaved"))) { _ in
+            // Trigger refresh when group meeting saved (person.groupMeetings updates via Core Data)
             conversationManager.loadConversations(for: person)
         }
         .onDisappear {
@@ -345,18 +377,18 @@ struct PersonDetailView: View {
                     .font(.system(size: 16, weight: .semibold))
                     .foregroundColor(.primary)
                 Spacer()
-                Text("(\(conversations.count) conversations)")
+                Text("(\(timelineItems.count) meetings)")
                     .font(.caption)
                     .foregroundColor(.secondary)
             }
             
-            if conversations.isEmpty {
-                // Show placeholder when no conversations
+            if timelineItems.isEmpty {
+                // Show placeholder when no meetings
                 VStack(spacing: 12) {
                     Image(systemName: "chart.bar.xaxis")
                         .font(.system(size: 32))
                         .foregroundColor(.secondary)
-                    Text("No conversation data yet")
+                    Text("No meeting data yet")
                         .font(.subheadline)
                         .foregroundColor(.secondary)
                     Text("Start a conversation to see analytics")
@@ -452,11 +484,13 @@ struct PersonDetailView: View {
     }
     
     private var averageSentiment: Double {
-        let sentiments = conversations.compactMap { conversation in
+        let conversationSentiments = conversations.compactMap { conversation in
             conversation.value(forKey: "sentimentScore") as? Double
         }
-        guard !sentiments.isEmpty else { return 0.0 }
-        return sentiments.reduce(0, +) / Double(sentiments.count)
+        let groupSentiments = person.groupMeetingsArray.map { $0.sentimentScore }
+        let allSentiments = conversationSentiments + groupSentiments
+        guard !allSentiments.isEmpty else { return 0.0 }
+        return allSentiments.reduce(0, +) / Double(allSentiments.count)
     }
     
     private var averageSentimentLabel: String {
@@ -477,7 +511,7 @@ struct PersonDetailView: View {
     
     @ViewBuilder
     private var preMeetingBriefView: some View {
-        if !conversations.isEmpty {
+        if !timelineItems.isEmpty {
             VStack(alignment: .leading, spacing: 16) {
                 HStack {
                     Image(systemName: "note.text")
@@ -569,13 +603,16 @@ struct PersonDetailView: View {
                     Image(systemName: "bubble.left.and.bubble.right")
                         .font(.system(size: 14))
                         .foregroundColor(.secondary)
-                    Text("Conversations")
+                    Text("Meeting History")
                         .font(.system(size: 16, weight: .semibold))
                         .foregroundColor(.primary)
+                    Text("(\(timelineItems.count))")
+                        .font(.system(size: 13))
+                        .foregroundColor(.secondary)
                 }
-                
+
                 Spacer()
-                
+
                 Button(action: openNewConversationWindow) {
                     HStack(spacing: 6) {
                         Image(systemName: "plus")
@@ -591,16 +628,16 @@ struct PersonDetailView: View {
                 }
                 .buttonStyle(PlainButtonStyle())
             }
-            
-            if conversations.isEmpty {
+
+            if timelineItems.isEmpty {
                 // Empty State
                 VStack(spacing: 16) {
                     Image(systemName: "bubble.left.and.bubble.right")
                         .font(.system(size: 40))
                         .foregroundColor(.secondary.opacity(0.5))
-                    
+
                     VStack(spacing: 8) {
-                        Text("No conversations yet")
+                        Text("No meetings yet")
                             .font(.system(size: 16, weight: .medium))
                             .foregroundColor(.primary)
                         Text("Start your first conversation to begin building insights")
@@ -608,7 +645,7 @@ struct PersonDetailView: View {
                             .foregroundColor(.secondary)
                             .multilineTextAlignment(.center)
                     }
-                    
+
                     Button(action: openNewConversationWindow) {
                         HStack(spacing: 8) {
                             Image(systemName: "plus")
@@ -629,10 +666,15 @@ struct PersonDetailView: View {
                 .background(Color(nsColor: .controlBackgroundColor).opacity(0.5))
                 .clipShape(RoundedRectangle(cornerRadius: 16))
             } else {
-                // Conversation List
+                // Unified Timeline List
                 LazyVStack(spacing: 12) {
-                    ForEach(conversations) { conversation in
-                        ConversationRowView(conversation: conversation, conversationManager: conversationManager)
+                    ForEach(timelineItems) { item in
+                        switch item {
+                        case .conversation(let conversation):
+                            ConversationRowView(conversation: conversation, conversationManager: conversationManager)
+                        case .groupMeeting(let meeting):
+                            GroupMeetingTimelineRow(meeting: meeting)
+                        }
                     }
                 }
             }
@@ -1090,6 +1132,125 @@ struct ConversationRowView: View {
             return .secondary
         }
     }
+}
+
+// MARK: - GroupMeetingTimelineRow
+
+struct GroupMeetingTimelineRow: View {
+    let meeting: GroupMeeting
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 16) {
+            // Date indicator
+            VStack(spacing: 4) {
+                if let date = meeting.date {
+                    Text(dayFormatter.string(from: date))
+                        .font(.system(size: 16, weight: .bold))
+                        .foregroundColor(.primary)
+                    Text(monthFormatter.string(from: date))
+                        .font(.system(size: 10, weight: .medium))
+                        .foregroundColor(.secondary)
+                        .textCase(.uppercase)
+                }
+            }
+            .frame(width: 50)
+            .padding(.vertical, 4)
+
+            // Content
+            VStack(alignment: .leading, spacing: 8) {
+                HStack {
+                    // Purple group badge
+                    if let groupName = meeting.group?.name {
+                        HStack(spacing: 4) {
+                            Image(systemName: "person.3.fill")
+                                .font(.system(size: 9))
+                            Text("Group: \(groupName)")
+                                .font(.system(size: 10, weight: .semibold))
+                        }
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 3)
+                        .background(Color.purple)
+                        .clipShape(Capsule())
+                    }
+
+                    Spacer()
+
+                    if let date = meeting.date {
+                        Text(timeFormatter.string(from: date))
+                            .font(.system(size: 10))
+                            .foregroundColor(.secondary)
+                    }
+                }
+
+                Text(meeting.displayTitle)
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundColor(.primary)
+                    .lineLimit(2)
+
+                // Attendee count and duration
+                HStack(spacing: 12) {
+                    if meeting.attendeeCount > 0 {
+                        HStack(spacing: 4) {
+                            Image(systemName: "person.2")
+                                .font(.system(size: 10))
+                                .foregroundColor(.secondary)
+                            Text("\(meeting.attendeeCount) attendees")
+                                .font(.system(size: 10))
+                                .foregroundColor(.secondary)
+                        }
+                    }
+
+                    if meeting.duration > 0 {
+                        HStack(spacing: 4) {
+                            Image(systemName: "clock")
+                                .font(.system(size: 10))
+                                .foregroundColor(.secondary)
+                            Text(meeting.formattedDuration)
+                                .font(.system(size: 10))
+                                .foregroundColor(.secondary)
+                        }
+                    }
+
+                    Spacer()
+                }
+
+                // Summary preview
+                if let summary = meeting.summary, !summary.isEmpty {
+                    Text(summary)
+                        .font(.system(size: 12))
+                        .foregroundColor(.secondary)
+                        .lineLimit(3)
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .padding(16)
+        .background(Color(nsColor: .controlBackgroundColor))
+        .clipShape(RoundedRectangle(cornerRadius: 12))
+        .overlay(
+            RoundedRectangle(cornerRadius: 12)
+                .stroke(Color.purple.opacity(0.3), lineWidth: 1)
+        )
+    }
+
+    private let dayFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "d"
+        return formatter
+    }()
+
+    private let monthFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "MMM"
+        return formatter
+    }()
+
+    private let timeFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.timeStyle = .short
+        return formatter
+    }()
 }
 
 // MARK: - PreMeetingBriefWindowController

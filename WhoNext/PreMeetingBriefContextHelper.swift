@@ -19,7 +19,9 @@ struct PreMeetingBriefContextHelper {
         if let scheduledDate = scheduledDate {
             context += "Next Scheduled Conversation: \(scheduledDate.formatted())\n"
         }
-        context += "Total Conversation History: \(conversations.count) conversations\n\n"
+        let groupMeetings = person.groupMeetingsArray
+        context += "Total 1:1 Conversations: \(conversations.count)\n"
+        context += "Total Group Meetings: \(groupMeetings.count)\n\n"
         
         // Enhanced conversation analysis
         if !conversations.isEmpty {
@@ -119,6 +121,38 @@ struct PreMeetingBriefContextHelper {
                 context += "(Not shown to optimize brief generation speed)\n\n"
             }
             
+            // Group Meeting History
+            if !groupMeetings.isEmpty {
+                context += "## GROUP MEETING HISTORY\n"
+                context += "(Meetings where this person was also an attendee)\n\n"
+
+                for meeting in groupMeetings.prefix(5) {
+                    if let date = meeting.date {
+                        let daysSince = Calendar.current.dateComponents([.day], from: date, to: now).day ?? 0
+                        let timeContext = daysSince == 0 ? "Today" : daysSince == 1 ? "Yesterday" : "\(daysSince) days ago"
+                        context += "📋 \(date.formatted(date: .abbreviated, time: .omitted)) (\(timeContext))\n"
+                    }
+
+                    if let groupName = meeting.group?.name {
+                        context += "GROUP: \(groupName)\n"
+                    }
+
+                    context += "TITLE: \(meeting.displayTitle)\n"
+
+                    if let summary = meeting.summary, !summary.isEmpty {
+                        let truncated = summary.count > 300 ? String(summary.prefix(300)) + "..." : summary
+                        context += "SUMMARY: \(truncated)\n"
+                    }
+
+                    let attendeeNames = meeting.sortedAttendees.compactMap { $0.name }.joined(separator: ", ")
+                    if !attendeeNames.isEmpty {
+                        context += "ATTENDEES: \(attendeeNames)\n"
+                    }
+
+                    context += "\n" + String(repeating: "-", count: 50) + "\n\n"
+                }
+            }
+
             // Intelligence analysis section
             context += "## INTELLIGENCE ANALYSIS PRIORITIES\n"
             context += "Focus your analysis on:\n"

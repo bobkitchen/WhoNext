@@ -17,6 +17,7 @@ public class Person: NSManagedObject {
     @NSManaged public var scheduledConversationDate: Date?
     @NSManaged public var timezone: String?
     @NSManaged public var conversations: NSSet?  // Legacy single-person relationship
+    @NSManaged public var groupMeetings: NSSet?  // Inverse of GroupMeeting.attendees
     // conversationParticipations removed - ConversationParticipant entity disabled
 
     // Sync-related timestamp fields
@@ -58,9 +59,23 @@ extension Person {
         let set = conversations as? Set<Conversation> ?? []
         return set.sorted { ($0.date ?? .distantPast) > ($1.date ?? .distantPast) }
     }
-    
+
+    public var groupMeetingsArray: [GroupMeeting] {
+        let set = groupMeetings as? Set<GroupMeeting> ?? []
+        return set
+            .filter { !$0.isSoftDeleted }
+            .sorted { ($0.date ?? .distantPast) > ($1.date ?? .distantPast) }
+    }
+
     public var lastContactDate: Date? {
-        conversationsArray.first?.date
+        let lastConversation = conversationsArray.first?.date
+        let lastGroupMeeting = groupMeetingsArray.first?.date
+        switch (lastConversation, lastGroupMeeting) {
+        case let (c?, g?): return max(c, g)
+        case let (c?, nil): return c
+        case let (nil, g?): return g
+        case (nil, nil): return nil
+        }
     }
     
     public var initials: String {

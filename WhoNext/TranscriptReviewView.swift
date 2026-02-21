@@ -20,6 +20,16 @@ struct TranscriptReviewView: View {
     @State private var autoMatchConfirmed: [String: Bool] = [:]
     @State private var showFullTranscript: Bool = false
 
+    // Meeting type handling
+    @State private var isGroupMeeting: Bool = false
+    @State private var selectedGroup: WhoNext.Group? = nil
+    @State private var newGroupName: String = ""
+
+    @FetchRequest(
+        sortDescriptors: [NSSortDescriptor(keyPath: \WhoNext.Group.name, ascending: true)],
+        predicate: NSPredicate(format: "isSoftDeleted == NO")
+    ) private var existingGroups: FetchedResults<WhoNext.Group>
+
     // Meeting date handling
     @State private var meetingDate: Date = Date()
     @State private var useCurrentDate: Bool = false
@@ -31,9 +41,8 @@ struct TranscriptReviewView: View {
         self._editedSummary = State(initialValue: processedTranscript.summary)
         self._selectedParticipants = State(initialValue: Set(processedTranscript.participants))
 
-        // Try to infer meeting date (default to 1 hour ago if imported transcript)
-        let oneHourAgo = Calendar.current.date(byAdding: .hour, value: -1, to: Date()) ?? Date()
-        self._meetingDate = State(initialValue: oneHourAgo)
+        // Use actual recording timestamp from the processed transcript
+        self._meetingDate = State(initialValue: processedTranscript.originalTranscript.timestamp)
     }
     
     var body: some View {
@@ -117,6 +126,44 @@ struct TranscriptReviewView: View {
                     .padding()
                     .background(Color(.controlBackgroundColor))
                     .cornerRadius(12)
+                }
+
+                // Meeting Type Section
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("Meeting Type")
+                        .font(.headline)
+
+                    Picker("Meeting Type", selection: $isGroupMeeting) {
+                        Text("1:1 Conversation").tag(false)
+                        Text("Group Meeting").tag(true)
+                    }
+                    .pickerStyle(.segmented)
+
+                    if isGroupMeeting {
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("Select or Create Group")
+                                .font(.subheadline)
+                                .foregroundColor(.secondary)
+
+                            if !existingGroups.isEmpty {
+                                Picker("Group", selection: $selectedGroup) {
+                                    Text("Create new group...").tag(nil as WhoNext.Group?)
+                                    ForEach(existingGroups) { group in
+                                        Text(group.name ?? "Unnamed Group").tag(group as WhoNext.Group?)
+                                    }
+                                }
+                                .labelsHidden()
+                            }
+
+                            if selectedGroup == nil {
+                                TextField("New group name", text: $newGroupName)
+                                    .textFieldStyle(.roundedBorder)
+                            }
+                        }
+                        .padding()
+                        .background(Color(.controlBackgroundColor))
+                        .cornerRadius(12)
+                    }
                 }
 
                 // Participants Section
@@ -485,6 +532,12 @@ struct TranscriptReviewView: View {
         }
         .frame(minWidth: 800, maxWidth: .infinity, minHeight: 600, maxHeight: .infinity)
         .background(Color(.windowBackgroundColor))
+        .onChange(of: selectedParticipants) { _, newValue in
+            // Auto-suggest group meeting when more than 2 participants selected
+            if newValue.count > 2 && !isGroupMeeting {
+                isGroupMeeting = true
+            }
+        }
         .safeAreaInset(edge: .bottom) {
             // Bottom Action Bar
             HStack(spacing: 16) {
@@ -495,12 +548,16 @@ struct TranscriptReviewView: View {
                 
                 Spacer()
                 
-                Button("Save Conversation") {
-                    saveConversation()
+                Button(isGroupMeeting ? "Save Group Meeting" : "Save Conversation") {
+                    if isGroupMeeting {
+                        saveAsGroupMeeting()
+                    } else {
+                        saveConversation()
+                    }
                     dismiss()
                 }
                 .buttonStyle(LiquidGlassButtonStyle(variant: .primary, size: .medium))
-                .disabled(editedTitle.isEmpty || selectedParticipants.isEmpty)
+                .disabled(editedTitle.isEmpty || selectedParticipants.isEmpty || (isGroupMeeting && selectedGroup == nil && newGroupName.trimmingCharacters(in: .whitespaces).isEmpty))
             }
             .padding()
             .background(.regularMaterial)
@@ -564,13 +621,13 @@ struct TranscriptReviewView: View {
         print("🔧   Summary length: \(conversation.summary?.count ?? 0)")
         print("🔧   Notes length: \(conversation.notes?.count ?? 0)")
         
-        // Save basic sentiment data that exists in the Core Data model
+        // Save basic sentiment data to Core Data fields
         let sentiment = processedTranscript.sentimentAnalysis
         conversation.engagementLevel = sentiment.engagementLevel
         conversation.sentimentScore = sentiment.sentimentScore
-        
-        // For now, store additional sentiment data in notes field as JSON
-        // TODO: Update Core Data model to include all sentiment fields
+        conversation.sentimentLabel = sentiment.overallSentiment
+
+        // Store detailed sentiment JSON in app support directory (keeps notes field clean)
         let additionalSentimentData: [String: Any] = [
             "overallSentiment": sentiment.overallSentiment,
             "confidence": sentiment.confidence,
@@ -583,14 +640,13 @@ struct TranscriptReviewView: View {
             "riskFactors": sentiment.riskFactors,
             "strengths": sentiment.strengths
         ]
-        
-        if let jsonData = try? JSONSerialization.data(withJSONObject: additionalSentimentData),
-           let jsonString = String(data: jsonData, encoding: .utf8) {
-            // Append sentiment data to notes without overwriting the main content
-            conversation.notes = editedSummary + "\n\n[SENTIMENT_DATA]\n" + jsonString
+
+        if let conversationId = conversation.uuid,
+           let jsonData = try? JSONSerialization.data(withJSONObject: additionalSentimentData, options: .prettyPrinted) {
+            saveSentimentData(jsonData, forConversation: conversationId)
         }
         
-        // Link to participants using the same context
+        // Link ALL participants to conversation and save voice embeddings
         print("🔗 Linking conversation to \(selectedParticipants.count) participants")
         for participant in selectedParticipants {
             print("🔗 Processing participant: \(participant.name)")
@@ -601,9 +657,9 @@ struct TranscriptReviewView: View {
                 continue
             }
             print("🔗 Found/created person: \(person.name ?? "Unknown") (ID: \(person.objectID))")
-            
-            // For the primary person relationship (maintaining backward compatibility)
-            if conversation.person == nil {
+
+            // Set first non-current-user as primary person (backward compat with to-one relationship)
+            if conversation.person == nil && !participant.isCurrentUser {
                 conversation.person = person
                 print("🔗 Set as primary person for conversation")
             }
@@ -613,8 +669,6 @@ struct TranscriptReviewView: View {
                 person.addVoiceEmbedding(embedding)
                 print("🎤 Saved voice embedding to \(person.wrappedName) (samples: \(person.voiceSampleCount))")
             }
-
-            // TODO: Add support for multiple participants when Core Data model is updated
         }
 
         // Save context
@@ -649,9 +703,6 @@ struct TranscriptReviewView: View {
                 print("❌ WARNING: Conversation was not linked to any person!")
             }
             
-            // Refresh the context to ensure UI updates
-            context.refreshAllObjects()
-            
             // Post notification to refresh any PersonDetailViews
             NotificationCenter.default.post(name: NSNotification.Name("ConversationSaved"), object: nil)
             
@@ -661,6 +712,118 @@ struct TranscriptReviewView: View {
         }
     }
     
+    private func saveAsGroupMeeting() {
+        let context = viewContext.persistentStoreCoordinator != nil ? viewContext : PersistenceController.shared.container.viewContext
+        print("🔧 [GroupMeeting] Using context: \(context)")
+
+        // 1. Resolve or create the Group
+        let group: WhoNext.Group
+        if let existing = selectedGroup {
+            group = existing
+        } else {
+            let trimmedName = newGroupName.trimmingCharacters(in: .whitespaces)
+            guard !trimmedName.isEmpty else {
+                print("❌ [GroupMeeting] No group name provided")
+                return
+            }
+            group = WhoNext.Group(context: context)
+            group.identifier = UUID()
+            group.name = trimmedName
+            group.createdAt = Date()
+            print("👥 [GroupMeeting] Created new group: \(trimmedName)")
+        }
+
+        // 2. Create GroupMeeting
+        let meeting = GroupMeeting(context: context)
+        meeting.identifier = UUID()
+        let selectedDate = useCurrentDate ? Date() : meetingDate
+        meeting.date = selectedDate
+        meeting.title = editedTitle
+        meeting.summary = editedSummary
+        meeting.notes = editedSummary
+        meeting.transcript = processedTranscript.originalTranscript.rawText
+        meeting.duration = Int32(processedTranscript.recordingDuration)
+        meeting.sentimentScore = Double(processedTranscript.sentimentAnalysis.sentimentScore)
+        meeting.createdAt = Date()
+
+        // 3. Link to Group
+        meeting.group = group
+
+        // 4. For each selected participant, link to meeting and group
+        print("🔗 [GroupMeeting] Linking \(selectedParticipants.count) participants")
+        for participant in selectedParticipants {
+            guard let person = participantReplacements[participant.name] ??
+                                (participant.existingPersonId != nil ? findPersonById(participant.existingPersonId!) : nil) ??
+                                findOrCreatePerson(named: participant.name, context: context) else {
+                print("⚠️ [GroupMeeting] Skipping participant (current user): \(participant.name)")
+                continue
+            }
+
+            meeting.addToAttendees(person)
+            group.addToMembers(person)
+            print("🔗 [GroupMeeting] Added \(person.wrappedName) as attendee and group member")
+
+            // Save voice embeddings (same as existing flow)
+            if let embedding = participant.voiceEmbedding, !embedding.isEmpty {
+                person.addVoiceEmbedding(embedding)
+                print("🎤 [GroupMeeting] Saved voice embedding to \(person.wrappedName)")
+            }
+        }
+
+        // 5. Update group.lastMeetingDate
+        if group.lastMeetingDate == nil || selectedDate > (group.lastMeetingDate ?? .distantPast) {
+            group.lastMeetingDate = selectedDate
+        }
+
+        // 6. Save sentiment data file (reuse existing helper)
+        let sentiment = processedTranscript.sentimentAnalysis
+        let additionalSentimentData: [String: Any] = [
+            "overallSentiment": sentiment.overallSentiment,
+            "confidence": sentiment.confidence,
+            "relationshipHealth": sentiment.relationshipHealth,
+            "communicationStyle": sentiment.communicationStyle,
+            "energyLevel": sentiment.energyLevel,
+            "keyObservations": sentiment.keyObservations,
+            "supportNeeds": sentiment.supportNeeds,
+            "followUpRecommendations": sentiment.followUpRecommendations,
+            "riskFactors": sentiment.riskFactors,
+            "strengths": sentiment.strengths
+        ]
+
+        if let meetingId = meeting.identifier,
+           let jsonData = try? JSONSerialization.data(withJSONObject: additionalSentimentData, options: .prettyPrinted) {
+            saveSentimentData(jsonData, forConversation: meetingId)
+        }
+
+        // Save context
+        do {
+            try context.save()
+            print("✅ [GroupMeeting] Saved successfully: \(editedTitle)")
+            print("✅ [GroupMeeting] Group: \(group.name ?? "Unknown"), Attendees: \(meeting.attendeeCount)")
+
+            // 7. Post notification to refresh views
+            NotificationCenter.default.post(name: NSNotification.Name("GroupMeetingSaved"), object: nil)
+            NotificationCenter.default.post(name: NSNotification.Name("ConversationSaved"), object: nil)
+
+            showingSaveConfirmation = true
+        } catch {
+            print("❌ [GroupMeeting] Error saving: \(error)")
+        }
+    }
+
+    private func saveSentimentData(_ data: Data, forConversation id: UUID) {
+        let dir = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
+            .appendingPathComponent("SentimentData", isDirectory: true)
+        do {
+            try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+            let file = dir.appendingPathComponent("\(id.uuidString).json")
+            try data.write(to: file)
+            print("📊 Saved sentiment data to \(file.lastPathComponent)")
+        } catch {
+            print("⚠️ Failed to save sentiment data: \(error)")
+        }
+    }
+
     private func findOrCreatePerson(named name: String, context: NSManagedObjectContext) -> Person? {
         print("👤 Finding or creating person: '\(name)'")
 
