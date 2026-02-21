@@ -492,15 +492,29 @@ class DiarizationManager: ObservableObject {
     }
 
     /// Compare two audio segments to determine if they're the same speaker
-    /// Note: This functionality requires implementation once FluidAudio provides speaker comparison
+    /// Processes each through FluidAudio to extract embeddings, then computes cosine similarity
     func compareSpeakers(audio1: [Float], audio2: [Float]) async throws -> Float {
-        guard let _ = fluidDiarizer else {
+        guard let diarizer = fluidDiarizer else {
             throw DiarizationError.notInitialized
         }
-        
-        // TODO: Implement when FluidAudio provides speaker comparison API
-        // For now, return a placeholder similarity score
-        return 0.5
+
+        // Both samples need minimum length for reliable embeddings
+        let minSamples = Int(sampleRate * 3.0)
+        guard audio1.count >= minSamples, audio2.count >= minSamples else {
+            throw DiarizationError.insufficientAudio
+        }
+
+        // Extract embeddings via FluidAudio
+        let result1 = try diarizer.performCompleteDiarization(audio1)
+        let result2 = try diarizer.performCompleteDiarization(audio2)
+
+        // Get the dominant speaker embedding from each
+        guard let emb1 = result1.speakerDatabase?.values.first,
+              let emb2 = result2.speakerDatabase?.values.first else {
+            throw DiarizationError.processingFailed("Could not extract speaker embeddings")
+        }
+
+        return SpeakerCache.cosineSimilarity(emb1, emb2)
     }
     
     // MARK: - Utility Methods
