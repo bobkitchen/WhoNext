@@ -10,8 +10,11 @@ class SegmentAligner {
     // MARK: - Properties
 
     #if canImport(FluidAudio)
-    /// Accumulated diarization segments for the session
-    private var allSegments: [TimedSpeakerSegment] = []
+    /// Accumulated diarization segments from microphone audio
+    private var micSegments: [TimedSpeakerSegment] = []
+
+    /// Accumulated diarization segments from system audio
+    private var systemSegments: [TimedSpeakerSegment] = []
 
     /// Speaker stabilizer to prevent rapid label switching
     private let stabilizer = SpeakerStabilizer()
@@ -35,35 +38,78 @@ class SegmentAligner {
     // MARK: - Public Interface
 
     #if canImport(FluidAudio)
-    /// Update with new diarization results
+
+    /// Prefix speaker IDs to distinguish mic vs system audio sources
+    private static func prefixSegments(_ segments: [TimedSpeakerSegment], prefix: String) -> [TimedSpeakerSegment] {
+        segments.map { segment in
+            TimedSpeakerSegment(
+                speakerId: "\(prefix)_\(segment.speakerId)",
+                embedding: segment.embedding,
+                startTimeSeconds: segment.startTimeSeconds,
+                endTimeSeconds: segment.endTimeSeconds,
+                qualityScore: segment.qualityScore
+            )
+        }
+    }
+
+    /// Update with new diarization results from microphone
     /// - Parameter result: New DiarizationResult from FluidAudio
     func updateDiarizationResults(_ result: DiarizationResult) {
         lock.lock()
         defer { lock.unlock() }
 
-        // Replace with latest segments (DiarizationManager maintains cumulative history)
-        allSegments = result.segments
+        micSegments = Self.prefixSegments(result.segments, prefix: "mic")
 
-        // Defensive cap matching DiarizationManager's 5000
-        if allSegments.count > 5000 {
-            allSegments = Array(allSegments.suffix(5000))
-            print("[SegmentAligner] ⚠️ Segment cap hit: trimmed to 5000")
+        // Defensive cap
+        if micSegments.count > 5000 {
+            micSegments = Array(micSegments.suffix(5000))
+            print("[SegmentAligner] ⚠️ Mic segment cap hit: trimmed to 5000")
         }
 
         // Track known speakers
-        for segment in result.segments {
+        for segment in micSegments {
             knownSpeakers.insert(segment.speakerId)
         }
 
-        // Cap known speakers (no real meeting has 100 speakers)
+        // Cap known speakers
         if knownSpeakers.count > 100 {
-            // Keep only speakers present in current segments
+            let allSegments = micSegments + systemSegments
             let activeIds = Set(allSegments.map { $0.speakerId })
             knownSpeakers = knownSpeakers.intersection(activeIds)
             print("[SegmentAligner] ⚠️ Speaker cap hit: pruned to \(knownSpeakers.count) active speakers")
         }
 
-        print("[SegmentAligner] Updated with \(result.segments.count) segments, \(knownSpeakers.count) unique speakers")
+        print("[SegmentAligner] Updated mic with \(result.segments.count) segments, \(knownSpeakers.count) unique speakers total")
+    }
+
+    /// Update with new diarization results from system audio
+    /// - Parameter result: New DiarizationResult from FluidAudio
+    func updateSystemDiarizationResults(_ result: DiarizationResult) {
+        lock.lock()
+        defer { lock.unlock() }
+
+        systemSegments = Self.prefixSegments(result.segments, prefix: "sys")
+
+        // Defensive cap
+        if systemSegments.count > 5000 {
+            systemSegments = Array(systemSegments.suffix(5000))
+            print("[SegmentAligner] ⚠️ System segment cap hit: trimmed to 5000")
+        }
+
+        // Track known speakers
+        for segment in systemSegments {
+            knownSpeakers.insert(segment.speakerId)
+        }
+
+        // Cap known speakers
+        if knownSpeakers.count > 100 {
+            let allSegments = micSegments + systemSegments
+            let activeIds = Set(allSegments.map { $0.speakerId })
+            knownSpeakers = knownSpeakers.intersection(activeIds)
+            print("[SegmentAligner] ⚠️ Speaker cap hit: pruned to \(knownSpeakers.count) active speakers")
+        }
+
+        print("[SegmentAligner] Updated system with \(result.segments.count) segments, \(knownSpeakers.count) unique speakers total")
     }
 
     /// Find the dominant speaker for a transcript time range
@@ -75,23 +121,18 @@ class SegmentAligner {
         lock.lock()
         defer { lock.unlock() }
 
-        guard !allSegments.isEmpty else {
-            return nil
-        }
+        let allSegments = micSegments + systemSegments
+        guard !allSegments.isEmpty else { return nil }
 
         let endTime = transcriptStart + duration
-
-        // Build a temporary DiarizationResult to use its helper method
         let result = DiarizationResult(segments: allSegments, speakerDatabase: nil, timings: nil)
         let speaker = result.dominantSpeaker(between: transcriptStart, and: endTime)
 
-        // Run through stabilizer to prevent rapid switching
         if let speaker = speaker {
             let stabilized = stabilizer.stabilize(rawLabel: speaker, currentLabel: lastReturnedSpeaker)
             lastReturnedSpeaker = stabilized
             return stabilized
         }
-
         return nil
     }
 
@@ -100,6 +141,7 @@ class SegmentAligner {
         lock.lock()
         defer { lock.unlock() }
 
+        let allSegments = micSegments + systemSegments
         return allSegments.filter { segment in
             Double(segment.endTimeSeconds) >= startTime && Double(segment.startTimeSeconds) <= endTime
         }
@@ -119,12 +161,11 @@ class SegmentAligner {
         defer { lock.unlock() }
 
         var times: [String: TimeInterval] = [:]
-
+        let allSegments = micSegments + systemSegments
         for segment in allSegments {
             let duration = Double(segment.endTimeSeconds - segment.startTimeSeconds)
             times[segment.speakerId, default: 0] += duration
         }
-
         return times
     }
 
@@ -132,8 +173,7 @@ class SegmentAligner {
     func getSegmentCount() -> Int {
         lock.lock()
         defer { lock.unlock() }
-
-        return allSegments.count
+        return micSegments.count + systemSegments.count
     }
     #endif
 
@@ -143,7 +183,8 @@ class SegmentAligner {
         defer { lock.unlock() }
 
         #if canImport(FluidAudio)
-        allSegments.removeAll()
+        micSegments.removeAll()
+        systemSegments.removeAll()
         knownSpeakers.removeAll()
         stabilizer.reset()
         lastReturnedSpeaker = nil
@@ -169,17 +210,26 @@ extension SegmentAligner {
         return abs(speakerId.hashValue % 100)
     }
 
-    /// Format speaker ID for display (e.g., "speaker_0" -> "Speaker 1", "2" -> "Speaker 2")
+    /// Format speaker ID for display (e.g., "speaker_0" -> "Speaker 1", "mic_2" -> "Speaker 2 (Local)")
     static func formatSpeakerName(_ speakerId: String) -> String {
+        // Strip mic_/sys_ prefix for display
+        var cleanId = speakerId
+        var sourceLabel = ""
+        if speakerId.hasPrefix("mic_") {
+            cleanId = String(speakerId.dropFirst(4))
+            sourceLabel = " (Local)"
+        } else if speakerId.hasPrefix("sys_") {
+            cleanId = String(speakerId.dropFirst(4))
+            sourceLabel = " (Remote)"
+        }
+
         // FluidAudio uses 1-based IDs like "1", "2" directly
-        // Legacy format uses "speaker_0", "speaker_1" (0-based)
-        if let num = Int(speakerId) {
-            // Already a 1-based number, use directly
-            return "Speaker \(num)"
+        if let num = Int(cleanId) {
+            return "Speaker \(num)\(sourceLabel)"
         }
         // Legacy format: extract number and add 1
-        let numericId = parseNumericId(speakerId)
-        return "Speaker \(numericId + 1)"
+        let numericId = parseNumericId(cleanId)
+        return "Speaker \(numericId + 1)\(sourceLabel)"
     }
 }
 
@@ -194,6 +244,7 @@ extension SegmentAligner {
 
         #if canImport(FluidAudio)
         let speakerCount = knownSpeakers.count
+        let allSegments = micSegments + systemSegments
         let segmentCount = allSegments.count
 
         var totalDuration: TimeInterval = 0
