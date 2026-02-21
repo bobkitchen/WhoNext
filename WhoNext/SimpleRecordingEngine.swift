@@ -57,6 +57,10 @@ class SimpleRecordingEngine: ObservableObject {
     private var recordingStartTime: Date?
     private var cancellables = Set<AnyCancellable>()
 
+    /// Cursor tracking the first transcript segment that may still need speaker backfill.
+    /// Avoids re-scanning already-attributed segments on every diarization update.
+    private var backfillCursor: Int = 0
+
     // MARK: - Initialization
 
     private init() {
@@ -169,6 +173,7 @@ class SimpleRecordingEngine: ObservableObject {
             segmentAligner.reset()
             diarizationManager.reset()
             detectedSpeakerCount = 0
+            backfillCursor = 0
             #endif
 
             // Start audio capture
@@ -438,14 +443,14 @@ class SimpleRecordingEngine: ObservableObject {
     }
 
     /// Backfill speaker labels into transcript segments that arrived before diarization caught up.
-    /// Iterates segments where speakerID is nil and queries the segmentAligner for the dominant
-    /// speaker at each segment's timestamp. This follows the pattern used by Otter, Fireflies,
-    /// and Read.ai: speaker processing runs with some delay, and labels are backfilled.
+    /// Uses backfillCursor to skip already-attributed segments (O(new) instead of O(all)).
     private func backfillSpeakerLabels() {
         guard let meeting = currentMeeting else { return }
 
         var backfilledCount = 0
-        for i in 0..<meeting.transcript.count {
+        var newCursor = meeting.transcript.count // Assume all done unless we find a nil
+
+        for i in backfillCursor..<meeting.transcript.count {
             let segment = meeting.transcript[i]
             guard segment.speakerID == nil else { continue }
 
@@ -470,11 +475,16 @@ class SimpleRecordingEngine: ObservableObject {
                     isFinalized: segment.isFinalized
                 )
                 backfilledCount += 1
+            } else {
+                // First segment still nil — this is the new cursor position
+                newCursor = min(newCursor, i)
             }
         }
 
+        backfillCursor = newCursor
+
         if backfilledCount > 0 {
-            print("[SimpleRecordingEngine] Backfilled speaker labels for \(backfilledCount) transcript segments")
+            print("[SimpleRecordingEngine] Backfilled speaker labels for \(backfilledCount) transcript segments (cursor at \(backfillCursor))")
         }
     }
 
