@@ -173,7 +173,11 @@ class DiarizationManager: ObservableObject {
     private var isInitialized = false
     private var audioBuffer: [Float] = []
     private let sampleRate: Float = 16000.0
-    
+
+    /// Cached converter for proper anti-aliased resampling to 16kHz
+    private var resamplingConverter: AVAudioConverter?
+    private var resamplingSourceFormat: AVAudioFormat?
+
     // Configuration
     private let config: DiarizerConfig
     @Published var isEnabled: Bool = true
@@ -502,42 +506,86 @@ class DiarizationManager: ObservableObject {
     // MARK: - Utility Methods
     
     /// Convert AVAudioPCMBuffer to Float array at 16kHz mono
+    /// Uses AVAudioConverter for proper anti-aliased resampling (not naive decimation)
     private func convertBufferToFloatArray(_ buffer: AVAudioPCMBuffer) -> [Float]? {
         guard let channelData = buffer.floatChannelData else { return nil }
-        
+
         let frameCount = Int(buffer.frameLength)
         let channelCount = Int(buffer.format.channelCount)
         let sourceSampleRate = buffer.format.sampleRate
-        
-        var samples: [Float] = []
-        
-        if sourceSampleRate != Double(sampleRate) {
-            // Downsample to 16kHz
-            let ratio = sourceSampleRate / Double(sampleRate)
-            let targetFrameCount = Int(Double(frameCount) / ratio)
-            
-            for frame in 0..<targetFrameCount {
-                let sourceFrame = Int(Double(frame) * ratio)
-                if sourceFrame < frameCount {
-                    // Average all channels to mono
+
+        // Fast path: already at 16kHz — just downmix to mono
+        if abs(sourceSampleRate - Double(sampleRate)) < 1.0 {
+            var samples = [Float](repeating: 0, count: frameCount)
+            if channelCount == 1 {
+                memcpy(&samples, channelData[0], frameCount * MemoryLayout<Float>.size)
+            } else {
+                for frame in 0..<frameCount {
                     var sample: Float = 0.0
                     for channel in 0..<channelCount {
-                        sample += channelData[channel][sourceFrame]
+                        sample += channelData[channel][frame]
                     }
-                    samples.append(sample / Float(channelCount))
+                    samples[frame] = sample / Float(channelCount)
                 }
             }
-        } else {
-            // Already at 16kHz, just convert to mono
-            for frame in 0..<frameCount {
-                var sample: Float = 0.0
-                for channel in 0..<channelCount {
-                    sample += channelData[channel][frame]
+            return samples
+        }
+
+        // Slow path: need resampling — use AVAudioConverter for proper anti-aliasing
+        guard let targetFormat = AVAudioFormat(standardFormatWithSampleRate: Double(sampleRate), channels: 1) else {
+            return nil
+        }
+
+        // Create mono source buffer first (downmix channels)
+        guard let sourceMonoFormat = AVAudioFormat(standardFormatWithSampleRate: sourceSampleRate, channels: 1) else {
+            return nil
+        }
+        guard let sourceMonoBuffer = AVAudioPCMBuffer(pcmFormat: sourceMonoFormat, frameCapacity: AVAudioFrameCount(frameCount)) else {
+            return nil
+        }
+        sourceMonoBuffer.frameLength = AVAudioFrameCount(frameCount)
+        if let monoData = sourceMonoBuffer.floatChannelData {
+            if channelCount == 1 {
+                memcpy(monoData[0], channelData[0], frameCount * MemoryLayout<Float>.size)
+            } else {
+                for frame in 0..<frameCount {
+                    var sample: Float = 0.0
+                    for channel in 0..<channelCount {
+                        sample += channelData[channel][frame]
+                    }
+                    monoData[0][frame] = sample / Float(channelCount)
                 }
-                samples.append(sample / Float(channelCount))
             }
         }
-        
+
+        // Create or reuse converter
+        if resamplingConverter == nil || resamplingSourceFormat?.sampleRate != sourceSampleRate {
+            resamplingConverter = AVAudioConverter(from: sourceMonoFormat, to: targetFormat)
+            resamplingSourceFormat = sourceMonoFormat
+        }
+        guard let converter = resamplingConverter else { return nil }
+
+        // Convert with proper anti-aliasing
+        let ratio = Double(sampleRate) / sourceSampleRate
+        let outputFrameCount = AVAudioFrameCount(Double(frameCount) * ratio)
+        guard let outputBuffer = AVAudioPCMBuffer(pcmFormat: targetFormat, frameCapacity: outputFrameCount) else {
+            return nil
+        }
+
+        var error: NSError?
+        let status = converter.convert(to: outputBuffer, error: &error) { _, outStatus in
+            outStatus.pointee = .haveData
+            return sourceMonoBuffer
+        }
+
+        guard status != .error, error == nil, let outputData = outputBuffer.floatChannelData else {
+            print("⚠️ [DiarizationManager] Resampling failed: \(error?.localizedDescription ?? "unknown"), falling back to source")
+            return nil
+        }
+
+        let outputCount = Int(outputBuffer.frameLength)
+        var samples = [Float](repeating: 0, count: outputCount)
+        memcpy(&samples, outputData[0], outputCount * MemoryLayout<Float>.size)
         return samples
     }
     
@@ -669,7 +717,9 @@ class DiarizationManager: ObservableObject {
         streamPosition = 0.0
         currentSpeakers.removeAll()
         speakerDistances.removeAll()
-        
+        resamplingConverter = nil
+        resamplingSourceFormat = nil
+
         print("🔄 [DiarizationManager] Reset complete")
     }
 
