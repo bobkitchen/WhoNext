@@ -4,6 +4,8 @@ import CoreData
 struct EnhancedPeopleView: View {
     @Binding var selectedPerson: Person?
     @Binding var selectedGroup: Group?
+    @Binding var selectedInboxConversation: Conversation?
+    @Binding var selectedInboxGroupMeeting: GroupMeeting?
     @Environment(\.managedObjectContext) private var viewContext
     @Environment(\.openWindow) private var openWindow
 
@@ -13,19 +15,21 @@ struct EnhancedPeopleView: View {
     @State private var selectedFilters: Set<PersonFilter> = []
     @State private var sortOption: PersonSortOption = .name
     @State private var showingImport = false
-    
+    @State private var isInboxExpanded = true
+    @State private var selectedInboxItem: InboxEntry?
+
     // Fetch request for people
     @FetchRequest(
         sortDescriptors: [NSSortDescriptor(keyPath: \Person.name, ascending: true)],
         animation: .default
     ) private var allPeople: FetchedResults<Person>
-    
+
     // Computed properties for grouped people
     private var filteredPeople: [Person] {
         var result = Array(allPeople)
 
-        // Exclude current user from People directory
-        result = result.filter { !$0.isCurrentUser }
+        // Exclude current user and speaker placeholders from People directory
+        result = result.filter { !$0.isCurrentUser && !InboxEntry.isSpeakerPlaceholder($0.name ?? "") }
 
         // Apply search
         if !searchText.isEmpty {
@@ -62,7 +66,21 @@ struct EnhancedPeopleView: View {
             return date > Date().addingTimeInterval(-7 * 24 * 60 * 60) // Last 7 days
         }
     }
-    
+
+    private var inboxItems: [InboxEntry] {
+        // Gather conversations from "Speaker X" placeholder persons
+        var entries: [InboxEntry] = []
+        for person in allPeople {
+            guard let name = person.name, InboxEntry.isSpeakerPlaceholder(name) else { continue }
+            if let conversations = person.conversations as? Set<Conversation> {
+                for conversation in conversations where !conversation.isSoftDeleted {
+                    entries.append(.conversation(conversation))
+                }
+            }
+        }
+        return entries.sorted { $0.date > $1.date }
+    }
+
     enum ViewMode: String, CaseIterable {
         case individuals = "Individuals"
         case groups = "Groups"
@@ -105,8 +123,22 @@ struct EnhancedPeopleView: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .onChange(of: selectedPerson) { _, newValue in
+            if newValue != nil {
+                selectedInboxItem = nil
+                selectedInboxConversation = nil
+                selectedInboxGroupMeeting = nil
+            }
+        }
+        .onChange(of: selectedGroup) { _, newValue in
+            if newValue != nil {
+                selectedInboxItem = nil
+                selectedInboxConversation = nil
+                selectedInboxGroupMeeting = nil
+            }
+        }
     }
-    
+
     // MARK: - Header View
     private var headerView: some View {
         VStack(spacing: 0) {
@@ -207,10 +239,17 @@ struct EnhancedPeopleView: View {
     // MARK: - People List Content
     private var peopleListContent: some View {
         ScrollView(.vertical, showsIndicators: true) {
-            if filteredPeople.isEmpty {
+            VStack(alignment: .leading, spacing: 24) {
+                // Inbox section — always at the top when there are items
+                if !inboxItems.isEmpty {
+                    inboxSection
+                }
+            }
+
+            if filteredPeople.isEmpty && inboxItems.isEmpty {
                 emptyStateView
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
-            } else {
+            } else if !filteredPeople.isEmpty {
                 VStack(alignment: .leading, spacing: 24) {
                     // Favorites section
                     if !favorites.isEmpty {
@@ -288,6 +327,79 @@ struct EnhancedPeopleView: View {
         .background(Color(NSColor.windowBackgroundColor))
     }
     
+    // MARK: - Inbox Section
+    private var inboxSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            // Collapsible header
+            Button(action: {
+                withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+                    isInboxExpanded.toggle()
+                }
+            }) {
+                HStack(spacing: 10) {
+                    Image(systemName: "tray.fill")
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundColor(.orange)
+
+                    Text("Inbox")
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundColor(.primary)
+
+                    Text("\(inboxItems.count)")
+                        .font(.system(size: 11, weight: .bold))
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 7)
+                        .padding(.vertical, 2)
+                        .background(Capsule().fill(Color.orange))
+
+                    Spacer()
+
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundColor(.secondary)
+                        .rotationEffect(.degrees(isInboxExpanded ? 90 : 0))
+
+                    Rectangle()
+                        .fill(Color(NSColor.separatorColor).opacity(0.2))
+                        .frame(height: 1)
+                }
+                .padding(.horizontal, 20)
+                .padding(.vertical, 10)
+            }
+            .buttonStyle(.plain)
+
+            if isInboxExpanded {
+                LazyVStack(spacing: 6) {
+                    ForEach(inboxItems) { entry in
+                        InboxMeetingCard(
+                            entry: entry,
+                            isSelected: selectedInboxItem?.id == entry.id,
+                            onSelect: {
+                                selectInboxItem(entry)
+                            }
+                        )
+                        .padding(.horizontal, 20)
+                    }
+                }
+                .transition(.opacity.combined(with: .move(edge: .top)))
+            }
+        }
+    }
+
+    private func selectInboxItem(_ entry: InboxEntry) {
+        selectedInboxItem = entry
+        selectedPerson = nil
+        selectedGroup = nil
+        switch entry {
+        case .conversation(let c):
+            selectedInboxConversation = c
+            selectedInboxGroupMeeting = nil
+        case .groupMeeting(let g):
+            selectedInboxGroupMeeting = g
+            selectedInboxConversation = nil
+        }
+    }
+
     // MARK: - Empty State
     private var emptyStateView: some View {
         VStack(spacing: 20) {

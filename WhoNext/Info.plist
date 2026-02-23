@@ -10,6 +10,21 @@
 	<string>WhoNext can create Apple Reminders from action items extracted from your meetings to help you track follow-ups.</string>
 	<key>NSCalendarsUsageDescription</key>
 	<string>WhoNext uses calendar access to detect upcoming meetings and integrate with your calendar events.</string>
+	<key>UTExportedTypeDeclarations</key>
+	<array>
+		<dict>
+			<key>UTTypeIdentifier</key>
+			<string>com.whonext.orphanedMeeting</string>
+			<key>UTTypeDescription</key>
+			<string>Orphaned Meeting Item</string>
+			<key>UTTypeConformsTo</key>
+			<array>
+				<string>public.data</string>
+			</array>
+			<key>UTTypeTagSpecification</key>
+			<dict/>
+		</dict>
+	</array>
 	<key>CFBundleURLTypes</key>
 	<array>
 		<dict>

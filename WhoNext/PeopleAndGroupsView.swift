@@ -4,6 +4,8 @@ import CoreData
 struct PeopleAndGroupsView: View {
     @Binding var selectedPerson: Person?
     @State private var selectedGroup: Group?
+    @State private var selectedInboxConversation: Conversation?
+    @State private var selectedInboxGroupMeeting: GroupMeeting?
     @EnvironmentObject var appStateManager: AppStateManager
 
     var body: some View {
@@ -11,13 +13,15 @@ struct PeopleAndGroupsView: View {
             // Enhanced people list on the left
             EnhancedPeopleView(
                 selectedPerson: $selectedPerson,
-                selectedGroup: $selectedGroup
+                selectedGroup: $selectedGroup,
+                selectedInboxConversation: $selectedInboxConversation,
+                selectedInboxGroupMeeting: $selectedInboxGroupMeeting
             )
             .frame(minWidth: 400, maxWidth: 500)
 
             Divider()
 
-            // Detail view on the right (Person or Group)
+            // Detail view on the right
             if let person = selectedPerson {
                 PersonDetailView(person: person)
                     .id(person.identifier)
@@ -28,6 +32,14 @@ struct PeopleAndGroupsView: View {
                     .id(group.identifier)
                     .frame(maxWidth: .infinity)
                     .environmentObject(appStateManager)
+            } else if let conversation = selectedInboxConversation {
+                ConversationDetailView(conversation: conversation)
+                    .id(conversation.uuid)
+                    .frame(maxWidth: .infinity)
+            } else if let meeting = selectedInboxGroupMeeting {
+                InboxMeetingDetailView(meeting: meeting)
+                    .id(meeting.identifier)
+                    .frame(maxWidth: .infinity)
             } else {
                 VStack(spacing: 20) {
                     Image(systemName: "person.crop.circle")
@@ -40,6 +52,18 @@ struct PeopleAndGroupsView: View {
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .background(Color(NSColor.windowBackgroundColor))
+            }
+        }
+        .onChange(of: selectedPerson) { _, newValue in
+            if newValue != nil {
+                selectedInboxConversation = nil
+                selectedInboxGroupMeeting = nil
+            }
+        }
+        .onChange(of: selectedGroup) { _, newValue in
+            if newValue != nil {
+                selectedInboxConversation = nil
+                selectedInboxGroupMeeting = nil
             }
         }
     }

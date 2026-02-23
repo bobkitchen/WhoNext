@@ -10,6 +10,7 @@ struct EnhancedPersonCard: View {
     
     @State private var isHovered = false
     @State private var showingActions = false
+    @State private var isDropTargeted = false
     
     private var isSelected: Bool {
         selectedPerson?.identifier == person.identifier
@@ -153,6 +154,14 @@ struct EnhancedPersonCard: View {
         .contextMenu {
             contextMenuItems
         }
+        .dropDestination(for: DraggableMeetingItem.self) { items, _ in
+            guard let item = items.first else { return false }
+            assignMeeting(item, to: person)
+            return true
+        } isTargeted: { targeted in
+            withAnimation(.easeInOut(duration: 0.2)) { isDropTargeted = targeted }
+        }
+        .scaleEffect(isDropTargeted ? 1.02 : 1.0)
     }
     
     // MARK: - Subviews
@@ -269,18 +278,20 @@ struct EnhancedPersonCard: View {
     private var cardBackground: some View {
         RoundedRectangle(cornerRadius: 10)
             .fill(
-                isSelected ? 
-                Color.accentColor.opacity(0.08) : 
-                (isHovered ? Color(NSColor.controlBackgroundColor) : Color(NSColor.controlBackgroundColor).opacity(0.5))
+                isDropTargeted ? Color.accentColor.opacity(0.15) :
+                (isSelected ?
+                Color.accentColor.opacity(0.08) :
+                (isHovered ? Color(NSColor.controlBackgroundColor) : Color(NSColor.controlBackgroundColor).opacity(0.5)))
             )
     }
-    
+
     private var cardBorder: some View {
         RoundedRectangle(cornerRadius: 10)
             .stroke(
-                isSelected ? Color.accentColor.opacity(0.4) : 
-                (isHovered ? Color(NSColor.separatorColor).opacity(0.3) : Color.clear),
-                lineWidth: isSelected ? 1.5 : 1
+                isDropTargeted ? Color.accentColor :
+                (isSelected ? Color.accentColor.opacity(0.4) :
+                (isHovered ? Color(NSColor.separatorColor).opacity(0.3) : Color.clear)),
+                lineWidth: isDropTargeted ? 2 : (isSelected ? 1.5 : 1)
             )
     }
     
@@ -371,6 +382,44 @@ struct EnhancedPersonCard: View {
         try? viewContext.save()
     }
     
+    private func assignMeeting(_ item: DraggableMeetingItem, to person: Person) {
+        switch item.kind {
+        case .conversation:
+            let request = NSFetchRequest<Conversation>(entityName: "Conversation")
+            request.predicate = NSPredicate(format: "uuid == %@", item.id as CVarArg)
+            request.fetchLimit = 1
+            if let conversation = try? viewContext.fetch(request).first {
+                let oldPerson = conversation.person
+                conversation.person = person
+                conversation.modifiedAt = Date()
+                // Clean up speaker placeholder person if it has no remaining conversations
+                cleanUpPlaceholderIfEmpty(oldPerson)
+            }
+        case .groupMeeting:
+            let request = NSFetchRequest<GroupMeeting>(entityName: "GroupMeeting")
+            request.predicate = NSPredicate(format: "identifier == %@", item.id as CVarArg)
+            request.fetchLimit = 1
+            if let meeting = try? viewContext.fetch(request).first {
+                meeting.addToAttendees(person)
+                meeting.modifiedAt = Date()
+            }
+        }
+        try? viewContext.save()
+    }
+
+    /// Delete a "Speaker X" placeholder person if they have no remaining conversations or group meetings
+    private func cleanUpPlaceholderIfEmpty(_ person: Person?) {
+        guard let person = person,
+              let name = person.name,
+              InboxEntry.isSpeakerPlaceholder(name) else { return }
+
+        let conversationCount = (person.conversations as? Set<Conversation>)?.count ?? 0
+        let groupMeetingCount = (person.groupMeetings as? Set<GroupMeeting>)?.count ?? 0
+        if conversationCount == 0 && groupMeetingCount == 0 {
+            viewContext.delete(person)
+        }
+    }
+
     private func deletePerson() {
         if selectedPerson == person {
             selectedPerson = nil
