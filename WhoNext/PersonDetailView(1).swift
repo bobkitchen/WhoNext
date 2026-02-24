@@ -55,10 +55,15 @@ struct PersonDetailView: View {
 
     @State private var preMeetingBrief: [UUID: String] = [:]
     @State private var fallbackIsGenerating = false
-    @StateObject private var hybridAI = HybridAIService()
+    @ObservedObject private var hybridAI = HybridAIService.shared
     @State private var preMeetingBriefWindowController: PreMeetingBriefWindowController?
     @State private var profileWindowController: ProfileWindowController?
     @State private var showLinkedInImport = false
+    @State private var experienceText: String?
+    @State private var educationText: String?
+    @State private var isProcessingProfile = false
+    @State private var clipboardError: String?
+    @State private var photoSaved = false
 
     init(person: Person) {
         self.person = person
@@ -87,11 +92,11 @@ struct PersonDetailView: View {
             // Load conversations for this person when view appears
             conversationManager.loadConversations(for: person)
         }
-        .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("ConversationSaved"))) { _ in
+        .onReceive(NotificationCenter.default.publisher(for: .conversationSaved)) { _ in
             // Reload conversations when new ones are saved
             conversationManager.loadConversations(for: person)
         }
-        .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("GroupMeetingSaved"))) { _ in
+        .onReceive(NotificationCenter.default.publisher(for: .groupMeetingSaved)) { _ in
             // Trigger refresh when group meeting saved (person.groupMeetings updates via Core Data)
             conversationManager.loadConversations(for: person)
         }
@@ -278,34 +283,124 @@ struct PersonDetailView: View {
             }
             .buttonStyle(.plain)
 
-            // Expandable drop zone
+            // Expandable content
             if showLinkedInImport {
-                CompactLinkedInDropZone { markdown in
-                    // Update person.notes with the extracted markdown
-                    person.notes = markdown
-                    person.modifiedAt = Date()
+                VStack(alignment: .leading, spacing: 12) {
+                    // Paste buttons row 1: Experience & Education
+                    HStack(spacing: 10) {
+                        Button(action: pasteExperience) {
+                            HStack(spacing: 6) {
+                                Image(systemName: "doc.on.clipboard")
+                                    .font(.system(size: 12))
+                                Text("Paste Experience")
+                                    .font(.system(size: 12, weight: .medium))
+                            }
+                        }
+                        .buttonStyle(LiquidGlassButtonStyle(variant: .primary, size: .small))
+                        .disabled(isProcessingProfile)
 
-                    // Extract location and set timezone if not already set
-                    if person.timezone?.isEmpty ?? true || person.timezone == "UTC" {
-                        if let location = extractLocationFromMarkdown(markdown) {
-                            let timezone = mapLocationToTimezone(location)
-                            person.timezone = timezone
-                            print("🌍 [PersonDetail] Set timezone to \(timezone) based on location: \(location)")
+                        Button(action: pasteEducation) {
+                            HStack(spacing: 6) {
+                                Image(systemName: "graduationcap")
+                                    .font(.system(size: 12))
+                                Text("Paste Education")
+                                    .font(.system(size: 12, weight: .medium))
+                            }
+                        }
+                        .buttonStyle(LiquidGlassButtonStyle(variant: .secondary, size: .small))
+                        .disabled(isProcessingProfile)
+                    }
+
+                    // Paste buttons row 2: Photo
+                    Button(action: pastePhoto) {
+                        HStack(spacing: 6) {
+                            Image(systemName: photoSaved ? "checkmark" : "photo.on.rectangle")
+                                .font(.system(size: 12))
+                            Text(photoSaved ? "Photo Saved" : "Paste Photo")
+                                .font(.system(size: 12, weight: .medium))
+                        }
+                    }
+                    .buttonStyle(LiquidGlassButtonStyle(variant: .secondary, size: .small))
+                    .disabled(isProcessingProfile)
+
+                    // Status chips
+                    if experienceText != nil || educationText != nil {
+                        VStack(alignment: .leading, spacing: 4) {
+                            if let exp = experienceText {
+                                HStack(spacing: 6) {
+                                    Image(systemName: "checkmark.circle.fill")
+                                        .font(.system(size: 11))
+                                        .foregroundColor(.green)
+                                    Text("Experience ready (\(exp.count.formatted()) chars)")
+                                        .font(.system(size: 11, weight: .medium))
+                                        .foregroundColor(.secondary)
+                                }
+                            }
+                            if let edu = educationText {
+                                HStack(spacing: 6) {
+                                    Image(systemName: "checkmark.circle.fill")
+                                        .font(.system(size: 11))
+                                        .foregroundColor(.green)
+                                    Text("Education ready (\(edu.count.formatted()) chars)")
+                                        .font(.system(size: 11, weight: .medium))
+                                        .foregroundColor(.secondary)
+                                }
+                            }
                         }
                     }
 
-                    // Save changes
-                    do {
-                        try viewContext.save()
-                        print("✅ [PersonDetail] LinkedIn profile data saved for \(person.name ?? "Unknown")")
-
-                        // Collapse the import section after successful import
-                        withAnimation {
-                            showLinkedInImport = false
+                    // Process Profile button (appears when experience is pasted)
+                    if experienceText != nil {
+                        Button(action: processProfile) {
+                            HStack(spacing: 6) {
+                                if isProcessingProfile {
+                                    ProgressView()
+                                        .scaleEffect(0.6)
+                                        .frame(width: 14, height: 14)
+                                } else {
+                                    Image(systemName: "sparkles")
+                                        .font(.system(size: 12))
+                                }
+                                Text(isProcessingProfile ? "Processing..." : "Process Profile")
+                                    .font(.system(size: 12, weight: .medium))
+                            }
                         }
-                    } catch {
-                        print("❌ [PersonDetail] Failed to save LinkedIn data: \(error)")
-                        ErrorManager.shared.handle(error, context: "Failed to save LinkedIn profile data")
+                        .buttonStyle(LiquidGlassButtonStyle(variant: .primary, size: .small))
+                        .disabled(isProcessingProfile)
+
+                        Text("AI will structure and summarize")
+                            .font(.system(size: 10))
+                            .foregroundColor(.secondary)
+                    }
+
+                    // Instruction text
+                    Text("Copy experience and education sections from LinkedIn (highlight and Cmd+C, or Cmd+A from the details pages). Right-click profile photo \u{2192} Copy Image for photo.")
+                        .font(.system(size: 11))
+                        .foregroundColor(.secondary)
+
+                    // Error display
+                    if let error = clipboardError {
+                        Text(error)
+                            .font(.system(size: 11))
+                            .foregroundColor(.red)
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 4)
+                            .background(Color.red.opacity(0.1))
+                            .cornerRadius(4)
+                    }
+
+                    // Divider
+                    HStack {
+                        Rectangle().fill(Color.secondary.opacity(0.2)).frame(height: 1)
+                        Text("or drag a LinkedIn PDF")
+                            .font(.system(size: 10))
+                            .foregroundColor(.secondary)
+                        Rectangle().fill(Color.secondary.opacity(0.2)).frame(height: 1)
+                    }
+
+                    // PDF drop zone (existing fallback)
+                    CompactLinkedInDropZone { markdown in
+                        saveLinkedInMarkdown(markdown)
                     }
                 }
                 .transition(.opacity.combined(with: .move(edge: .top)))
@@ -352,7 +447,7 @@ struct PersonDetailView: View {
                         .font(.system(size: 14, weight: .medium))
                         .foregroundColor(.secondary)
 
-                    Text("Import a LinkedIn PDF above or add notes manually via Edit")
+                    Text("Paste LinkedIn profile text above, drop a PDF, or add notes via Edit")
                         .font(.system(size: 12))
                         .foregroundColor(.secondary)
                         .multilineTextAlignment(.center)
@@ -689,7 +784,7 @@ struct PersonDetailView: View {
             defer: false
         )
         window.title = "Edit \(person.name ?? "Person")"
-        window.isReleasedWhenClosed = false
+        window.isReleasedWhenClosed = true
         window.contentView = NSHostingView(
             rootView: PersonEditView(
                 person: person,
@@ -709,7 +804,7 @@ struct PersonDetailView: View {
             defer: false
         )
         window.title = "New Conversation with \(person.name ?? "Person")"
-        window.isReleasedWhenClosed = false
+        window.isReleasedWhenClosed = true
         window.contentView = NSHostingView(
             rootView: NewConversationWindowView(
                 preselectedPerson: person,
@@ -787,6 +882,172 @@ struct PersonDetailView: View {
         NSPasteboard.general.setString(text, forType: .string)
     }
 
+    // MARK: - Clipboard Paste Actions
+
+    private func pasteExperience() {
+        guard let text = NSPasteboard.general.string(forType: .string) else {
+            clipboardError = "No text found on clipboard. Copy the Experience section from LinkedIn first."
+            return
+        }
+
+        guard text.count >= 50 else {
+            clipboardError = "Clipboard text is too short (\(text.count) chars). Please copy the full Experience section."
+            return
+        }
+
+        clipboardError = nil
+        experienceText = text
+    }
+
+    private func pasteEducation() {
+        guard let text = NSPasteboard.general.string(forType: .string) else {
+            clipboardError = "No text found on clipboard. Copy the Education section from LinkedIn first."
+            return
+        }
+
+        guard text.count >= 30 else {
+            clipboardError = "Clipboard text is too short (\(text.count) chars). Please copy the full Education section."
+            return
+        }
+
+        clipboardError = nil
+        educationText = text
+    }
+
+    private func processProfile() {
+        guard let experience = experienceText else { return }
+
+        isProcessingProfile = true
+        clipboardError = nil
+
+        Task {
+            do {
+                let markdown = try await structureLinkedInClipboard(experience: experience, education: educationText)
+                await MainActor.run {
+                    saveLinkedInMarkdown(markdown)
+                    experienceText = nil
+                    educationText = nil
+                    isProcessingProfile = false
+                }
+            } catch {
+                await MainActor.run {
+                    clipboardError = "Failed to structure profile: \(error.localizedDescription)"
+                    isProcessingProfile = false
+                }
+            }
+        }
+    }
+
+    private func pastePhoto() {
+        let pasteboard = NSPasteboard.general
+        if let image = NSImage(pasteboard: pasteboard) {
+            if let tiffData = image.tiffRepresentation,
+               let bitmap = NSBitmapImageRep(data: tiffData),
+               let jpegData = bitmap.representation(using: .jpeg, properties: [.compressionFactor: 0.8]) {
+                person.photo = jpegData
+                person.modifiedAt = Date()
+                do {
+                    try viewContext.save()
+                    photoSaved = true
+                    // Reset after 2 seconds
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+                        photoSaved = false
+                    }
+                    debugLog("✅ [PersonDetail] Photo pasted and saved for \(person.name ?? "Unknown")")
+                } catch {
+                    clipboardError = "Failed to save photo: \(error.localizedDescription)"
+                }
+            }
+        } else {
+            clipboardError = "No image found on clipboard. Right-click a photo and choose 'Copy Image' first."
+        }
+    }
+
+    private func saveLinkedInMarkdown(_ markdown: String) {
+        person.notes = markdown
+        person.modifiedAt = Date()
+
+        // Extract location and set timezone if not already set
+        if person.timezone?.isEmpty ?? true || person.timezone == "UTC" {
+            if let location = extractLocationFromMarkdown(markdown) {
+                let timezone = TimezoneMapper.mapLocationToTimezone(location)
+                person.timezone = timezone
+                debugLog("🌍 [PersonDetail] Set timezone to \(timezone) based on location: \(location)")
+            }
+        }
+
+        do {
+            try viewContext.save()
+            debugLog("✅ [PersonDetail] LinkedIn profile data saved for \(person.name ?? "Unknown")")
+            withAnimation {
+                showLinkedInImport = false
+            }
+        } catch {
+            debugLog("❌ [PersonDetail] Failed to save LinkedIn data: \(error)")
+            ErrorManager.shared.handle(error, context: "Failed to save LinkedIn profile data")
+        }
+    }
+
+    private func structureLinkedInClipboard(experience: String, education: String?) async throws -> String {
+        let educationBlock = education.map { String($0.prefix(3000)) } ?? "Not provided"
+
+        let prompt = """
+        Parse this LinkedIn profile data and return structured markdown.
+
+        EXPERIENCE TEXT (copied from LinkedIn Experience section):
+        ---
+        \(String(experience.prefix(12000)))
+        ---
+
+        EDUCATION TEXT (copied from LinkedIn Education section):
+        ---
+        \(educationBlock)
+        ---
+
+        Return markdown in this EXACT format:
+
+        **{Full Name}**
+        {Headline/Current Title}
+        📍 {Location}
+
+        ## Summary
+        Write 2-3 sentences assessing this person's professional profile:
+        - Seniority level (junior/mid/senior/executive) based on titles and career progression
+        - Geographic breadth — how many countries or regions they've worked in
+        - Education relevance — how their education relates to their career path
+        Be specific and cite evidence from the data.
+
+        ## Experience
+        **{Job Title}**
+        {Company Name} · {Location}
+        {Date Range}
+        {Brief description if available}
+
+        (Continue for ALL jobs...)
+
+        ## Education
+        **{School Name}**
+        {Degree} - {Field of Study}
+        {Years}
+
+        ## Skills
+        • {Skill 1}
+        • {Skill 2}
+        ...
+
+        IMPORTANT RULES:
+        1. Extract ALL work experience entries with locations
+        2. IGNORE navigation bar text, footer, "People also viewed", ads
+        3. Keep exact company and school names
+        4. The Summary section is REQUIRED — analyze seniority, geography, and education
+        5. If education text was not provided, omit the Education section
+        6. Respond ONLY with the formatted markdown
+        """
+
+        let aiService = AIService.shared
+        return try await aiService.sendMessage(prompt)
+    }
+
     // MARK: - Location & Timezone Helpers
 
     private func extractLocationFromMarkdown(_ markdown: String) -> String? {
@@ -804,110 +1065,7 @@ struct PersonDetailView: View {
         return nil
     }
 
-    private func mapLocationToTimezone(_ location: String) -> String {
-        let lowercased = location.lowercased()
-
-        // Country/region to timezone mapping
-        let timezoneMap: [(keywords: [String], timezone: String)] = [
-            // Africa
-            (["kenya", "nairobi"], "Africa/Nairobi"),
-            (["ethiopia", "addis"], "Africa/Addis_Ababa"),
-            (["nigeria", "lagos"], "Africa/Lagos"),
-            (["south africa", "johannesburg", "cape town"], "Africa/Johannesburg"),
-            (["egypt", "cairo"], "Africa/Cairo"),
-            (["morocco", "casablanca"], "Africa/Casablanca"),
-            (["ghana", "accra"], "Africa/Accra"),
-            (["tanzania", "dar es salaam"], "Africa/Dar_es_Salaam"),
-            (["uganda", "kampala"], "Africa/Kampala"),
-            (["rwanda", "kigali"], "Africa/Kigali"),
-            (["senegal", "dakar"], "Africa/Dakar"),
-            (["democratic republic of congo", "kinshasa", "drc"], "Africa/Kinshasa"),
-
-            // Europe
-            (["london", "uk", "united kingdom", "england", "britain"], "Europe/London"),
-            (["paris", "france"], "Europe/Paris"),
-            (["berlin", "germany"], "Europe/Berlin"),
-            (["amsterdam", "netherlands"], "Europe/Amsterdam"),
-            (["madrid", "spain"], "Europe/Madrid"),
-            (["rome", "italy"], "Europe/Rome"),
-            (["zurich", "switzerland", "geneva"], "Europe/Zurich"),
-            (["stockholm", "sweden"], "Europe/Stockholm"),
-            (["oslo", "norway"], "Europe/Oslo"),
-            (["copenhagen", "denmark"], "Europe/Copenhagen"),
-            (["dublin", "ireland"], "Europe/Dublin"),
-            (["brussels", "belgium"], "Europe/Brussels"),
-            (["vienna", "austria"], "Europe/Vienna"),
-            (["warsaw", "poland"], "Europe/Warsaw"),
-            (["prague", "czech"], "Europe/Prague"),
-
-            // Americas
-            (["new york", "nyc", "eastern"], "America/New_York"),
-            (["los angeles", "la", "california", "pacific"], "America/Los_Angeles"),
-            (["chicago", "central"], "America/Chicago"),
-            (["denver", "mountain"], "America/Denver"),
-            (["seattle", "washington"], "America/Los_Angeles"),
-            (["san francisco", "sf", "bay area"], "America/Los_Angeles"),
-            (["boston", "massachusetts"], "America/New_York"),
-            (["miami", "florida"], "America/New_York"),
-            (["atlanta", "georgia"], "America/New_York"),
-            (["dallas", "texas", "houston", "austin"], "America/Chicago"),
-            (["phoenix", "arizona"], "America/Phoenix"),
-            (["toronto", "ontario", "canada"], "America/Toronto"),
-            (["vancouver", "british columbia"], "America/Vancouver"),
-            (["mexico city", "mexico"], "America/Mexico_City"),
-            (["sao paulo", "brazil", "rio"], "America/Sao_Paulo"),
-            (["buenos aires", "argentina"], "America/Argentina/Buenos_Aires"),
-            (["bogota", "colombia"], "America/Bogota"),
-            (["lima", "peru"], "America/Lima"),
-            (["santiago", "chile"], "America/Santiago"),
-
-            // Asia
-            (["tokyo", "japan"], "Asia/Tokyo"),
-            (["beijing", "china", "shanghai"], "Asia/Shanghai"),
-            (["hong kong"], "Asia/Hong_Kong"),
-            (["singapore"], "Asia/Singapore"),
-            (["india", "mumbai", "delhi", "bangalore", "chennai"], "Asia/Kolkata"),
-            (["dubai", "uae", "abu dhabi"], "Asia/Dubai"),
-            (["seoul", "korea", "south korea"], "Asia/Seoul"),
-            (["bangkok", "thailand"], "Asia/Bangkok"),
-            (["jakarta", "indonesia"], "Asia/Jakarta"),
-            (["manila", "philippines"], "Asia/Manila"),
-            (["kuala lumpur", "malaysia"], "Asia/Kuala_Lumpur"),
-            (["vietnam", "ho chi minh", "hanoi"], "Asia/Ho_Chi_Minh"),
-            (["pakistan", "karachi", "lahore"], "Asia/Karachi"),
-            (["bangladesh", "dhaka"], "Asia/Dhaka"),
-            (["israel", "tel aviv", "jerusalem"], "Asia/Jerusalem"),
-            (["turkey", "istanbul", "ankara"], "Europe/Istanbul"),
-            (["saudi arabia", "riyadh"], "Asia/Riyadh"),
-            (["jordan", "amman"], "Asia/Amman"),
-            (["lebanon", "beirut"], "Asia/Beirut"),
-            (["iraq", "baghdad"], "Asia/Baghdad"),
-            (["iran", "tehran"], "Asia/Tehran"),
-            (["afghanistan", "kabul"], "Asia/Kabul"),
-            (["nepal", "kathmandu"], "Asia/Kathmandu"),
-            (["sri lanka", "colombo"], "Asia/Colombo"),
-            (["myanmar", "yangon"], "Asia/Yangon"),
-
-            // Oceania
-            (["sydney", "australia", "melbourne", "brisbane"], "Australia/Sydney"),
-            (["perth", "western australia"], "Australia/Perth"),
-            (["auckland", "new zealand", "wellington"], "Pacific/Auckland"),
-
-            // US States
-            (["washington dc", "dc", "virginia", "maryland"], "America/New_York"),
-        ]
-
-        for (keywords, timezone) in timezoneMap {
-            for keyword in keywords {
-                if lowercased.contains(keyword) {
-                    return timezone
-                }
-            }
-        }
-
-        // Default to UTC if no match found
-        return "UTC"
-    }
+    // mapLocationToTimezone moved to Utilities/TimezoneMapper.swift
 }
 
 struct ConversationRowView: View {
@@ -1075,7 +1233,7 @@ struct ConversationRowView: View {
             defer: false
         )
         window.title = "Conversation - \(conversationTitle)"
-        window.isReleasedWhenClosed = false
+        window.isReleasedWhenClosed = true
         window.contentView = NSHostingView(
             rootView: ConversationDetailView(conversation: conversation, conversationManager: conversationManager)
                 .environment(\.managedObjectContext, viewContext)
@@ -1121,16 +1279,7 @@ struct ConversationRowView: View {
     }
     
     private func engagementColor(_ engagementLevel: String) -> Color {
-        switch engagementLevel.lowercased() {
-        case "high":
-            return .green
-        case "medium":
-            return .orange
-        case "low":
-            return .red
-        default:
-            return .secondary
-        }
+        SentimentColors.engagement(engagementLevel)
     }
 }
 
