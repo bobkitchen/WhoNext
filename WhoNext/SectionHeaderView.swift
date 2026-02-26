@@ -25,7 +25,7 @@ struct SectionHeaderView: View {
         HStack(spacing: 12) {
             if useSystemIcon {
                 Image(systemName: icon)
-                    .font(.system(size: 20, weight: .medium))
+                    .font(.system(size: 16, weight: .medium))
                     .foregroundStyle(iconColor)
                     .symbolRenderingMode(.hierarchical)
             } else {
@@ -36,7 +36,7 @@ struct SectionHeaderView: View {
             }
             
             Text(title)
-                .font(.system(size: 20, weight: .semibold, design: .rounded))
+                .font(.system(size: 17, weight: .semibold, design: .rounded))
                 .foregroundStyle(.primary)
             
             if let count = count {

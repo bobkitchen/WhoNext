@@ -10,6 +10,8 @@ private struct BriefCacheEntry {
 }
 
 class HybridAIService: ObservableObject {
+    static let shared = HybridAIService()
+
     @AppStorage("aiProvider") private var aiProvider: String = "apple" {
         didSet {
             // Trigger UI update when provider changes
@@ -46,7 +48,7 @@ class HybridAIService: ObservableObject {
         
         // Migrate legacy "local" setting to "apple"
         if aiProvider == "local" {
-            print(" [HybridAI] Migrating legacy 'local' setting to 'apple'")
+            debugLog(" [HybridAI] Migrating legacy 'local' setting to 'apple'")
             aiProvider = "apple"
         }
         
@@ -79,20 +81,20 @@ class HybridAIService: ObservableObject {
             aiProvider = "openrouter"
         }
 
-        print(" [HybridAI] Normalized provider: '\(normalizedProvider)' (original: '\(aiProvider)')")
-        print(" [HybridAI] API Keys - OpenRouter: \(!openrouterApiKey.isEmpty)")
+        debugLog(" [HybridAI] Normalized provider: '\(normalizedProvider)' (original: '\(aiProvider)')")
+        debugLog(" [HybridAI] API Keys - OpenRouter: \(!openrouterApiKey.isEmpty)")
 
         if isAppleIntelligenceAvailable && (normalizedProvider == "apple") {
-            print(" [HybridAI] Selecting Apple Intelligence")
+            debugLog(" [HybridAI] Selecting Apple Intelligence")
             return .appleIntelligence
         } else if !openrouterApiKey.isEmpty && normalizedProvider == "openrouter" {
-            print(" [HybridAI] Selecting OpenRouter")
+            debugLog(" [HybridAI] Selecting OpenRouter")
             return .openRouter
         } else if isAppleIntelligenceAvailable {
-            print(" [HybridAI] Selecting Apple Intelligence (fallback)")
+            debugLog(" [HybridAI] Selecting Apple Intelligence (fallback)")
             return .appleIntelligence
         } else {
-            print(" [HybridAI] No providers available")
+            debugLog(" [HybridAI] No providers available")
             return .none
         }
     }
@@ -141,8 +143,8 @@ class HybridAIService: ObservableObject {
                                  errorMessage.contains("cannot") ||
                                  errorMessage.contains("unable to")
 
-            print("🔄 [HybridAI] Primary provider failed: \(error)")
-            print("🔄 [HybridAI] Attempting fallback to \(fallbackProvider)")
+            debugLog("🔄 [HybridAI] Primary provider failed: \(error)")
+            debugLog("🔄 [HybridAI] Attempting fallback to \(fallbackProvider)")
 
             // Show notification
             let fallbackReason: FallbackNotification.FallbackReason
@@ -246,7 +248,7 @@ class HybridAIService: ObservableObject {
                 do {
                     return try await appleService.generatePreMeetingBrief(personData: personData, context: context)
                 } catch {
-                    print("Apple Intelligence failed, falling back to cloud: \(error)")
+                    debugLog("Apple Intelligence failed, falling back to cloud: \(error)")
                     return try await aiService.generatePreMeetingBrief(personData: personData, context: context)
                 }
             }
@@ -277,15 +279,15 @@ class HybridAIService: ObservableObject {
                     // 1. Cache is less than 1 hour old AND
                     // 2. No new conversations have been added
                     if timeSinceCache < cacheExpirationInterval && conversationsUnchanged {
-                        print("✅ [BriefCache] Using cached brief for \(person.name ?? "Unknown") (age: \(Int(timeSinceCache/60))m)")
+                        debugLog("✅ [BriefCache] Using cached brief for \(person.name ?? "Unknown") (age: \(Int(timeSinceCache/60))m)")
                         completion(.success(cachedEntry.brief))
                         return
                     } else {
-                        print("🔄 [BriefCache] Cache expired or stale for \(person.name ?? "Unknown") (age: \(Int(timeSinceCache/60))m, conversations: \(conversationCount) vs cached: \(cachedEntry.conversationCount))")
+                        debugLog("🔄 [BriefCache] Cache expired or stale for \(person.name ?? "Unknown") (age: \(Int(timeSinceCache/60))m, conversations: \(conversationCount) vs cached: \(cachedEntry.conversationCount))")
                     }
                 }
 
-                print("🚀 [BriefCache] Generating new brief for \(person.name ?? "Unknown")")
+                debugLog("🚀 [BriefCache] Generating new brief for \(person.name ?? "Unknown")")
 
                 // Use the enhanced context generation
                 let context = PreMeetingBriefContextHelper.generateContext(for: person)
@@ -311,49 +313,49 @@ class HybridAIService: ObservableObject {
     func clearBriefCache(for personID: UUID? = nil) {
         if let personID = personID {
             briefCache.removeValue(forKey: personID)
-            print("🗑️ [BriefCache] Cleared cache for person \(personID)")
+            debugLog("🗑️ [BriefCache] Cleared cache for person \(personID)")
         } else {
             briefCache.removeAll()
-            print("🗑️ [BriefCache] Cleared all brief cache")
+            debugLog("🗑️ [BriefCache] Cleared all brief cache")
         }
     }
     
     // MARK: - Chat Enhancement
     func sendMessage(_ message: String, context: String) async throws -> String {
         let provider = preferredProvider
-        print(" [HybridAI] Preferred provider: \(provider)")
-        print(" [HybridAI] Apple Intelligence available: \(isAppleIntelligenceAvailable)")
+        debugLog(" [HybridAI] Preferred provider: \(provider)")
+        debugLog(" [HybridAI] Apple Intelligence available: \(isAppleIntelligenceAvailable)")
         
         switch provider {
         case .appleIntelligence:
-            print(" [HybridAI] Attempting Apple Intelligence...")
+            debugLog(" [HybridAI] Attempting Apple Intelligence...")
             do {
                 if #available(iOS 18.1, macOS 15.5, *) {
                     if let appleService = appleIntelligenceService as? AppleIntelligenceService {
                         return try await appleService.enhanceChat(message: message, context: context)
                     } else {
-                        print(" [HybridAI] Apple Intelligence service not initialized")
+                        debugLog(" [HybridAI] Apple Intelligence service not initialized")
                         throw HybridAIError.serviceUnavailable
                     }
                 } else {
-                    print(" [HybridAI] Apple Intelligence requires macOS 15.5 or later")
+                    debugLog(" [HybridAI] Apple Intelligence requires macOS 15.5 or later")
                     throw HybridAIError.serviceUnavailable
                 }
             } catch {
-                print(" [HybridAI] Apple Intelligence failed: \(error)")
-                print(" [HybridAI] Falling back to cloud providers...")
+                debugLog(" [HybridAI] Apple Intelligence failed: \(error)")
+                debugLog(" [HybridAI] Falling back to cloud providers...")
                 // Fall through to cloud providers
             }
             
             // Fallback to OpenRouter
             if !openrouterApiKey.isEmpty {
-                print(" [HybridAI] Falling back to OpenRouter...")
+                debugLog(" [HybridAI] Falling back to OpenRouter...")
                 return try await aiService.sendMessage(message, context: context)
             }
             
             // Fallback to OpenAI
             if !openaiApiKey.isEmpty {
-                print(" [HybridAI] Falling back to OpenAI...")
+                debugLog(" [HybridAI] Falling back to OpenAI...")
                 let openAIService = AIService()
                 openAIService.openaiApiKey = openaiApiKey
                 openAIService.currentProvider = .openai
@@ -364,11 +366,11 @@ class HybridAIService: ObservableObject {
             
         case .openRouter, .openAI:
             // Both routed through OpenRouter now (OpenAI models accessible via OpenRouter)
-            print(" [HybridAI] Using OpenRouter...")
+            debugLog(" [HybridAI] Using OpenRouter...")
             return try await aiService.sendMessage(message, context: context)
 
         case .none:
-            print(" [HybridAI] No AI providers available")
+            debugLog(" [HybridAI] No AI providers available")
             throw HybridAIError.noProvidersAvailable
         }
     }
@@ -376,7 +378,7 @@ class HybridAIService: ObservableObject {
     // MARK: - Participant Extraction
     func extractParticipants(from transcript: String) async throws -> [String] {
         let provider = preferredProvider
-        print(" [HybridAI] Preferred provider for participant extraction: \(provider)")
+        debugLog(" [HybridAI] Preferred provider for participant extraction: \(provider)")
         
         switch provider {
         case .appleIntelligence:
@@ -385,13 +387,13 @@ class HybridAIService: ObservableObject {
                 do {
                     return try await appleService.extractParticipants(from: transcript)
                 } catch {
-                    print("Apple Intelligence failed, falling back to cloud: \(error)")
+                    debugLog("Apple Intelligence failed, falling back to cloud: \(error)")
                     // Ensure we have a valid fallback
                     if !openrouterApiKey.isEmpty || !openaiApiKey.isEmpty {
                         return try await aiService.extractParticipants(from: transcript)
                     } else {
                         // If no cloud API keys, try manual extraction as last resort
-                        print("No cloud API keys available, using manual extraction")
+                        debugLog("No cloud API keys available, using manual extraction")
                         throw error
                     }
                 }
@@ -428,7 +430,7 @@ class HybridAIService: ObservableObject {
             """
             
             let response = try await sendMessage(prompt, context: "")
-            print("🤖 AI participant extraction response: \(response)")
+            debugLog("🤖 AI participant extraction response: \(response)")
             
             // Clean up response - remove markdown code blocks if present
             let cleanedResponse = response
@@ -438,22 +440,22 @@ class HybridAIService: ObservableObject {
                 .replacingOccurrences(of: "```", with: "")
                 .trimmingCharacters(in: .whitespacesAndNewlines)
             
-            print("🤖 Cleaned response: \(cleanedResponse)")
+            debugLog("🤖 Cleaned response: \(cleanedResponse)")
             
             // Try to parse JSON response
             guard let data = cleanedResponse.data(using: .utf8) else {
-                print("🤖 Failed to convert response to data")
+                debugLog("🤖 Failed to convert response to data")
                 throw HybridAIError.allProvidersFailed
             }
             
             do {
                 let decoder = JSONDecoder()
                 let participants = try decoder.decode([String].self, from: data)
-                print("🤖 Successfully parsed \(participants.count) participants: \(participants)")
+                debugLog("🤖 Successfully parsed \(participants.count) participants: \(participants)")
                 return participants
             } catch {
-                print("🤖 JSON parsing failed: \(error)")
-                print("🤖 Raw response was: \(response)")
+                debugLog("🤖 JSON parsing failed: \(error)")
+                debugLog("🤖 Raw response was: \(response)")
                 
                 // Try to extract from response manually if JSON parsing fails
                 let lines = response.components(separatedBy: .newlines)
@@ -475,7 +477,7 @@ class HybridAIService: ObservableObject {
                     }
                 }
                 
-                print("🤖 Manual extraction found \(extractedNames.count) names: \(extractedNames)")
+                debugLog("🤖 Manual extraction found \(extractedNames.count) names: \(extractedNames)")
                 return extractedNames
             }
         case .none:
@@ -486,8 +488,8 @@ class HybridAIService: ObservableObject {
     // MARK: - Provider Status
     func getProviderStatus() -> String {
         let provider = preferredProvider
-        print(" [HybridAI] getProviderStatus() - current provider: \(provider)")
-        print(" [HybridAI] getProviderStatus() - aiProvider setting: '\(aiProvider)'")
+        debugLog(" [HybridAI] getProviderStatus() - current provider: \(provider)")
+        debugLog(" [HybridAI] getProviderStatus() - aiProvider setting: '\(aiProvider)'")
         
         switch provider {
         case .appleIntelligence:
@@ -550,9 +552,9 @@ extension AIService {
         
         // Log which prompt is being used
         if let customPrompt = userCustomPrompt, !customPrompt.isEmpty {
-            print("📝 [AIService] Using custom summarization prompt from user settings")
+            debugLog("📝 [AIService] Using custom summarization prompt from user settings")
         } else {
-            print("📝 [AIService] Using default summarization prompt")
+            debugLog("📝 [AIService] Using default summarization prompt")
         }
         
         let customPrompt = userCustomPrompt ?? """
@@ -598,7 +600,7 @@ extension AIService {
         let maxCharsPerChunk = 150000
         
         if transcript.count > maxCharsPerChunk {
-            print("📊 [AIService] Large transcript detected (\(transcript.count) chars), using chunked processing")
+            debugLog("📊 [AIService] Large transcript detected (\(transcript.count) chars), using chunked processing")
             
             // Split transcript into overlapping chunks
             var chunks: [String] = []
@@ -618,12 +620,12 @@ extension AIService {
                 }
             }
             
-            print("📊 [AIService] Split into \(chunks.count) chunks for processing")
+            debugLog("📊 [AIService] Split into \(chunks.count) chunks for processing")
             
             // Process each chunk
             var chunkSummaries: [String] = []
             for (index, chunk) in chunks.enumerated() {
-                print("📊 [AIService] Processing chunk \(index + 1) of \(chunks.count)")
+                debugLog("📊 [AIService] Processing chunk \(index + 1) of \(chunks.count)")
                 
                 // Use appropriate prompt based on model
                 let chunkPrompt: String
@@ -660,7 +662,7 @@ extension AIService {
             }
             
             // Combine chunk summaries into final summary
-            print("📊 [AIService] Combining \(chunkSummaries.count) chunk summaries")
+            debugLog("📊 [AIService] Combining \(chunkSummaries.count) chunk summaries")
             
             let combinedSummaries = chunkSummaries.enumerated().map { index, summary in
                 "=== Section \(index + 1) ===\n\(summary)"

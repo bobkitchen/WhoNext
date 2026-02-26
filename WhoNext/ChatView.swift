@@ -7,7 +7,7 @@ struct ChatView: View {
     @Environment(\.managedObjectContext) private var viewContext
     @State private var people: [Person] = []
     @StateObject private var chatSession = ChatSessionHolder.shared.session
-    @StateObject private var hybridAI = HybridAIService()
+    @ObservedObject private var hybridAI = HybridAIService.shared
     @FocusState private var isFocused: Bool
     @AppStorage("hasSeenChatOnboarding") private var hasSeenOnboarding = false
     @State private var showOnboarding = false
@@ -25,7 +25,7 @@ struct ChatView: View {
         VStack(spacing: 0) {
             // Listen for PeopleDidImport notification and refresh the FetchRequest
             EmptyView()
-                .onReceive(NotificationCenter.default.publisher(for: Notification.Name("PeopleDidImport"))) { _ in
+                .onReceive(NotificationCenter.default.publisher(for: .peopleDidImport)) { _ in
                     fetchPeople()
                 }
             
@@ -332,8 +332,8 @@ struct ChatView: View {
         
         do {
             let context = generateContext(for: messageToSend)
-            print("🔍 [Context] Generated context length: \(context.count) characters")
-            print("🔍 [Context] Context preview: \(String(context.prefix(300)))...")
+            debugLog("🔍 [Context] Generated context length: \(context.count) characters")
+            debugLog("🔍 [Context] Context preview: \(String(context.prefix(300)))...")
             let response = try await hybridAI.sendMessage(messageToSend, context: context)
             let aiMessage = ChatMessage(content: response, isUser: false, timestamp: Date())
             chatSession.messages.append(aiMessage)
@@ -364,7 +364,7 @@ struct ChatView: View {
         do {
             people = try viewContext.fetch(fetchRequest)
         } catch {
-            print("Failed to fetch people: \(error)")
+            debugLog("Failed to fetch people: \(error)")
             people = []
         }
     }

@@ -129,13 +129,13 @@ Best regards
     
     @FetchRequest(
         sortDescriptors: [NSSortDescriptor(keyPath: \Person.name, ascending: true)],
-        predicate: nil,
+        predicate: NSPredicate(format: "isSoftDeleted == false"),
         animation: .default
     ) private var people: FetchedResults<Person>
-    
+
     @FetchRequest(
         sortDescriptors: [NSSortDescriptor(keyPath: \Conversation.date, ascending: false)],
-        predicate: nil,
+        predicate: NSPredicate(format: "isSoftDeleted == false"),
         animation: .default
     ) private var conversations: FetchedResults<Conversation>
     
@@ -557,89 +557,6 @@ struct PromptSettingsRow: View {
 // MARK: - SettingsView Extension for Additional Views
 
 extension SettingsView {
-    // MARK: - Calendar Settings (Deprecated - moved to DataSyncSettingsView)
-    var calendarSettingsView: some View {
-        CalendarProviderSettings()
-        /*
-        VStack(alignment: .leading, spacing: 20) {
-            // Calendar Integration Section
-            VStack(alignment: .leading, spacing: 8) {
-                Text("Calendar Integration")
-                    .font(.headline)
-                Text("Select which calendar to use for meeting scheduling and upcoming events")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-                
-                HStack {
-                    Button("Request Calendar Access") {
-                        requestCalendarAccess()
-                    }
-                    .buttonStyle(LiquidGlassButtonStyle(variant: .secondary, size: .medium))
-                    
-                    Button("Refresh Calendars") {
-                        loadAvailableCalendars()
-                    }
-                    .buttonStyle(LiquidGlassButtonStyle(variant: .secondary, size: .medium))
-                }
-                
-                // Calendar Selection
-                if !availableCalendars.isEmpty {
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("Select Calendar:")
-                            .font(.subheadline)
-                            .fontWeight(.medium)
-                        
-                        Picker("Calendar", selection: $selectedCalendarID) {
-                            Text("None Selected").tag("")
-                            ForEach(availableCalendars, id: \.calendarIdentifier) { calendar in
-                                HStack {
-                                    Circle()
-                                        .fill(Color(calendar.color))
-                                        .frame(width: 12, height: 12)
-                                    Text("\(calendar.title) (\(calendar.source.title))")
-                                }
-                                .tag(calendar.calendarIdentifier)
-                            }
-                        }
-                        .pickerStyle(.menu)
-                        .onChange(of: selectedCalendarID) { oldValue, newValue in
-                            storedCalendarID = newValue
-                            // Notify CalendarService to update
-                            NotificationCenter.default.post(
-                                name: Notification.Name("CalendarSelectionChanged"),
-                                object: newValue
-                            )
-                        }
-                    }
-                }
-                
-                // Current Status
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Status:")
-                        .font(.subheadline)
-                        .fontWeight(.medium)
-                    
-                    let authStatus = EKEventStore.authorizationStatus(for: .event)
-                    HStack {
-                        Circle()
-                            .fill(authStatus == .fullAccess ? .green : .red)
-                            .frame(width: 8, height: 8)
-                        Text(calendarStatusText(authStatus))
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                    }
-                }
-            }
-        }
-        .onAppear {
-            selectedCalendarID = storedCalendarID
-            if EKEventStore.authorizationStatus(for: .event) == .fullAccess {
-                loadAvailableCalendars()
-            }
-        }
-        */
-    }
-
     // MARK: - Recording Settings
     var recordingSettingsView: some View {
         VStack(alignment: .leading, spacing: 20) {
@@ -897,176 +814,7 @@ extension SettingsView {
             }
         }
     }
-    
-    // MARK: - Sync Settings
-    private var syncSettingsView: some View {
-        VStack(alignment: .leading, spacing: 20) {
-            // CloudKit Sync Status Section
-            VStack(alignment: .leading, spacing: 12) {
-                Text("iCloud Sync")
-                    .font(.headline)
-
-                HStack(spacing: 12) {
-                    // CloudKit status indicator
-                    HStack(spacing: 10) {
-                        Circle()
-                            .fill(cloudKitStatusColor)
-                            .frame(width: 12, height: 12)
-
-                        VStack(alignment: .leading, spacing: 3) {
-                            Text(cloudKitStatusText)
-                                .font(.subheadline)
-                                .fontWeight(.medium)
-
-                            Text("Sync happens automatically via iCloud")
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-                        }
-                    }
-
-                    Spacer()
-
-                    // Refresh status button
-                    Button("Refresh Status") {
-                        checkCloudKitStatus()
-                    }
-                    .buttonStyle(LiquidGlassButtonStyle(variant: .secondary, size: .small))
-                }
-
-                // Show troubleshooting tip only when there's an issue
-                if PersistenceController.iCloudStatus != .available {
-                    HStack(spacing: 6) {
-                        Image(systemName: "exclamationmark.triangle.fill")
-                            .foregroundColor(.orange)
-                            .font(.caption)
-                        Text(iCloudTroubleshootingTip)
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                    }
-                    .padding(.top, 4)
-                }
-            }
-            .padding()
-            .background(Color(NSColor.controlBackgroundColor))
-            .cornerRadius(8)
-
-            // Local Data Section
-            VStack(alignment: .leading, spacing: 8) {
-                Text("Local Data")
-                    .font(.headline)
-
-                HStack(spacing: 24) {
-                    HStack(spacing: 6) {
-                        Image(systemName: "person.2.fill")
-                            .foregroundColor(.secondary)
-                            .font(.caption)
-                        Text("People:")
-                            .foregroundColor(.secondary)
-                        Text("\(people.count)")
-                            .fontWeight(.medium)
-                    }
-
-                    HStack(spacing: 6) {
-                        Image(systemName: "bubble.left.and.bubble.right.fill")
-                            .foregroundColor(.secondary)
-                            .font(.caption)
-                        Text("Conversations:")
-                            .foregroundColor(.secondary)
-                        Text("\(conversations.count)")
-                            .fontWeight(.medium)
-                            .id(refreshTrigger)
-                    }
-                }
-                .font(.subheadline)
-            }
-            .padding()
-            .background(Color(NSColor.controlBackgroundColor))
-            .cornerRadius(8)
-
-            // Advanced Options (hidden by default)
-            VStack(alignment: .leading, spacing: 12) {
-                // Toggle for advanced options
-                Button {
-                    withAnimation(.easeInOut(duration: 0.2)) {
-                        showAdvancedSyncOptions.toggle()
-                    }
-                } label: {
-                    HStack {
-                        Image(systemName: showAdvancedSyncOptions ? "chevron.down" : "chevron.right")
-                            .font(.caption)
-                            .frame(width: 12)
-                        Text("Advanced Options")
-                            .font(.subheadline)
-                        Spacer()
-                    }
-                    .foregroundColor(.secondary)
-                }
-                .buttonStyle(.plain)
-
-                if showAdvancedSyncOptions {
-                    VStack(alignment: .leading, spacing: 12) {
-                        Text("Use these options only if sync isn't working correctly")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-
-                        // Diagnostics
-                        Button(isRunningDiagnostics ? "Running..." : "Run Diagnostics") {
-                            runSyncDiagnostics()
-                        }
-                        .buttonStyle(LiquidGlassButtonStyle(variant: .secondary, size: .small))
-                        .disabled(isRunningDiagnostics)
-                        .help("Check CloudKit sync health and identify issues")
-
-                        // Initial setup option
-                        Divider()
-                            .padding(.vertical, 4)
-
-                        Text("Initial Setup (use once)")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-
-                        Button("Force Upload All Data") {
-                            showForceUploadConfirmation = true
-                        }
-                        .buttonStyle(LiquidGlassButtonStyle(variant: .secondary, size: .small))
-                        .help("Re-upload all local data to CloudKit - use only for initial setup")
-
-                        // Diagnostics output
-                        if let diagnosticsResult = diagnosticsResult {
-                            ScrollView {
-                                Text(diagnosticsResult)
-                                    .font(.system(.caption, design: .monospaced))
-                                    .textSelection(.enabled)
-                                    .frame(maxWidth: .infinity, alignment: .leading)
-                            }
-                            .frame(maxHeight: 150)
-                            .padding(8)
-                            .background(Color(NSColor.textBackgroundColor))
-                            .cornerRadius(4)
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 4)
-                                    .stroke(Color.gray.opacity(0.3), lineWidth: 1)
-                            )
-                        }
-                    }
-                    .padding(.top, 8)
-                    .transition(.opacity.combined(with: .move(edge: .top)))
-                }
-            }
-            .padding()
-            .background(Color(NSColor.controlBackgroundColor))
-            .cornerRadius(8)
-        }
-        .alert("Force Upload All Data", isPresented: $showForceUploadConfirmation) {
-            Button("Upload", role: .destructive) {
-                PersistenceController.shared.forceSyncAllExistingData()
-                diagnosticsResult = "☁️ Force uploading all local data to CloudKit..."
-            }
-            Button("Cancel", role: .cancel) { }
-        } message: {
-            Text("This will re-upload ALL local data to CloudKit. Only use this for initial setup on a new device.\n\n⚠️ Warning: This can resurrect records that were deleted on other devices.")
-        }
-    }
+    // syncSettingsView removed — functionality moved to DataSyncSettingsView
 
     // MARK: - CloudKit Status Helpers
 
@@ -1155,7 +903,7 @@ extension SettingsView {
             Task { @MainActor in
                 PersistenceController.iCloudStatus = status
                 if let error = error {
-                    print("☁️ [CloudKit] Status check error: \(error.localizedDescription)")
+                    debugLog("☁️ [CloudKit] Status check error: \(error.localizedDescription)")
                 }
             }
         }
@@ -1349,9 +1097,9 @@ extension SettingsView {
                 }
                 
                 if let httpResponse = response as? HTTPURLResponse {
-                    print("Claude API validation response: \(httpResponse.statusCode)")
+                    debugLog("Claude API validation response: \(httpResponse.statusCode)")
                     if let data = data, let responseString = String(data: data, encoding: .utf8) {
-                        print("Claude API response body: \(responseString)")
+                        debugLog("Claude API response body: \(responseString)")
                     }
                     
                     switch httpResponse.statusCode {
@@ -1401,35 +1149,35 @@ extension SettingsView {
             // Move all Core Data operations to the main thread
             DispatchQueue.main.async {
                 do {
-                    print("Reading CSV from: \(url)")
+                    debugLog("Reading CSV from: \(url)")
                     let csvContent = try String(contentsOfFile: url.path, encoding: .utf8)
                     let rows = csvContent.components(separatedBy: .newlines)
                     
                     guard !rows.isEmpty else {
-                        print("CSV file is empty")
+                        debugLog("CSV file is empty")
                         importError = "CSV file is empty"
                         return
                     }
                     
-                    print("Found \(rows.count) rows")
+                    debugLog("Found \(rows.count) rows")
                     
                     // Parse headers
                     let headers = rows[0].components(separatedBy: ",")
                         .map { $0.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() }
-                    print("Headers: \(headers)")
+                    debugLog("Headers: \(headers)")
                     
                     // Find required column indices
                     let nameIndex = headers.firstIndex(of: "name")
                     let roleIndex = headers.firstIndex(of: "role")
                     
                     guard let nameIdx = nameIndex else {
-                        print("Name column not found")
+                        debugLog("Name column not found")
                         importError = "Required 'Name' column not found in CSV"
                         return
                     }
                     
                     guard let roleIdx = roleIndex else {
-                        print("Role column not found")
+                        debugLog("Role column not found")
                         importError = "Required 'Role' column not found in CSV"
                         return
                     }
@@ -1452,19 +1200,19 @@ extension SettingsView {
                             .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
                         
                         guard columns.count >= max(nameIdx, roleIdx) + 1 else {
-                            print("Row has missing fields: \(columns)")
+                            debugLog("Row has missing fields: \(columns)")
                             importError = "Row has missing required fields"
                             return
                         }
                         
                         let name = columns[nameIdx]
                         if existingNames.contains(name.lowercased()) {
-                            print("Skipping duplicate: \(name)")
+                            debugLog("Skipping duplicate: \(name)")
                             skippedCount += 1
                             continue
                         }
                         
-                        print("Creating person: \(name)")
+                        debugLog("Creating person: \(name)")
                         let newPerson = Person(context: viewContext)
                         newPerson.identifier = UUID()
                         newPerson.name = name
@@ -1472,7 +1220,7 @@ extension SettingsView {
                         
                         // Optional fields
                         if let drIdx = directReportIndex, columns.count > drIdx {
-                            newPerson.isDirectReport = columns[drIdx].lowercased() == "true"
+                            newPerson.category = columns[drIdx].lowercased() == "true" ? .directReport : .colleague
                         }
                         
                         if let tzIdx = timezoneIndex, columns.count > tzIdx {
@@ -1482,12 +1230,12 @@ extension SettingsView {
                         importedCount += 1
                     }
                     
-                    print("Import complete: \(importedCount) imported, \(skippedCount) skipped")
+                    debugLog("Import complete: \(importedCount) imported, \(skippedCount) skipped")
                     
                     do {
                         try viewContext.save()
-                        print("Saving context (import)\n\tCallStack: \(Thread.callStackSymbols.joined(separator: "\n\t"))")
-                        print("Import complete: \(importedCount) imported, \(skippedCount) skipped")
+                        debugLog("Saving context (import)\n\tCallStack: \(Thread.callStackSymbols.joined(separator: "\n\t"))")
+                        debugLog("Import complete: \(importedCount) imported, \(skippedCount) skipped")
                         
                         importError = nil
                         // Build success message
@@ -1501,15 +1249,15 @@ extension SettingsView {
                         importSuccess = successMsg
                         
                         // Notify other views to refresh people after import
-                        NotificationCenter.default.post(name: Notification.Name("PeopleDidImport"), object: nil)
+                        NotificationCenter.default.post(name: .peopleDidImport, object: nil)
                         
                     } catch {
-                        print("Import failed: \(error)")
+                        debugLog("Import failed: \(error)")
                         importError = error.localizedDescription
                         importSuccess = nil
                     }
                 } catch {
-                    print("Import failed: \(error)")
+                    debugLog("Import failed: \(error)")
                     importError = error.localizedDescription
                     importSuccess = nil
                 }
@@ -1529,7 +1277,7 @@ extension SettingsView {
         do {
             try viewContext.save()
         } catch {
-            print("Failed to reset spoken to dates: \(error)")
+            debugLog("Failed to reset spoken to dates: \(error)")
         }
         
         // Clear dismissed people
@@ -1543,13 +1291,13 @@ extension SettingsView {
         do {
             try viewContext.save()
         } catch {
-            print("Failed to delete all people: \(error)")
+            debugLog("Failed to delete all people: \(error)")
         }
     }
     
     private func processOrgChartFile(_ fileURL: URL) {
-        print("🔍 [DROP] File dropped: \(fileURL.lastPathComponent)")
-        print("🔍 [DROP] File path: \(fileURL.path)")
+        debugLog("🔍 [DROP] File dropped: \(fileURL.lastPathComponent)")
+        debugLog("🔍 [DROP] File path: \(fileURL.path)")
 
         // Clear previous messages
         importSuccess = nil
@@ -1584,14 +1332,14 @@ extension SettingsView {
     }
     
     private func processCSVContent(_ csvContent: String) {
-        print("🔍 [CSV] Starting CSV processing")
-        print("🔍 [CSV] Raw CSV content:\n\(csvContent)")
+        debugLog("🔍 [CSV] Starting CSV processing")
+        debugLog("🔍 [CSV] Raw CSV content:\n\(csvContent)")
         
         let lines = csvContent.components(separatedBy: .newlines)
-        print("🔍 [CSV] Split into \(lines.count) lines")
+        debugLog("🔍 [CSV] Split into \(lines.count) lines")
         
         guard lines.count > 1 else {
-            print("❌ [CSV] Not enough lines in CSV content")
+            debugLog("❌ [CSV] Not enough lines in CSV content")
             importError = "No data found in CSV content"
             return
         }
@@ -1601,55 +1349,55 @@ extension SettingsView {
         do {
             let existingPeople = try viewContext.fetch(fetchRequest)
             let existingNames = Set(existingPeople.compactMap { ($0 as? Person)?.name?.lowercased() })
-            print("🔍 [CSV] Found \(existingNames.count) existing people: \(existingNames)")
+            debugLog("🔍 [CSV] Found \(existingNames.count) existing people: \(existingNames)")
             
             // Skip header line and process data
             let dataLines = Array(lines.dropFirst()).filter { !$0.trimmingCharacters(in: .whitespaces).isEmpty }
-            print("🔍 [CSV] Processing \(dataLines.count) data lines (after filtering empty lines)")
+            debugLog("🔍 [CSV] Processing \(dataLines.count) data lines (after filtering empty lines)")
             
             var importedCount = 0
             var skippedCount = 0
             
             for (index, line) in dataLines.enumerated() {
-                print("🔍 [CSV] Processing line \(index + 1): \(line)")
+                debugLog("🔍 [CSV] Processing line \(index + 1): \(line)")
                 
                 let components = parseCSVLine(line)
-                print("🔍 [CSV] Parsed components: \(components)")
+                debugLog("🔍 [CSV] Parsed components: \(components)")
                 
                 guard components.count >= 2 else {
-                    print("⚠️ [CSV] Skipping line with insufficient components: \(components.count)")
+                    debugLog("⚠️ [CSV] Skipping line with insufficient components: \(components.count)")
                     continue
                 }
                 
                 let name = components[0].trimmingCharacters(in: .whitespacesAndNewlines)
                 let role = components[1].trimmingCharacters(in: .whitespacesAndNewlines)
-                let isDirectReport = components.count > 2 ? components[2].trimmingCharacters(in: .whitespacesAndNewlines).lowercased() == "true" : false
+                let isDirectReportStr = components.count > 2 ? components[2].trimmingCharacters(in: .whitespacesAndNewlines).lowercased() : "false"
                 let timezone = components.count > 4 ? components[4].trimmingCharacters(in: .whitespacesAndNewlines) : ""
-                
-                print("🔍 [CSV] Extracted - Name: '\(name)', Role: '\(role)', DirectReport: \(isDirectReport), Timezone: '\(timezone)'")
+
+                debugLog("🔍 [CSV] Extracted - Name: '\(name)', Role: '\(role)', Category: \(isDirectReportStr), Timezone: '\(timezone)'")
                 
                 // Check for duplicates (case-insensitive)
                 if existingNames.contains(name.lowercased()) {
-                    print("⚠️ [CSV] Skipping duplicate: \(name)")
+                    debugLog("⚠️ [CSV] Skipping duplicate: \(name)")
                     skippedCount += 1
                     continue
                 }
                 
-                print("✅ [CSV] Creating new person: \(name)")
+                debugLog("✅ [CSV] Creating new person: \(name)")
                 let person = Person(context: viewContext)
                 person.name = name
                 person.role = role
-                person.isDirectReport = isDirectReport
+                person.category = isDirectReportStr == "true" ? .directReport : .colleague
                 person.timezone = timezone.isEmpty ? "UTC" : timezone
                 importedCount += 1
             }
             
-            print("🔍 [CSV] Import summary - Imported: \(importedCount), Skipped: \(skippedCount)")
+            debugLog("🔍 [CSV] Import summary - Imported: \(importedCount), Skipped: \(skippedCount)")
             
             // Save context
             do {
                 try viewContext.save()
-                print("✅ [CSV] Context saved successfully")
+                debugLog("✅ [CSV] Context saved successfully")
                 
                 // Update success message
                 var successMsg = "✓ Imported \(importedCount) team member"
@@ -1662,16 +1410,16 @@ extension SettingsView {
                     successMsg += ")"
                 }
                 
-                print("✅ [CSV] Success message: \(successMsg)")
+                debugLog("✅ [CSV] Success message: \(successMsg)")
                 importSuccess = successMsg
                 importError = nil
             } catch {
-                print("❌ [CSV] Failed to save context: \(error)")
+                debugLog("❌ [CSV] Failed to save context: \(error)")
                 importError = "Failed to save imported data: \(error.localizedDescription)"
                 importSuccess = nil
             }
         } catch {
-            print("❌ [CSV] Failed to fetch existing people: \(error)")
+            debugLog("❌ [CSV] Failed to fetch existing people: \(error)")
             importError = "Failed to check for duplicates: \(error.localizedDescription)"
         }
     }
@@ -1744,24 +1492,24 @@ struct OrgChartDropZone: View {
                 }
             )
             .onDrop(of: [.fileURL], isTargeted: nil) { providers in
-                print("🔍 [DROP] onDrop triggered with \(providers.count) providers")
+                debugLog("🔍 [DROP] onDrop triggered with \(providers.count) providers")
                 if let provider = providers.first {
-                    print("🔍 [DROP] Checking if provider can load URL...")
+                    debugLog("🔍 [DROP] Checking if provider can load URL...")
                     if provider.canLoadObject(ofClass: URL.self) {
-                        print("🔍 [DROP] Provider can load URL, loading...")
+                        debugLog("🔍 [DROP] Provider can load URL, loading...")
                         _ = provider.loadObject(ofClass: URL.self) { url, _ in
                             if let url = url {
-                                print("🔍 [DROP] Successfully loaded URL: \(url)")
+                                debugLog("🔍 [DROP] Successfully loaded URL: \(url)")
                                 onDrop(url)
                             } else {
-                                print("❌ [DROP] Failed to load URL")
+                                debugLog("❌ [DROP] Failed to load URL")
                             }
                         }
                     } else {
-                        print("❌ [DROP] Provider cannot load URL")
+                        debugLog("❌ [DROP] Provider cannot load URL")
                     }
                 } else {
-                    print("❌ [DROP] No providers found")
+                    debugLog("❌ [DROP] No providers found")
                 }
                 return true
             }

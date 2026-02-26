@@ -5,7 +5,7 @@ struct FollowUpNeededView: View {
     @Environment(\.managedObjectContext) private var viewContext
     @FetchRequest(
         sortDescriptors: [NSSortDescriptor(keyPath: \Person.name, ascending: true)],
-        predicate: nil,
+        predicate: NSPredicate(format: "isSoftDeleted == false"),
         animation: .default
     ) private var people: FetchedResults<Person>
 
@@ -71,7 +71,7 @@ extension FollowUpNeededView {
         let filtered = people.filter { person in
             // Exclude people without names, direct reports, dismissed people, and current user
             guard person.name != nil,
-                  !person.isDirectReport,
+                  person.category != .directReport,
                   !person.isCurrentUser,
                   let personID = person.identifier,
                   !dismissedPeopleIDs.contains(personID) else {
@@ -82,7 +82,7 @@ extension FollowUpNeededView {
 
         // Sort by least recently contacted
         let sorted = filtered.sorted {
-            ($0.lastContactDate ?? .distantPast) < ($1.lastContactDate ?? .distantPast)
+            ($0.mostRecentContactDate ?? .distantPast) < ($1.mostRecentContactDate ?? .distantPast)
         }
 
         // Take a larger pool (e.g., top 6 least-recently-contacted), then shuffle ONCE and pick 2

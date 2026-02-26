@@ -4,10 +4,7 @@ import CoreData
 import AppKit
 #endif
 
-// Add this at the top or near other Notification.Name extensions
-extension Notification.Name {
-    static let triggerAddPerson = Notification.Name("triggerAddPerson")
-}
+// Notification.Name extensions consolidated in Utilities/NotificationNames.swift
 
 struct ContentView: View {
     @Environment(\.managedObjectContext) private var viewContext

@@ -102,13 +102,21 @@ struct SuggestionsView: View {
                     HStack(spacing: 8) {
                         // Avatar
                         ZStack {
-                            Circle()
-                                .fill(Color(nsColor: .systemGray).opacity(0.15))
-                                .frame(width: 24, height: 24)
-                            
-                            Text(person.initials)
-                                .font(.system(size: 10, weight: .medium, design: .rounded))
-                                .foregroundColor(.secondary)
+                            if let photoData = person.photo, let nsImage = NSImage(data: photoData) {
+                                Image(nsImage: nsImage)
+                                    .resizable()
+                                    .aspectRatio(contentMode: .fill)
+                                    .frame(width: 24, height: 24)
+                                    .clipShape(Circle())
+                            } else {
+                                Circle()
+                                    .fill(Color(nsColor: .systemGray).opacity(0.15))
+                                    .frame(width: 24, height: 24)
+
+                                Text(person.initials)
+                                    .font(.system(size: 10, weight: .medium, design: .rounded))
+                                    .foregroundColor(.secondary)
+                            }
                         }
                         
                         VStack(alignment: .leading, spacing: 2) {

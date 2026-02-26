@@ -29,6 +29,7 @@ struct ParticipantConfirmationView: View {
     // Fetch existing people
     @FetchRequest(
         sortDescriptors: [NSSortDescriptor(keyPath: \Person.name, ascending: true)],
+        predicate: NSPredicate(format: "isSoftDeleted == false"),
         animation: .default
     )
     private var people: FetchedResults<Person>

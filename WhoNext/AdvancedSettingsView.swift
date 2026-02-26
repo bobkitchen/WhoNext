@@ -13,13 +13,13 @@ struct AdvancedSettingsView: View {
 
     @FetchRequest(
         sortDescriptors: [NSSortDescriptor(keyPath: \Person.name, ascending: true)],
-        predicate: nil,
+        predicate: NSPredicate(format: "isSoftDeleted == false"),
         animation: .default
     ) private var people: FetchedResults<Person>
 
     @FetchRequest(
         sortDescriptors: [NSSortDescriptor(keyPath: \Conversation.date, ascending: false)],
-        predicate: nil,
+        predicate: NSPredicate(format: "isSoftDeleted == false"),
         animation: .default
     ) private var conversations: FetchedResults<Conversation>
 

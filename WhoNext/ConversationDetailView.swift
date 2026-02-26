@@ -227,19 +227,16 @@ struct ConversationDetailView: View {
                         )
                 }
             } else {
-                ScrollView {
-                    VStack(alignment: .leading, spacing: 12) {
-                        if editedSummary.isEmpty {
-                            Text("No summary available.")
-                                .foregroundColor(.secondary)
-                                .italic()
-                        } else {
-                            ProfileContentView(content: editedSummary)
-                        }
+                VStack(alignment: .leading, spacing: 12) {
+                    if editedSummary.isEmpty {
+                        Text("No summary available.")
+                            .foregroundColor(.secondary)
+                            .italic()
+                    } else {
+                        ProfileContentView(content: editedSummary)
                     }
-                    .frame(maxWidth: .infinity, alignment: .leading)
                 }
-                .frame(maxHeight: 300)
+                .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(16)
                 .background(Color(nsColor: .controlBackgroundColor))
                 .clipShape(RoundedRectangle(cornerRadius: 12))
@@ -370,9 +367,9 @@ struct ConversationDetailView: View {
             showingSaveConfirmation = true
 
             // Post notification to refresh PersonDetailView
-            NotificationCenter.default.post(name: NSNotification.Name("ConversationUpdated"), object: nil)
+            NotificationCenter.default.post(name: .conversationUpdated, object: nil)
         } catch {
-            print("Failed to save conversation changes: \(error)")
+            debugLog("Failed to save conversation changes: \(error)")
         }
     }
 
@@ -394,40 +391,7 @@ struct ConversationDetailView: View {
     // MARK: - Helper Methods
     
     private func sentimentColor(_ sentiment: String) -> Color {
-        switch sentiment.lowercased() {
-        case "positive": return .green
-        case "negative": return .red
-        case "neutral": return .orange
-        default: return .gray
-        }
-    }
-    
-    private func relationshipHealthColor(_ health: String) -> Color {
-        switch health.lowercased() {
-        case "excellent": return .green
-        case "good": return .blue
-        case "fair": return .orange
-        case "poor": return .red
-        default: return .gray
-        }
-    }
-    
-    private func engagementColor(_ engagement: String) -> Color {
-        switch engagement.lowercased() {
-        case "high": return .green
-        case "medium": return .blue
-        case "low": return .orange
-        default: return .gray
-        }
-    }
-    
-    private func energyColor(_ energy: String) -> Color {
-        switch energy.lowercased() {
-        case "high": return .green
-        case "medium": return .blue
-        case "low": return .orange
-        default: return .gray
-        }
+        SentimentColors.color(for: sentiment)
     }
 }
 

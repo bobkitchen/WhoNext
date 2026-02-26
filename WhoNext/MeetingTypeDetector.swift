@@ -62,7 +62,7 @@ class MeetingTypeDetector: ObservableObject {
         // Update detection confidence
         self.detectionConfidence = meeting.speakerDetectionConfidence
         
-        print("[MeetingTypeDetector] Detected \(speakerCount) speakers - Type: \(meeting.meetingType.displayName)")
+        debugLog("[MeetingTypeDetector] Detected \(speakerCount) speakers - Type: \(meeting.meetingType.displayName)")
     }
     
     /// Calculate confidence score for detection
@@ -166,7 +166,7 @@ class MeetingTypeDetector: ObservableObject {
             if !meeting.identifiedParticipants.contains(where: { $0.personRecord?.id == person.id }) {
                 meeting.identifiedParticipants.append(participant)
                 
-                print("[MeetingTypeDetector] Identified Speaker \(speakerId) as \(person.wrappedName) (confidence: \(person.voiceConfidence))")
+                debugLog("[MeetingTypeDetector] Identified Speaker \(speakerId) as \(person.wrappedName) (confidence: \(person.voiceConfidence))")
                 
                 // Show notification for high-confidence matches
                 if person.voiceConfidence > 0.9 {
@@ -195,14 +195,14 @@ class MeetingTypeDetector: ObservableObject {
         
         // Pre-load embeddings
         let embeddings = voicePrintManager.preloadEmbeddings(for: participantPeople)
-        print("[MeetingTypeDetector] Pre-loaded \(embeddings.count) voice embeddings for expected participants")
+        debugLog("[MeetingTypeDetector] Pre-loaded \(embeddings.count) voice embeddings for expected participants")
     }
     
     // MARK: - Calendar Integration
     
     /// Prepare for upcoming meeting from calendar
     func prepareForMeeting(_ calendarEvent: UpcomingMeeting) async {
-        print("[MeetingTypeDetector] Preparing for meeting: \(calendarEvent.title)")
+        debugLog("[MeetingTypeDetector] Preparing for meeting: \(calendarEvent.title)")
         
         // Extract attendee names - attendees is already [String]?
         let attendeeNames = calendarEvent.attendees ?? []
@@ -240,22 +240,7 @@ class MeetingTypeDetector: ObservableObject {
     // MARK: - Helper Methods
     
     private func cosineSimilarity(_ a: [Float], _ b: [Float]) -> Float {
-        guard a.count == b.count else { return 0 }
-        
-        var dotProduct: Float = 0
-        var normA: Float = 0
-        var normB: Float = 0
-        
-        for i in 0..<a.count {
-            dotProduct += a[i] * b[i]
-            normA += a[i] * a[i]
-            normB += b[i] * b[i]
-        }
-        
-        let denominator = sqrt(normA) * sqrt(normB)
-        guard denominator > 0 else { return 0 }
-        
-        return dotProduct / denominator
+        VectorMath.cosineSimilarity(a, b)
     }
     #endif
 }
@@ -270,12 +255,6 @@ extension LiveMeeting {
         } else {
             identifiedParticipants.append(participant)
         }
-    }
-    
-    /// Get participant by speaker ID
-    func participant(for speakerId: Int) -> IdentifiedParticipant? {
-        // Match by name pattern for speaker IDs
-        return identifiedParticipants.first { $0.name?.contains("Speaker \(speakerId)") ?? false }
     }
     
     /// Check if meeting type detection is confident

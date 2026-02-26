@@ -61,20 +61,9 @@ struct MeetingsHeaderView: View {
                 
                 Spacer()
                 
-                // Additional controls could go here (e.g. Calendar settings)
-                Button(action: { 
-                    // Open settings
-                    NotificationCenter.default.post(name: Notification.Name("showRecordingDashboard"), object: nil)
-                }) {
-                    Image(systemName: "gearshape")
-                        .font(.system(size: 12))
-                }
-                .buttonStyle(.bordered)
-                .controlSize(.small)
-                .help("Recording Settings")
             }
             .padding(.horizontal, 20)
-            .padding(.vertical, 8)
+            .padding(.vertical, 6)
             .background(Color(NSColor.controlBackgroundColor).opacity(0.3))
         }
         .background(Color(NSColor.windowBackgroundColor))

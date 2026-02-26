@@ -1,9 +1,7 @@
 import SwiftUI
 import CoreData
 
-extension Notification.Name {
-    static let showRecordingDashboard = Notification.Name("showRecordingDashboard")
-}
+// Notification.Name extensions consolidated in Utilities/NotificationNames.swift
 
 @main
 struct WhoNextApp: App {
@@ -15,20 +13,34 @@ struct WhoNextApp: App {
                 .environment(\.managedObjectContext, persistenceController.container.viewContext)
                 .fallbackNotifications()
                 .onAppear {
-                    // Clean up any Person records for the current user
-                    cleanupUserPersonRecords()
+                    // Serialize launch operations to avoid Core Data context
+                    // contention with CloudKit sync. Previously, all operations
+                    // fired simultaneously and caused "entangle context after
+                    // pre-commit" crashes when CloudKit imported remote changes
+                    // while multiple subsystems were fetching/saving on viewContext.
+                    Task { @MainActor in
+                        // Phase 1: Quick cleanup (viewContext, but before CloudKit storms)
+                        cleanupUserPersonRecords()
 
-                    // Initialize sentiment analysis on app startup
-                    initializeSentimentAnalysis()
+                        // Phase 2: Wait for CloudKit initial sync to settle
+                        triggerLaunchSync()
+                        // Give CloudKit a moment to process the initial burst of
+                        // remote change notifications before other subsystems
+                        // start hammering viewContext
+                        try? await Task.sleep(for: .milliseconds(500))
 
-                    // Trigger initial sync on app launch
-                    triggerLaunchSync()
+                        // Phase 3: Sentiment analysis (viewContext reads)
+                        initializeSentimentAnalysis()
 
-                    // Auto-start meeting monitoring for seamless recording
-                    startAutoRecordingMonitoring()
+                        // Phase 4: Pre-warm recording engine (uses background context)
+                        startAutoRecordingMonitoring()
 
-                    // Start observing Apple Reminders changes and sync
-                    startRemindersSync()
+                        // Phase 5: Reminders sync (viewContext fetch + save)
+                        startRemindersSync()
+
+                        // Phase 6: Obsidian sync (already has its own 3s delay)
+                        triggerObsidianSync()
+                    }
                 }
                 .onOpenURL { url in
                     handleDeepLink(url)
@@ -39,10 +51,7 @@ struct WhoNextApp: App {
         .windowResizability(.automatic)
         .windowToolbarStyle(.unified)
         // Removed direct Window for NewConversationWindow. Now handled in ContentView via .sheet presentation.
-        Window("Test Window", id: "testWindow") {
-            TestWindow()
-        }
-        
+
         Window("Meeting Recording", id: "recording-dashboard") {
             MeetingRecordingView()
                 .environment(\.managedObjectContext, persistenceController.container.viewContext)
@@ -103,14 +112,14 @@ struct WhoNextApp: App {
         
         // Log sentiment analysis availability
         if SentimentAnalysisMigration.isAnalysisReady() {
-            print("✅ Sentiment Analysis: Ready")
+            debugLog("✅ Sentiment Analysis: Ready")
         } else {
-            print("⚠️ Sentiment Analysis: Not available on this device")
+            debugLog("⚠️ Sentiment Analysis: Not available on this device")
         }
         
         // Log migration status
         let status = SentimentAnalysisMigration.getMigrationStatus(context: context)
-        print("📊 Sentiment Analysis Status: \(status.message)")
+        debugLog("📊 Sentiment Analysis Status: \(status.message)")
     }
     
     /// Trigger sync on app launch to ensure fresh data
@@ -118,9 +127,9 @@ struct WhoNextApp: App {
         // Wait for CloudKit to sync user profile data before proceeding
         // This ensures the user profile is populated from iCloud on fresh installs
         Task {
-            print("☁️ CloudKit: Waiting for initial user profile sync...")
+            debugLog("☁️ CloudKit: Waiting for initial user profile sync...")
             await UserProfile.shared.waitForInitialSync()
-            print("☁️ CloudKit: User profile sync complete - \(UserProfile.shared.name.isEmpty ? "empty profile" : "loaded: \(UserProfile.shared.name)")")
+            debugLog("☁️ CloudKit: User profile sync complete - \(UserProfile.shared.name.isEmpty ? "empty profile" : "loaded: \(UserProfile.shared.name)")")
         }
     }
     
@@ -128,8 +137,8 @@ struct WhoNextApp: App {
     private func startAutoRecordingMonitoring() {
         // DISABLED: Do NOT auto-start monitoring to avoid interfering with AirPods/audio
         // Users can manually start monitoring via the toolbar button or menu command
-        print("🎯 Auto-Recording: Auto-start disabled - user can manually start monitoring")
-        print("🎯 Use the toolbar button or Recording > Start Monitoring menu to begin")
+        debugLog("🎯 Auto-Recording: Auto-start disabled - user can manually start monitoring")
+        debugLog("🎯 Use the toolbar button or Recording > Start Monitoring menu to begin")
 
         // Don't start monitoring automatically
         // MeetingRecordingEngine.shared.startMonitoring()
@@ -141,13 +150,11 @@ struct WhoNextApp: App {
     /// Pre-warm heavy components so first recording starts quickly
     private func prewarmRecordingEngine() {
         Task.detached(priority: .background) {
-            print("🔥 Pre-warming recording engine components...")
+            debugLog("🔥 Pre-warming recording engine components...")
 
-            // Access the shared engine to trigger its lazy initialization
-            // This starts pre-warming of ModernSpeechFramework in the background
-            _ = MeetingRecordingEngine.shared
+            await MeetingRecordingEngine.shared.preWarm()
 
-            print("🔥 Recording engine pre-warm triggered")
+            debugLog("🔥 Recording engine pre-warm complete")
         }
     }
 
@@ -157,11 +164,23 @@ struct WhoNextApp: App {
             // Start observing changes from Apple Reminders
             await RemindersIntegration.shared.startObservingChanges()
 
-            // Perform initial sync to catch any changes made while app was closed
-            let context = persistenceController.container.viewContext
-            await RemindersIntegration.shared.syncAllReminders(in: context)
+            // Perform initial sync on a background context to avoid
+            // contention with CloudKit sync on viewContext
+            let bgContext = persistenceController.container.newBackgroundContext()
+            bgContext.mergePolicy = NSMergeByPropertyObjectTrumpMergePolicy
+            await RemindersIntegration.shared.syncAllReminders(in: bgContext)
 
-            print("📋 Reminders: Started observer and completed initial sync")
+            debugLog("📋 Reminders: Started observer and completed initial sync")
+        }
+    }
+
+    /// Sync meeting notes to the user's Obsidian vault on launch
+    private func triggerObsidianSync() {
+        guard ObsidianSyncService.shared.isEnabled else { return }
+        Task {
+            // Let CloudKit sync settle first
+            try? await Task.sleep(for: .seconds(3))
+            await ObsidianSyncService.shared.fullSync()
         }
     }
 
@@ -176,7 +195,7 @@ struct WhoNextApp: App {
 
             for person in allPeople {
                 if person.isCurrentUser {
-                    print("🗑️ Removing user Person record: \(person.name ?? "Unknown")")
+                    debugLog("🗑️ Removing user Person record: \(person.name ?? "Unknown")")
                     context.delete(person)
                     deletedCount += 1
                 }
@@ -184,12 +203,12 @@ struct WhoNextApp: App {
 
             if deletedCount > 0 {
                 try context.save()
-                print("✅ Cleaned up \(deletedCount) user Person record(s)")
+                debugLog("✅ Cleaned up \(deletedCount) user Person record(s)")
             } else {
-                print("✅ No user Person records to clean up")
+                debugLog("✅ No user Person records to clean up")
             }
         } catch {
-            print("❌ Failed to cleanup user Person records: \(error)")
+            debugLog("❌ Failed to cleanup user Person records: \(error)")
         }
     }
 
@@ -198,11 +217,11 @@ struct WhoNextApp: App {
     /// Handle deep links from the widget and other sources
     private func handleDeepLink(_ url: URL) {
         guard url.scheme == "whonext" else {
-            print("🔗 Deep Link: Unknown scheme - \(url)")
+            debugLog("🔗 Deep Link: Unknown scheme - \(url)")
             return
         }
 
-        print("🔗 Deep Link: Received \(url)")
+        debugLog("🔗 Deep Link: Received \(url)")
 
         switch url.host {
         case "join":
@@ -212,11 +231,11 @@ struct WhoNextApp: App {
 
         case "open":
             // Simple open app action
-            print("🔗 Deep Link: App opened via widget")
+            debugLog("🔗 Deep Link: App opened via widget")
             // App is already open, nothing else needed
 
         default:
-            print("🔗 Deep Link: Unknown action - \(url.host ?? "nil")")
+            debugLog("🔗 Deep Link: Unknown action - \(url.host ?? "nil")")
         }
     }
 
@@ -226,19 +245,16 @@ struct WhoNextApp: App {
         let components = URLComponents(url: url, resolvingAgainstBaseURL: false)
         let meetingId = components?.queryItems?.first(where: { $0.name == "meetingId" })?.value
 
-        print("🔗 Deep Link: Join meeting request - ID: \(meetingId ?? "none")")
+        debugLog("🔗 Deep Link: Join meeting request - ID: \(meetingId ?? "none")")
 
         // Start recording with 2-second delay
         // This gives Teams time to open and establish audio
         DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
-            print("🎙️ Starting recording from widget join action...")
+            debugLog("🎙️ Starting recording from widget join action...")
             MeetingRecordingEngine.shared.manualStartRecording()
         }
     }
 
 }
 
-extension Notification.Name {
-    static let triggerCSVImport = Notification.Name("triggerCSVImport")
-    static let showParticipantConfirmation = Notification.Name("showParticipantConfirmation")
-}
+// triggerCSVImport and showParticipantConfirmation consolidated in Utilities/NotificationNames.swift

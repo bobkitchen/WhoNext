@@ -17,8 +17,8 @@ public class Conversation: NSManagedObject {
     @NSManaged public var qualityScore: Double
     @NSManaged public var sentimentLabel: String?
     @NSManaged public var sentimentScore: Double
-    @NSManaged public var person: Person?  // Legacy single-person relationship (backward compatibility)
-    @NSManaged public var participants: NSSet?  // New: all participants with full attribution data
+    @NSManaged public var person: Person?
+    // ConversationParticipant entity disabled — see CLAUDE.md
     @NSManaged public var notesRTF: Data?
 
     // Sync-related timestamp fields

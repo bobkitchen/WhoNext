@@ -44,9 +44,9 @@ class VoicePrintManager: ObservableObject {
             if UserDefaults.standard.integer(forKey: "VoicePrintEmbeddingDimension") == 0 {
                 // First embedding ever — record the dimension
                 UserDefaults.standard.set(embedding.count, forKey: "VoicePrintEmbeddingDimension")
-                print("[VoicePrintManager] 📐 Learned embedding dimension: \(embedding.count)")
+                debugLog("[VoicePrintManager] 📐 Learned embedding dimension: \(embedding.count)")
             } else {
-                print("[VoicePrintManager] ⚠️ Embedding dimension changed: \(embedding.count) vs stored \(storedDim). Updating.")
+                debugLog("[VoicePrintManager] ⚠️ Embedding dimension changed: \(embedding.count) vs stored \(storedDim). Updating.")
                 UserDefaults.standard.set(embedding.count, forKey: "VoicePrintEmbeddingDimension")
                 invalidateCache()
             }
@@ -54,29 +54,17 @@ class VoicePrintManager: ObservableObject {
 
         let context = persistenceController.container.viewContext
         
-        // Serialize embedding to Data
-        let embeddingData = embedding.withUnsafeBufferPointer { buffer in
-            Data(buffer: buffer)
-        }
-        
-        // Update person's voice data
-        person.voiceEmbeddings = embeddingData
-        person.lastVoiceUpdate = Date()
-        
-        // Increment sample count
-        person.voiceSampleCount += 1
-        
-        // Update confidence based on sample count
-        updateConfidence(for: person)
+        // Use JSON serialization (matches Person.addVoiceEmbedding format)
+        person.addVoiceEmbedding(embedding)
         
         // Save context
         do {
             try context.save()
             // Invalidate cache so next lookup picks up the new embedding
             invalidateCache()
-            print("[VoicePrintManager] Saved voice embedding for \(person.wrappedName)")
+            debugLog("[VoicePrintManager] Saved voice embedding for \(person.wrappedName)")
         } catch {
-            print("[VoicePrintManager] Error saving embedding: \(error)")
+            debugLog("[VoicePrintManager] Error saving embedding: \(error)")
         }
     }
     
@@ -127,9 +115,9 @@ class VoicePrintManager: ObservableObject {
 
                     self.cachedEmbeddingsData = cached
                     self.cacheTimestamp = Date()
-                    print("[VoicePrintManager] 📦 Refreshed cache with \(cached.count) people (background)")
+                    debugLog("[VoicePrintManager] 📦 Refreshed cache with \(cached.count) people (background)")
                 } catch {
-                    print("[VoicePrintManager] ❌ Error refreshing cache: \(error)")
+                    debugLog("[VoicePrintManager] ❌ Error refreshing cache: \(error)")
                     self.cachedEmbeddingsData = nil
                 }
                 continuation.resume()
@@ -151,7 +139,7 @@ class VoicePrintManager: ObservableObject {
     /// Find matching person for a given embedding (uses caching to avoid repeated Core Data fetches)
     func findMatchingPerson(for embedding: [Float]) async -> (Person?, Float)? {
         guard !embedding.isEmpty else {
-            print("[VoicePrintManager] ❌ Empty embedding")
+            debugLog("[VoicePrintManager] ❌ Empty embedding")
             return nil
         }
 
@@ -162,11 +150,11 @@ class VoicePrintManager: ObservableObject {
         }
 
         guard let cached = cachedEmbeddingsData, !cached.isEmpty else {
-            print("[VoicePrintManager] ⚠️ No people with voice embeddings in database - voice learning not started yet")
+            debugLog("[VoicePrintManager] ⚠️ No people with voice embeddings in database - voice learning not started yet")
             return nil
         }
 
-        print("[VoicePrintManager] 🔍 Searching \(cached.count) cached voice embeddings...")
+        debugLog("[VoicePrintManager] 🔍 Searching \(cached.count) cached voice embeddings...")
 
         var bestMatch: (personId: UUID, name: String, similarity: Float)?
         var allMatches: [(String, Float)] = []  // For debug logging
@@ -174,7 +162,7 @@ class VoicePrintManager: ObservableObject {
         for entry in cached {
             // Skip mismatched dimensions instead of silently failing
             guard embedding.count == entry.embedding.count else {
-                print("[VoicePrintManager] ⚠️ Dimension mismatch for \(entry.name): \(embedding.count) vs \(entry.embedding.count), skipping")
+                debugLog("[VoicePrintManager] ⚠️ Dimension mismatch for \(entry.name): \(embedding.count) vs \(entry.embedding.count), skipping")
                 continue
             }
 
@@ -197,19 +185,19 @@ class VoicePrintManager: ObservableObject {
         let sortedMatches = allMatches.sorted { $0.1 > $1.1 }
         for (name, score) in sortedMatches.prefix(3) {
             let status = score >= minimumConfidenceThreshold ? "✓" : "✗"
-            print("[VoicePrintManager]   \(status) \(name): \(String(format: "%.1f%%", score * 100))")
+            debugLog("[VoicePrintManager]   \(status) \(name): \(String(format: "%.1f%%", score * 100))")
         }
 
         if let match = bestMatch {
             lastMatchConfidence = match.similarity
-            print("[VoicePrintManager] ✅ Best match: \(match.name) with confidence \(String(format: "%.1f%%", match.similarity * 100))")
+            debugLog("[VoicePrintManager] ✅ Best match: \(match.name) with confidence \(String(format: "%.1f%%", match.similarity * 100))")
             let context = persistenceController.container.viewContext
             let request: NSFetchRequest<Person> = Person.fetchRequest()
             request.predicate = NSPredicate(format: "identifier == %@", match.personId as CVarArg)
             let person = try? context.fetch(request).first
             return (person, match.similarity)
         } else {
-            print("[VoicePrintManager] ❌ No match above \(String(format: "%.0f%%", minimumConfidenceThreshold * 100)) threshold")
+            debugLog("[VoicePrintManager] ❌ No match above \(String(format: "%.0f%%", minimumConfidenceThreshold * 100)) threshold")
         }
 
         return nil
@@ -276,7 +264,7 @@ class VoicePrintManager: ObservableObject {
     /// This improves learning speed when users validate auto-identifications
     func saveEmbeddingWithFeedback(_ embedding: [Float], for person: Person, wasConfirmed: Bool) {
         guard !embedding.isEmpty else {
-            print("[VoicePrintManager] Empty embedding in feedback save")
+            debugLog("[VoicePrintManager] Empty embedding in feedback save")
             return
         }
 
@@ -297,7 +285,7 @@ class VoicePrintManager: ObservableObject {
             if wasConfirmed {
                 // Boost confidence for confirmed matches
                 person.voiceConfidence = min(person.voiceConfidence + 0.1, 1.0)
-                print("[VoicePrintManager] ✅ Boosted learning for \(person.wrappedName) (confirmed match)")
+                debugLog("[VoicePrintManager] ✅ Boosted learning for \(person.wrappedName) (confirmed match)")
             }
         } else {
             saveEmbedding(embedding, for: person)
@@ -309,7 +297,7 @@ class VoicePrintManager: ObservableObject {
     func recordIncorrectMatch(for person: Person, incorrectEmbedding: [Float]) {
         // For now, just log the incorrect match
         // Future: could track embeddings that should NOT match this person
-        print("[VoicePrintManager] ⚠️ Incorrect match recorded for \(person.wrappedName)")
+        debugLog("[VoicePrintManager] ⚠️ Incorrect match recorded for \(person.wrappedName)")
 
         // Slightly reduce confidence when mistakes happen (cap at minimum 0.3)
         person.voiceConfidence = max(person.voiceConfidence - 0.05, 0.3)
@@ -331,7 +319,7 @@ class VoicePrintManager: ObservableObject {
         // Combined confidence
         person.voiceConfidence = sampleConfidence * 0.7 + consistencyScore * 0.3
         
-        print("[VoicePrintManager] Updated confidence for \(person.wrappedName): \(person.voiceConfidence)")
+        debugLog("[VoicePrintManager] Updated confidence for \(person.wrappedName): \(person.voiceConfidence)")
     }
     
     /// Check if a person needs more voice samples
@@ -343,22 +331,7 @@ class VoicePrintManager: ObservableObject {
     
     /// Calculate cosine similarity between two embeddings
     private func cosineSimilarity(_ a: [Float], _ b: [Float]) -> Float {
-        guard a.count == b.count else { return 0 }
-        
-        var dotProduct: Float = 0
-        var normA: Float = 0
-        var normB: Float = 0
-        
-        for i in 0..<a.count {
-            dotProduct += a[i] * b[i]
-            normA += a[i] * a[i]
-            normB += b[i] * b[i]
-        }
-        
-        let denominator = sqrt(normA) * sqrt(normB)
-        guard denominator > 0 else { return 0 }
-        
-        return dotProduct / denominator
+        VectorMath.cosineSimilarity(a, b)
     }
     
     /// Average multiple embeddings
@@ -378,16 +351,38 @@ class VoicePrintManager: ObservableObject {
         return averaged.map { $0 / count }
     }
     
-    /// Deserialize embedding from Data
+    /// Deserialize embedding from Data (JSON format, with raw binary fallback for migration)
     private func deserializeEmbedding(from data: Data) -> [Float]? {
+        // Try JSON format first (current standard)
+        if let embeddings = try? JSONDecoder().decode([[Float]].self, from: data) {
+            // Return the average of all stored embeddings
+            guard !embeddings.isEmpty else { return nil }
+            let size = embeddings[0].count
+            var average = [Float](repeating: 0, count: size)
+            for embedding in embeddings {
+                for i in 0..<min(embedding.count, size) {
+                    average[i] += embedding[i]
+                }
+            }
+            let count = Float(embeddings.count)
+            return average.map { $0 / count }
+        }
+
+        // Try single-array JSON format
+        if let single = try? JSONDecoder().decode([Float].self, from: data) {
+            return single
+        }
+
+        // Fallback: raw binary format (legacy migration)
         guard data.count == embeddingDimension * MemoryLayout<Float>.size else {
-            print("[VoicePrintManager] Invalid data size for embedding")
+            debugLog("[VoicePrintManager] Invalid data size for embedding: \(data.count) bytes")
             return nil
         }
-        
-        return data.withUnsafeBytes { buffer in
+        let rawEmbedding = data.withUnsafeBytes { buffer in
             Array(buffer.bindMemory(to: Float.self))
         }
+        debugLog("[VoicePrintManager] ⚠️ Migrated raw binary embedding to JSON format")
+        return rawEmbedding
     }
     
     // MARK: - Batch Operations
@@ -400,13 +395,58 @@ class VoicePrintManager: ObservableObject {
             if let data = person.voiceEmbeddings,
                let embedding = deserializeEmbedding(from: data) {
                 embeddings[person.id] = embedding
-                print("[VoicePrintManager] Pre-loaded embedding for \(person.wrappedName)")
+                debugLog("[VoicePrintManager] Pre-loaded embedding for \(person.wrappedName)")
             }
         }
         
         return embeddings
     }
     
+    /// Find a Person record by name (case-insensitive) that has stored voice embeddings.
+    /// Used by guided diarization to match calendar attendee names to voice profiles.
+    func findMatchingPersonByName(_ name: String) async -> Person? {
+        let context = persistenceController.container.viewContext
+        let request: NSFetchRequest<Person> = Person.fetchRequest()
+        // Case-insensitive name match with voice data
+        request.predicate = NSPredicate(
+            format: "name ==[cd] %@ AND voiceEmbeddings != nil",
+            name
+        )
+        request.fetchLimit = 1
+
+        do {
+            let results = try context.fetch(request)
+            return results.first
+        } catch {
+            debugLog("[VoicePrintManager] Error finding person by name '\(name)': \(error)")
+            return nil
+        }
+    }
+
+    /// Get all stored voice embeddings as (id, name, embedding) tuples.
+    /// Used as a fallback when no calendar-matched speakers are available for guided diarization.
+    func getAllStoredEmbeddings() async -> [(id: String, name: String, embedding: [Float])] {
+        let context = persistenceController.container.viewContext
+        let request: NSFetchRequest<Person> = Person.fetchRequest()
+        request.predicate = NSPredicate(format: "voiceEmbeddings != nil")
+
+        do {
+            let people = try context.fetch(request)
+            return people.compactMap { person in
+                guard let data = person.voiceEmbeddings,
+                      let embedding = deserializeEmbedding(from: data) else { return nil }
+                return (
+                    id: person.identifier?.uuidString ?? UUID().uuidString,
+                    name: person.wrappedName,
+                    embedding: embedding
+                )
+            }
+        } catch {
+            debugLog("[VoicePrintManager] Error fetching all embeddings: \(error)")
+            return []
+        }
+    }
+
     /// Clear all voice data (for privacy/reset)
     func clearAllVoiceData() {
         let context = persistenceController.container.viewContext
@@ -422,9 +462,9 @@ class VoicePrintManager: ObservableObject {
                 person.lastVoiceUpdate = nil
             }
             try context.save()
-            print("[VoicePrintManager] Cleared all voice data")
+            debugLog("[VoicePrintManager] Cleared all voice data")
         } catch {
-            print("[VoicePrintManager] Error clearing voice data: \(error)")
+            debugLog("[VoicePrintManager] Error clearing voice data: \(error)")
         }
     }
 }
@@ -452,7 +492,7 @@ class VoiceLearningSystem {
                 // Add new embeddings to person's model
                 voicePrintManager.addEmbeddings(embeddings, for: person)
                 
-                print("[VoiceLearning] Improved model for \(person.wrappedName)")
+                debugLog("[VoiceLearning] Improved model for \(person.wrappedName)")
             }
         }
     }
@@ -537,7 +577,7 @@ extension VoicePrintManager {
             let embeddings = try JSONDecoder().decode([[Float]].self, from: data)
             return embeddings
         } catch {
-            print("❌ Failed to deserialize embeddings: \(error)")
+            debugLog("❌ Failed to deserialize embeddings: \(error)")
             return nil
         }
     }
@@ -548,7 +588,7 @@ extension VoicePrintManager {
             let data = try JSONEncoder().encode(embeddings)
             return data
         } catch {
-            print("❌ Failed to serialize embeddings: \(error)")
+            debugLog("❌ Failed to serialize embeddings: \(error)")
             return nil
         }
     }

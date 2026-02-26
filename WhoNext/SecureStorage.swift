@@ -68,8 +68,10 @@ class SecureStorage {
         }
         
         let account = provider.rawValue
-        let data = key.data(using: .utf8)!
-        
+        guard let data = key.data(using: .utf8) else {
+            throw SecureStorageError.encodingError
+        }
+
         // Check if key already exists
         if keyExists(for: provider) {
             // Update existing key
@@ -91,7 +93,7 @@ class SecureStorage {
             throw SecureStorageError.keychainError(status)
         }
         
-        print("🔐 [SecureStorage] Stored API key for \(provider.displayName)")
+        debugLog("🔐 [SecureStorage] Stored API key for \(provider.displayName)")
     }
     
     /// Retrieve an API key from the Keychain
@@ -131,14 +133,16 @@ class SecureStorage {
         }
         
         let account = provider.rawValue
-        let data = key.data(using: .utf8)!
-        
+        guard let data = key.data(using: .utf8) else {
+            throw SecureStorageError.encodingError
+        }
+
         let query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrService as String: service,
             kSecAttrAccount as String: account
         ]
-        
+
         let attributes: [String: Any] = [
             kSecValueData as String: data
         ]
@@ -149,7 +153,7 @@ class SecureStorage {
             throw SecureStorageError.keychainError(status)
         }
         
-        print("🔐 [SecureStorage] Updated API key for \(provider.displayName)")
+        debugLog("🔐 [SecureStorage] Updated API key for \(provider.displayName)")
     }
     
     /// Delete an API key from the Keychain
@@ -168,7 +172,7 @@ class SecureStorage {
             throw SecureStorageError.keychainError(status)
         }
         
-        print("🔐 [SecureStorage] Deleted API key for \(provider.displayName)")
+        debugLog("🔐 [SecureStorage] Deleted API key for \(provider.displayName)")
     }
     
     /// Check if an API key exists for a provider
@@ -188,9 +192,12 @@ class SecureStorage {
     
     // MARK: - Migration from UserDefaults
     
-    /// Migrate API keys from UserDefaults to secure Keychain storage
+    /// Migrate API keys from UserDefaults to secure Keychain storage (runs once)
     static func migrateFromUserDefaults() {
-        print("🔐 [SecureStorage] Starting migration from UserDefaults...")
+        let migrationKey = "SecureStorage_hasMigrated_v1"
+        guard !UserDefaults.standard.bool(forKey: migrationKey) else { return }
+
+        debugLog("🔐 [SecureStorage] Starting migration from UserDefaults...")
         
         let userDefaults = UserDefaults.standard
         var migrated = 0
@@ -201,9 +208,9 @@ class SecureStorage {
                 try storeAPIKey(openaiKey, for: .openai)
                 userDefaults.removeObject(forKey: "openaiApiKey")
                 migrated += 1
-                print("🔐 [SecureStorage] Migrated OpenAI API key")
+                debugLog("🔐 [SecureStorage] Migrated OpenAI API key")
             } catch {
-                print("❌ [SecureStorage] Failed to migrate OpenAI key: \(error)")
+                debugLog("❌ [SecureStorage] Failed to migrate OpenAI key: \(error)")
             }
         }
         
@@ -213,9 +220,9 @@ class SecureStorage {
                 try storeAPIKey(claudeKey, for: .claude)
                 userDefaults.removeObject(forKey: "claudeApiKey")
                 migrated += 1
-                print("🔐 [SecureStorage] Migrated Claude API key")
+                debugLog("🔐 [SecureStorage] Migrated Claude API key")
             } catch {
-                print("❌ [SecureStorage] Failed to migrate Claude key: \(error)")
+                debugLog("❌ [SecureStorage] Failed to migrate Claude key: \(error)")
             }
         }
         
@@ -225,17 +232,18 @@ class SecureStorage {
                 try storeAPIKey(openrouterKey, for: .openrouter)
                 userDefaults.removeObject(forKey: "openrouterApiKey")
                 migrated += 1
-                print("🔐 [SecureStorage] Migrated OpenRouter API key")
+                debugLog("🔐 [SecureStorage] Migrated OpenRouter API key")
             } catch {
-                print("❌ [SecureStorage] Failed to migrate OpenRouter key: \(error)")
+                debugLog("❌ [SecureStorage] Failed to migrate OpenRouter key: \(error)")
             }
         }
         
         if migrated > 0 {
-            print("🔐 [SecureStorage] Successfully migrated \(migrated) API keys to secure storage")
-        } else {
-            print("🔐 [SecureStorage] No API keys found to migrate")
+            debugLog("🔐 [SecureStorage] Successfully migrated \(migrated) API keys to secure storage")
         }
+
+        // Mark migration complete so it doesn't run again
+        UserDefaults.standard.set(true, forKey: migrationKey)
     }
     
     // MARK: - Debugging (Development Only)
@@ -267,7 +275,7 @@ extension SecureStorage {
         do {
             try storeAPIKey(key, for: provider)
         } catch {
-            print("❌ [SecureStorage] Failed to store \(provider.displayName) key: \(error)")
+            debugLog("❌ [SecureStorage] Failed to store \(provider.displayName) key: \(error)")
         }
     }
     
@@ -276,7 +284,7 @@ extension SecureStorage {
         do {
             try deleteAPIKey(for: provider)
         } catch {
-            print("❌ [SecureStorage] Failed to delete \(provider.displayName) key: \(error)")
+            debugLog("❌ [SecureStorage] Failed to delete \(provider.displayName) key: \(error)")
         }
     }
 }

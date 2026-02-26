@@ -47,7 +47,7 @@ struct PersistenceController {
         person.name         = "Preview Person"
         person.role         = "Test Role"
         person.identifier   = UUID()
-        person.isDirectReport = false
+        person.personCategory = PersonCategory.colleague.rawValue
 
         try? viewContext.save()
         return controller
@@ -94,7 +94,7 @@ struct PersistenceController {
             store.cloudKitContainerOptions = NSPersistentCloudKitContainerOptions(
                 containerIdentifier: PersistenceController.cloudKitContainerID
             )
-            print("☁️ [CloudKit] Container options set: \(PersistenceController.cloudKitContainerID)")
+            debugLog("☁️ [CloudKit] Container options set: \(PersistenceController.cloudKitContainerID)")
         }
 
         // 4. In-memory override for previews
@@ -105,32 +105,43 @@ struct PersistenceController {
         // ---------------------------------------------------------------------
         container.loadPersistentStores { storeDescription, error in
             if let error = error {
-                print("❌ Core Data load error: \(error)")
-                print("❌ Store description: \(storeDescription)")
+                debugLog("❌ Core Data load error: \(error)")
+                debugLog("❌ Store description: \(storeDescription)")
                 fatalError("❌ Core Data load error: \(error)")
             } else {
-                print("✅ Core Data store loaded successfully")
-                print("✅ Store URL: \(storeDescription.url?.absoluteString ?? "unknown")")
+                debugLog("✅ Core Data store loaded successfully")
+                debugLog("✅ Store URL: \(storeDescription.url?.absoluteString ?? "unknown")")
             }
         }
 
         // CRITICAL: Configure viewContext for CloudKit
         container.viewContext.automaticallyMergesChangesFromParent = true
         container.viewContext.mergePolicy = NSMergeByPropertyObjectTrumpMergePolicy
+        container.viewContext.transactionAuthor = "app"
+        container.viewContext.name = "viewContext"
+
+        // Prevent Core Data from turning registered objects into faults while
+        // they're still referenced by SwiftUI views. Without this, CloudKit
+        // merges can invalidate/free managed objects that views still hold,
+        // causing EXC_BAD_ACCESS in objc_release during view teardown
+        // (the "entangle context after pre-commit" crash).
+        container.viewContext.retainsRegisteredObjects = true
+
+        // One-time migration: isDirectReport → personCategory
+        migrateDirectReportToCategory()
 
         // NOTE: Do NOT use setQueryGenerationFrom(.current) with CloudKit
         // It can cause crashes when combined with refreshAllObjects() and remote sync
         // The automaticallyMergesChangesFromParent handles this automatically
 
         // ---------------------------------------------------------------------
-        // CloudKit Schema Initialization (DEBUG only)
-        // This ensures ckAsset fields are created for binary data attributes
+        // CloudKit Schema Initialization
+        // Runs in all builds to ensure Production schema includes all fields
+        // (e.g., personCategory added after initial CloudKit deployment)
         // ---------------------------------------------------------------------
-        #if DEBUG
         if !inMemory {
             initializeCloudKitSchemaIfNeeded()
         }
-        #endif
 
         // ---------------------------------------------------------------------
         // CloudKit Monitoring
@@ -142,13 +153,12 @@ struct PersistenceController {
 
     // MARK: - Schema Initialization
 
-    #if DEBUG
     private func initializeCloudKitSchemaIfNeeded() {
-        // Only run this once - it creates representative records in CloudKit
-        // and ensures schema is synchronized (especially for ckAsset fields)
-        let hasInitializedKey = "CloudKitSchemaInitialized_v1"
+        // Uses a versioned key so adding new fields (e.g., personCategory)
+        // triggers a re-initialization that pushes them to CloudKit.
+        let hasInitializedKey = "CloudKitSchemaInitialized_v2"
         guard !UserDefaults.standard.bool(forKey: hasInitializedKey) else {
-            print("☁️ [CloudKit] Schema already initialized")
+            debugLog("☁️ [CloudKit] Schema already initialized (v2)")
             return
         }
 
@@ -156,27 +166,43 @@ struct PersistenceController {
             do {
                 try container.initializeCloudKitSchema(options: [])
                 UserDefaults.standard.set(true, forKey: hasInitializedKey)
-                print("☁️ [CloudKit] ✅ Schema initialized successfully")
+                print("☁️ [CloudKit] ✅ Schema initialized successfully (v2 — includes personCategory)")
             } catch {
                 print("☁️ [CloudKit] ⚠️ Schema initialization failed: \(error)")
                 // Don't save the flag - try again next launch
             }
         }
     }
-    #endif
 
     // MARK: - CloudKit Monitoring
 
+    /// Dedicated background queue for CloudKit remote change notifications.
+    /// CRITICAL: Using .main caused "entangle context after pre-commit" crashes
+    /// because the notification handler ran synchronously on the main thread while
+    /// CloudKit was mid-transaction, causing context merge conflicts with SwiftUI
+    /// view teardown and other main-thread Core Data operations.
+    private static let cloudKitNotificationQueue: OperationQueue = {
+        let queue = OperationQueue()
+        queue.name = "com.bobk.WhoNext.CloudKitNotifications"
+        queue.maxConcurrentOperationCount = 1  // Serial to prevent reentrant merges
+        queue.qualityOfService = .utility
+        return queue
+    }()
+
     private func setupCloudKitMonitoring() {
-        // Listen for remote changes from CloudKit
+        // Listen for remote changes from CloudKit on a BACKGROUND queue.
+        // The viewContext's automaticallyMergesChangesFromParent handles merging
+        // on the correct queue internally — we must not interfere by running
+        // our handler on .main where it competes with view lifecycle events.
         NotificationCenter.default.addObserver(
             forName: .NSPersistentStoreRemoteChange,
             object: container.persistentStoreCoordinator,
-            queue: .main
+            queue: Self.cloudKitNotificationQueue
         ) { notification in
-            print("☁️ [CloudKit] Remote changes received from iCloud!")
-            print("☁️ [CloudKit] Timestamp: \(Date())")
+            debugLog("☁️ [CloudKit] Remote changes received from iCloud!")
+            debugLog("☁️ [CloudKit] Timestamp: \(Date())")
 
+            // Update UI state on MainActor (async — does not block the notification)
             Task { @MainActor in
                 PersistenceController.lastRemoteChangeDate = Date()
             }
@@ -184,29 +210,26 @@ struct PersistenceController {
             // Log what changed (if available in userInfo)
             if let userInfo = notification.userInfo {
                 if let historyToken = userInfo[NSPersistentHistoryTokenKey] {
-                    print("☁️ [CloudKit] History token updated: \(historyToken)")
+                    debugLog("☁️ [CloudKit] History token updated: \(historyToken)")
                 }
                 if let storeUUID = userInfo[NSStoreUUIDKey] {
-                    print("☁️ [CloudKit] Store UUID: \(storeUUID)")
+                    debugLog("☁️ [CloudKit] Store UUID: \(storeUUID)")
                 }
             }
 
-            // NOTE: Do NOT call refreshAllObjects() here - it can cause crashes
-            // when combined with CloudKit sync. The automaticallyMergesChangesFromParent
-            // setting handles this automatically and safely.
-            print("☁️ [CloudKit] Changes will be merged automatically")
+            debugLog("☁️ [CloudKit] Changes will be merged automatically")
         }
 
-        // Listen for import events (CloudKit data being imported)
+        // Listen for store change events on background queue too
         NotificationCenter.default.addObserver(
             forName: NSNotification.Name.NSPersistentStoreCoordinatorStoresDidChange,
             object: container.persistentStoreCoordinator,
-            queue: .main
+            queue: Self.cloudKitNotificationQueue
         ) { notification in
-            print("☁️ [CloudKit] Persistent stores changed")
+            debugLog("☁️ [CloudKit] Persistent stores changed")
         }
 
-        print("☁️ [CloudKit] Monitoring setup complete - listening for remote changes")
+        debugLog("☁️ [CloudKit] Monitoring setup complete - listening for remote changes")
     }
 
     /// Monitor CloudKit sync events for detailed status and error handling
@@ -214,7 +237,7 @@ struct PersistenceController {
         NotificationCenter.default.addObserver(
             forName: NSPersistentCloudKitContainer.eventChangedNotification,
             object: container,
-            queue: .main
+            queue: Self.cloudKitNotificationQueue
         ) { notification in
             guard let event = notification.userInfo?[
                 NSPersistentCloudKitContainer.eventNotificationUserInfoKey
@@ -228,19 +251,19 @@ struct PersistenceController {
                 case .setup:
                     PersistenceController.syncProgress = .setup
                     PersistenceController.isSyncing = true
-                    print("☁️ [CloudKit] Setup phase started")
+                    debugLog("☁️ [CloudKit] Setup phase started")
                 case .import:
                     PersistenceController.syncProgress = .importing
                     PersistenceController.isSyncing = true
                     // Only log start of event (when endDate is nil), not completion
                     if event.endDate == nil {
-                        print("☁️ [CloudKit] Importing data from iCloud...")
+                        debugLog("☁️ [CloudKit] Importing data from iCloud...")
                     }
                 case .export:
                     PersistenceController.syncProgress = .exporting
                     PersistenceController.isSyncing = true
                     if event.endDate == nil {
-                        print("☁️ [CloudKit] Exporting data to iCloud...")
+                        debugLog("☁️ [CloudKit] Exporting data to iCloud...")
                     }
                 @unknown default:
                     break
@@ -257,13 +280,13 @@ struct PersistenceController {
                     } else {
                         PersistenceController.syncProgress = .completed(Date())
                         PersistenceController.lastSyncError = nil
-                        print("☁️ [CloudKit] ✅ Sync completed successfully")
+                        debugLog("☁️ [CloudKit] ✅ Sync completed successfully")
                     }
                 }
             }
         }
 
-        print("☁️ [CloudKit] Event monitoring setup complete")
+        debugLog("☁️ [CloudKit] Event monitoring setup complete")
     }
 
     // MARK: - CloudKit Error Handling
@@ -316,76 +339,76 @@ struct PersistenceController {
         let nsError = error as NSError
 
         // Log the raw error details first
-        print("☁️ [CloudKit] ❌ ERROR DETAILS:")
-        print("☁️ [CloudKit]   Domain: \(nsError.domain)")
-        print("☁️ [CloudKit]   Code: \(nsError.code) - \(translateCKErrorCode(nsError.code))")
-        print("☁️ [CloudKit]   Description: \(nsError.localizedDescription)")
+        debugLog("☁️ [CloudKit] ❌ ERROR DETAILS:")
+        debugLog("☁️ [CloudKit]   Domain: \(nsError.domain)")
+        debugLog("☁️ [CloudKit]   Code: \(nsError.code) - \(translateCKErrorCode(nsError.code))")
+        debugLog("☁️ [CloudKit]   Description: \(nsError.localizedDescription)")
 
         // Log underlying errors if present
         if let underlying = nsError.userInfo[NSUnderlyingErrorKey] as? NSError {
-            print("☁️ [CloudKit]   Underlying: \(underlying.domain) code \(underlying.code)")
+            debugLog("☁️ [CloudKit]   Underlying: \(underlying.domain) code \(underlying.code)")
         }
 
         if let ckError = error as? CKError {
             switch ckError.code {
             case .quotaExceeded:
-                print("☁️ [CloudKit] ❌ QUOTA EXCEEDED - iCloud storage is full")
-                print("☁️ [CloudKit] → User needs to free up iCloud storage or upgrade plan")
+                debugLog("☁️ [CloudKit] ❌ QUOTA EXCEEDED - iCloud storage is full")
+                debugLog("☁️ [CloudKit] → User needs to free up iCloud storage or upgrade plan")
 
             case .networkFailure, .networkUnavailable:
-                print("☁️ [CloudKit] ⚠️ Network error - will retry automatically")
+                debugLog("☁️ [CloudKit] ⚠️ Network error - will retry automatically")
 
             case .partialFailure:
-                print("☁️ [CloudKit] ⚠️ Partial failure - some records synced")
+                debugLog("☁️ [CloudKit] ⚠️ Partial failure - some records synced")
                 if let partialErrors = ckError.userInfo[CKPartialErrorsByItemIDKey] as? [AnyHashable: Error] {
-                    print("☁️ [CloudKit]   Partial errors (\(partialErrors.count) items):")
+                    debugLog("☁️ [CloudKit]   Partial errors (\(partialErrors.count) items):")
                     for (recordID, recordError) in partialErrors.prefix(5) {
                         let recordNSError = recordError as NSError
-                        print("☁️ [CloudKit]   - \(recordID): code \(recordNSError.code) - \(translateCKErrorCode(recordNSError.code))")
+                        debugLog("☁️ [CloudKit]   - \(recordID): code \(recordNSError.code) - \(translateCKErrorCode(recordNSError.code))")
                     }
                     if partialErrors.count > 5 {
-                        print("☁️ [CloudKit]   ... and \(partialErrors.count - 5) more errors")
+                        debugLog("☁️ [CloudKit]   ... and \(partialErrors.count - 5) more errors")
                     }
                 }
 
             case .notAuthenticated:
-                print("☁️ [CloudKit] ❌ NOT AUTHENTICATED - user needs to sign in to iCloud")
+                debugLog("☁️ [CloudKit] ❌ NOT AUTHENTICATED - user needs to sign in to iCloud")
 
             case .serverResponseLost:
-                print("☁️ [CloudKit] ⚠️ Server response lost - will retry")
+                debugLog("☁️ [CloudKit] ⚠️ Server response lost - will retry")
 
             case .zoneBusy:
-                print("☁️ [CloudKit] ⚠️ CloudKit server busy - will retry")
+                debugLog("☁️ [CloudKit] ⚠️ CloudKit server busy - will retry")
 
             case .zoneNotFound:
-                print("☁️ [CloudKit] ❌ ZONE NOT FOUND - The CloudKit zone doesn't exist!")
-                print("☁️ [CloudKit] → This is likely the root cause of sync failures")
-                print("☁️ [CloudKit] → Try 'Repair Sync' in Settings to recreate the zone")
+                debugLog("☁️ [CloudKit] ❌ ZONE NOT FOUND - The CloudKit zone doesn't exist!")
+                debugLog("☁️ [CloudKit] → This is likely the root cause of sync failures")
+                debugLog("☁️ [CloudKit] → Try 'Repair Sync' in Settings to recreate the zone")
 
             case .unknownItem:
-                print("☁️ [CloudKit] ❌ UNKNOWN ITEM - Record or zone doesn't exist in CloudKit")
-                print("☁️ [CloudKit] → Schema may not be deployed or zone is missing")
-                print("☁️ [CloudKit] → Try 'Repair Sync' in Settings")
+                debugLog("☁️ [CloudKit] ❌ UNKNOWN ITEM - Record or zone doesn't exist in CloudKit")
+                debugLog("☁️ [CloudKit] → Schema may not be deployed or zone is missing")
+                debugLog("☁️ [CloudKit] → Try 'Repair Sync' in Settings")
 
             case .operationCancelled:
-                print("☁️ [CloudKit] ⚠️ Operation cancelled")
+                debugLog("☁️ [CloudKit] ⚠️ Operation cancelled")
 
             case .incompatibleVersion:
-                print("☁️ [CloudKit] ❌ Incompatible version - schema mismatch")
-                print("☁️ [CloudKit] → May need to run initializeCloudKitSchema()")
+                debugLog("☁️ [CloudKit] ❌ Incompatible version - schema mismatch")
+                debugLog("☁️ [CloudKit] → May need to run initializeCloudKitSchema()")
 
             case .assetFileNotFound:
-                print("☁️ [CloudKit] ⚠️ Asset file not found - binary data issue")
+                debugLog("☁️ [CloudKit] ⚠️ Asset file not found - binary data issue")
 
             case .invalidArguments:
-                print("☁️ [CloudKit] ❌ INVALID ARGUMENTS - Query or schema issue")
-                print("☁️ [CloudKit] → Check if schema is deployed to Production")
+                debugLog("☁️ [CloudKit] ❌ INVALID ARGUMENTS - Query or schema issue")
+                debugLog("☁️ [CloudKit] → Check if schema is deployed to Production")
 
             default:
-                print("☁️ [CloudKit] ⚠️ CloudKit error (\(ckError.code.rawValue)): \(ckError.localizedDescription)")
+                debugLog("☁️ [CloudKit] ⚠️ CloudKit error (\(ckError.code.rawValue)): \(ckError.localizedDescription)")
             }
         } else {
-            print("☁️ [CloudKit] ⚠️ Non-CKError sync error: \(error.localizedDescription)")
+            debugLog("☁️ [CloudKit] ⚠️ Non-CKError sync error: \(error.localizedDescription)")
         }
     }
 
@@ -396,27 +419,27 @@ struct PersistenceController {
 
                 switch status {
                 case .available:
-                    print("☁️ [CloudKit] ✅ iCloud account AVAILABLE - sync will work")
+                    debugLog("☁️ [CloudKit] ✅ iCloud account AVAILABLE - sync will work")
                     // Fetch container identifier for debugging
                     let containerID = CKContainer.default().containerIdentifier ?? "unknown"
-                    print("☁️ [CloudKit] Container: \(containerID)")
+                    debugLog("☁️ [CloudKit] Container: \(containerID)")
                 case .noAccount:
-                    print("☁️ [CloudKit] ❌ NO iCloud account signed in!")
-                    print("☁️ [CloudKit] ⚠️ Data will NOT sync between devices")
-                    print("☁️ [CloudKit] → Sign in to iCloud in System Preferences")
+                    debugLog("☁️ [CloudKit] ❌ NO iCloud account signed in!")
+                    debugLog("☁️ [CloudKit] ⚠️ Data will NOT sync between devices")
+                    debugLog("☁️ [CloudKit] → Sign in to iCloud in System Preferences")
                 case .restricted:
-                    print("☁️ [CloudKit] ⚠️ iCloud account RESTRICTED")
-                    print("☁️ [CloudKit] → Check parental controls or MDM settings")
+                    debugLog("☁️ [CloudKit] ⚠️ iCloud account RESTRICTED")
+                    debugLog("☁️ [CloudKit] → Check parental controls or MDM settings")
                 case .couldNotDetermine:
-                    print("☁️ [CloudKit] ⚠️ Could not determine iCloud status")
+                    debugLog("☁️ [CloudKit] ⚠️ Could not determine iCloud status")
                     if let error = error {
-                        print("☁️ [CloudKit] Error: \(error.localizedDescription)")
+                        debugLog("☁️ [CloudKit] Error: \(error.localizedDescription)")
                     }
                 case .temporarilyUnavailable:
-                    print("☁️ [CloudKit] ⚠️ iCloud temporarily unavailable")
-                    print("☁️ [CloudKit] → Check internet connection")
+                    debugLog("☁️ [CloudKit] ⚠️ iCloud temporarily unavailable")
+                    debugLog("☁️ [CloudKit] → Check internet connection")
                 @unknown default:
-                    print("☁️ [CloudKit] ⚠️ Unknown iCloud status: \(status.rawValue)")
+                    debugLog("☁️ [CloudKit] ⚠️ Unknown iCloud status: \(status.rawValue)")
                 }
             }
         }
@@ -425,10 +448,46 @@ struct PersistenceController {
         let ckContainer = CKContainer(identifier: PersistenceController.cloudKitContainerID)
         ckContainer.accountStatus { status, error in
             if status == .available {
-                print("☁️ [CloudKit] ✅ WhoNext container accessible")
+                debugLog("☁️ [CloudKit] ✅ WhoNext container accessible")
             } else {
-                print("☁️ [CloudKit] ⚠️ WhoNext container status: \(status.rawValue)")
+                debugLog("☁️ [CloudKit] ⚠️ WhoNext container status: \(status.rawValue)")
             }
+        }
+    }
+
+    // MARK: - Migration: isDirectReport → personCategory
+
+    private func migrateDirectReportToCategory() {
+        let migrationKey = "PersonCategoryMigration_v1"
+        guard !UserDefaults.standard.bool(forKey: migrationKey) else { return }
+
+        let context = container.newBackgroundContext()
+        context.mergePolicy = NSMergeByPropertyObjectTrumpMergePolicy
+
+        context.perform {
+            let request: NSFetchRequest<Person> = Person.fetchRequest()
+            request.predicate = NSPredicate(format: "personCategory == nil OR personCategory == ''")
+            guard let people = try? context.fetch(request) else { return }
+
+            for person in people {
+                if person.isDirectReport {
+                    person.personCategory = PersonCategory.directReport.rawValue
+                } else {
+                    person.personCategory = PersonCategory.colleague.rawValue
+                }
+            }
+
+            if context.hasChanges {
+                do {
+                    try context.save()
+                    debugLog("✅ Migrated \(people.count) people to personCategory")
+                } catch {
+                    debugLog("❌ personCategory migration failed: \(error)")
+                    return // Don't set the flag if migration failed
+                }
+            }
+
+            UserDefaults.standard.set(true, forKey: migrationKey)
         }
     }
 
@@ -441,9 +500,9 @@ struct PersistenceController {
             let context = self.container.viewContext
             if context.hasChanges {
                 try? context.save()
-                print("☁️ [CloudKit] Saved pending changes - should trigger sync")
+                debugLog("☁️ [CloudKit] Saved pending changes - should trigger sync")
             } else {
-                print("☁️ [CloudKit] No pending changes to sync")
+                debugLog("☁️ [CloudKit] No pending changes to sync")
             }
         }
     }
@@ -484,34 +543,34 @@ struct PersistenceController {
     func dumpLocalRecordCounts() {
         let context = container.viewContext
         context.perform {
-            print("\n☁️ ========== LOCAL CORE DATA RECORD COUNTS ==========")
+            debugLog("\n☁️ ========== LOCAL CORE DATA RECORD COUNTS ==========")
 
             // Person count
             let personRequest = NSFetchRequest<NSManagedObject>(entityName: "Person")
             let personCount = (try? context.count(for: personRequest)) ?? 0
-            print("☁️ Person records: \(personCount)")
+            debugLog("☁️ Person records: \(personCount)")
 
             // Conversation count
             let convRequest = NSFetchRequest<NSManagedObject>(entityName: "Conversation")
             let convCount = (try? context.count(for: convRequest)) ?? 0
-            print("☁️ Conversation records: \(convCount)")
+            debugLog("☁️ Conversation records: \(convCount)")
 
             // UserProfileEntity count
             let profileRequest = NSFetchRequest<NSManagedObject>(entityName: "UserProfileEntity")
             let profileCount = (try? context.count(for: profileRequest)) ?? 0
-            print("☁️ UserProfileEntity records: \(profileCount)")
+            debugLog("☁️ UserProfileEntity records: \(profileCount)")
 
             // Group count
             let groupRequest = NSFetchRequest<NSManagedObject>(entityName: "Group")
             let groupCount = (try? context.count(for: groupRequest)) ?? 0
-            print("☁️ Group records: \(groupCount)")
+            debugLog("☁️ Group records: \(groupCount)")
 
             // GroupMeeting count
             let meetingRequest = NSFetchRequest<NSManagedObject>(entityName: "GroupMeeting")
             let meetingCount = (try? context.count(for: meetingRequest)) ?? 0
-            print("☁️ GroupMeeting records: \(meetingCount)")
+            debugLog("☁️ GroupMeeting records: \(meetingCount)")
 
-            print("☁️ =====================================================\n")
+            debugLog("☁️ =====================================================\n")
         }
     }
 
@@ -520,8 +579,8 @@ struct PersistenceController {
         let ckContainer = CKContainer(identifier: PersistenceController.cloudKitContainerID)
         let privateDB = ckContainer.privateCloudDatabase
 
-        print("\n☁️ ========== CLOUDKIT RECORD VERIFICATION ==========")
-        print("☁️ Querying CloudKit private database...")
+        debugLog("\n☁️ ========== CLOUDKIT RECORD VERIFICATION ==========")
+        debugLog("☁️ Querying CloudKit private database...")
 
         // Query for CD_Person records (Core Data prefixes with CD_)
         let recordTypes = ["CD_Person", "CD_Conversation", "CD_UserProfileEntity", "CD_Group", "CD_GroupMeeting"]
@@ -532,57 +591,50 @@ struct PersistenceController {
                 switch result {
                 case .success(let (matchResults, _)):
                     let count = matchResults.count
-                    print("☁️ \(recordType): \(count) records in CloudKit")
+                    debugLog("☁️ \(recordType): \(count) records in CloudKit")
 
                     // Log first few record IDs for debugging
                     for (recordID, recordResult) in matchResults.prefix(3) {
                         switch recordResult {
                         case .success(let record):
-                            print("☁️   - \(recordID.recordName): modified \(record.modificationDate ?? Date())")
+                            debugLog("☁️   - \(recordID.recordName): modified \(record.modificationDate ?? Date())")
                         case .failure(let error):
-                            print("☁️   - \(recordID.recordName): error \(error.localizedDescription)")
+                            debugLog("☁️   - \(recordID.recordName): error \(error.localizedDescription)")
                         }
                     }
 
                 case .failure(let error):
                     if let ckError = error as? CKError, ckError.code == .unknownItem {
-                        print("☁️ \(recordType): Record type not found in schema")
+                        debugLog("☁️ \(recordType): Record type not found in schema")
                     } else {
-                        print("☁️ \(recordType): Error querying - \(error.localizedDescription)")
+                        debugLog("☁️ \(recordType): Error querying - \(error.localizedDescription)")
                     }
                 }
             }
         }
     }
 
-    /// Force re-initialize CloudKit schema (DEBUG only)
+    /// Force re-initialize CloudKit schema
     /// This creates sample records to ensure all fields are in the schema
     func forceSchemaReinitialization() {
-        #if DEBUG
         print("☁️ [CloudKit] Forcing schema re-initialization...")
 
-        // Clear the flag so schema initialization runs again
+        // Clear both old and new flags so schema initialization runs again
         UserDefaults.standard.removeObject(forKey: "CloudKitSchemaInitialized_v1")
+        UserDefaults.standard.removeObject(forKey: "CloudKitSchemaInitialized_v2")
 
         Task {
             do {
-                // Use dryRun first to see what would happen
-                try container.initializeCloudKitSchema(options: [.dryRun])
-                print("☁️ [CloudKit] Schema dry run successful")
-
                 // Now do the actual initialization
                 try container.initializeCloudKitSchema(options: [])
                 print("☁️ [CloudKit] ✅ Schema force-initialized successfully")
                 print("☁️ [CloudKit] ⚠️ IMPORTANT: Deploy schema to Production in CloudKit Dashboard!")
 
-                UserDefaults.standard.set(true, forKey: "CloudKitSchemaInitialized_v1")
+                UserDefaults.standard.set(true, forKey: "CloudKitSchemaInitialized_v2")
             } catch {
                 print("☁️ [CloudKit] ❌ Schema initialization failed: \(error)")
             }
         }
-        #else
-        print("☁️ [CloudKit] Schema reinitialization only available in DEBUG builds")
-        #endif
     }
 
     /// Check CloudKit zone status
@@ -596,15 +648,15 @@ struct PersistenceController {
 
         privateDB.fetch(withRecordZoneID: zoneID) { zone, error in
             if let zone = zone {
-                print("☁️ [CloudKit] ✅ Zone exists: \(zone.zoneID.zoneName)")
-                print("☁️ [CloudKit] Zone capabilities: \(zone.capabilities)")
+                debugLog("☁️ [CloudKit] ✅ Zone exists: \(zone.zoneID.zoneName)")
+                debugLog("☁️ [CloudKit] Zone capabilities: \(zone.capabilities)")
             } else if let error = error {
-                print("☁️ [CloudKit] ❌ Zone error: \(error.localizedDescription)")
+                debugLog("☁️ [CloudKit] ❌ Zone error: \(error.localizedDescription)")
 
                 // Check if zone doesn't exist
                 if let ckError = error as? CKError, ckError.code == .zoneNotFound {
-                    print("☁️ [CloudKit] Zone not found - this means no data has ever synced!")
-                    print("☁️ [CloudKit] Try saving some data to create the zone")
+                    debugLog("☁️ [CloudKit] Zone not found - this means no data has ever synced!")
+                    debugLog("☁️ [CloudKit] Try saving some data to create the zone")
                 }
             }
         }
@@ -613,10 +665,11 @@ struct PersistenceController {
     /// Force sync all existing data by touching modifiedAt timestamps
     /// This is needed because data created before history tracking was enabled won't sync
     func forceSyncAllExistingData() {
-        let context = container.viewContext
+        let context = container.newBackgroundContext()
+        context.mergePolicy = NSMergeByPropertyObjectTrumpMergePolicy
 
         context.perform {
-            print("☁️ [CloudKit] Force-syncing all existing data...")
+            debugLog("☁️ [CloudKit] Force-syncing all existing data...")
             var touchedCount = 0
 
             // Touch all Person records
@@ -626,7 +679,7 @@ struct PersistenceController {
                     person.modifiedAt = Date()
                     touchedCount += 1
                 }
-                print("☁️ [CloudKit] Touched \(people.count) Person records")
+                debugLog("☁️ [CloudKit] Touched \(people.count) Person records")
             }
 
             // Touch all Conversation records
@@ -636,7 +689,7 @@ struct PersistenceController {
                     conversation.modifiedAt = Date()
                     touchedCount += 1
                 }
-                print("☁️ [CloudKit] Touched \(conversations.count) Conversation records")
+                debugLog("☁️ [CloudKit] Touched \(conversations.count) Conversation records")
             }
 
             // Touch UserProfileEntity
@@ -646,7 +699,7 @@ struct PersistenceController {
                     profile.modifiedAt = Date()
                     touchedCount += 1
                 }
-                print("☁️ [CloudKit] Touched \(profiles.count) UserProfileEntity records")
+                debugLog("☁️ [CloudKit] Touched \(profiles.count) UserProfileEntity records")
             }
 
             // Touch Group records
@@ -656,7 +709,7 @@ struct PersistenceController {
                     group.modifiedAt = Date()
                     touchedCount += 1
                 }
-                print("☁️ [CloudKit] Touched \(groups.count) Group records")
+                debugLog("☁️ [CloudKit] Touched \(groups.count) Group records")
             }
 
             // Touch GroupMeeting records
@@ -666,19 +719,19 @@ struct PersistenceController {
                     meeting.modifiedAt = Date()
                     touchedCount += 1
                 }
-                print("☁️ [CloudKit] Touched \(meetings.count) GroupMeeting records")
+                debugLog("☁️ [CloudKit] Touched \(meetings.count) GroupMeeting records")
             }
 
             // Save changes to trigger CloudKit sync
             do {
                 if context.hasChanges {
                     try context.save()
-                    print("☁️ [CloudKit] ✅ Force-synced \(touchedCount) total records - should trigger CloudKit export")
+                    debugLog("☁️ [CloudKit] ✅ Force-synced \(touchedCount) total records - should trigger CloudKit export")
                 } else {
-                    print("☁️ [CloudKit] No changes to save")
+                    debugLog("☁️ [CloudKit] No changes to save")
                 }
             } catch {
-                print("☁️ [CloudKit] ❌ Error saving force-sync changes: \(error)")
+                debugLog("☁️ [CloudKit] ❌ Error saving force-sync changes: \(error)")
             }
         }
     }
@@ -686,16 +739,17 @@ struct PersistenceController {
     /// Repair orphaned conversations that reference non-existent Person records
     /// These can cause CloudKit sync failures (CKError 2 - unknownItem)
     func repairOrphanedConversations() -> (deleted: Int, fixed: Int) {
-        let context = container.viewContext
+        let context = container.newBackgroundContext()
+        context.mergePolicy = NSMergeByPropertyObjectTrumpMergePolicy
         var deletedCount = 0
         var fixedCount = 0
 
         context.performAndWait {
-            print("☁️ [CloudKit] Checking for orphaned conversations...")
+            debugLog("☁️ [CloudKit] Checking for orphaned conversations...")
 
             let convRequest = NSFetchRequest<Conversation>(entityName: "Conversation")
             guard let conversations = try? context.fetch(convRequest) else {
-                print("☁️ [CloudKit] Could not fetch conversations")
+                debugLog("☁️ [CloudKit] Could not fetch conversations")
                 return
             }
 
@@ -711,12 +765,12 @@ struct PersistenceController {
                         // Set modifiedAt to trigger a clean sync
                         conversation.modifiedAt = Date()
                         fixedCount += 1
-                        print("☁️ [CloudKit] Fixed orphan with content: \(conversation.summary?.prefix(30) ?? "no summary")")
+                        debugLog("☁️ [CloudKit] Fixed orphan with content: \(conversation.summary?.prefix(30) ?? "no summary")")
                     } else {
                         // Empty orphan - delete it
                         context.delete(conversation)
                         deletedCount += 1
-                        print("☁️ [CloudKit] Deleted empty orphan conversation")
+                        debugLog("☁️ [CloudKit] Deleted empty orphan conversation")
                     }
                 }
             }
@@ -724,12 +778,12 @@ struct PersistenceController {
             if context.hasChanges {
                 do {
                     try context.save()
-                    print("☁️ [CloudKit] ✅ Orphan repair saved: deleted \(deletedCount), fixed \(fixedCount)")
+                    debugLog("☁️ [CloudKit] ✅ Orphan repair saved: deleted \(deletedCount), fixed \(fixedCount)")
                 } catch {
-                    print("☁️ [CloudKit] ❌ Error saving orphan repairs: \(error)")
+                    debugLog("☁️ [CloudKit] ❌ Error saving orphan repairs: \(error)")
                 }
             } else {
-                print("☁️ [CloudKit] No orphaned conversations found")
+                debugLog("☁️ [CloudKit] No orphaned conversations found")
             }
         }
 
@@ -742,15 +796,16 @@ struct PersistenceController {
         let context = container.newBackgroundContext()
 
         await context.perform {
-            print("☁️ [CloudKit] Purging persistent history transactions...")
+            debugLog("☁️ [CloudKit] Purging persistent history transactions...")
 
             do {
-                // Delete all history before the current date - this clears sync metadata
-                let deleteRequest = NSPersistentHistoryChangeRequest.deleteHistory(before: Date())
+                // Keep at least 7 days of history for CloudKit sync
+                let cutoff = Calendar.current.date(byAdding: .day, value: -7, to: Date()) ?? Date()
+                let deleteRequest = NSPersistentHistoryChangeRequest.deleteHistory(before: cutoff)
                 try context.execute(deleteRequest)
-                print("☁️ [CloudKit] ✅ Purged persistent history")
+                debugLog("☁️ [CloudKit] ✅ Purged persistent history")
             } catch {
-                print("☁️ [CloudKit] ⚠️ Error purging history: \(error.localizedDescription)")
+                debugLog("☁️ [CloudKit] ⚠️ Error purging history: \(error.localizedDescription)")
             }
         }
     }
@@ -761,11 +816,11 @@ struct PersistenceController {
         var deletedCount = 0
 
         context.performAndWait {
-            print("☁️ [CloudKit] Deleting ALL orphaned conversations...")
+            debugLog("☁️ [CloudKit] Deleting ALL orphaned conversations...")
 
             let convRequest = NSFetchRequest<Conversation>(entityName: "Conversation")
             guard let conversations = try? context.fetch(convRequest) else {
-                print("☁️ [CloudKit] Could not fetch conversations")
+                debugLog("☁️ [CloudKit] Could not fetch conversations")
                 return
             }
 
@@ -779,9 +834,9 @@ struct PersistenceController {
             if context.hasChanges {
                 do {
                     try context.save()
-                    print("☁️ [CloudKit] ✅ Deleted \(deletedCount) orphaned conversations")
+                    debugLog("☁️ [CloudKit] ✅ Deleted \(deletedCount) orphaned conversations")
                 } catch {
-                    print("☁️ [CloudKit] ❌ Error deleting orphans: \(error)")
+                    debugLog("☁️ [CloudKit] ❌ Error deleting orphans: \(error)")
                 }
             }
         }
@@ -791,13 +846,13 @@ struct PersistenceController {
 
     /// Comprehensive sync diagnostic
     func runSyncDiagnostic() {
-        print("\n")
-        print("☁️ ╔══════════════════════════════════════════════════════════╗")
-        print("☁️ ║           CLOUDKIT SYNC DIAGNOSTIC REPORT                ║")
-        print("☁️ ╚══════════════════════════════════════════════════════════╝")
-        print("☁️")
-        print("☁️ Container ID: \(PersistenceController.cloudKitContainerID)")
-        print("☁️")
+        debugLog("\n")
+        debugLog("☁️ ╔══════════════════════════════════════════════════════════╗")
+        debugLog("☁️ ║           CLOUDKIT SYNC DIAGNOSTIC REPORT                ║")
+        debugLog("☁️ ╚══════════════════════════════════════════════════════════╝")
+        debugLog("☁️")
+        debugLog("☁️ Container ID: \(PersistenceController.cloudKitContainerID)")
+        debugLog("☁️")
 
         // Check iCloud status
         checkiCloudAccountStatus()
@@ -811,15 +866,15 @@ struct PersistenceController {
         // Query CloudKit
         verifyCloudKitRecords()
 
-        print("☁️")
-        print("☁️ ════════════════════════════════════════════════════════════")
-        print("☁️ TROUBLESHOOTING STEPS:")
-        print("☁️ 1. Ensure SAME iCloud account on both devices")
-        print("☁️ 2. Check CloudKit Dashboard → Deploy Schema to Production")
-        print("☁️ 3. In CloudKit Dashboard, verify records exist in Private DB")
-        print("☁️ 4. Try: Settings → iCloud → WhoNext → Toggle OFF then ON")
-        print("☁️ 5. Check device storage isn't full")
-        print("☁️ ════════════════════════════════════════════════════════════")
+        debugLog("☁️")
+        debugLog("☁️ ════════════════════════════════════════════════════════════")
+        debugLog("☁️ TROUBLESHOOTING STEPS:")
+        debugLog("☁️ 1. Ensure SAME iCloud account on both devices")
+        debugLog("☁️ 2. Check CloudKit Dashboard → Deploy Schema to Production")
+        debugLog("☁️ 3. In CloudKit Dashboard, verify records exist in Private DB")
+        debugLog("☁️ 4. Try: Settings → iCloud → WhoNext → Toggle OFF then ON")
+        debugLog("☁️ 5. Check device storage isn't full")
+        debugLog("☁️ ════════════════════════════════════════════════════════════")
     }
 
     // MARK: - Zone Repair and Reset
@@ -832,14 +887,14 @@ struct PersistenceController {
 
         do {
             _ = try await privateDB.recordZone(for: zoneID)
-            print("☁️ [CloudKit] ✅ Zone exists")
+            debugLog("☁️ [CloudKit] ✅ Zone exists")
             return true
         } catch {
             let ckError = error as? CKError
             if ckError?.code == .zoneNotFound {
-                print("☁️ [CloudKit] ❌ Zone NOT found - needs to be created")
+                debugLog("☁️ [CloudKit] ❌ Zone NOT found - needs to be created")
             } else {
-                print("☁️ [CloudKit] ⚠️ Zone check error: \(error.localizedDescription)")
+                debugLog("☁️ [CloudKit] ⚠️ Zone check error: \(error.localizedDescription)")
             }
             return false
         }
@@ -849,32 +904,32 @@ struct PersistenceController {
     func createCloudKitZoneIfNeeded() async throws {
         let zoneExists = await checkZoneExistsAsync()
         if zoneExists {
-            print("☁️ [CloudKit] Zone already exists, no action needed")
+            debugLog("☁️ [CloudKit] Zone already exists, no action needed")
             return
         }
 
-        print("☁️ [CloudKit] Creating CloudKit zone...")
+        debugLog("☁️ [CloudKit] Creating CloudKit zone...")
         let ckContainer = CKContainer(identifier: PersistenceController.cloudKitContainerID)
         let privateDB = ckContainer.privateCloudDatabase
         let zone = CKRecordZone(zoneName: "com.apple.coredata.cloudkit.zone")
 
         do {
             let savedZone = try await privateDB.save(zone)
-            print("☁️ [CloudKit] ✅ Zone created: \(savedZone.zoneID.zoneName)")
+            debugLog("☁️ [CloudKit] ✅ Zone created: \(savedZone.zoneID.zoneName)")
         } catch {
-            print("☁️ [CloudKit] ❌ Failed to create zone: \(error)")
+            debugLog("☁️ [CloudKit] ❌ Failed to create zone: \(error)")
             throw error
         }
     }
 
     /// Repair CloudKit sync - tries to fix common issues
     func repairCloudKitSync() async throws {
-        print("☁️ [CloudKit] ═══════════════════════════════════════════════")
-        print("☁️ [CloudKit] Starting CloudKit Sync Repair...")
-        print("☁️ [CloudKit] ═══════════════════════════════════════════════")
+        debugLog("☁️ [CloudKit] ═══════════════════════════════════════════════")
+        debugLog("☁️ [CloudKit] Starting CloudKit Sync Repair...")
+        debugLog("☁️ [CloudKit] ═══════════════════════════════════════════════")
 
         // Step 1: Check iCloud account status
-        print("☁️ [CloudKit] Step 1: Checking iCloud account...")
+        debugLog("☁️ [CloudKit] Step 1: Checking iCloud account...")
         let status = try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<CKAccountStatus, Error>) in
             CKContainer(identifier: PersistenceController.cloudKitContainerID).accountStatus { status, error in
                 if let error = error {
@@ -886,17 +941,17 @@ struct PersistenceController {
         }
 
         guard status == .available else {
-            print("☁️ [CloudKit] ❌ iCloud not available (status: \(status.rawValue))")
+            debugLog("☁️ [CloudKit] ❌ iCloud not available (status: \(status.rawValue))")
             throw NSError(domain: "CloudKitRepair", code: 1, userInfo: [NSLocalizedDescriptionKey: "iCloud account not available. Please sign in to iCloud."])
         }
-        print("☁️ [CloudKit] ✅ iCloud account available")
+        debugLog("☁️ [CloudKit] ✅ iCloud account available")
 
         // Step 2: Check/create zone
-        print("☁️ [CloudKit] Step 2: Checking CloudKit zone...")
+        debugLog("☁️ [CloudKit] Step 2: Checking CloudKit zone...")
         try await createCloudKitZoneIfNeeded()
 
         // Step 3: Re-initialize schema
-        print("☁️ [CloudKit] Step 3: Re-initializing schema...")
+        debugLog("☁️ [CloudKit] Step 3: Re-initializing schema...")
         #if DEBUG
         do {
             // Clear the initialization flag
@@ -911,69 +966,69 @@ struct PersistenceController {
             // Don't throw - this is sometimes expected
         }
         #else
-        print("☁️ [CloudKit] ⚠️ Schema initialization skipped (not DEBUG build)")
+        debugLog("☁️ [CloudKit] ⚠️ Schema initialization skipped (not DEBUG build)")
         #endif
 
         // Step 4: Repair orphaned conversations (can cause sync failures)
-        print("☁️ [CloudKit] Step 4: Repairing orphaned conversations...")
+        debugLog("☁️ [CloudKit] Step 4: Repairing orphaned conversations...")
         let orphanResult = repairOrphanedConversations()
-        print("☁️ [CloudKit] ✅ Orphan repair: deleted \(orphanResult.deleted), fixed \(orphanResult.fixed)")
+        debugLog("☁️ [CloudKit] ✅ Orphan repair: deleted \(orphanResult.deleted), fixed \(orphanResult.fixed)")
 
         // Step 5: Force sync all records
-        print("☁️ [CloudKit] Step 5: Forcing sync of all records...")
+        debugLog("☁️ [CloudKit] Step 5: Forcing sync of all records...")
         forceSyncAllExistingData()
 
-        print("☁️ [CloudKit] ═══════════════════════════════════════════════")
-        print("☁️ [CloudKit] ✅ Repair complete! Wait 1-2 minutes for sync.")
-        print("☁️ [CloudKit] ═══════════════════════════════════════════════")
+        debugLog("☁️ [CloudKit] ═══════════════════════════════════════════════")
+        debugLog("☁️ [CloudKit] ✅ Repair complete! Wait 1-2 minutes for sync.")
+        debugLog("☁️ [CloudKit] ═══════════════════════════════════════════════")
     }
 
     /// Nuclear option: Reset CloudKit sync completely
     /// WARNING: This deletes ALL CloudKit data and re-uploads from this device
     func resetCloudKitSync() async throws {
-        print("☁️ [CloudKit] ═══════════════════════════════════════════════")
-        print("☁️ [CloudKit] ⚠️ NUCLEAR RESET: Deleting CloudKit zone...")
-        print("☁️ [CloudKit] ═══════════════════════════════════════════════")
+        debugLog("☁️ [CloudKit] ═══════════════════════════════════════════════")
+        debugLog("☁️ [CloudKit] ⚠️ NUCLEAR RESET: Deleting CloudKit zone...")
+        debugLog("☁️ [CloudKit] ═══════════════════════════════════════════════")
 
         let ckContainer = CKContainer(identifier: PersistenceController.cloudKitContainerID)
         let privateDB = ckContainer.privateCloudDatabase
         let zoneID = CKRecordZone.ID(zoneName: "com.apple.coredata.cloudkit.zone", ownerName: CKCurrentUserDefaultName)
 
         // Step 1: Delete the zone (removes all cloud data)
-        print("☁️ [CloudKit] Step 1: Deleting CloudKit zone...")
+        debugLog("☁️ [CloudKit] Step 1: Deleting CloudKit zone...")
         do {
             try await privateDB.deleteRecordZone(withID: zoneID)
-            print("☁️ [CloudKit] ✅ Zone deleted")
+            debugLog("☁️ [CloudKit] ✅ Zone deleted")
         } catch {
             let ckError = error as? CKError
             if ckError?.code == .zoneNotFound {
-                print("☁️ [CloudKit] Zone didn't exist, continuing...")
+                debugLog("☁️ [CloudKit] Zone didn't exist, continuing...")
             } else {
-                print("☁️ [CloudKit] ⚠️ Zone deletion warning: \(error.localizedDescription)")
+                debugLog("☁️ [CloudKit] ⚠️ Zone deletion warning: \(error.localizedDescription)")
                 // Continue anyway
             }
         }
 
         // Step 2: Wait a moment for CloudKit to process
-        print("☁️ [CloudKit] Step 2: Waiting for CloudKit to process...")
+        debugLog("☁️ [CloudKit] Step 2: Waiting for CloudKit to process...")
         try await Task.sleep(nanoseconds: 2_000_000_000) // 2 seconds
 
         // Step 3: Clear local sync metadata and purge persistent history
-        print("☁️ [CloudKit] Step 3: Clearing local sync metadata...")
+        debugLog("☁️ [CloudKit] Step 3: Clearing local sync metadata...")
         UserDefaults.standard.removeObject(forKey: "CloudKitSchemaInitialized_v1")
 
         // Purge ALL persistent history - this is where sync metadata lives
-        print("☁️ [CloudKit] Step 3b: Purging persistent history...")
+        debugLog("☁️ [CloudKit] Step 3b: Purging persistent history...")
         await purgePersistentHistory()
 
         // Step 4: Create new zone
-        print("☁️ [CloudKit] Step 4: Creating new zone...")
+        debugLog("☁️ [CloudKit] Step 4: Creating new zone...")
         let zone = CKRecordZone(zoneName: "com.apple.coredata.cloudkit.zone")
         _ = try await privateDB.save(zone)
-        print("☁️ [CloudKit] ✅ New zone created")
+        debugLog("☁️ [CloudKit] ✅ New zone created")
 
         // Step 5: Re-initialize schema
-        print("☁️ [CloudKit] Step 5: Initializing schema...")
+        debugLog("☁️ [CloudKit] Step 5: Initializing schema...")
         #if DEBUG
         try container.initializeCloudKitSchema(options: [])
         UserDefaults.standard.set(true, forKey: "CloudKitSchemaInitialized_v1")
@@ -981,19 +1036,19 @@ struct PersistenceController {
         #endif
 
         // Step 6: Clean up orphaned conversations before uploading
-        print("☁️ [CloudKit] Step 6: Cleaning orphaned conversations...")
+        debugLog("☁️ [CloudKit] Step 6: Cleaning orphaned conversations...")
         let deletedOrphans = deleteAllOrphanedConversations()
-        print("☁️ [CloudKit] ✅ Deleted \(deletedOrphans) orphaned conversations")
+        debugLog("☁️ [CloudKit] ✅ Deleted \(deletedOrphans) orphaned conversations")
 
         // Step 7: Force sync all records
-        print("☁️ [CloudKit] Step 7: Uploading all local data...")
+        debugLog("☁️ [CloudKit] Step 7: Uploading all local data...")
         forceSyncAllExistingData()
 
-        print("☁️ [CloudKit] ═══════════════════════════════════════════════")
-        print("☁️ [CloudKit] ✅ RESET COMPLETE!")
-        print("☁️ [CloudKit] All data from THIS device will be uploaded.")
-        print("☁️ [CloudKit] Other devices will receive data after sync.")
-        print("☁️ [CloudKit] ═══════════════════════════════════════════════")
+        debugLog("☁️ [CloudKit] ═══════════════════════════════════════════════")
+        debugLog("☁️ [CloudKit] ✅ RESET COMPLETE!")
+        debugLog("☁️ [CloudKit] All data from THIS device will be uploaded.")
+        debugLog("☁️ [CloudKit] Other devices will receive data after sync.")
+        debugLog("☁️ [CloudKit] ═══════════════════════════════════════════════")
     }
 
     /// Get detailed sync status for UI display

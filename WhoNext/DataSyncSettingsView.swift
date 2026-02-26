@@ -26,13 +26,13 @@ struct DataSyncSettingsView: View {
 
     @FetchRequest(
         sortDescriptors: [NSSortDescriptor(keyPath: \Person.name, ascending: true)],
-        predicate: nil,
+        predicate: NSPredicate(format: "isSoftDeleted == false"),
         animation: .default
     ) private var people: FetchedResults<Person>
 
     @FetchRequest(
         sortDescriptors: [NSSortDescriptor(keyPath: \Conversation.date, ascending: false)],
-        predicate: nil,
+        predicate: NSPredicate(format: "isSoftDeleted == false"),
         animation: .default
     ) private var conversations: FetchedResults<Conversation>
 
@@ -55,6 +55,9 @@ struct DataSyncSettingsView: View {
                 SectionButton(title: "Reminders", icon: "bell", isSelected: selectedSection == "reminders") {
                     selectedSection = "reminders"
                 }
+                SectionButton(title: "Obsidian", icon: "book", isSelected: selectedSection == "obsidian") {
+                    selectedSection = "obsidian"
+                }
                 Spacer()
             }
             .padding(.bottom, 8)
@@ -71,6 +74,8 @@ struct DataSyncSettingsView: View {
                 exportSection
             case "reminders":
                 remindersSection
+            case "obsidian":
+                ObsidianSyncSettingsView()
             default:
                 syncSection
             }
@@ -786,7 +791,11 @@ struct DataSyncSettingsView: View {
                 let person = Person(context: viewContext)
                 person.name = name
                 person.role = role
-                person.isDirectReport = components.count > 2 ? components[2].lowercased() == "true" : false
+                if components.count > 2 && components[2].lowercased() == "true" {
+                    person.category = .directReport
+                } else {
+                    person.category = .colleague
+                }
                 person.timezone = components.count > 4 ? components[4] : "UTC"
                 importedCount += 1
             }
@@ -834,15 +843,15 @@ struct DataSyncSettingsView: View {
         panel.begin { response in
             guard response == .OK, let url = panel.url else { return }
 
-            var csv = "Name,Role,Direct Report,Timezone\n"
+            var csv = "Name,Role,Category,Timezone\n"
 
             for person in people {
                 let name = person.name ?? ""
                 let role = person.role ?? ""
-                let directReport = person.isDirectReport ? "true" : "false"
+                let cat = person.category.rawValue
                 let timezone = person.timezone ?? ""
 
-                csv += "\"\(name)\",\"\(role)\",\(directReport),\"\(timezone)\"\n"
+                csv += "\"\(name)\",\"\(role)\",\"\(cat)\",\"\(timezone)\"\n"
             }
 
             do {

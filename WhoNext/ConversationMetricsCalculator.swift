@@ -49,46 +49,52 @@ struct DurationInsight {
 
 enum RelationshipType {
     case directReport
-    case skipLevel
-    case other
-    
+    case teammate
+    case colleague
+    case external
+
     var expectedMeetingFrequencyDays: Int {
         switch self {
-        case .directReport: return 10 // Weekly to bi-weekly (7-14 days)
-        case .skipLevel: return 180 // 1-2 times per year (180-365 days)
-        case .other: return 30 // Monthly default
+        case .directReport: return 10
+        case .teammate: return 14
+        case .colleague: return 30
+        case .external: return 90
         }
     }
-    
+
     var optimalDurationRange: ClosedRange<Double> {
         switch self {
-        case .directReport: return 45...60 // 45-60 minutes as specified
-        case .skipLevel: return 25...35 // 30 minutes ±5 for flexibility
-        case .other: return 20...45 // General range
+        case .directReport: return 45...60
+        case .teammate: return 30...45
+        case .colleague: return 20...45
+        case .external: return 30...60
         }
     }
-    
+
     var overdueThresholdMultiplier: Double {
         switch self {
-        case .directReport: return 1.5 // 15-21 days before considered overdue
-        case .skipLevel: return 1.2 // ~7-8 months before considered overdue
-        case .other: return 2.0 // 2 months before considered overdue
+        case .directReport: return 1.5   // 15 days
+        case .teammate: return 2.0       // 28 days
+        case .colleague: return 2.0      // 60 days
+        case .external: return 2.0       // 180 days
         }
     }
-    
+
     var healthScoreWeight: Double {
         switch self {
-        case .directReport: return 1.0 // Full weight - most important relationships
-        case .skipLevel: return 0.7 // Lower weight - less frequent but still important
-        case .other: return 0.8 // Standard weight
+        case .directReport: return 1.0
+        case .teammate: return 0.9
+        case .colleague: return 0.8
+        case .external: return 0.6
         }
     }
-    
+
     var description: String {
         switch self {
         case .directReport: return "Direct Report"
-        case .skipLevel: return "Skip Level"
-        case .other: return "Other"
+        case .teammate: return "Teammate"
+        case .colleague: return "Colleague"
+        case .external: return "External"
         }
     }
 }
@@ -138,22 +144,14 @@ class ConversationMetricsCalculator {
     
     // MARK: - Relationship Type Classification
     
-    /// Classify relationship type based on person attributes
+    /// Classify relationship type based on person category
     func classifyRelationshipType(for person: Person) -> RelationshipType {
-        if person.isDirectReport {
-            return .directReport
+        switch person.category {
+        case .directReport: return .directReport
+        case .teammate: return .teammate
+        case .colleague: return .colleague
+        case .external: return .external
         }
-        
-        // Check if this might be a skip level based on role patterns
-        if let role = person.role?.lowercased() {
-            // Common skip level indicators
-            let skipLevelIndicators = ["engineer", "developer", "analyst", "specialist", "coordinator", "associate"]
-            if skipLevelIndicators.contains(where: role.contains) && !person.isDirectReport {
-                return .skipLevel
-            }
-        }
-        
-        return .other
     }
     
     // MARK: - Context-Aware Duration Analytics
@@ -296,17 +294,19 @@ class ConversationMetricsCalculator {
     /// Generate communication pattern insight based on relationship type
     private func generateCommunicationPatternInsight(_ person: Person, relationshipType: RelationshipType, metrics: ConversationMetrics) -> String? {
         let expectedFrequency = relationshipType.expectedMeetingFrequencyDays
-        let lastConversationDays = Calendar.current.dateComponents([.day], from: person.lastContactDate ?? .distantPast, to: Date()).day ?? 0
+        let lastConversationDays = Calendar.current.dateComponents([.day], from: person.mostRecentContactDate ?? .distantPast, to: Date()).day ?? 0
         let daysSince = lastConversationDays
         
         if daysSince > Int(Double(expectedFrequency) * relationshipType.overdueThresholdMultiplier) {
             switch relationshipType {
             case .directReport:
                 return "Direct report check-in is overdue - last conversation was \(daysSince) days ago"
-            case .skipLevel:
-                return "Skip level meeting may be due - last conversation was \(daysSince) days ago"
-            case .other:
+            case .teammate:
+                return "Teammate catch-up may be due - last conversation was \(daysSince) days ago"
+            case .colleague:
                 return "Consider scheduling a catch-up - last conversation was \(daysSince) days ago"
+            case .external:
+                return "External contact follow-up may be due - last conversation was \(daysSince) days ago"
             }
         }
         
@@ -321,10 +321,12 @@ class ConversationMetricsCalculator {
             switch relationshipType {
             case .directReport:
                 return "Consider more structured 1:1 agendas to improve engagement efficiency"
-            case .skipLevel:
-                return "Skip level meetings could benefit from more focused feedback questions"
-            case .other:
+            case .teammate:
+                return "Teammate meetings could benefit from more focused agendas"
+            case .colleague:
                 return "Consider shorter, more focused conversations for better engagement"
+            case .external:
+                return "External meetings could benefit from tighter preparation"
             }
         }
         
@@ -339,10 +341,12 @@ class ConversationMetricsCalculator {
             switch relationshipType {
             case .directReport:
                 return "Direct report relationship needs attention - consider additional support or feedback"
-            case .skipLevel:
-                return "Skip level relationship showing low engagement - may indicate broader team issues"
-            case .other:
+            case .teammate:
+                return "Teammate relationship showing low engagement - consider reaching out"
+            case .colleague:
                 return "Relationship health is declining - consider proactive outreach"
+            case .external:
+                return "External relationship may need a follow-up"
             }
         }
         
@@ -421,21 +425,29 @@ class ConversationMetricsCalculator {
                     actionable: true,
                     priority: .high
                 )
-            case .skipLevel:
+            case .teammate:
                 return DurationInsight(
-                    type: .relationshipAlert,
-                    title: "Skip Level Meeting Due",
-                    description: "Last conversation was \(daysSince) days ago. Consider scheduling skip level meeting",
+                    type: .underCommunicating,
+                    title: "Teammate Catch-up Due",
+                    description: "Last conversation was \(daysSince) days ago. Consider scheduling a teammate sync",
                     actionable: true,
                     priority: .medium
                 )
-            case .other:
+            case .colleague:
                 return DurationInsight(
                     type: .underCommunicating,
                     title: "Long Time Since Last Conversation",
                     description: "Last conversation was \(daysSince) days ago. Consider reaching out",
                     actionable: true,
                     priority: .medium
+                )
+            case .external:
+                return DurationInsight(
+                    type: .relationshipAlert,
+                    title: "External Follow-up Due",
+                    description: "Last conversation was \(daysSince) days ago. Consider a follow-up",
+                    actionable: true,
+                    priority: .low
                 )
             }
         }

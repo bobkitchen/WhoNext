@@ -11,12 +11,10 @@ struct PersonEditView: View {
     @State private var editingTimezone: String = ""
     @State private var showingTimezoneDropdown: Bool = false
     @State private var editingNotes: String = ""
-    @State private var isDirectReport: Bool = false
+    @State private var editingCategory: PersonCategory = .colleague
     @State private var editingPhotoData: Data? = nil
     @State private var editingPhotoImage: NSImage? = nil
     @State private var showingPhotoPicker = false
-    @State private var showingLinkedInSearch = false
-    
     var onSave: (() -> Void)?
     var onCancel: (() -> Void)?
     
@@ -149,31 +147,20 @@ struct PersonEditView: View {
                                 }
                             }
                             
-                            Toggle("Direct Report", isOn: $isDirectReport)
-                                .font(.system(size: 14, weight: .medium))
+                            Picker("Category", selection: $editingCategory) {
+                                ForEach(PersonCategory.allCases) { cat in
+                                    Label(cat.displayName, systemImage: cat.icon).tag(cat)
+                                }
+                            }
+                            .pickerStyle(.menu)
+                            .font(.system(size: 14, weight: .medium))
                         }
                     }
                     
                     // Notes Section
                     VStack(alignment: .leading, spacing: 12) {
-                        HStack {
-                            Text("Profile Notes")
-                                .font(.system(size: 16, weight: .semibold))
-
-                            Spacer()
-
-                            Button(action: {
-                                showingLinkedInSearch = true
-                            }) {
-                                HStack(spacing: 6) {
-                                    Image(systemName: "magnifyingglass")
-                                    Text("Search LinkedIn")
-                                }
-                                .font(.system(size: 12, weight: .medium))
-                                .foregroundColor(.blue)
-                            }
-                            .buttonStyle(PlainButtonStyle())
-                        }
+                        Text("Profile Notes")
+                            .font(.system(size: 16, weight: .semibold))
 
                         // Always show editable TextEditor
                         TextEditor(text: $editingNotes)
@@ -188,7 +175,7 @@ struct PersonEditView: View {
                             )
 
                         // Helper text
-                        Text("💡 Tip: Use markdown formatting like **bold** and ## Headings. Click 'Search LinkedIn' to import profile data.")
+                        Text("💡 Tip: Use markdown formatting like **bold** and ## Headings")
                             .font(.system(size: 11))
                             .foregroundColor(.secondary)
                             .padding(.top, 4)
@@ -228,20 +215,6 @@ struct PersonEditView: View {
                 break
             }
         }
-        .sheet(isPresented: $showingLinkedInSearch) {
-            LinkedInSearchWindow(
-                personName: editingName.isEmpty ? (person.name ?? "") : editingName,
-                personRole: editingRole.isEmpty ? person.role : editingRole,
-                onDataExtracted: { profileData in
-                    populateFromLinkedInData(profileData)
-                    showingLinkedInSearch = false
-                },
-                onClose: {
-                    showingLinkedInSearch = false
-                }
-            )
-            .frame(minWidth: 900, minHeight: 700)
-        }
         .onAppear {
             loadPersonData()
         }
@@ -260,7 +233,7 @@ struct PersonEditView: View {
         editingRole = person.role ?? ""
         editingTimezone = person.timezone ?? ""
         editingNotes = person.notes ?? ""
-        isDirectReport = person.isDirectReport
+        editingCategory = person.category
         
         if let data = person.photo, let image = NSImage(data: data) {
             editingPhotoData = data
@@ -271,122 +244,12 @@ struct PersonEditView: View {
         }
     }
     
-    private func cleanMarkdown(_ text: String) -> String {
-        // Remove existing markdown formatting (asterisks, etc.)
-        return text
-            .replacingOccurrences(of: "**", with: "")
-            .replacingOccurrences(of: "*", with: "")
-            .trimmingCharacters(in: .whitespacesAndNewlines)
-    }
-
-    private func populateFromLinkedInData(_ data: LinkedInProfileData) {
-        print("✅ [PersonEditView] LinkedIn data extracted!")
-        print("   LinkedIn headline: '\(data.headline)'")
-        print("   Current editing role: '\(editingRole)'")
-
-        // Format LinkedIn data into notes (similar to PersonDetailView)
-        var formatted = ""
-
-        // Header
-        if !data.name.isEmpty {
-            formatted += "**\(cleanMarkdown(data.name))**\n"
-        }
-        if !data.headline.isEmpty {
-            formatted += "\(cleanMarkdown(data.headline))\n"
-        }
-        if !data.location.isEmpty {
-            formatted += "📍 \(cleanMarkdown(data.location))\n"
-        }
-        formatted += "\n"
-
-        // About section
-        if !data.about.isEmpty {
-            formatted += "## About\n"
-            formatted += "\(cleanMarkdown(data.about))\n\n"
-        }
-
-        // Experience section
-        if !data.experience.isEmpty {
-            formatted += "## Experience\n"
-            for exp in data.experience {
-                formatted += "• **\(cleanMarkdown(exp.title))**"
-                if !exp.company.isEmpty {
-                    formatted += " at \(cleanMarkdown(exp.company))"
-                }
-                if !exp.duration.isEmpty {
-                    formatted += " — \(cleanMarkdown(exp.duration))"
-                }
-                formatted += "\n"
-            }
-            formatted += "\n"
-        }
-
-        // Education section
-        if !data.education.isEmpty {
-            formatted += "## Education\n"
-            for edu in data.education {
-                formatted += "• \(cleanMarkdown(edu.school))"
-                if !edu.degree.isEmpty {
-                    formatted += " — \(cleanMarkdown(edu.degree))"
-                }
-                if !edu.field.isEmpty {
-                    formatted += " in \(cleanMarkdown(edu.field))"
-                }
-                formatted += "\n"
-            }
-            formatted += "\n"
-        }
-
-        // Skills section
-        if !data.skills.isEmpty {
-            formatted += "## Skills\n"
-            formatted += data.skills.prefix(15).map { "• \(cleanMarkdown($0))" }.joined(separator: "\n")
-            formatted += "\n"
-        }
-
-        // Update editing fields
-        editingNotes = formatted.trimmingCharacters(in: .whitespacesAndNewlines)
-
-        // Only populate empty fields - never overwrite existing data
-        if !data.name.isEmpty && editingName.isEmpty {
-            editingName = data.name
-            print("📝 Updated name: \(data.name)")
-        }
-
-        if !data.location.isEmpty && editingTimezone.isEmpty {
-            editingTimezone = data.location
-            print("📝 Updated location: \(data.location)")
-        }
-
-        // Role is NOT auto-populated - LinkedIn headline is in notes
-        print("ℹ️  LinkedIn headline '\(data.headline)' saved to notes only (not applied to role field)")
-
-        // Download and set photo if available
-        if !data.photo.isEmpty, let photoURL = URL(string: data.photo) {
-            print("📸 Downloading photo from: \(data.photo)")
-
-            Task {
-                do {
-                    let (imageData, _) = try await URLSession.shared.data(from: photoURL)
-
-                    await MainActor.run {
-                        self.editingPhotoData = imageData
-                        self.editingPhotoImage = NSImage(data: imageData)
-                        print("✅ Photo downloaded and set successfully")
-                    }
-                } catch {
-                    print("❌ Failed to download photo: \(error)")
-                }
-            }
-        }
-    }
-
     private func saveChanges() {
         person.name = editingName.trimmingCharacters(in: .whitespacesAndNewlines)
         person.role = editingRole.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? nil : editingRole.trimmingCharacters(in: .whitespacesAndNewlines)
         person.timezone = editingTimezone.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? nil : editingTimezone.trimmingCharacters(in: .whitespacesAndNewlines)
         person.notes = editingNotes.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? nil : editingNotes.trimmingCharacters(in: .whitespacesAndNewlines)
-        person.isDirectReport = isDirectReport
+        person.category = editingCategory
         person.photo = editingPhotoData
         person.modifiedAt = Date() // Mark as modified for sync
         

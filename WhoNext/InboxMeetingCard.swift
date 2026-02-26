@@ -74,7 +74,6 @@ enum InboxEntry: Identifiable {
     /// Returns true if a person name looks like an auto-generated speaker placeholder
     static func isSpeakerPlaceholder(_ name: String) -> Bool {
         let trimmed = name.trimmingCharacters(in: .whitespaces)
-        // Match "Speaker", "Speaker 1", "Speaker 12", etc.
         let pattern = #"^Speaker(\s+\d+)?$"#
         return trimmed.range(of: pattern, options: .regularExpression) != nil
     }
@@ -86,7 +85,14 @@ struct InboxMeetingCard: View {
     let isSelected: Bool
     let onSelect: () -> Void
 
+    @Environment(\.managedObjectContext) private var viewContext
     @State private var isHovered = false
+    @State private var showingAssignPopover = false
+
+    @FetchRequest(
+        sortDescriptors: [NSSortDescriptor(keyPath: \Person.name, ascending: true)],
+        animation: .default
+    ) private var allPeople: FetchedResults<Person>
 
     var body: some View {
         HStack(spacing: 14) {
@@ -156,6 +162,29 @@ struct InboxMeetingCard: View {
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
+
+            // Assign button
+            Button(action: { showingAssignPopover = true }) {
+                Image(systemName: "person.badge.plus")
+                    .font(.system(size: 13))
+                    .foregroundColor(.accentColor)
+                    .frame(width: 28, height: 28)
+                    .background(
+                        RoundedRectangle(cornerRadius: 6)
+                            .fill(Color.accentColor.opacity(0.1))
+                    )
+            }
+            .buttonStyle(.plain)
+            .help("Assign to person")
+            .popover(isPresented: $showingAssignPopover, arrowEdge: .trailing) {
+                AssignPersonPopover(
+                    people: assignablePeople,
+                    onAssign: { person in
+                        assignToPerson(person)
+                        showingAssignPopover = false
+                    }
+                )
+            }
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 12)
@@ -169,14 +198,16 @@ struct InboxMeetingCard: View {
             }
         }
         .onTapGesture {
-            withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
-                onSelect()
-            }
+            onSelect()
         }
         .draggable(entry.draggableItem)
     }
 
     // MARK: - Computed
+
+    private var assignablePeople: [Person] {
+        allPeople.filter { !$0.isCurrentUser && !InboxEntry.isSpeakerPlaceholder($0.name ?? "") }
+    }
 
     private var kindColor: Color {
         switch entry {
@@ -207,5 +238,121 @@ struct InboxMeetingCard: View {
                 (isHovered ? Color(NSColor.separatorColor).opacity(0.3) : Color.clear),
                 lineWidth: isSelected ? 1.5 : 1
             )
+    }
+
+    // MARK: - Assignment
+
+    private func assignToPerson(_ person: Person) {
+        let oldPerson: Person?
+        switch entry {
+        case .conversation(let conversation):
+            oldPerson = conversation.person
+            conversation.person = person
+            conversation.modifiedAt = Date()
+        case .groupMeeting(let meeting):
+            oldPerson = nil
+            meeting.addToAttendees(person)
+            meeting.modifiedAt = Date()
+        }
+        try? viewContext.save()
+
+        // Defer placeholder cleanup to a separate transaction so CloudKit sync
+        // can finish processing the reassignment before we delete the Person.
+        if let oldPerson, let name = oldPerson.name, InboxEntry.isSpeakerPlaceholder(name) {
+            let objectID = oldPerson.objectID
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { [weak viewContext] in
+                guard let context = viewContext else { return }
+                guard let placeholder = try? context.existingObject(with: objectID) as? Person else { return }
+                let remaining = (placeholder.conversations as? Set<Conversation>)?.count ?? 0
+                if remaining == 0 {
+                    context.delete(placeholder)
+                    try? context.save()
+                }
+            }
+        }
+    }
+}
+
+// MARK: - Assign Person Popover
+struct AssignPersonPopover: View {
+    let people: [Person]
+    let onAssign: (Person) -> Void
+
+    @State private var searchText = ""
+
+    private var filteredPeople: [Person] {
+        if searchText.isEmpty { return people }
+        let search = searchText.lowercased()
+        return people.filter { ($0.name ?? "").lowercased().contains(search) }
+    }
+
+    var body: some View {
+        VStack(spacing: 0) {
+            // Header
+            Text("Assign to...")
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundColor(.primary)
+                .padding(.horizontal, 16)
+                .padding(.top, 12)
+                .padding(.bottom, 8)
+
+            // Search
+            TextField("Search people...", text: $searchText)
+                .textFieldStyle(.roundedBorder)
+                .controlSize(.small)
+                .padding(.horizontal, 12)
+                .padding(.bottom, 8)
+
+            Divider()
+
+            // People list
+            ScrollView {
+                LazyVStack(spacing: 2) {
+                    ForEach(filteredPeople, id: \.identifier) { person in
+                        Button(action: { onAssign(person) }) {
+                            HStack(spacing: 10) {
+                                // Avatar
+                                ZStack {
+                                    Circle()
+                                        .fill(avatarColor(for: person))
+                                        .frame(width: 28, height: 28)
+                                    Text(person.initials)
+                                        .font(.system(size: 11, weight: .semibold))
+                                        .foregroundColor(.white)
+                                }
+
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text(person.name ?? "Unnamed")
+                                        .font(.system(size: 13, weight: .medium))
+                                        .foregroundColor(.primary)
+                                    if let role = person.role, !role.isEmpty {
+                                        Text(role)
+                                            .font(.system(size: 11))
+                                            .foregroundColor(.secondary)
+                                            .lineLimit(1)
+                                    }
+                                }
+
+                                Spacer()
+                            }
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 6)
+                            .background(RoundedRectangle(cornerRadius: 6).fill(Color.clear))
+                            .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+                .padding(.vertical, 4)
+            }
+            .frame(maxHeight: 250)
+        }
+        .frame(width: 260)
+    }
+
+    private func avatarColor(for person: Person) -> Color {
+        let colors: [Color] = [.blue, .green, .purple, .orange, .pink]
+        let index = abs((person.name ?? "").hashValue) % colors.count
+        return colors[index]
     }
 }

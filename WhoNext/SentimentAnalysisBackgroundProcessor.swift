@@ -171,7 +171,7 @@ class SentimentAnalysisBackgroundProcessor: ObservableObject {
                     } catch {
                         let errorMessage = "Failed to analyze conversation with \(personName): \(error.localizedDescription)"
                         errors.append(errorMessage)
-                        print("Sentiment analysis error: \(errorMessage)")
+                        debugLog("Sentiment analysis error: \(errorMessage)")
                         lastError = errorMessage
                     }
                 }
@@ -193,12 +193,12 @@ class SentimentAnalysisBackgroundProcessor: ObservableObject {
             processingState = .completed(finalProgress)
             isProcessing = false
             
-            print("Sentiment analysis completed: \(processedCount)/\(unanalyzedConversations.count) conversations processed")
+            debugLog("Sentiment analysis completed: \(processedCount)/\(unanalyzedConversations.count) conversations processed")
             
         } catch {
             processingState = .failed(error)
             isProcessing = false
-            print("Failed to start sentiment analysis processing: \(error)")
+            debugLog("Failed to start sentiment analysis processing: \(error)")
             lastError = error.localizedDescription
         }
     }

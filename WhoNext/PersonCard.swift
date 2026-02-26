@@ -57,7 +57,7 @@ struct PersonCard: View {
             // Last contact or scheduled meeting info
             if isFollowUp {
                 VStack(alignment: .leading, spacing: 4) {
-                    if let lastContact = person.lastContactDate {
+                    if let lastContact = person.mostRecentContactDate {
                         // Calculate days since last contact
                         let daysSince = Calendar.current.dateComponents([.day], from: lastContact, to: Date()).day ?? 0
 

@@ -228,22 +228,34 @@ struct TimelineItemView: View {
 struct PersonAvatarView: View {
     let person: Person
     let size: CGFloat
-    
+
     var body: some View {
-        Circle()
-            .fill(
-                LinearGradient(
-                    colors: [avatarColor, avatarColor.opacity(0.7)],
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
+        if let photoData = person.photo, let nsImage = NSImage(data: photoData) {
+            Image(nsImage: nsImage)
+                .resizable()
+                .aspectRatio(contentMode: .fill)
+                .frame(width: size, height: size)
+                .clipShape(Circle())
+                .overlay(
+                    Circle()
+                        .stroke(Color.primary.opacity(0.1), lineWidth: 0.5)
                 )
-            )
-            .frame(width: size, height: size)
-            .overlay(
-                Text(initials)
-                    .font(.system(size: size * 0.4, weight: .medium))
-                    .foregroundColor(.white)
-            )
+        } else {
+            Circle()
+                .fill(
+                    LinearGradient(
+                        colors: [avatarColor, avatarColor.opacity(0.7)],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+                .frame(width: size, height: size)
+                .overlay(
+                    Text(initials)
+                        .font(.system(size: size * 0.4, weight: .medium))
+                        .foregroundColor(.white)
+                )
+        }
     }
     
     private var initials: String {

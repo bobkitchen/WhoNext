@@ -25,7 +25,7 @@ struct EmptyStateCard: View {
         VStack(spacing: 12) {
             if useSystemIcon {
                 Image(systemName: icon)
-                    .font(.system(size: 32, weight: .light))
+                    .font(.system(size: 24, weight: .light))
                     .foregroundStyle(iconColor)
                     .symbolRenderingMode(.hierarchical)
             } else {
@@ -44,7 +44,7 @@ struct EmptyStateCard: View {
                 .foregroundStyle(.tertiary)
         }
         .frame(maxWidth: .infinity)
-        .padding(.vertical, 32)
+        .padding(.vertical, 16)
         .liquidGlassCard(
             cornerRadius: 16,
             elevation: .low,

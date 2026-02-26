@@ -9,7 +9,7 @@ struct GroupDetailView: View {
 
     @State private var preMeetingBrief: String?
     @State private var isGeneratingBrief = false
-    @StateObject private var hybridAI = HybridAIService()
+    @ObservedObject private var hybridAI = HybridAIService.shared
     @State private var preMeetingBriefWindowController: GroupPreMeetingBriefWindowController?
     @State private var showingEditGroup = false
     @State private var showingAddMember = false
@@ -927,6 +927,9 @@ struct GroupMeetingRowView: View {
             rootView: GroupMeetingDetailView(meeting: meeting)
                 .environment(\.managedObjectContext, viewContext)
         )
+        let delegate = ConversationWindowDelegate()
+        window.delegate = delegate
+        objc_setAssociatedObject(window, &ConversationWindowDelegate.associatedKey, delegate, .OBJC_ASSOCIATION_RETAIN_NONATOMIC)
         window.makeKeyAndOrderFront(nil)
     }
 

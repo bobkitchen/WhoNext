@@ -10,6 +10,8 @@ struct TranscriptReviewView: View {
     @State private var editedSummary: String
     @State private var selectedParticipants: Set<ParticipantInfo>
     @State private var showingSaveConfirmation = false
+    @State private var showingSaveError = false
+    @State private var saveErrorMessage = ""
     @State private var participantReplacements: [String: Person] = [:]
     @State private var searchQueries: [String: String] = [:]
     @State private var searchResults: [String: [Person]] = [:]
@@ -19,6 +21,7 @@ struct TranscriptReviewView: View {
     @State private var manualParticipants: [ParticipantInfo] = []
     @State private var autoMatchConfirmed: [String: Bool] = [:]
     @State private var showFullTranscript: Bool = false
+    @State private var markedAsCurrentUserNames: Set<String> = []
 
     // Meeting type handling
     @State private var isGroupMeeting: Bool = false
@@ -43,6 +46,10 @@ struct TranscriptReviewView: View {
 
         // Use actual recording timestamp from the processed transcript
         self._meetingDate = State(initialValue: processedTranscript.originalTranscript.timestamp)
+
+        // Seed markedAsCurrentUserNames from pre-identified current users
+        let currentUserNames = Set(processedTranscript.participants.filter { $0.isCurrentUser }.map { $0.name })
+        self._markedAsCurrentUserNames = State(initialValue: currentUserNames)
     }
     
     var body: some View {
@@ -554,7 +561,9 @@ struct TranscriptReviewView: View {
                     } else {
                         saveConversation()
                     }
-                    dismiss()
+                    if !showingSaveError {
+                        dismiss()
+                    }
                 }
                 .buttonStyle(LiquidGlassButtonStyle(variant: .primary, size: .medium))
                 .disabled(editedTitle.isEmpty || selectedParticipants.isEmpty || (isGroupMeeting && selectedGroup == nil && newGroupName.trimmingCharacters(in: .whitespaces).isEmpty))
@@ -562,28 +571,24 @@ struct TranscriptReviewView: View {
             .padding()
             .background(.regularMaterial)
         }
+        .alert("Save Failed", isPresented: $showingSaveError) {
+            Button("OK", role: .cancel) { }
+        } message: {
+            Text(saveErrorMessage)
+        }
     }
     
     // MARK: - Helper Methods
     
     private func sentimentColor(_ sentiment: String) -> Color {
-        switch sentiment.lowercased() {
-        case "positive", "happy", "excited":
-            return .green
-        case "negative", "sad", "angry", "frustrated":
-            return .red
-        case "concerned", "worried":
-            return .orange
-        default:
-            return .blue
-        }
+        SentimentColors.color(for: sentiment)
     }
     
     private func saveConversation() {
         // Use a consistent context for all operations
         let context = viewContext.persistentStoreCoordinator != nil ? viewContext : PersistenceController.shared.container.viewContext
-        print("🔧 Using context: \(context)")
-        print("🔧 Context has coordinator: \(context.persistentStoreCoordinator != nil)")
+        debugLog("🔧 Using context: \(context)")
+        debugLog("🔧 Context has coordinator: \(context.persistentStoreCoordinator != nil)")
 
         let conversation = Conversation(context: context)
         conversation.uuid = UUID()
@@ -608,18 +613,18 @@ struct TranscriptReviewView: View {
         let isVeryRecent = abs(hoursDifference) < 0.5 // Within 30 minutes
 
         if isInFuture {
-            print("⚠️ WARNING: Meeting date is in the FUTURE (\(selectedDate.formatted()))")
+            debugLog("⚠️ WARNING: Meeting date is in the FUTURE (\(selectedDate.formatted()))")
         } else if isVeryRecent && !useCurrentDate {
-            print("⚠️ NOTICE: Meeting date is very recent but user opted not to use current time")
+            debugLog("⚠️ NOTICE: Meeting date is very recent but user opted not to use current time")
         }
 
-        print("🔧 Created conversation with:")
-        print("🔧   UUID: \(conversation.uuid?.uuidString ?? "nil")")
-        print("🔧   Meeting Date: \(conversation.date?.description ?? "nil") (selected by user: \(!useCurrentDate))")
-        print("🔧   Created At: \(conversation.createdAt?.description ?? "nil")")
-        print("🔧   Time difference from now: \(String(format: "%.1f", hoursDifference)) hours")
-        print("🔧   Summary length: \(conversation.summary?.count ?? 0)")
-        print("🔧   Notes length: \(conversation.notes?.count ?? 0)")
+        debugLog("🔧 Created conversation with:")
+        debugLog("🔧   UUID: \(conversation.uuid?.uuidString ?? "nil")")
+        debugLog("🔧   Meeting Date: \(conversation.date?.description ?? "nil") (selected by user: \(!useCurrentDate))")
+        debugLog("🔧   Created At: \(conversation.createdAt?.description ?? "nil")")
+        debugLog("🔧   Time difference from now: \(String(format: "%.1f", hoursDifference)) hours")
+        debugLog("🔧   Summary length: \(conversation.summary?.count ?? 0)")
+        debugLog("🔧   Notes length: \(conversation.notes?.count ?? 0)")
         
         // Save basic sentiment data to Core Data fields
         let sentiment = processedTranscript.sentimentAnalysis
@@ -647,27 +652,31 @@ struct TranscriptReviewView: View {
         }
         
         // Link ALL participants to conversation and save voice embeddings
-        print("🔗 Linking conversation to \(selectedParticipants.count) participants")
+        debugLog("🔗 Linking conversation to \(selectedParticipants.count) participants")
         for participant in selectedParticipants {
-            print("🔗 Processing participant: \(participant.name)")
+            if participant.isCurrentUser {
+                debugLog("⏭️ Skipping current user: \(participant.name)")
+                continue
+            }
+            debugLog("🔗 Processing participant: \(participant.name)")
             guard let person = participantReplacements[participant.name] ??
                                 (participant.existingPersonId != nil ? findPersonById(participant.existingPersonId!) : nil) ??
                                 findOrCreatePerson(named: participant.name, context: context) else {
-                print("⚠️ Skipping participant (current user): \(participant.name)")
+                debugLog("⚠️ Could not find/create person for: \(participant.name)")
                 continue
             }
-            print("🔗 Found/created person: \(person.name ?? "Unknown") (ID: \(person.objectID))")
+            debugLog("🔗 Found/created person: \(person.name ?? "Unknown") (ID: \(person.objectID))")
 
             // Set first non-current-user as primary person (backward compat with to-one relationship)
             if conversation.person == nil && !participant.isCurrentUser {
                 conversation.person = person
-                print("🔗 Set as primary person for conversation")
+                debugLog("🔗 Set as primary person for conversation")
             }
 
             // Voice learning: save voice embedding to Person record for future matching
             if let embedding = participant.voiceEmbedding, !embedding.isEmpty {
                 person.addVoiceEmbedding(embedding)
-                print("🎤 Saved voice embedding to \(person.wrappedName) (samples: \(person.voiceSampleCount))")
+                debugLog("🎤 Saved voice embedding to \(person.wrappedName) (samples: \(person.voiceSampleCount))")
             }
         }
 
@@ -677,44 +686,46 @@ struct TranscriptReviewView: View {
             
             // Sync happens automatically via CloudKit
             
-            print("✅ Conversation saved successfully with enhanced sentiment data")
+            debugLog("✅ Conversation saved successfully with enhanced sentiment data")
             
             // Debug: Verify the conversation was actually saved
-            print("🔧 After save - conversation details:")
-            print("🔧   Object ID: \(conversation.objectID)")
-            print("🔧   UUID: \(conversation.uuid?.uuidString ?? "nil")")
-            print("🔧   Date: \(conversation.date?.description ?? "nil")")
-            print("🔧   Summary: \(conversation.summary?.prefix(50) ?? "nil")...")
-            print("🔧   Notes length: \(conversation.notes?.count ?? 0)")
+            debugLog("🔧 After save - conversation details:")
+            debugLog("🔧   Object ID: \(conversation.objectID)")
+            debugLog("🔧   UUID: \(conversation.uuid?.uuidString ?? "nil")")
+            debugLog("🔧   Date: \(conversation.date?.description ?? "nil")")
+            debugLog("🔧   Summary: \(conversation.summary?.prefix(50) ?? "nil")...")
+            debugLog("🔧   Notes length: \(conversation.notes?.count ?? 0)")
             
             // Debug: Verify the relationship was established
             if let savedPerson = conversation.person {
-                print("✅ Conversation linked to person: \(savedPerson.name ?? "Unknown")")
-                print("✅ Person now has \(savedPerson.conversations?.count ?? 0) conversations")
+                debugLog("✅ Conversation linked to person: \(savedPerson.name ?? "Unknown")")
+                debugLog("✅ Person now has \(savedPerson.conversations?.count ?? 0) conversations")
                 
                 // Debug: Check if the person's conversations include our new one
                 if let conversations = savedPerson.conversations?.allObjects as? [Conversation] {
-                    print("🔧 Person's conversations:")
+                    debugLog("🔧 Person's conversations:")
                     for conv in conversations {
-                        print("🔧   - \(conv.uuid?.uuidString ?? "no-uuid") on \(conv.date?.description ?? "no-date")")
+                        debugLog("🔧   - \(conv.uuid?.uuidString ?? "no-uuid") on \(conv.date?.description ?? "no-date")")
                     }
                 }
             } else {
-                print("❌ WARNING: Conversation was not linked to any person!")
+                debugLog("❌ WARNING: Conversation was not linked to any person!")
             }
             
             // Post notification to refresh any PersonDetailViews
-            NotificationCenter.default.post(name: NSNotification.Name("ConversationSaved"), object: nil)
+            NotificationCenter.default.post(name: .conversationSaved, object: nil)
             
             showingSaveConfirmation = true
         } catch {
-            print("❌ Error saving conversation: \(error)")
+            debugLog("❌ Error saving conversation: \(error)")
+            saveErrorMessage = "Failed to save conversation: \(error.localizedDescription)"
+            showingSaveError = true
         }
     }
-    
+
     private func saveAsGroupMeeting() {
         let context = viewContext.persistentStoreCoordinator != nil ? viewContext : PersistenceController.shared.container.viewContext
-        print("🔧 [GroupMeeting] Using context: \(context)")
+        debugLog("🔧 [GroupMeeting] Using context: \(context)")
 
         // 1. Resolve or create the Group
         let group: WhoNext.Group
@@ -723,14 +734,14 @@ struct TranscriptReviewView: View {
         } else {
             let trimmedName = newGroupName.trimmingCharacters(in: .whitespaces)
             guard !trimmedName.isEmpty else {
-                print("❌ [GroupMeeting] No group name provided")
+                debugLog("❌ [GroupMeeting] No group name provided")
                 return
             }
             group = WhoNext.Group(context: context)
             group.identifier = UUID()
             group.name = trimmedName
             group.createdAt = Date()
-            print("👥 [GroupMeeting] Created new group: \(trimmedName)")
+            debugLog("👥 [GroupMeeting] Created new group: \(trimmedName)")
         }
 
         // 2. Create GroupMeeting
@@ -750,23 +761,27 @@ struct TranscriptReviewView: View {
         meeting.group = group
 
         // 4. For each selected participant, link to meeting and group
-        print("🔗 [GroupMeeting] Linking \(selectedParticipants.count) participants")
+        debugLog("🔗 [GroupMeeting] Linking \(selectedParticipants.count) participants")
         for participant in selectedParticipants {
+            if participant.isCurrentUser {
+                debugLog("⏭️ [GroupMeeting] Skipping current user: \(participant.name)")
+                continue
+            }
             guard let person = participantReplacements[participant.name] ??
                                 (participant.existingPersonId != nil ? findPersonById(participant.existingPersonId!) : nil) ??
                                 findOrCreatePerson(named: participant.name, context: context) else {
-                print("⚠️ [GroupMeeting] Skipping participant (current user): \(participant.name)")
+                debugLog("⚠️ [GroupMeeting] Could not find/create person for: \(participant.name)")
                 continue
             }
 
             meeting.addToAttendees(person)
             group.addToMembers(person)
-            print("🔗 [GroupMeeting] Added \(person.wrappedName) as attendee and group member")
+            debugLog("🔗 [GroupMeeting] Added \(person.wrappedName) as attendee and group member")
 
             // Save voice embeddings (same as existing flow)
             if let embedding = participant.voiceEmbedding, !embedding.isEmpty {
                 person.addVoiceEmbedding(embedding)
-                print("🎤 [GroupMeeting] Saved voice embedding to \(person.wrappedName)")
+                debugLog("🎤 [GroupMeeting] Saved voice embedding to \(person.wrappedName)")
             }
         }
 
@@ -798,16 +813,18 @@ struct TranscriptReviewView: View {
         // Save context
         do {
             try context.save()
-            print("✅ [GroupMeeting] Saved successfully: \(editedTitle)")
-            print("✅ [GroupMeeting] Group: \(group.name ?? "Unknown"), Attendees: \(meeting.attendeeCount)")
+            debugLog("✅ [GroupMeeting] Saved successfully: \(editedTitle)")
+            debugLog("✅ [GroupMeeting] Group: \(group.name ?? "Unknown"), Attendees: \(meeting.attendeeCount)")
 
             // 7. Post notification to refresh views
-            NotificationCenter.default.post(name: NSNotification.Name("GroupMeetingSaved"), object: nil)
-            NotificationCenter.default.post(name: NSNotification.Name("ConversationSaved"), object: nil)
+            NotificationCenter.default.post(name: .groupMeetingSaved, object: nil)
+            NotificationCenter.default.post(name: .conversationSaved, object: nil)
 
             showingSaveConfirmation = true
         } catch {
-            print("❌ [GroupMeeting] Error saving: \(error)")
+            debugLog("❌ [GroupMeeting] Error saving: \(error)")
+            saveErrorMessage = "Failed to save group meeting: \(error.localizedDescription)"
+            showingSaveError = true
         }
     }
 
@@ -818,18 +835,18 @@ struct TranscriptReviewView: View {
             try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
             let file = dir.appendingPathComponent("\(id.uuidString).json")
             try data.write(to: file)
-            print("📊 Saved sentiment data to \(file.lastPathComponent)")
+            debugLog("📊 Saved sentiment data to \(file.lastPathComponent)")
         } catch {
-            print("⚠️ Failed to save sentiment data: \(error)")
+            debugLog("⚠️ Failed to save sentiment data: \(error)")
         }
     }
 
     private func findOrCreatePerson(named name: String, context: NSManagedObjectContext) -> Person? {
-        print("👤 Finding or creating person: '\(name)'")
+        debugLog("👤 Finding or creating person: '\(name)'")
 
         // Check if this is the current user - should not create Person record for user
         if UserProfile.shared.isCurrentUser(name) {
-            print("⚠️ Attempted to create Person record for current user '\(name)' - skipping")
+            debugLog("⚠️ Attempted to create Person record for current user '\(name)' - skipping")
             return nil
         }
 
@@ -839,29 +856,29 @@ struct TranscriptReviewView: View {
         do {
             let people = try context.fetch(request)
             if let existingPerson = people.first {
-                print("👤 Found existing person: \(existingPerson.name ?? "Unknown") (ID: \(existingPerson.objectID))")
+                debugLog("👤 Found existing person: \(existingPerson.name ?? "Unknown") (ID: \(existingPerson.objectID))")
                 return existingPerson
             }
         } catch {
-            print("👤 Error fetching person: \(error)")
+            debugLog("👤 Error fetching person: \(error)")
         }
 
         // Create new person
-        print("👤 Creating new person: '\(name)'")
+        debugLog("👤 Creating new person: '\(name)'")
         let newPerson = Person(context: context)
         newPerson.identifier = UUID()
         newPerson.name = name
-        print("👤 Created new person: \(newPerson.name ?? "Unknown") (ID: \(newPerson.objectID))")
+        debugLog("👤 Created new person: \(newPerson.name ?? "Unknown") (ID: \(newPerson.objectID))")
         return newPerson
     }
     
     private func searchPeople(for participantName: String, query: String) {
-        print("🔍 Searching for participant: \(participantName), query: '\(query)'")
+        debugLog("🔍 Searching for participant: \(participantName), query: '\(query)'")
         
         // Use consistent context - same logic as saveConversation
         let context = viewContext.persistentStoreCoordinator != nil ? viewContext : PersistenceController.shared.container.viewContext
         
-        print("🔍 Using context: \(context == viewContext ? "viewContext" : "sharedContext")")
+        debugLog("🔍 Using context: \(context == viewContext ? "viewContext" : "sharedContext")")
         
         if query.isEmpty {
             searchResults[participantName] = []
@@ -874,15 +891,15 @@ struct TranscriptReviewView: View {
         request.fetchLimit = 10
         
         do {
-            print("🔍 Executing Core Data fetch request...")
+            debugLog("🔍 Executing Core Data fetch request...")
             let results = try context.fetch(request)
-            print("🔍 Found \(results.count) results")
+            debugLog("🔍 Found \(results.count) results")
             for person in results {
-                print("🔍 - \(person.name ?? "Unknown") (\(person.role ?? "No role"))")
+                debugLog("🔍 - \(person.name ?? "Unknown") (\(person.role ?? "No role"))")
             }
             searchResults[participantName] = results
         } catch {
-            print("🔍 Error searching people: \(error)")
+            debugLog("🔍 Error searching people: \(error)")
             searchResults[participantName] = []
         }
     }
@@ -901,7 +918,7 @@ struct TranscriptReviewView: View {
         do {
             manualSearchResults = try context.fetch(request)
         } catch {
-            print("🔍 Error searching manual people: \(error)")
+            debugLog("🔍 Error searching manual people: \(error)")
             manualSearchResults = []
         }
     }
@@ -928,32 +945,30 @@ struct TranscriptReviewView: View {
         do {
             return try context.fetch(request).first
         } catch {
-            print("❌ Error finding person by ID: \(error)")
+            debugLog("❌ Error finding person by ID: \(error)")
             return nil
         }
     }
 
     /// Mark a participant as the current user and update user profile
     private func markAsCurrentUser(_ participant: ParticipantInfo) {
-        print("🙋 User identified themselves as: \(participant.name)")
+        markedAsCurrentUserNames.insert(participant.name)
+        debugLog("🙋 User identified themselves as: \(participant.name)")
 
         // Update UserProfile with the participant's name if not already set
         if UserProfile.shared.name.isEmpty {
             UserProfile.shared.name = participant.name
-            print("✅ Updated UserProfile name to: \(participant.name)")
+            debugLog("✅ Updated UserProfile name to: \(participant.name)")
         }
-
-        // Remove the participant from selected participants (users don't appear in their own meetings)
-        selectedParticipants.remove(participant)
 
         // Save voice embedding to UserProfile for future auto-identification.
         // This enables DiarizationManager.identifyUserSpeaker() which checks UserProfile.
         if let embedding = participant.voiceEmbedding, !embedding.isEmpty {
             UserProfile.shared.addVoiceSample(embedding)
-            print("🎤 Saved voice embedding to UserProfile (samples: \(UserProfile.shared.voiceSampleCount))")
+            debugLog("🎤 Saved voice embedding to UserProfile (samples: \(UserProfile.shared.voiceSampleCount))")
         } else {
-            print("💡 No voice embedding available for this participant.")
-            print("💡 Use Settings > General > Voice Recognition to train your voice")
+            debugLog("💡 No voice embedding available for this participant.")
+            debugLog("💡 Use Settings > General > Voice Recognition to train your voice")
         }
     }
 
@@ -1069,7 +1084,7 @@ struct TranscriptReviewView: View {
             }
 
             // "This is me" button - for user self-identification and voice training
-            if !UserProfile.shared.isCurrentUser(participant.name) {
+            if !participant.isCurrentUser && !markedAsCurrentUserNames.contains(participant.name) {
                 HStack(spacing: 8) {
                     Button {
                         markAsCurrentUser(participant)

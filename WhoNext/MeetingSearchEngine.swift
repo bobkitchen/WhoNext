@@ -170,7 +170,7 @@ class MeetingSearchEngine: ObservableObject {
                 )
             }
         } catch {
-            print("Failed to search group meetings: \(error)")
+            debugLog("Failed to search group meetings: \(error)")
             return []
         }
     }
@@ -246,7 +246,7 @@ class MeetingSearchEngine: ObservableObject {
                 )
             }
         } catch {
-            print("Failed to search conversations: \(error)")
+            debugLog("Failed to search conversations: \(error)")
             return []
         }
     }
@@ -362,7 +362,7 @@ class MeetingSearchEngine: ObservableObject {
     private func buildSearchIndex() {
         Task {
             searchIndex = await SearchIndex.build(from: context)
-            print("✅ Search index built with \(searchIndex?.entryCount ?? 0) entries")
+            debugLog("✅ Search index built with \(searchIndex?.entryCount ?? 0) entries")
         }
     }
     
@@ -927,7 +927,7 @@ struct SearchResultRow: View {
     
     private func openSearchResult(_ result: SearchResult) {
         // TODO: Implement navigation to the meeting or conversation
-        print("Opening result: \(result.id)")
+        debugLog("Opening result: \(result.id)")
     }
 }
 

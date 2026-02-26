@@ -163,7 +163,7 @@ class TranscriptProcessor: ObservableObject {
     @Published var processingStatus = ""
     @Published var currentPhase: TranscriptProcessingPhase = .idle
 
-    private let hybridAI = HybridAIService()
+    private let hybridAI = HybridAIService.shared
 
     init() {
     }

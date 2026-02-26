@@ -21,6 +21,7 @@ struct EnhancedPeopleView: View {
     // Fetch request for people
     @FetchRequest(
         sortDescriptors: [NSSortDescriptor(keyPath: \Person.name, ascending: true)],
+        predicate: NSPredicate(format: "isSoftDeleted == false"),
         animation: .default
     ) private var allPeople: FetchedResults<Person>
 
@@ -52,8 +53,8 @@ struct EnhancedPeopleView: View {
         return result
     }
     
-    private var favorites: [Person] {
-        filteredPeople.filter { $0.isDirectReport }
+    private var directReports: [Person] {
+        filteredPeople.filter { $0.category == .directReport }
     }
     
     private var recentlyContacted: [Person] {
@@ -161,10 +162,10 @@ struct EnhancedPeopleView: View {
                     Divider()
                         .frame(height: 12)
                     
-                    Text("\(favorites.count)")
+                    Text("\(directReports.count)")
                         .font(.system(size: 11, weight: .medium))
                         .foregroundColor(.primary)
-                    Text("favorites")
+                    Text("direct reports")
                         .font(.system(size: 11))
                         .foregroundColor(.secondary)
                 }
@@ -239,29 +240,27 @@ struct EnhancedPeopleView: View {
     // MARK: - People List Content
     private var peopleListContent: some View {
         ScrollView(.vertical, showsIndicators: true) {
-            VStack(alignment: .leading, spacing: 24) {
-                // Inbox section — always at the top when there are items
-                if !inboxItems.isEmpty {
-                    inboxSection
-                }
-            }
-
             if filteredPeople.isEmpty && inboxItems.isEmpty {
                 emptyStateView
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
-            } else if !filteredPeople.isEmpty {
+            } else {
                 VStack(alignment: .leading, spacing: 24) {
+                    // Inbox section — always at the top when there are items
+                    if !inboxItems.isEmpty {
+                        inboxSection
+                    }
+
                     // Favorites section
-                    if !favorites.isEmpty {
+                    if !directReports.isEmpty {
                         VStack(alignment: .leading, spacing: 8) {
                             PersonSectionHeader(
-                                title: "Favorites",
-                                count: favorites.count,
-                                icon: "star.fill"
+                                title: "Direct Reports",
+                                count: directReports.count,
+                                icon: "arrow.down.right.circle.fill"
                             )
                             
                             LazyVStack(spacing: 6) {
-                                ForEach(favorites, id: \.identifier) { person in
+                                ForEach(directReports, id: \.identifier) { person in
                                     EnhancedPersonCard(
                                         person: person,
                                         selectedPerson: $selectedPerson
@@ -273,7 +272,7 @@ struct EnhancedPeopleView: View {
                     }
                     
                     // Recently contacted section
-                    if !recentlyContacted.isEmpty && recentlyContacted != favorites {
+                    if !recentlyContacted.isEmpty && recentlyContacted != directReports {
                         VStack(alignment: .leading, spacing: 8) {
                             PersonSectionHeader(
                                 title: "Recently Contacted",
@@ -282,7 +281,7 @@ struct EnhancedPeopleView: View {
                             )
                             
                             LazyVStack(spacing: 8) {
-                                ForEach(recentlyContacted.filter { !favorites.contains($0) }, id: \.identifier) { person in
+                                ForEach(recentlyContacted.filter { !directReports.contains($0) }, id: \.identifier) { person in
                                     EnhancedPersonCard(
                                         person: person,
                                         selectedPerson: $selectedPerson
@@ -295,7 +294,7 @@ struct EnhancedPeopleView: View {
                     
                     // All people section
                     let remainingPeople = filteredPeople.filter { 
-                        !favorites.contains($0) && !recentlyContacted.contains($0)
+                        !directReports.contains($0) && !recentlyContacted.contains($0)
                     }
                     
                     if !remainingPeople.isEmpty {
@@ -468,8 +467,8 @@ struct EnhancedPeopleView: View {
     
     private func applyFilter(_ filter: PersonFilter, to people: [Person]) -> [Person] {
         switch filter {
-        case .directReport:
-            return people.filter { $0.isDirectReport }
+        case .category(let cat):
+            return people.filter { $0.category == cat }
         case .recentlyContacted:
             return people.filter { person in
                 guard let conversations = person.conversations as? Set<Conversation>,
@@ -514,9 +513,6 @@ struct EnhancedPeopleView: View {
                 }
                 return conversations.count >= 10
             }
-        case .role, .department:
-            // These would require additional filtering logic
-            return people
         }
     }
     

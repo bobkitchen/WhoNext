@@ -1,8 +1,9 @@
 import Foundation
 import SwiftUI
 
+@MainActor
 class ErrorManager: ObservableObject {
-    @MainActor static let shared = ErrorManager()
+    static let shared = ErrorManager()
     // MARK: - Published Properties
     @Published var currentError: AppError?
     @Published var isShowingError = false
@@ -212,12 +213,7 @@ extension View {
                 errorManager.clearError()
             }
             
-            if error.recoverySuggestion != nil {
-                Button("Retry") {
-                    // This would need to be customized per use case
-                    errorManager.dismissError()
-                }
-            }
+            // Retry removed — dismissError() was a no-op; wire per-use-case retry via ErrorManager.retry(action:)
         } message: { error in
             VStack(alignment: .leading, spacing: 8) {
                 if let description = error.errorDescription {

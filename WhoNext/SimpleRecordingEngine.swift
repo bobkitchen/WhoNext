@@ -34,6 +34,51 @@ class SimpleRecordingEngine: ObservableObject {
 
     // Speaker diarization state
     @Published var detectedSpeakerCount: Int = 0
+    @Published var hasRemoteAudio: Bool = false
+
+    /// Expected number of attendees from calendar data (used to constrain diarization)
+    var expectedAttendeeCount: Int?
+
+    // MARK: - Diarization Strategy
+
+    /// Determines how speaker identification is performed based on AEC availability and meeting size.
+    /// - streamLabeling: 1:1 with AEC — mic=local, system=remote. Zero FluidAudio diarization.
+    /// - hybridGroup: Group with AEC — mic=local (VAD only), guided FluidAudio on system stream only.
+    /// - legacyDualDiarizer: Fallback when AEC unavailable — dual independent diarizers (Feb 25 fixes).
+    enum DiarizationStrategy: String {
+        case streamLabeling       // 1:1: mic=local, system=remote. Zero diarization.
+        case hybridGroup          // Group: mic=local, guided FluidAudio on system only.
+        case legacyDualDiarizer   // Fallback: current dual-diarizer (AEC unavailable).
+    }
+
+    @Published private(set) var diarizationStrategy: DiarizationStrategy = .legacyDualDiarizer
+
+    /// RMS threshold for VAD (Voice Activity Detection) in stream labeling / hybrid modes
+    private let vadRMSThreshold: Float = 0.01
+
+    // MARK: - Multi-Speaker Detection (Dynamic Upgrade)
+
+    /// Rolling window of system audio speech energy values for multi-speaker detection.
+    /// When energy variance is high relative to mean, it suggests multiple speakers.
+    private var systemSpeechEnergies: [Float] = []
+    /// Maximum number of energy samples to retain in the rolling window
+    private let energyWindowSize = 50
+    /// Number of consecutive windows where multi-speaker evidence was detected
+    private var multiSpeakerEvidenceCount = 0
+    /// Threshold: trigger upgrade after this many consecutive evidence windows
+    private let multiSpeakerEvidenceThreshold = 3
+    /// Coefficient of variation threshold — above this suggests multiple speakers
+    private let energyCVThreshold: Float = 0.6
+
+    // MARK: - System Audio Buffer (Strategy Upgrade Catch-Up)
+
+    /// Buffers recent system audio during streamLabeling mode so the diarizer
+    /// can catch up when upgrading to hybridGroup mid-recording.
+    private var systemAudioCatchUpBuffer: [AVAudioPCMBuffer] = []
+    /// Maximum catch-up buffer duration in seconds (at 16kHz)
+    private let maxCatchUpBufferSeconds: Double = 60.0
+    /// Running count of buffered frames for size management
+    private var catchUpBufferFrameCount: Int = 0
 
     // MARK: - Components
 
@@ -44,8 +89,8 @@ class SimpleRecordingEngine: ObservableObject {
     // MARK: - Diarization Components
 
     #if canImport(FluidAudio)
-    private let diarizationManager = DiarizationManager(enableRealTimeProcessing: true)
-    private let systemDiarizationManager = DiarizationManager(enableRealTimeProcessing: true)
+    private var diarizationManager = DiarizationManager(enableRealTimeProcessing: true)
+    private var systemDiarizationManager = DiarizationManager(enableRealTimeProcessing: true)
     private let diarizationBuffer = DiarizationBuffer()
     private let systemDiarizationBuffer = DiarizationBuffer()
     private let segmentAligner = SegmentAligner()
@@ -91,6 +136,14 @@ class SimpleRecordingEngine: ObservableObject {
             .receive(on: RunLoop.main)
             .sink { [weak self] mode in
                 self?.isMicOnlyMode = (mode == .microphoneOnly)
+            }
+            .store(in: &cancellables)
+
+        // Log AEC status changes
+        audioCapturer.$isEchoCancellationActive
+            .receive(on: RunLoop.main)
+            .sink { active in
+                print("[SimpleRecordingEngine] AEC status: \(active ? "active" : "inactive")")
             }
             .store(in: &cancellables)
     }
@@ -148,66 +201,37 @@ class SimpleRecordingEngine: ObservableObject {
         print("[SimpleRecordingEngine] Starting recording...")
 
         do {
-            // Ensure transcriber is ready
-            if transcriber == nil || transcriber?.isReady != true {
-                let settings = MeetingRecordingConfiguration.shared.transcriptionSettings
-                transcriber = TranscriptionManagerFactory.createEngine(for: settings)
-                try await transcriber?.initialize()
-                print("[SimpleRecordingEngine] Transcriber initialized: \(settings.transcriptionEngine.displayName)")
-            }
+            // --- Phase 1: Parallel initialization ---
+            // Transcriber init, diarization init, and audio capture are independent
+            async let transcriberReady: Void = ensureTranscriberReady()
+            async let diarizationReady: Void = ensureDiarizationReady()
+            async let audioReady: Void = audioCapturer.startCapture()
 
-            // Reset transcription state for new recording (important for Parakeet decoder state)
-            transcriber?.resetState()
-
-            // Create new meeting
+            // Do trivial sync setup while waiting for heavy work
             let meeting = LiveMeeting()
             meeting.calendarTitle = "Recording"
             meeting.startTime = Date()
             currentMeeting = meeting
-
-            // Reset chunk buffer
             await chunkBuffer.reset()
 
-            // Initialize and reset diarization components
-            #if canImport(FluidAudio)
-            // Ensure diarization is initialized (may not have been pre-warmed)
-            do {
-                try await diarizationManager.initialize()
-                print("[SimpleRecordingEngine] Diarization manager initialized")
-            } catch {
-                print("[SimpleRecordingEngine] Diarization initialization failed: \(error)")
+            // Derive expected attendee count from calendar data if available
+            if !meeting.expectedParticipants.isEmpty {
+                expectedAttendeeCount = meeting.expectedParticipants.count
             }
-            await diarizationBuffer.reset()
-            segmentAligner.reset()
-            diarizationManager.reset()
-            do {
-                try await systemDiarizationManager.initialize()
-                print("[SimpleRecordingEngine] System diarization manager initialized")
-            } catch {
-                print("[SimpleRecordingEngine] System diarization initialization failed: \(error)")
-            }
-            await systemDiarizationBuffer.reset()
-            systemDiarizationManager.reset()
-            detectedSpeakerCount = 0
-            backfillCursor = 0
-            #endif
 
-            // Start audio capture
-            try await audioCapturer.startCapture()
+            // Wait for all heavy work to finish
+            try await transcriberReady
+            _ = await diarizationReady  // non-throwing wrapper
+            try await audioReady
 
-            // Update state
+            // --- Phase 2: Start (all sequential deps satisfied) ---
             isRecording = true
             recordingState = .recording
             recordingDuration = 0
             recordingStartTime = Date()
-
-            // Start duration timer
             startDurationTimer()
-
-            // Show recording window
             RecordingWindowManager.shared.show()
 
-            // Start processing loop
             recordingTask = Task {
                 await processAudioStreams()
             }
@@ -220,6 +244,144 @@ class SimpleRecordingEngine: ObservableObject {
             currentMeeting = nil
         }
     }
+
+    /// Ensure the transcription engine is initialized and ready
+    private func ensureTranscriberReady() async throws {
+        if transcriber == nil || transcriber?.isReady != true {
+            let settings = MeetingRecordingConfiguration.shared.transcriptionSettings
+            transcriber = TranscriptionManagerFactory.createEngine(for: settings)
+            try await transcriber?.initialize()
+            print("[SimpleRecordingEngine] Transcriber initialized: \(settings.transcriptionEngine.displayName)")
+        }
+        transcriber?.resetState()
+    }
+
+    /// Ensure diarization managers are initialized and reset for a new recording.
+    /// Selects diarization strategy based on AEC availability and expected attendee count.
+    private func ensureDiarizationReady() async {
+        #if canImport(FluidAudio)
+        // --- Strategy Selection ---
+        let attendeeCount = expectedAttendeeCount ?? 2
+        let aecAvailable = audioCapturer.isEchoCancellationActive
+
+        if aecAvailable && attendeeCount <= 2 {
+            diarizationStrategy = .streamLabeling
+        } else if aecAvailable {
+            diarizationStrategy = .hybridGroup
+        } else {
+            diarizationStrategy = .legacyDualDiarizer
+        }
+        print("[SimpleRecordingEngine] 🎯 Diarization strategy: \(diarizationStrategy.rawValue) (AEC: \(aecAvailable), attendees: \(attendeeCount))")
+
+        // --- Initialize Based on Strategy ---
+        switch diarizationStrategy {
+        case .streamLabeling:
+            // Zero diarization — mic=local, system=remote
+            // No DiarizationManagers needed
+            detectedSpeakerCount = 2
+            hasRemoteAudio = true
+            print("[SimpleRecordingEngine] Stream labeling mode: no FluidAudio diarizers created")
+
+        case .hybridGroup:
+            // Only ONE diarizer — for the system (remote) stream with guided pre-loading
+            let remoteSpeakers = max(attendeeCount - 1, 1)  // minus local user
+            systemDiarizationManager = DiarizationManager(
+                enableRealTimeProcessing: true,
+                maxSpeakers: remoteSpeakers + 2  // +2 headroom for unexpected attendees
+            )
+            do {
+                try await systemDiarizationManager.initialize()
+                print("[SimpleRecordingEngine] System diarization manager initialized (hybridGroup, maxSpeakers: \(remoteSpeakers + 2))")
+            } catch {
+                print("[SimpleRecordingEngine] System diarization initialization failed: \(error)")
+            }
+
+            // Pre-load known speaker embeddings from VoicePrintManager (guided diarization)
+            await preloadKnownSpeakersForMeeting()
+
+            hasRemoteAudio = true
+            detectedSpeakerCount = attendeeCount
+            print("[SimpleRecordingEngine] Hybrid group mode: 1 system diarizer with guided speakers")
+
+        case .legacyDualDiarizer:
+            // Original dual-diarizer approach (Feb 25 fixes intact)
+            let maxSpeakers: Int? = expectedAttendeeCount.map { $0 + 2 }
+            print("[SimpleRecordingEngine] Creating legacy dual diarizers with maxSpeakers=\(maxSpeakers.map(String.init) ?? "auto")")
+            diarizationManager = DiarizationManager(enableRealTimeProcessing: true, maxSpeakers: maxSpeakers)
+            systemDiarizationManager = DiarizationManager(enableRealTimeProcessing: true)
+
+            do {
+                try await diarizationManager.initialize()
+                print("[SimpleRecordingEngine] Mic diarization manager initialized (legacy)")
+            } catch {
+                print("[SimpleRecordingEngine] Mic diarization initialization failed: \(error)")
+            }
+            do {
+                try await systemDiarizationManager.initialize()
+                print("[SimpleRecordingEngine] System diarization manager initialized (legacy)")
+            } catch {
+                print("[SimpleRecordingEngine] System diarization initialization failed: \(error)")
+            }
+        }
+
+        await diarizationBuffer.reset()
+        await systemDiarizationBuffer.reset()
+        segmentAligner.reset()
+        if diarizationStrategy == .legacyDualDiarizer {
+            detectedSpeakerCount = 0
+            hasRemoteAudio = false
+        }
+        backfillCursor = 0
+
+        // Reset dynamic upgrade detection state
+        systemSpeechEnergies.removeAll()
+        multiSpeakerEvidenceCount = 0
+        systemAudioCatchUpBuffer.removeAll()
+        catchUpBufferFrameCount = 0
+        #endif
+    }
+
+    // MARK: - Guided Diarization Helpers
+
+    #if canImport(FluidAudio)
+    /// Pre-load known voice profiles into the system diarizer from VoicePrintManager.
+    /// Uses calendar expectedParticipants to narrow scope, falls back to all known voices.
+    private func preloadKnownSpeakersForMeeting() async {
+        guard let meeting = currentMeeting else { return }
+
+        // Gather expected people from calendar attendees
+        let expectedNames = meeting.expectedParticipants
+        var knownSpeakers: [(id: String, name: String, embedding: [Float])] = []
+
+        if !expectedNames.isEmpty {
+            // Try to match calendar names to Person records with voice embeddings
+            for name in expectedNames {
+                // Search for Person by name in VoicePrintManager cache
+                if let match = await voicePrintManager.findMatchingPersonByName(name),
+                   let embedding = voicePrintManager.getStoredEmbedding(for: match) {
+                    knownSpeakers.append((
+                        id: match.identifier?.uuidString ?? UUID().uuidString,
+                        name: match.wrappedName,
+                        embedding: embedding
+                    ))
+                }
+            }
+        }
+
+        // If no calendar matches, load all known voice profiles as candidates
+        if knownSpeakers.isEmpty {
+            let allEmbeddings = await voicePrintManager.getAllStoredEmbeddings()
+            knownSpeakers = allEmbeddings
+        }
+
+        if !knownSpeakers.isEmpty {
+            systemDiarizationManager.preloadKnownSpeakers(knownSpeakers)
+            print("[SimpleRecordingEngine] 🎯 Pre-loaded \(knownSpeakers.count) known speakers for guided diarization")
+        } else {
+            print("[SimpleRecordingEngine] ⚠️ No known voice profiles available for guided diarization")
+        }
+    }
+    #endif
 
     /// Stop recording
     func stopRecording() async {
@@ -251,18 +413,41 @@ class SimpleRecordingEngine: ObservableObject {
             await transcribeChunk(finalChunk)
         }
 
-        // Flush remaining diarization audio
+        // Flush remaining diarization audio (strategy-aware)
         #if canImport(FluidAudio)
-        if let (finalDiarChunk, startTime) = await diarizationBuffer.flush() {
-            await processDiarizationChunk(finalDiarChunk, startTime: startTime)
-        }
-        // Get final diarization results
-        _ = await diarizationManager.finishProcessing()
+        switch diarizationStrategy {
+        case .streamLabeling:
+            // No FluidAudio to flush — VAD-only mode
+            break
 
-        if let (finalSysDiarChunk, sysStartTime) = await systemDiarizationBuffer.flush() {
-            await processSystemDiarizationChunk(finalSysDiarChunk, startTime: sysStartTime)
+        case .hybridGroup:
+            // Only system diarizer active
+            if let (finalSysDiarChunk, sysStartTime) = await systemDiarizationBuffer.flush() {
+                await processSystemDiarizationChunk(finalSysDiarChunk, startTime: sysStartTime)
+            }
+            _ = await systemDiarizationManager.finishProcessing()
+
+        case .legacyDualDiarizer:
+            // Both diarizers active
+            if let (finalDiarChunk, startTime) = await diarizationBuffer.flush() {
+                await processDiarizationChunk(finalDiarChunk, startTime: startTime)
+            }
+            _ = await diarizationManager.finishProcessing()
+
+            if let (finalSysDiarChunk, sysStartTime) = await systemDiarizationBuffer.flush() {
+                await processSystemDiarizationChunk(finalSysDiarChunk, startTime: sysStartTime)
+            }
+            _ = await systemDiarizationManager.finishProcessing()
         }
-        _ = await systemDiarizationManager.finishProcessing()
+        #endif
+
+        // Post-meeting voice learning (save embeddings before finalization)
+        #if canImport(FluidAudio)
+        await saveVoiceEmbeddingsPostMeeting()
+
+        // Clean up catch-up buffer memory
+        systemAudioCatchUpBuffer.removeAll()
+        catchUpBufferFrameCount = 0
         #endif
 
         // Update state for processing phase
@@ -279,12 +464,13 @@ class SimpleRecordingEngine: ObservableObject {
     // MARK: - Audio Processing
 
     private func processAudioStreams() async {
-        print("[SimpleRecordingEngine] Starting audio stream processing")
+        print("[SimpleRecordingEngine] Starting audio stream processing (strategy: \(diarizationStrategy.rawValue))")
 
         // Get streams on main actor before entering task group
         let micStream = audioCapturer.micStream!
         let systemStream = audioCapturer.systemStream!
         let buffer = chunkBuffer
+        let strategy = diarizationStrategy
 
         #if canImport(FluidAudio)
         let diarBuffer = diarizationBuffer
@@ -293,41 +479,62 @@ class SimpleRecordingEngine: ObservableObject {
 
         // Process mic and system audio concurrently
         await withTaskGroup(of: Void.self) { group in
-            // Mic stream processor (for transcription and diarization)
+            // Mic stream processor
             group.addTask {
                 for await audioBuffer in micStream {
                     guard !Task.isCancelled else { break }
 
-                    // Add to chunk buffer for transcription
+                    // Always add to chunk buffer for transcription
                     if let chunk = await buffer.addBuffer(audioBuffer, isMic: true) {
                         await self.transcribeChunk(chunk)
                     }
 
                     #if canImport(FluidAudio)
-                    // Also feed to diarization buffer (parallel pipeline)
-                    let elapsed = await MainActor.run { self.recordingDuration }
-                    if let (diarChunk, startTime) = await diarBuffer.addBuffer(audioBuffer, recordingElapsed: elapsed) {
-                        await self.processDiarizationChunk(diarChunk, startTime: startTime)
+                    switch strategy {
+                    case .streamLabeling, .hybridGroup:
+                        // AEC modes: mic = local speaker. Use VAD only, no FluidAudio.
+                        await self.processMicVAD(audioBuffer)
+
+                    case .legacyDualDiarizer:
+                        // Feed to mic diarization buffer (original behavior)
+                        let elapsed = await MainActor.run { self.recordingDuration }
+                        if let (diarChunk, startTime) = await diarBuffer.addBuffer(audioBuffer, recordingElapsed: elapsed) {
+                            await self.processDiarizationChunk(diarChunk, startTime: startTime)
+                        }
                     }
                     #endif
                 }
             }
 
-            // System stream processor (for transcription AND diarization)
+            // System stream processor
             group.addTask {
                 for await audioBuffer in systemStream {
                     guard !Task.isCancelled else { break }
 
-                    // Add to chunk buffer for transcription
+                    // Always add to chunk buffer for transcription
                     if let chunk = await buffer.addBuffer(audioBuffer, isMic: false) {
                         await self.transcribeChunk(chunk)
                     }
 
                     #if canImport(FluidAudio)
-                    // Also feed to system diarization buffer
-                    let elapsed = await MainActor.run { self.recordingDuration }
-                    if let (diarChunk, startTime) = await systemDiarBuffer.addBuffer(audioBuffer, recordingElapsed: elapsed) {
-                        await self.processSystemDiarizationChunk(diarChunk, startTime: startTime)
+                    switch strategy {
+                    case .streamLabeling:
+                        // 1:1 AEC mode: system = remote speaker. VAD only, no FluidAudio.
+                        await self.processSystemVAD(audioBuffer)
+
+                    case .hybridGroup:
+                        // Group AEC mode: system stream → guided FluidAudio diarizer
+                        let elapsed = await MainActor.run { self.recordingDuration }
+                        if let (diarChunk, startTime) = await systemDiarBuffer.addBuffer(audioBuffer, recordingElapsed: elapsed) {
+                            await self.processSystemDiarizationChunk(diarChunk, startTime: startTime)
+                        }
+
+                    case .legacyDualDiarizer:
+                        // Feed to system diarization buffer (original behavior)
+                        let elapsed = await MainActor.run { self.recordingDuration }
+                        if let (diarChunk, startTime) = await systemDiarBuffer.addBuffer(audioBuffer, recordingElapsed: elapsed) {
+                            await self.processSystemDiarizationChunk(diarChunk, startTime: startTime)
+                        }
                     }
                     #endif
                 }
@@ -379,14 +586,20 @@ class SimpleRecordingEngine: ObservableObject {
         let segmentStart = max(0, recordingDuration - chunkDuration)
         if let speaker = segmentAligner.dominantSpeaker(for: segmentStart, duration: chunkDuration) {
             speakerID = speaker
-            // Use user-assigned name if available, otherwise format from speaker ID
+            // Use participant name if identified (by user, voice match, or auto-detection)
             if let participant = currentMeeting?.identifiedParticipants.first(where: { $0.speakerID == speaker }),
-               let userName = participant.name, participant.namingMode == .namedByUser {
-                speakerName = userName
+               participant.namingMode != .unnamed {
+                speakerName = participant.displayName
             } else {
                 speakerName = SegmentAligner.formatSpeakerName(speaker)
             }
             print("[SimpleRecordingEngine] Speaker identified: \(speakerName ?? "unknown")")
+        } else if let meeting = currentMeeting, let lastSpeaker = meeting.transcript.last?.speakerID {
+            // Temporal continuity fallback: when diarization is ambiguous,
+            // assume the same person is still speaking within a 10-second window
+            speakerID = lastSpeaker
+            speakerName = meeting.transcript.last?.speakerName
+            print("[SimpleRecordingEngine] Speaker fallback (temporal continuity): \(speakerName ?? lastSpeaker)")
         }
         #endif
 
@@ -444,19 +657,25 @@ class SimpleRecordingEngine: ObservableObject {
             print("[SimpleRecordingEngine] Diarization result: \(result.segments.count) segments, \(result.speakerCount) speakers")
             segmentAligner.updateDiarizationResults(result)
 
-            // Always update participants and meeting type from latest results,
-            // since speaker merging can reduce the count between chunks.
-            let speakerCount = diarizationManager.totalSpeakerCount
-            if speakerCount != detectedSpeakerCount {
-                print("[SimpleRecordingEngine] Speaker count changed: \(detectedSpeakerCount) -> \(speakerCount)")
+            // Use mic-only speaker count — the mic captures all voices in the room
+            // plus echo/bleed from the speaker. System audio should NOT add to count
+            // as it creates phantom speakers from VoIP codec artifacts.
+            let micSpeakers = diarizationManager.totalSpeakerCount
+            let effectiveCount = hasRemoteAudio ? max(micSpeakers, 2) : micSpeakers
+            if effectiveCount != detectedSpeakerCount {
+                print("[SimpleRecordingEngine] Speaker count changed: \(detectedSpeakerCount) -> \(effectiveCount) (mic: \(micSpeakers), remoteAudio: \(hasRemoteAudio))")
             }
-            detectedSpeakerCount = speakerCount
-            updateMeetingType(speakerCount: speakerCount)
+            detectedSpeakerCount = effectiveCount
+            updateMeetingType(speakerCount: effectiveCount)
             await updateParticipants(from: result)
 
             // Sync participants: remove any whose speaker IDs were merged away
-            let validSpeakerIDs = Set(result.segments.map { $0.speakerId })
-            currentMeeting?.syncParticipants(withSpeakerIDs: validSpeakerIDs)
+            let validMicIDs = Set(result.segments.map { "mic_\($0.speakerId)" })
+            var allValidIDs = validMicIDs
+            if let sysResult = systemDiarizationManager.lastResult {
+                allValidIDs.formUnion(sysResult.segments.map { "sys_\($0.speakerId)" })
+            }
+            currentMeeting?.syncParticipants(withSpeakerIDs: allValidIDs)
 
             // Backfill speaker labels into transcript segments that arrived before diarization
             backfillSpeakerLabels()
@@ -492,23 +711,329 @@ class SimpleRecordingEngine: ObservableObject {
             print("[SimpleRecordingEngine] System diarization result: \(result.segments.count) segments, \(result.speakerCount) speakers")
             segmentAligner.updateSystemDiarizationResults(result)
 
-            // Update total speaker count (mic + system)
-            let totalSpeakers = diarizationManager.totalSpeakerCount + systemDiarizationManager.totalSpeakerCount
-            if totalSpeakers != detectedSpeakerCount {
-                print("[SimpleRecordingEngine] Total speaker count changed: \(detectedSpeakerCount) -> \(totalSpeakers)")
+            if diarizationStrategy == .hybridGroup {
+                // Hybrid group: speaker count = 1 (local) + system diarizer speakers
+                let systemSpeakers = systemDiarizationManager.totalSpeakerCount
+                let effectiveCount = 1 + systemSpeakers
+                if effectiveCount != detectedSpeakerCount {
+                    print("[SimpleRecordingEngine] Speaker count updated (hybridGroup): \(detectedSpeakerCount) -> \(effectiveCount) (1 local + \(systemSpeakers) remote)")
+                }
+                detectedSpeakerCount = effectiveCount
+                updateMeetingType(speakerCount: effectiveCount)
+            } else {
+                // Legacy: system audio indicates remote participants are present,
+                // but does NOT inflate the speaker count (mic handles that).
+                let systemHasSpeakers = systemDiarizationManager.totalSpeakerCount > 0
+                if systemHasSpeakers && !hasRemoteAudio {
+                    hasRemoteAudio = true
+                    print("[SimpleRecordingEngine] Remote audio detected — hasRemoteAudio = true")
+                    let micSpeakers = diarizationManager.totalSpeakerCount
+                    let effectiveCount = max(micSpeakers, 2)
+                    if effectiveCount != detectedSpeakerCount {
+                        print("[SimpleRecordingEngine] Speaker count updated with remote presence: \(detectedSpeakerCount) -> \(effectiveCount)")
+                    }
+                    detectedSpeakerCount = effectiveCount
+                    updateMeetingType(speakerCount: effectiveCount)
+                }
             }
-            detectedSpeakerCount = totalSpeakers
-            updateMeetingType(speakerCount: totalSpeakers)
             await updateParticipants(from: result)
 
             // Sync with all valid speaker IDs from both streams
-            var allValidIDs = Set(result.segments.map { $0.speakerId })
-            if let micResult = diarizationManager.lastResult {
-                allValidIDs.formUnion(micResult.segments.map { $0.speakerId })
+            var allValidIDs = Set(result.segments.map { "sys_\($0.speakerId)" })
+            if diarizationStrategy == .hybridGroup {
+                // In hybrid mode, local speaker has a fixed ID
+                allValidIDs.insert("mic_local_1")
+            } else if let micResult = diarizationManager.lastResult {
+                allValidIDs.formUnion(micResult.segments.map { "mic_\($0.speakerId)" })
             }
             currentMeeting?.syncParticipants(withSpeakerIDs: allValidIDs)
 
             backfillSpeakerLabels()
+        }
+    }
+
+    // MARK: - Stream Labeling Mode (VAD-Only)
+
+    /// Process mic audio in stream labeling or hybrid mode: VAD only, label as local speaker.
+    /// No FluidAudio diarization — AEC ensures mic contains only the local speaker's voice.
+    private func processMicVAD(_ buffer: AVAudioPCMBuffer) async {
+        let rms = calculateRMS(buffer)
+        guard rms > vadRMSThreshold else { return }  // Silence — skip
+
+        let elapsed = recordingDuration
+        let duration = Double(buffer.frameLength) / 16000.0
+
+        // Create a synthetic diarization segment for the local speaker
+        let segment = TimedSpeakerSegment(
+            speakerId: "local_1",
+            embedding: [],
+            startTimeSeconds: Float(elapsed - duration),
+            endTimeSeconds: Float(elapsed),
+            qualityScore: min(rms * 10, 1.0)  // Normalize RMS to quality estimate
+        )
+
+        let result = DiarizationResult(
+            segments: [segment],
+            speakerDatabase: nil,
+            timings: nil
+        )
+        segmentAligner.updateDiarizationResults(result)
+
+        // Ensure local participant exists
+        if let meeting = currentMeeting,
+           !meeting.identifiedParticipants.contains(where: { $0.speakerID == "mic_local_1" }) {
+            let participant = IdentifiedParticipant()
+            participant.speakerID = "mic_local_1"
+            participant.isCurrentUser = true
+            let userName = UserProfile.shared.displayName
+            if !userName.isEmpty {
+                participant.name = userName
+                participant.namingMode = .linkedToPerson
+            }
+            meeting.identifiedParticipants.append(participant)
+            print("[SimpleRecordingEngine] 👤 Stream labeling: added local speaker participant")
+        }
+    }
+
+    /// Process system audio in stream labeling mode: VAD only, label as remote speaker.
+    /// No FluidAudio diarization — in a 1:1 with AEC, system = single remote speaker.
+    /// Also buffers audio and runs multi-speaker detection for dynamic upgrade.
+    private func processSystemVAD(_ buffer: AVAudioPCMBuffer) async {
+        let rms = calculateRMS(buffer)
+
+        // Buffer system audio for potential catch-up (even silence, for timing continuity)
+        bufferSystemAudioForCatchUp(buffer)
+
+        guard rms > vadRMSThreshold else { return }  // Silence — skip
+
+        let elapsed = recordingDuration
+        let duration = Double(buffer.frameLength) / 16000.0
+
+        let segment = TimedSpeakerSegment(
+            speakerId: "remote_1",
+            embedding: [],
+            startTimeSeconds: Float(elapsed - duration),
+            endTimeSeconds: Float(elapsed),
+            qualityScore: min(rms * 10, 1.0)
+        )
+
+        let result = DiarizationResult(
+            segments: [segment],
+            speakerDatabase: nil,
+            timings: nil
+        )
+        segmentAligner.updateSystemDiarizationResults(result)
+
+        // Ensure remote participant exists
+        if let meeting = currentMeeting,
+           !meeting.identifiedParticipants.contains(where: { $0.speakerID == "sys_remote_1" }) {
+            let participant = IdentifiedParticipant()
+            participant.speakerID = "sys_remote_1"
+            participant.isCurrentUser = false
+            meeting.identifiedParticipants.append(participant)
+            print("[SimpleRecordingEngine] 👤 Stream labeling: added remote speaker participant")
+        }
+
+        // Feed energy to multi-speaker detector
+        trackSystemSpeechEnergy(rms)
+    }
+
+    // MARK: - System Audio Catch-Up Buffer
+
+    /// Buffer system audio during streamLabeling for potential catch-up on upgrade.
+    /// Keeps a rolling window of the most recent audio up to maxCatchUpBufferSeconds.
+    private func bufferSystemAudioForCatchUp(_ buffer: AVAudioPCMBuffer) {
+        guard diarizationStrategy == .streamLabeling else { return }
+
+        let newFrames = Int(buffer.frameLength)
+        let maxFrames = Int(maxCatchUpBufferSeconds * 16000.0)
+
+        // Deep copy the buffer before storing
+        guard let copy = deepCopyBuffer(buffer) else { return }
+        systemAudioCatchUpBuffer.append(copy)
+        catchUpBufferFrameCount += newFrames
+
+        // Trim oldest buffers if over capacity
+        while catchUpBufferFrameCount > maxFrames, !systemAudioCatchUpBuffer.isEmpty {
+            let removed = systemAudioCatchUpBuffer.removeFirst()
+            catchUpBufferFrameCount -= Int(removed.frameLength)
+        }
+    }
+
+    /// Deep copy an AVAudioPCMBuffer (mirrors AudioCapturer.deepCopy)
+    private func deepCopyBuffer(_ buffer: AVAudioPCMBuffer) -> AVAudioPCMBuffer? {
+        guard let copy = AVAudioPCMBuffer(pcmFormat: buffer.format, frameCapacity: buffer.frameCapacity) else {
+            return nil
+        }
+        copy.frameLength = buffer.frameLength
+        if let srcData = buffer.floatChannelData, let dstData = copy.floatChannelData {
+            for channel in 0..<Int(buffer.format.channelCount) {
+                memcpy(dstData[channel], srcData[channel], Int(buffer.frameLength) * MemoryLayout<Float>.size)
+            }
+        }
+        return copy
+    }
+
+    // MARK: - Multi-Speaker Energy Detection
+
+    /// Track speech energy from the system stream to detect multiple speakers.
+    /// Uses coefficient of variation (CV) of speech energy levels — a single speaker
+    /// has relatively consistent energy, while multiple speakers create higher variance.
+    private func trackSystemSpeechEnergy(_ rms: Float) {
+        systemSpeechEnergies.append(rms)
+        if systemSpeechEnergies.count > energyWindowSize {
+            systemSpeechEnergies.removeFirst(systemSpeechEnergies.count - energyWindowSize)
+        }
+
+        // Need enough samples before evaluating
+        guard systemSpeechEnergies.count >= energyWindowSize / 2 else { return }
+
+        let mean = systemSpeechEnergies.reduce(0, +) / Float(systemSpeechEnergies.count)
+        guard mean > 0 else { return }
+
+        let variance = systemSpeechEnergies.reduce(Float(0)) { acc, val in
+            let diff = val - mean
+            return acc + diff * diff
+        } / Float(systemSpeechEnergies.count)
+        let stddev = sqrt(variance)
+        let cv = stddev / mean  // Coefficient of variation
+
+        if cv > energyCVThreshold {
+            multiSpeakerEvidenceCount += 1
+            if multiSpeakerEvidenceCount == multiSpeakerEvidenceThreshold {
+                print("[SimpleRecordingEngine] 🔍 Multi-speaker detected on system stream (CV: \(String(format: "%.2f", cv)) > \(energyCVThreshold), evidence: \(multiSpeakerEvidenceCount))")
+                Task {
+                    await upgradeToHybridGroup()
+                }
+            }
+        } else {
+            // Reset evidence counter on low-variance window (single speaker)
+            multiSpeakerEvidenceCount = max(0, multiSpeakerEvidenceCount - 1)
+        }
+    }
+
+    /// Calculate RMS of an audio buffer for VAD
+    private func calculateRMS(_ buffer: AVAudioPCMBuffer) -> Float {
+        guard let channelData = buffer.floatChannelData else { return 0 }
+        let samples = channelData[0]
+        let count = Int(buffer.frameLength)
+        guard count > 0 else { return 0 }
+        var sum: Float = 0
+        for i in 0..<count {
+            sum += samples[i] * samples[i]
+        }
+        return sqrt(sum / Float(count))
+    }
+
+    // MARK: - Dynamic Strategy Upgrade
+
+    /// Upgrade from streamLabeling to hybridGroup if multiple remote speakers detected.
+    /// Called automatically by multi-speaker energy detection or explicitly when attendee count changes.
+    func upgradeToHybridGroup() async {
+        guard diarizationStrategy == .streamLabeling else { return }
+
+        print("[SimpleRecordingEngine] 🔄 Upgrading strategy: streamLabeling → hybridGroup")
+        diarizationStrategy = .hybridGroup
+
+        // Initialize system diarizer on-the-fly
+        let attendeeCount = expectedAttendeeCount ?? 3
+        let remoteSpeakers = max(attendeeCount - 1, 2)
+        systemDiarizationManager = DiarizationManager(
+            enableRealTimeProcessing: true,
+            maxSpeakers: remoteSpeakers + 2
+        )
+        do {
+            try await systemDiarizationManager.initialize()
+            await preloadKnownSpeakersForMeeting()
+            print("[SimpleRecordingEngine] ✅ Hybrid group diarizer initialized mid-recording")
+
+            // Feed buffered system audio for catch-up
+            await feedCatchUpBufferToDiarizer()
+        } catch {
+            print("[SimpleRecordingEngine] ❌ Failed to initialize hybrid group diarizer: \(error)")
+            // Fall back to legacy if hybrid init fails
+            diarizationStrategy = .legacyDualDiarizer
+        }
+
+        // Clean up detection state — no longer needed
+        systemSpeechEnergies.removeAll()
+        multiSpeakerEvidenceCount = 0
+        systemAudioCatchUpBuffer.removeAll()
+        catchUpBufferFrameCount = 0
+    }
+
+    /// Feed accumulated system audio buffer to the newly initialized diarizer for catch-up.
+    private func feedCatchUpBufferToDiarizer() async {
+        guard !systemAudioCatchUpBuffer.isEmpty else {
+            print("[SimpleRecordingEngine] No catch-up audio to feed")
+            return
+        }
+
+        let bufferCount = systemAudioCatchUpBuffer.count
+        let totalSeconds = Double(catchUpBufferFrameCount) / 16000.0
+        print("[SimpleRecordingEngine] 🔄 Feeding \(bufferCount) catch-up buffers (\(String(format: "%.1f", totalSeconds))s) to system diarizer")
+
+        for buffer in systemAudioCatchUpBuffer {
+            await systemDiarizationManager.processAudioBuffer(buffer)
+        }
+
+        print("[SimpleRecordingEngine] ✅ Catch-up buffer fed to diarizer")
+    }
+
+    /// Update expected attendee count mid-recording. Triggers strategy upgrade if needed.
+    func updateExpectedAttendeeCount(_ count: Int) async {
+        let oldCount = expectedAttendeeCount
+        expectedAttendeeCount = count
+        print("[SimpleRecordingEngine] Expected attendee count updated: \(oldCount.map(String.init) ?? "nil") → \(count)")
+
+        if count > 2 && diarizationStrategy == .streamLabeling {
+            await upgradeToHybridGroup()
+        }
+    }
+
+    // MARK: - Post-Meeting Voice Learning
+
+    /// Save voice embeddings from the completed recording back to VoicePrintManager.
+    /// Implements Quill-style progressive voice learning — each meeting improves recognition.
+    private func saveVoiceEmbeddingsPostMeeting() async {
+        guard let meeting = currentMeeting else { return }
+
+        var savedCount = 0
+
+        for participant in meeting.identifiedParticipants {
+            // Only save for participants linked to a Person record
+            guard let person = participant.personRecord else { continue }
+
+            // Get the best embedding from diarization results
+            let rawId = participant.speakerID
+                .replacingOccurrences(of: "mic_", with: "")
+                .replacingOccurrences(of: "sys_", with: "")
+
+            var embedding: [Float]?
+
+            // Check system diarizer first (hybridGroup uses this), then mic diarizer
+            if let sysDb = systemDiarizationManager.lastResult?.speakerDatabase {
+                embedding = sysDb[rawId]
+            }
+            if embedding == nil, let micDb = diarizationManager.lastResult?.speakerDatabase {
+                embedding = micDb[rawId]
+            }
+
+            guard let validEmbedding = embedding, !validEmbedding.isEmpty else { continue }
+
+            // Higher confidence weight for guided diarization matches
+            let wasConfirmed = participant.namingMode == .linkedToPerson ||
+                               participant.namingMode == .suggestedByVoice
+            voicePrintManager.saveEmbeddingWithFeedback(
+                validEmbedding,
+                for: person,
+                wasConfirmed: wasConfirmed
+            )
+            savedCount += 1
+        }
+
+        if savedCount > 0 {
+            print("[SimpleRecordingEngine] 🧠 Post-meeting voice learning: saved \(savedCount) embeddings")
         }
     }
 
@@ -526,11 +1051,11 @@ class SimpleRecordingEngine: ObservableObject {
 
             // Query the aligner for who was speaking at this segment's time
             if let speaker = segmentAligner.dominantSpeaker(for: segment.timestamp, duration: 5.0) {
-                // Use user-assigned name if available
+                // Use participant name if identified (by user, voice match, or auto-detection)
                 let speakerName: String
                 if let participant = meeting.identifiedParticipants.first(where: { $0.speakerID == speaker }),
-                   let userName = participant.name, participant.namingMode == .namedByUser {
-                    speakerName = userName
+                   participant.namingMode != .unnamed {
+                    speakerName = participant.displayName
                 } else {
                     speakerName = SegmentAligner.formatSpeakerName(speaker)
                 }
@@ -540,6 +1065,20 @@ class SimpleRecordingEngine: ObservableObject {
                     timestamp: segment.timestamp,
                     speakerID: speaker,
                     speakerName: speakerName,
+                    confidence: segment.confidence,
+                    isFinalized: segment.isFinalized
+                )
+                backfilledCount += 1
+            } else if i > 0, let prevSpeaker = meeting.transcript[i - 1].speakerID {
+                // Temporal continuity fallback: if diarization can't determine the speaker,
+                // inherit from the previous segment (same person likely still talking)
+                let prevName = meeting.transcript[i - 1].speakerName ?? SegmentAligner.formatSpeakerName(prevSpeaker)
+                meeting.transcript[i] = TranscriptSegment(
+                    id: segment.id,
+                    text: segment.text,
+                    timestamp: segment.timestamp,
+                    speakerID: prevSpeaker,
+                    speakerName: prevName,
                     confidence: segment.confidence,
                     isFinalized: segment.isFinalized
                 )
@@ -591,7 +1130,10 @@ class SimpleRecordingEngine: ObservableObject {
                 participant.totalSpeakingTime = speakingTimes[speakerId] ?? 0
 
                 // Attempt voice-based identification using VoicePrintManager
-                if let embedding = result.speakerDatabase?[speakerId] {
+                // speakerDatabase uses raw IDs ("1", "2") but speakerId is prefixed ("mic_1", "sys_2")
+                let rawId = speakerId.replacingOccurrences(of: "mic_", with: "")
+                                     .replacingOccurrences(of: "sys_", with: "")
+                if let embedding = result.speakerDatabase?[rawId] {
                     if let match = await voicePrintManager.findMatchingPerson(for: embedding),
                        let matchedPerson = match.0,
                        match.1 > 0.80 {
@@ -609,18 +1151,53 @@ class SimpleRecordingEngine: ObservableObject {
                     // SegmentAligner prefixes mic speakers with "mic_", so compare with prefix
                     if speakerId == "mic_\(userSpkId)" {
                         participant.isCurrentUser = true
-                        if participant.name == nil {
-                            participant.name = UserProfile.shared.displayName
-                            participant.namingMode = .linkedToPerson
+                        participant.name = UserProfile.shared.displayName
+                        participant.namingMode = .linkedToPerson
+
+                        // If another participant was previously marked as "me" (e.g., user clicked
+                        // "This is me" on the wrong speaker), unmark them — voice-based ID is more reliable
+                        for other in meeting.identifiedParticipants where other.isCurrentUser && other.speakerID != speakerId {
+                            other.isCurrentUser = false
+                            // Revert their transcript labels back to generic speaker name
+                            let revertName = SegmentAligner.formatSpeakerName(other.speakerID)
+                            other.name = nil
+                            other.namingMode = .unnamed
+                            for i in meeting.transcript.indices where meeting.transcript[i].speakerID == other.speakerID {
+                                meeting.transcript[i].speakerName = revertName
+                            }
+                            print("[SimpleRecordingEngine] ⚠️ Reverted \(other.speakerID) — voice ID says \(speakerId) is the real user")
                         }
+
+                        // Save this speaker's embedding for future voice recognition improvement
+                        if let embedding = result.speakerDatabase?[rawId], !embedding.isEmpty {
+                            UserProfile.shared.addVoiceSample(embedding)
+                            print("[SimpleRecordingEngine] 🎤 Saved voice embedding to UserProfile from \(speakerId)")
+                        }
+
                         print("[SimpleRecordingEngine] 👤 Auto-identified current user as speaker \(speakerId)")
                     }
                 }
 
                 meeting.identifiedParticipants.append(participant)
                 print("[SimpleRecordingEngine] Added participant: \(participant.displayName)")
+
+                // Backfill existing transcript segments with the participant's display name
+                if participant.namingMode != .unnamed {
+                    let displayName = participant.displayName
+                    for i in meeting.transcript.indices where meeting.transcript[i].speakerID == speakerId {
+                        meeting.transcript[i].speakerName = displayName
+                    }
+                    print("[SimpleRecordingEngine] Backfilled transcript with name '\(displayName)' for speaker \(speakerId)")
+                }
             }
         }
+    }
+    #endif
+
+    /// Expose latest diarization result for voice embedding access (e.g., "This is me" feature)
+    #if canImport(FluidAudio)
+    var diarizationManagerResult: DiarizationResult? {
+        diarizationManager.lastResult
     }
     #endif
 
@@ -667,17 +1244,40 @@ class SimpleRecordingEngine: ObservableObject {
         // Build transcript as plain text
         let transcriptText = meeting.getFullTranscriptText()
 
-        // Get voice embeddings from diarization results
+        // Get voice embeddings from diarization results (keyed by prefixed speaker ID)
         #if canImport(FluidAudio)
         var speakerEmbeddings: [String: [Float]] = [:]
         if let result = diarizationManager.lastResult {
             for segment in result.segments {
-                if speakerEmbeddings[segment.speakerId] == nil {
-                    speakerEmbeddings[segment.speakerId] = segment.embedding
+                let prefixedId = "mic_\(segment.speakerId)"
+                if speakerEmbeddings[prefixedId] == nil {
+                    speakerEmbeddings[prefixedId] = segment.embedding
+                }
+            }
+        }
+        if let result = systemDiarizationManager.lastResult {
+            for segment in result.segments {
+                let prefixedId = "sys_\(segment.speakerId)"
+                if speakerEmbeddings[prefixedId] == nil {
+                    speakerEmbeddings[prefixedId] = segment.embedding
                 }
             }
         }
         #endif
+
+        // Auto-identify: if exactly one mic speaker, that's the current user
+        let micParticipants = meeting.identifiedParticipants.filter { $0.speakerID.hasPrefix("mic_") }
+        let hasCurrentUser = meeting.identifiedParticipants.contains { $0.isCurrentUser }
+        if micParticipants.count == 1, !hasCurrentUser {
+            let localSpeaker = micParticipants[0]
+            localSpeaker.isCurrentUser = true
+            let userName = UserProfile.shared.displayName
+            if !userName.isEmpty {
+                localSpeaker.name = userName
+                localSpeaker.namingMode = .linkedToPerson
+            }
+            print("[SimpleRecordingEngine] 👤 Auto-identified sole mic speaker as current user: \(localSpeaker.speakerID)")
+        }
 
         // Build participant data with voice embeddings
         let serializableParticipants = meeting.identifiedParticipants.map { participant in

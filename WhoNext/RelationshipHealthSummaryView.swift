@@ -7,7 +7,7 @@ struct RelationshipHealthSummaryView: View {
     @Environment(\.managedObjectContext) private var viewContext
     @FetchRequest(
         sortDescriptors: [NSSortDescriptor(keyPath: \Person.name, ascending: true)],
-        predicate: nil,
+        predicate: NSPredicate(format: "isSoftDeleted == false"),
         animation: .default
     ) private var people: FetchedResults<Person>
 
@@ -22,28 +22,32 @@ struct RelationshipHealthSummaryView: View {
                 .fontWeight(.bold)
 
             VStack(spacing: 12) {
-                // Direct Reports
                 healthRow(
                     type: .directReport,
                     count: directReportCount,
                     healthyCount: healthyDirectReports,
-                    color: .blue
+                    color: PersonCategory.directReport.color
                 )
 
-                // Skip Levels
                 healthRow(
-                    type: .skipLevel,
-                    count: skipLevelCount,
-                    healthyCount: healthySkipLevels,
-                    color: .purple
+                    type: .teammate,
+                    count: teammateCount,
+                    healthyCount: healthyTeammates,
+                    color: PersonCategory.teammate.color
                 )
 
-                // Other Relationships
                 healthRow(
-                    type: .other,
-                    count: otherCount,
-                    healthyCount: healthyOthers,
-                    color: .green
+                    type: .colleague,
+                    count: colleagueCount,
+                    healthyCount: healthyColleagues,
+                    color: PersonCategory.colleague.color
+                )
+
+                healthRow(
+                    type: .external,
+                    count: externalCount,
+                    healthyCount: healthyExternals,
+                    color: PersonCategory.external.color
                 )
             }
             .padding(16)
@@ -163,30 +167,43 @@ struct RelationshipHealthSummaryView: View {
         directReportMetrics.filter { $0.healthScore >= 0.4 }.count
     }
 
-    // Skip Levels
-    private var skipLevelMetrics: [PersonMetrics] {
-        relationshipMetrics.filter { $0.relationshipType == .skipLevel }
+    // Teammates
+    private var teammateMetrics: [PersonMetrics] {
+        relationshipMetrics.filter { $0.relationshipType == .teammate }
     }
 
-    private var skipLevelCount: Int {
-        skipLevelMetrics.count
+    private var teammateCount: Int {
+        teammateMetrics.count
     }
 
-    private var healthySkipLevels: Int {
-        skipLevelMetrics.filter { $0.healthScore >= 0.4 }.count
+    private var healthyTeammates: Int {
+        teammateMetrics.filter { $0.healthScore >= 0.4 }.count
     }
 
-    // Others
-    private var otherMetrics: [PersonMetrics] {
-        relationshipMetrics.filter { $0.relationshipType == .other }
+    // Colleagues
+    private var colleagueMetrics: [PersonMetrics] {
+        relationshipMetrics.filter { $0.relationshipType == .colleague }
     }
 
-    private var otherCount: Int {
-        otherMetrics.count
+    private var colleagueCount: Int {
+        colleagueMetrics.count
     }
 
-    private var healthyOthers: Int {
-        otherMetrics.filter { $0.healthScore >= 0.4 }.count
+    private var healthyColleagues: Int {
+        colleagueMetrics.filter { $0.healthScore >= 0.4 }.count
+    }
+
+    // External
+    private var externalMetrics: [PersonMetrics] {
+        relationshipMetrics.filter { $0.relationshipType == .external }
+    }
+
+    private var externalCount: Int {
+        externalMetrics.count
+    }
+
+    private var healthyExternals: Int {
+        externalMetrics.filter { $0.healthScore >= 0.4 }.count
     }
 
     // Declining

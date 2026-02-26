@@ -217,14 +217,7 @@ public class UserProfileEntity: NSManagedObject, @unchecked Sendable {
     }
 
     private func cosineSimilarity(_ a: [Float], _ b: [Float]) -> Float {
-        guard a.count == b.count else { return 0.0 }
-
-        let dotProduct = zip(a, b).map(*).reduce(0, +)
-        let magnitudeA = sqrt(a.map { $0 * $0 }.reduce(0, +))
-        let magnitudeB = sqrt(b.map { $0 * $0 }.reduce(0, +))
-
-        guard magnitudeA > 0 && magnitudeB > 0 else { return 0.0 }
-        return dotProduct / (magnitudeA * magnitudeB)
+        VectorMath.cosineSimilarity(a, b)
     }
 
     // MARK: - Update Helper

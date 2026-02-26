@@ -8,12 +8,10 @@ struct AddPersonWindow: View {
     @State private var editingTimezone: String = ""
     @State private var showingTimezoneDropdown: Bool = false
     @State private var editingNotes: String = ""
-    @State private var isDirectReport: Bool = false
+    @State private var editingCategory: PersonCategory = .colleague
     @State private var editingPhotoData: Data? = nil
     @State private var editingPhotoImage: NSImage? = nil
     @State private var showingPhotoPicker = false
-    @State private var showingLinkedInWindow = false
-    
     let context: NSManagedObjectContext
     let onSave: (Person) -> Void
     let onCancel: () -> Void
@@ -144,31 +142,19 @@ struct AddPersonWindow: View {
                                 }
                             }
                             
-                            Toggle("Direct Report", isOn: $isDirectReport)
-                                .toggleStyle(SwitchToggleStyle())
+                            Picker("Category", selection: $editingCategory) {
+                                ForEach(PersonCategory.allCases) { cat in
+                                    Label(cat.displayName, systemImage: cat.icon).tag(cat)
+                                }
+                            }
+                            .pickerStyle(.menu)
                         }
                     }
                     
                     // Notes Section
                     VStack(alignment: .leading, spacing: 12) {
-                        HStack {
-                            Text("Profile Notes")
-                                .font(.system(size: 16, weight: .semibold))
-                            
-                            Spacer()
-                            
-                            Button(action: {
-                                showingLinkedInWindow.toggle()
-                            }) {
-                                HStack(spacing: 4) {
-                                    Image(systemName: "link")
-                                        .font(.system(size: 10))
-                                    Text("LinkedIn Search")
-                                        .font(.system(size: 11))
-                                }
-                            }
-                            .buttonStyle(LiquidGlassButtonStyle(variant: .secondary, size: .small))
-                        }
+                        Text("Profile Notes")
+                            .font(.system(size: 16, weight: .semibold))
                         
                         ZStack(alignment: .topLeading) {
                             RoundedRectangle(cornerRadius: 12)
@@ -190,8 +176,7 @@ struct AddPersonWindow: View {
                         }
                         .frame(minHeight: 120)
                         
-                        // Quick tip for LinkedIn info
-                        Text("💡 Tip: Use 'LinkedIn Search' button above to quickly import profile information")
+                        Text("💡 Tip: Use markdown formatting like **bold** and ## Headings")
                             .font(.caption)
                             .foregroundColor(.secondary)
                             .padding(.top, 4)
@@ -215,7 +200,7 @@ struct AddPersonWindow: View {
                     newPerson.name = editingName.trimmingCharacters(in: .whitespacesAndNewlines)
                     newPerson.role = editingRole.trimmingCharacters(in: .whitespacesAndNewlines)
                     newPerson.timezone = editingTimezone.trimmingCharacters(in: .whitespacesAndNewlines)
-                    newPerson.isDirectReport = isDirectReport
+                    newPerson.category = editingCategory
                     newPerson.notes = editingNotes.trimmingCharacters(in: .whitespacesAndNewlines)
                     newPerson.createdAt = Date() // Set creation timestamp for sync
                     newPerson.modifiedAt = Date() // Set initial modification timestamp
@@ -244,18 +229,6 @@ struct AddPersonWindow: View {
             case .failure(let error):
                 print("Failed to import photo: \(error)")
             }
-        }
-        .sheet(isPresented: $showingLinkedInWindow) {
-            LinkedInSearchWindow(
-                personName: editingName,
-                personRole: editingRole,
-                onDataExtracted: { data in
-                    populateFormFields(with: data)
-                },
-                onClose: {
-                    showingLinkedInWindow = false
-                }
-            )
         }
         .onAppear {
             // Set default timezone to user's current timezone
@@ -296,40 +269,6 @@ struct AddPersonWindow: View {
         }
     }
     
-    private func populateFormFields(with data: LinkedInProfileData) {
-        editingName = data.name
-        editingRole = data.headline
-        editingTimezone = data.location
-        
-        var summary = data.about
-        
-        summary += "\n\nExperience:\n" + data.experience.map { "• \( $0.title ) at \( $0.company ) (\( $0.duration ))" }.joined(separator: "\n")
-        
-        summary += "\n\nEducation:\n" + data.education.map { "• \( $0.school ) (\( $0.degree ) in \( $0.field ))" }.joined(separator: "\n")
-        
-        editingNotes = summary
-        
-        // Download and set photo if available
-        if !data.photo.isEmpty, let photoURL = URL(string: data.photo) {
-            print("📸 Downloading photo from: \(data.photo)")
-            
-            Task {
-                do {
-                    let (imageData, _) = try await URLSession.shared.data(from: photoURL)
-                    
-                    await MainActor.run {
-                        self.editingPhotoData = imageData
-                        self.editingPhotoImage = NSImage(data: imageData)
-                        print("✅ Photo downloaded and set successfully")
-                    }
-                } catch {
-                    print("❌ Failed to download photo: \(error)")
-                }
-            }
-        } else {
-            print("📸 No photo URL provided or invalid URL: '\(data.photo)'")
-        }
-    }
 }
 
 #Preview {

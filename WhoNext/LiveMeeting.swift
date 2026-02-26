@@ -324,6 +324,19 @@ class LiveMeeting: ObservableObject, Identifiable {
         }
     }
 
+    /// Rename a speaker across all transcript segments and update the participant record
+    func renameSpeaker(speakerID: String, to name: String, person: Person?) {
+        for i in transcript.indices where transcript[i].speakerID == speakerID {
+            transcript[i].speakerName = name
+        }
+        if let participant = identifiedParticipants.first(where: { $0.speakerID == speakerID }) {
+            participant.name = name
+            participant.person = person
+            participant.personRecord = person
+            participant.namingMode = person != nil ? .linkedToPerson : .namedByUser
+        }
+    }
+
     /// Synchronize participants with the current speaker database
     /// Removes participants whose speaker IDs no longer exist (were merged)
     func syncParticipants(withSpeakerIDs validSpeakerIDs: Set<String>) {

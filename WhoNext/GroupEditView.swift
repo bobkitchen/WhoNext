@@ -163,6 +163,7 @@ struct AddMemberToGroupView: View {
 
     @FetchRequest(
         sortDescriptors: [NSSortDescriptor(keyPath: \Person.name, ascending: true)],
+        predicate: NSPredicate(format: "isSoftDeleted == false"),
         animation: .default
     ) private var allPeople: FetchedResults<Person>
 

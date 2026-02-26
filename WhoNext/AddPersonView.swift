@@ -6,12 +6,12 @@ struct AddPersonView: View {
     @State private var name: String = ""
     @State private var role: String = ""
     @State private var timezone: String = ""
-    @State private var isDirectReport: Bool = false
+    @State private var personCategory: PersonCategory = .colleague
     @State private var notes: String = ""
     @State private var photoData: Data? = nil
     @State private var photoImage: NSImage? = nil
     @State private var showingPhotoPicker = false
-    var onSave: (String, String, String, Bool, String, Data?) -> Void
+    var onSave: (String, String, String, PersonCategory, String, Data?) -> Void
     @Environment(\.presentationMode) private var presentationMode
 
     var body: some View {
@@ -58,10 +58,14 @@ struct AddPersonView: View {
                     .labelsHidden()
                     .frame(width: 260)
                     .padding(.top, 2)
-                    Toggle("Direct Report", isOn: $isDirectReport)
-                        .font(.system(size: 13))
-                        .toggleStyle(.checkbox)
-                        .padding(.top, 4)
+                    Picker("Category", selection: $personCategory) {
+                        ForEach(PersonCategory.allCases) { cat in
+                            Label(cat.displayName, systemImage: cat.icon).tag(cat)
+                        }
+                    }
+                    .pickerStyle(.menu)
+                    .font(.system(size: 13))
+                    .padding(.top, 4)
                 }
             }
             VStack(alignment: .leading, spacing: 8) {
@@ -86,7 +90,7 @@ struct AddPersonView: View {
                         onSave(name.trimmingCharacters(in: .whitespaces),
                                role.trimmingCharacters(in: .whitespaces),
                                timezone.trimmingCharacters(in: .whitespaces),
-                               isDirectReport,
+                               personCategory,
                                notes.trimmingCharacters(in: .whitespacesAndNewlines),
                                photoData)
                     }

@@ -189,18 +189,7 @@ extension NavigationStateManager {
             navigationHistory = Array(navigationHistory.suffix(maxNavigationHistory))
             updateNavigationButtons()
         }
-        
-        // Clear any stale window references
-        cleanupStaleWindows()
     }
-    
-    private func cleanupStaleWindows() {
-        // Remove window references that may no longer be valid
-        // This could be expanded to check actual window state if needed
-        // For now, we'll trust the window management to be accurate
-        // In the future, we could add window state validation here
-    }
-    
     
     func clearHistory() {
         navigationHistory.removeAll()

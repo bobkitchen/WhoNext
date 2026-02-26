@@ -7,6 +7,7 @@ struct PeopleListView: View {
 
     @FetchRequest(
         sortDescriptors: [NSSortDescriptor(keyPath: \Person.name, ascending: true)],
+        predicate: NSPredicate(format: "isSoftDeleted == false"),
         animation: nil
     ) private var allPeople: FetchedResults<Person>
 
@@ -186,12 +187,7 @@ struct PersonRowView: View {
                         .foregroundStyle(.primary)
                         .lineLimit(1)
                     
-                    if person.isDirectReport {
-                        Image(systemName: "person.badge.key.fill")
-                            .font(.system(size: 10))
-                            .foregroundStyle(Color.accentColor)
-                            .symbolRenderingMode(.hierarchical)
-                    }
+                    CategoryBadge(category: person.category)
                 }
                 
                 if let role = person.role, !role.isEmpty {
@@ -253,9 +249,7 @@ struct PersonRowView: View {
         if let role = person.role, !role.isEmpty {
             label += ", \(role)"
         }
-        if person.isDirectReport {
-            label += ", Direct report"
-        }
+        label += ", \(person.category.displayName)"
         return label
     }
 }

@@ -86,12 +86,12 @@ class AppStateManager: ObservableObject {
         }
     }
     
-    func createPerson(name: String, role: String?, isDirectReport: Bool, timezone: String?, photo: Data?) -> Person? {
+    func createPerson(name: String, role: String?, isDirectReport: Bool = false, timezone: String?, photo: Data?, category: PersonCategory = .colleague) -> Person? {
         let person = Person(context: viewContext)
         person.identifier = UUID()
         person.name = name
         person.role = role
-        person.isDirectReport = isDirectReport
+        person.category = category
         person.timezone = timezone
         person.photo = photo
         

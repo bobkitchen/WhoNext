@@ -236,53 +236,47 @@ struct AllFiltersView: View {
 
 // MARK: - Person Filter Enum
 enum PersonFilter: Hashable {
-    case directReport
+    case category(PersonCategory)
     case recentlyContacted
     case needsCheckIn
     case healthy
     case hasNotes
     case noMeetings
     case frequentMeetings
-    case role(String)
-    case department(String)
-    
+
     var label: String {
         switch self {
-        case .directReport: return "Direct Reports"
+        case .category(let cat): return cat.displayName + "s"
         case .recentlyContacted: return "Recently Met"
         case .needsCheckIn: return "Needs Check-in"
         case .healthy: return "Healthy"
         case .hasNotes: return "Has Notes"
         case .noMeetings: return "No Meetings"
         case .frequentMeetings: return "Frequent"
-        case .role(let role): return role
-        case .department(let dept): return dept
         }
     }
-    
+
     var icon: String {
         switch self {
-        case .directReport: return "star.fill"
+        case .category(let cat): return cat.icon
         case .recentlyContacted: return "clock.fill"
         case .needsCheckIn: return "exclamationmark.circle.fill"
         case .healthy: return "checkmark.circle.fill"
         case .hasNotes: return "note.text"
         case .noMeetings: return "calendar.badge.minus"
         case .frequentMeetings: return "calendar.badge.plus"
-        case .role: return "briefcase.fill"
-        case .department: return "building.2.fill"
         }
     }
-    
+
     static var quickFilters: [PersonFilter] {
-        [.directReport, .recentlyContacted, .needsCheckIn, .healthy]
+        [.category(.directReport), .category(.teammate), .category(.external), .recentlyContacted, .needsCheckIn]
     }
-    
+
     enum Category: CaseIterable {
         case relationship
         case activity
         case metadata
-        
+
         var title: String {
             switch self {
             case .relationship: return "Relationship"
@@ -291,11 +285,11 @@ enum PersonFilter: Hashable {
             }
         }
     }
-    
+
     static func filters(for category: Category) -> [PersonFilter] {
         switch category {
         case .relationship:
-            return [.directReport, .healthy, .needsCheckIn]
+            return PersonCategory.allCases.map { .category($0) } + [.healthy, .needsCheckIn]
         case .activity:
             return [.recentlyContacted, .frequentMeetings, .noMeetings]
         case .metadata:

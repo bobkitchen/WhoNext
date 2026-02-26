@@ -34,7 +34,6 @@ struct PeopleAndGroupsView: View {
                     .environmentObject(appStateManager)
             } else if let conversation = selectedInboxConversation {
                 ConversationDetailView(conversation: conversation)
-                    .id(conversation.uuid)
                     .frame(maxWidth: .infinity)
             } else if let meeting = selectedInboxGroupMeeting {
                 InboxMeetingDetailView(meeting: meeting)

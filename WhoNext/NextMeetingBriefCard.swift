@@ -12,14 +12,15 @@ struct NextMeetingBriefCard: View {
     var onPersonTap: ((Person) -> Void)?
 
     @State private var isHovered = false
-    @State private var showingBrief = false
+    @State private var isRegenerating = false
+    @State private var showFullBrief = false
 
     private let calculator = ConversationMetricsCalculator.shared
 
     // MARK: - Body
 
     var body: some View {
-        Group {
+        SwiftUI.Group {
             if let meeting = nextMeeting {
                 meetingCard(for: meeting, isTomorrow: !isToday(meeting.startDate))
             } else if let futureMeeting = nextMeetingWithin7Days {
@@ -32,18 +33,18 @@ struct NextMeetingBriefCard: View {
 
     // MARK: - Meeting Resolution
 
-    /// Next meeting: today's upcoming, or tomorrow's first if none left today
+    /// Next meeting that hasn't started yet — always forward-looking for prep.
+    /// Once a meeting starts, skip it and show what's next.
     private var nextMeeting: UpcomingMeeting? {
         let now = Date()
         let calendar = Calendar.current
 
-        // Today's remaining meetings (started within last hour counts as "in progress")
-        let todayUpcoming = calendarService.upcomingMeetings.filter { meeting in
-            calendar.isDateInToday(meeting.startDate) &&
-            meeting.startDate > now.addingTimeInterval(-3600)
+        // Future meetings today (strictly not yet started)
+        let todayFuture = calendarService.upcomingMeetings.filter { meeting in
+            calendar.isDateInToday(meeting.startDate) && meeting.startDate > now
         }.sorted { $0.startDate < $1.startDate }
 
-        if let first = todayUpcoming.first {
+        if let first = todayFuture.first {
             return first
         }
 
@@ -71,11 +72,10 @@ struct NextMeetingBriefCard: View {
         let isOneOnOne = (meeting.attendees?.count ?? 0) == 2
         let person = isOneOnOne ? findMatchedPerson(for: meeting) : nil
         let metrics = person.flatMap { calculator.calculateMetrics(for: $0) }
-        let isInProgress = meeting.startDate <= Date()
 
         VStack(alignment: .leading, spacing: 12) {
             // Header row
-            headerRow(meeting: meeting, isTomorrow: isTomorrow, isInProgress: isInProgress)
+            headerRow(meeting: meeting, isTomorrow: isTomorrow)
 
             if isOneOnOne {
                 oneOnOneContent(meeting: meeting, person: person, metrics: metrics, isTomorrow: isTomorrow)
@@ -92,33 +92,15 @@ struct NextMeetingBriefCard: View {
         .scaleEffect(isHovered ? 1.005 : 1.0)
         .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isHovered)
         .onHover { hovering in isHovered = hovering }
-        .sheet(isPresented: $showingBrief) {
-            if let person = person {
-                PreMeetingBriefWindow(
-                    personName: person.wrappedName,
-                    briefContent: briefManager.getBrief(for: meeting.id)?.briefContent ?? "Generating brief...",
-                    onClose: { showingBrief = false }
-                )
-            }
-        }
     }
 
     // MARK: - Header Row
 
     @ViewBuilder
-    private func headerRow(meeting: UpcomingMeeting, isTomorrow: Bool, isInProgress: Bool) -> some View {
-        TimelineView(.periodic(from: .now, by: 60)) { _ in
+    private func headerRow(meeting: UpcomingMeeting, isTomorrow: Bool) -> some View {
+        SwiftUI.TimelineView(.periodic(from: .now, by: 60)) { _ in
             HStack {
-                if isInProgress {
-                    Text("NOW")
-                        .font(.caption)
-                        .fontWeight(.bold)
-                        .foregroundColor(.red)
-                        .tracking(0.5)
-                    Text("Started \(minutesAgo(meeting.startDate)) ago")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                } else if isTomorrow {
+                if isTomorrow {
                     Text("TOMORROW")
                         .font(.caption)
                         .fontWeight(.semibold)
@@ -267,11 +249,8 @@ struct NextMeetingBriefCard: View {
             }
         }
 
-        // Footer with View Brief button
-        HStack {
-            Spacer()
-            briefButton(meeting: meeting, person: person)
-        }
+        // Inline AI brief section
+        inlineBriefSection(meeting: meeting, person: person)
     }
 
     @ViewBuilder
@@ -566,33 +545,131 @@ struct NextMeetingBriefCard: View {
             .foregroundColor(color)
     }
 
-    @ViewBuilder
-    private func briefButton(meeting: UpcomingMeeting, person: Person) -> some View {
-        let hasBrief = briefManager.hasBrief(for: meeting.id)
+    // MARK: - Inline Brief Section
 
-        Button(action: {
-            if hasBrief {
-                showingBrief = true
-            } else {
-                Task {
-                    await briefManager.generateBriefForMeeting(meeting)
-                    showingBrief = true
+    @ViewBuilder
+    private func inlineBriefSection(meeting: UpcomingMeeting, person: Person) -> some View {
+        let hasBrief = briefManager.hasBrief(for: meeting.id)
+        let isPending = briefManager.pendingMeetings.contains(meeting.id)
+        let conversationCount = person.conversations?.count ?? 0
+
+        if hasBrief, let cached = briefManager.getBrief(for: meeting.id) {
+            // Render cached brief inline
+            VStack(alignment: .leading, spacing: 8) {
+                briefDivider
+
+                let content = cached.briefContent
+                if showFullBrief || content.count <= 600 {
+                    CompactBriefContentView(content: content)
+                } else {
+                    CompactBriefContentView(content: String(content.prefix(600)) + "...")
+                    Button(action: { withAnimation { showFullBrief = true } }) {
+                        Text("Show more")
+                            .font(.caption2)
+                            .foregroundColor(.accentColor)
+                    }
+                    .buttonStyle(.plain)
                 }
+
+                briefFooter(meeting: meeting)
             }
-        }) {
-            HStack(spacing: 4) {
-                Image(systemName: hasBrief ? "doc.text" : "sparkles")
-                    .font(.system(size: 11))
-                Text(hasBrief ? "View Brief" : "Generate Brief")
-                    .font(.system(size: 11, weight: .medium))
+        } else if (briefManager.isGenerating && isPending) || isRegenerating {
+            // Loading state
+            VStack(alignment: .leading, spacing: 8) {
+                briefDivider
+
+                HStack(spacing: 8) {
+                    ProgressView()
+                        .controlSize(.small)
+                    Text("Preparing brief...")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+                .padding(.vertical, 4)
             }
-            .foregroundColor(.accentColor)
-            .padding(.horizontal, 10)
-            .padding(.vertical, 5)
-            .background(Color.accentColor.opacity(0.1))
-            .cornerRadius(6)
+        } else if conversationCount == 0 {
+            // First meeting — no history
+            VStack(alignment: .leading, spacing: 8) {
+                briefDivider
+
+                HStack(spacing: 6) {
+                    Image(systemName: "person.wave.2")
+                        .font(.system(size: 11))
+                        .foregroundColor(.secondary)
+                    Text("First meeting — no previous conversation history")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+                .padding(.vertical, 4)
+            }
+        } else {
+            // Auto-trigger generation for today's meetings
+            Color.clear
+                .frame(height: 0)
+                .task(id: meeting.id) {
+                    guard isToday(meeting.startDate) else { return }
+                    guard !briefManager.hasBrief(for: meeting.id) else { return }
+                    await briefManager.generateBriefForMeeting(meeting)
+                }
         }
-        .buttonStyle(.plain)
+    }
+
+    private var briefDivider: some View {
+        HStack(spacing: 8) {
+            Rectangle()
+                .fill(Color.secondary.opacity(0.2))
+                .frame(height: 1)
+                .frame(maxWidth: 20)
+            Text("AI BRIEF")
+                .font(.system(size: 10, weight: .semibold))
+                .foregroundColor(.secondary)
+                .tracking(0.5)
+            Rectangle()
+                .fill(Color.secondary.opacity(0.2))
+                .frame(height: 1)
+        }
+    }
+
+    @ViewBuilder
+    private func briefFooter(meeting: UpcomingMeeting) -> some View {
+        HStack {
+            Spacer()
+
+            Button(action: {
+                isRegenerating = true
+                showFullBrief = false
+                Task {
+                    await briefManager.regenerateBrief(for: meeting)
+                    isRegenerating = false
+                }
+            }) {
+                HStack(spacing: 3) {
+                    Image(systemName: "arrow.clockwise")
+                        .font(.system(size: 10))
+                    Text("Regenerate")
+                        .font(.system(size: 10, weight: .medium))
+                }
+                .foregroundColor(.secondary)
+            }
+            .buttonStyle(.plain)
+            .disabled(isRegenerating)
+
+            Button(action: {
+                if let brief = briefManager.getBrief(for: meeting.id) {
+                    NSPasteboard.general.clearContents()
+                    NSPasteboard.general.setString(brief.briefContent, forType: .string)
+                }
+            }) {
+                HStack(spacing: 3) {
+                    Image(systemName: "doc.on.doc")
+                        .font(.system(size: 10))
+                    Text("Copy")
+                        .font(.system(size: 10, weight: .medium))
+                }
+                .foregroundColor(.secondary)
+            }
+            .buttonStyle(.plain)
+        }
     }
 
     // MARK: - Person Matching (from EnhancedMeetingCard pattern)
@@ -699,12 +776,6 @@ struct NextMeetingBriefCard: View {
         Calendar.current.isDateInToday(date)
     }
 
-    private func minutesAgo(_ date: Date) -> String {
-        let minutes = max(0, Int(Date().timeIntervalSince(date) / 60))
-        if minutes < 1 { return "just now" }
-        return "\(minutes) min"
-    }
-
     private func healthColor(_ score: Double) -> Color {
         if score >= 0.7 { return .green }
         if score >= 0.4 { return .orange }
@@ -718,6 +789,113 @@ struct NextMeetingBriefCard: View {
         case "neutral": return .secondary
         default: return .secondary
         }
+    }
+}
+
+// MARK: - Compact Brief Content Renderer
+
+/// Lightweight inline markdown renderer for AI brief content.
+/// Adapted from ProfileContentView with smaller fonts for card context.
+private struct CompactBriefContentView: View {
+    let content: String
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            ForEach(Array(sections.enumerated()), id: \.offset) { _, section in
+                sectionView(section)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private var sections: [String] {
+        content.components(separatedBy: "\n\n").filter { !$0.trimmingCharacters(in: .whitespaces).isEmpty }
+    }
+
+    @ViewBuilder
+    private func sectionView(_ section: String) -> some View {
+        let lines = section.components(separatedBy: "\n")
+        VStack(alignment: .leading, spacing: 4) {
+            ForEach(Array(lines.enumerated()), id: \.offset) { _, line in
+                lineView(line)
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func lineView(_ line: String) -> some View {
+        let trimmed = line.trimmingCharacters(in: .whitespaces)
+        if trimmed.isEmpty {
+            EmptyView()
+        } else if trimmed.hasPrefix("###") {
+            Text(formatInline(trimmed.replacingOccurrences(of: "### ", with: "")))
+                .font(.system(size: 11, weight: .semibold))
+                .foregroundColor(.primary)
+                .padding(.top, 2)
+        } else if trimmed.hasPrefix("##") {
+            Text(formatInline(trimmed.replacingOccurrences(of: "## ", with: "")))
+                .font(.system(size: 12, weight: .bold))
+                .foregroundColor(.primary)
+                .padding(.top, 4)
+        } else if trimmed.hasPrefix("•") || trimmed.hasPrefix("-") || trimmed.hasPrefix("*") {
+            let bulletText = trimmed
+                .replacingOccurrences(of: "^[•\\-\\*]\\s*", with: "", options: .regularExpression)
+            HStack(alignment: .top, spacing: 6) {
+                Text("•")
+                    .font(.system(size: 12))
+                    .foregroundColor(.secondary)
+                    .frame(width: 10)
+                Text(formatInline(bulletText))
+                    .font(.system(size: 12))
+                    .foregroundColor(.primary)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .textSelection(.enabled)
+            }
+        } else {
+            Text(formatInline(trimmed))
+                .font(.system(size: 12))
+                .foregroundColor(.primary)
+                .fixedSize(horizontal: false, vertical: true)
+                .textSelection(.enabled)
+        }
+    }
+
+    private func formatInline(_ text: String) -> AttributedString {
+        // Process **bold** markers
+        var result = AttributedString()
+        let boldPattern = "\\*\\*([^*]+)\\*\\*"
+
+        guard let regex = try? NSRegularExpression(pattern: boldPattern) else {
+            return AttributedString(text)
+        }
+
+        let nsText = text as NSString
+        var lastEnd = 0
+        let matches = regex.matches(in: text, range: NSRange(location: 0, length: nsText.length))
+
+        for match in matches {
+            // Text before bold
+            if match.range.location > lastEnd {
+                let before = nsText.substring(with: NSRange(location: lastEnd, length: match.range.location - lastEnd))
+                result.append(AttributedString(before))
+            }
+            // Bold text
+            if match.numberOfRanges > 1 {
+                let boldContent = nsText.substring(with: match.range(at: 1))
+                var boldAttr = AttributedString(boldContent)
+                boldAttr.font = .system(size: 12, weight: .semibold)
+                result.append(boldAttr)
+            }
+            lastEnd = match.range.location + match.range.length
+        }
+
+        // Remaining text
+        if lastEnd < nsText.length {
+            let remaining = nsText.substring(from: lastEnd)
+            result.append(AttributedString(remaining))
+        }
+
+        return result.characters.isEmpty ? AttributedString(text) : result
     }
 }
 

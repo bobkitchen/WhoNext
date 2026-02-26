@@ -272,7 +272,7 @@ struct PopoutChatView: View {
         context += String(repeating: "=", count: 80) + "\n"
 
         // Use the same centralized context service as main chat
-        let hybridAI = HybridAIService()
+        let hybridAI = HybridAIService.shared
         let historicalContext = ChatContextService.generateContext(
             for: message,
             people: people,

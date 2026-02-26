@@ -47,8 +47,10 @@ class SpeakerStabilizer {
     /// - Parameters:
     ///   - rawLabel: The label from the diarization model
     ///   - currentLabel: The currently assigned stable label (or nil if first segment)
+    ///   - confidence: Optional embedding match confidence (0-1). High confidence (>0.85)
+    ///     bypasses hysteresis and commits the change immediately.
     /// - Returns: The stabilized label (may be same as current if change not confirmed)
-    func stabilize(rawLabel: String, currentLabel: String?) -> String {
+    func stabilize(rawLabel: String, currentLabel: String?, confidence: Float = 0.0) -> String {
         let current = currentLabel ?? rawLabel
 
         // If raw matches current, reset pending state
@@ -58,6 +60,15 @@ class SpeakerStabilizer {
             lastStableSpeaker = current
             stabilizationStats.stableSegments += 1
             return current
+        }
+
+        // High-confidence changes bypass hysteresis — commit immediately
+        if confidence > 0.85 {
+            pendingLabel = nil
+            pendingCount = 0
+            lastStableSpeaker = rawLabel
+            stabilizationStats.committedChanges += 1
+            return rawLabel
         }
 
         // Raw differs from current - check if this confirms a pending change
@@ -95,7 +106,7 @@ class SpeakerStabilizer {
         var result: [String] = []
         var currentStable: String? = nil
 
-        for (index, segment) in segments.enumerated() {
+        for (_, segment) in segments.enumerated() {
             let duration = segment.endTime - segment.startTime
 
             // For very short segments, inherit from previous

@@ -170,27 +170,7 @@ struct PersonDetailView: View {
                         }
                     }
                     
-                    if (person.value(forKey: "isDirectReport") as? Bool) == true {
-                        HStack(spacing: 8) {
-                            Image(systemName: "person.badge.key.fill")
-                                .font(.system(size: 12, weight: .medium))
-                                .foregroundStyle(.blue)
-                                .symbolRenderingMode(.hierarchical)
-                            Text("Direct Report")
-                                .font(.system(size: 13, weight: .semibold))
-                                .foregroundStyle(.blue)
-                        }
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 4)
-                        .background {
-                            Capsule()
-                                .fill(.blue.opacity(0.1))
-                                .overlay {
-                                    Capsule()
-                                        .stroke(.blue.opacity(0.2), lineWidth: 0.5)
-                                }
-                        }
-                    }
+                    CategoryBadge(category: person.category)
 
                     // Voice Recognition Status
                     if person.voiceSampleCount > 0 {
@@ -784,7 +764,7 @@ struct PersonDetailView: View {
             defer: false
         )
         window.title = "Edit \(person.name ?? "Person")"
-        window.isReleasedWhenClosed = true
+        window.isReleasedWhenClosed = false
         window.contentView = NSHostingView(
             rootView: PersonEditView(
                 person: person,
@@ -793,6 +773,9 @@ struct PersonDetailView: View {
             )
             .environment(\.managedObjectContext, viewContext)
         )
+        let delegate = ConversationWindowDelegate()
+        window.delegate = delegate
+        objc_setAssociatedObject(window, &ConversationWindowDelegate.associatedKey, delegate, .OBJC_ASSOCIATION_RETAIN_NONATOMIC)
         window.makeKeyAndOrderFront(nil)
     }
     
@@ -804,7 +787,7 @@ struct PersonDetailView: View {
             defer: false
         )
         window.title = "New Conversation with \(person.name ?? "Person")"
-        window.isReleasedWhenClosed = true
+        window.isReleasedWhenClosed = false
         window.contentView = NSHostingView(
             rootView: NewConversationWindowView(
                 preselectedPerson: person,
@@ -813,6 +796,9 @@ struct PersonDetailView: View {
             )
             .environment(\.managedObjectContext, viewContext)
         )
+        let delegate = ConversationWindowDelegate()
+        window.delegate = delegate
+        objc_setAssociatedObject(window, &ConversationWindowDelegate.associatedKey, delegate, .OBJC_ASSOCIATION_RETAIN_NONATOMIC)
         window.makeKeyAndOrderFront(nil)
     }
     
@@ -1225,7 +1211,17 @@ struct ConversationRowView: View {
     }
     
     private func openConversationWindow() {
-        // Open conversation in new window
+        // Open conversation in new window.
+        // IMPORTANT: We use isReleasedWhenClosed = false and manage lifecycle
+        // via NSWindowDelegate. Setting isReleasedWhenClosed = true caused
+        // EXC_BAD_ACCESS crashes because when the window deallocs, the
+        // NSHostingView's SwiftUI content (holding Core Data managed object
+        // references) is torn down simultaneously. If CloudKit is mid-merge
+        // at that moment, the managed object deallocation conflicts with the
+        // merge transaction ("entangle context after pre-commit").
+        //
+        // Fix: nil out contentView in windowWillClose (releasing SwiftUI content
+        // and its managed object refs) BEFORE the window itself deallocs.
         let window = NSWindow(
             contentRect: NSRect(x: 0, y: 0, width: 600, height: 500),
             styleMask: [.titled, .closable, .resizable],
@@ -1233,11 +1229,15 @@ struct ConversationRowView: View {
             defer: false
         )
         window.title = "Conversation - \(conversationTitle)"
-        window.isReleasedWhenClosed = true
+        window.isReleasedWhenClosed = false
         window.contentView = NSHostingView(
             rootView: ConversationDetailView(conversation: conversation, conversationManager: conversationManager)
                 .environment(\.managedObjectContext, viewContext)
         )
+        let delegate = ConversationWindowDelegate()
+        window.delegate = delegate
+        // Store delegate as associated object so it lives as long as the window
+        objc_setAssociatedObject(window, &ConversationWindowDelegate.associatedKey, delegate, .OBJC_ASSOCIATION_RETAIN_NONATOMIC)
         window.makeKeyAndOrderFront(nil)
     }
     
@@ -1701,5 +1701,31 @@ struct ProfileWindow: View {
             .background(Color(nsColor: .windowBackgroundColor))
         }
         .frame(minWidth: 600, minHeight: 400)
+    }
+}
+
+// MARK: - Conversation Window Delegate
+
+/// Manages conversation window lifecycle to prevent Core Data crashes.
+/// When the window closes, we nil out contentView first to release the SwiftUI
+/// view hierarchy (and its managed object references) before the window deallocs.
+/// This prevents EXC_BAD_ACCESS when CloudKit is mid-merge during window close.
+class ConversationWindowDelegate: NSObject, NSWindowDelegate {
+    nonisolated(unsafe) static var associatedKey: UInt8 = 0
+
+    func windowWillClose(_ notification: Notification) {
+        guard let window = notification.object as? NSWindow else { return }
+        // Release the SwiftUI hosting view (and its managed object refs) before
+        // the window itself is deallocated. This breaks the retain cycle between
+        // the window and the Core Data objects, preventing crashes when CloudKit
+        // merges happen during deallocation.
+        window.contentView = nil
+    }
+
+    func windowDidClose(_ notification: Notification) {
+        // Remove the associated delegate reference so ARC can clean up
+        if let window = notification.object as? NSWindow {
+            objc_setAssociatedObject(window, &ConversationWindowDelegate.associatedKey, nil, .OBJC_ASSOCIATION_RETAIN_NONATOMIC)
+        }
     }
 }

@@ -15,7 +15,7 @@ struct MeetingsView: View {
     @Environment(\.managedObjectContext) private var viewContext
     @FetchRequest(
         sortDescriptors: [NSSortDescriptor(keyPath: \Person.name, ascending: true)],
-        predicate: nil,
+        predicate: NSPredicate(format: "isSoftDeleted == false"),
         animation: .default
     ) private var people: FetchedResults<Person>
     
@@ -53,7 +53,7 @@ struct MeetingsView: View {
             )
             
             ScrollView(.vertical, showsIndicators: true) {
-                VStack(alignment: .leading, spacing: 24) {
+                VStack(alignment: .leading, spacing: 16) {
                     // Statistics Dashboard - New actionable cards
                     StatisticsCardsView(
                         onNavigateToPeople: {
@@ -83,9 +83,8 @@ struct MeetingsView: View {
                     FollowUpNeededView()
                         .smoothTransition()
                     
-                    Spacer().frame(height: 24)
                 }
-                .padding(24)
+                .padding(20)
             }
             .background(Color(NSColor.windowBackgroundColor))
         }
@@ -484,7 +483,7 @@ struct MasonryGrid<Data: RandomAccessCollection, Content: View>: View where Data
 
     // Adaptive columns: minimum 280pt (fits 2-3 cards), maximum 400pt to prevent overly wide cards
     private let columns = [
-        GridItem(.adaptive(minimum: 280, maximum: 400), spacing: 16)
+        GridItem(.adaptive(minimum: 280, maximum: 400), spacing: 12)
     ]
 
     init(_ data: Data, @ViewBuilder content: @escaping (Data.Element) -> Content) {
@@ -493,7 +492,7 @@ struct MasonryGrid<Data: RandomAccessCollection, Content: View>: View where Data
     }
 
     var body: some View {
-        LazyVGrid(columns: columns, spacing: 16) {
+        LazyVGrid(columns: columns, spacing: 12) {
             ForEach(Array(data), id: \.id) { item in
                 content(item)
             }

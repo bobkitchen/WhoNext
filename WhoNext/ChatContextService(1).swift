@@ -248,8 +248,8 @@ class ChatContextService {
             }
             
             // Prioritize direct reports
-            if person1.isDirectReport != person2.isDirectReport {
-                return person1.isDirectReport
+            if (person1.category == .directReport) != (person2.category == .directReport) {
+                return person1.category == .directReport
             }
             
             // Prioritize people with recent conversations
@@ -285,7 +285,7 @@ class ChatContextService {
             }
             
             // Check for direct report queries
-            if lowercased.contains("direct report") && person.isDirectReport {
+            if lowercased.contains("direct report") && person.category == .directReport {
                 return true
             }
             
@@ -306,7 +306,7 @@ class ChatContextService {
     private static func generatePersonContext(person: Person, includeFullHistory: Bool = false, focused: Bool = false) -> String {
         let name = person.name ?? "Unknown"
         let role = person.role ?? "Unknown"
-        let isDirectReport = person.isDirectReport
+        let categoryName = person.category.displayName
         let timezone = person.timezone ?? "Unknown"
         let conversations = person.conversations as? Set<Conversation> ?? []
 
@@ -316,7 +316,7 @@ class ChatContextService {
 
         PERSON: \(name)
         Role: \(role)
-        Direct Report: \(isDirectReport ? "Yes" : "No")
+        Category: \(categoryName)
         Timezone: \(timezone)
         """
 
@@ -410,7 +410,7 @@ class ChatContextService {
     }
     
     private static func generateTeamSummary(people: [Person]) -> String {
-        let directReports = people.filter { $0.isDirectReport }.count
+        let directReports = people.filter { $0.category == .directReport }.count
         let totalConversations = people.reduce(0) { sum, person in
             sum + ((person.conversations as? Set<Conversation>)?.count ?? 0)
         }

@@ -7,7 +7,7 @@ struct AIInsightsPanelView: View {
     @FocusState.Binding var isFocused: Bool
 
     @StateObject private var chatSession = ChatSessionHolder.shared.session
-    @StateObject private var hybridAI = HybridAIService()
+    @ObservedObject private var hybridAI = HybridAIService.shared
     @StateObject private var calendarService = CalendarService.shared
     @AppStorage("isChatExpanded") private var isExpanded = false
     @State private var chatWindow: NSWindow?
@@ -15,7 +15,7 @@ struct AIInsightsPanelView: View {
     @Environment(\.managedObjectContext) private var viewContext
     @FetchRequest(
         sortDescriptors: [NSSortDescriptor(keyPath: \Person.name, ascending: true)],
-        predicate: nil,
+        predicate: NSPredicate(format: "isSoftDeleted == false"),
         animation: .default
     ) private var people: FetchedResults<Person>
 

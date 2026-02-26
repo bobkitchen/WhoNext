@@ -350,15 +350,16 @@ struct RecordingWindowView: View {
 
                 if let meeting = recordingEngine.currentMeeting {
                     ForEach(meeting.identifiedParticipants, id: \.speakerID) { participant in
-                        ParticipantRow(participant: participant) { newName in
-                            // Backfill the user-assigned name into existing transcript segments for this speaker
-                            let speakerId = "\(participant.speakerID)"
-                            for i in 0..<meeting.transcript.count {
-                                if meeting.transcript[i].speakerID == speakerId {
-                                    meeting.transcript[i].speakerName = newName
-                                }
+                        ParticipantRow(
+                            participant: participant,
+                            onRename: { newName, person in
+                                // Backfill the user-assigned name and Person link into all transcript segments
+                                meeting.renameSpeaker(speakerID: participant.speakerID, to: newName, person: person)
+                            },
+                            onMarkAsMe: {
+                                markParticipantAsMe(participant, in: meeting)
                             }
-                        }
+                        )
                     }
                 } else {
                     Text("No participants detected")
@@ -442,6 +443,42 @@ struct RecordingWindowView: View {
         } else {
             return String(format: "%02d:%02d", minutes, seconds)
         }
+    }
+
+    /// Mark a participant as the current user and save their voice embedding for future identification
+    private func markParticipantAsMe(_ participant: IdentifiedParticipant, in meeting: LiveMeeting) {
+        // Mark as current user
+        participant.isCurrentUser = true
+        let userName = UserProfile.shared.displayName
+        if !userName.isEmpty {
+            participant.name = userName
+            participant.namingMode = .linkedToPerson
+        }
+        // Use displayName ("Me") for transcript labels — consistent with transcribeChunk()
+        meeting.renameSpeaker(speakerID: participant.speakerID, to: participant.displayName, person: nil)
+
+        // Unmark any other participant that was previously marked as "me"
+        for other in meeting.identifiedParticipants where other.speakerID != participant.speakerID {
+            other.isCurrentUser = false
+        }
+
+        // Save voice embedding to UserProfile for future auto-identification
+        #if canImport(FluidAudio)
+        let engine = SimpleRecordingEngine.shared
+        // Get embedding from the diarization result's speaker database
+        let rawId = participant.speakerID
+            .replacingOccurrences(of: "mic_", with: "")
+            .replacingOccurrences(of: "sys_", with: "")
+
+        // Check mic diarization manager first, then system
+        if let result = engine.diarizationManagerResult,
+           let embedding = result.speakerDatabase?[rawId], !embedding.isEmpty {
+            UserProfile.shared.addVoiceSample(embedding)
+            print("[RecordingWindow] Saved voice embedding to UserProfile from \(participant.speakerID)")
+        }
+        #endif
+
+        print("[RecordingWindow] Marked \(participant.speakerID) as current user (\(userName))")
     }
 
     /// Convert LiveMeeting.MeetingType to MeetingTypeBadge.MeetingType
@@ -570,12 +607,18 @@ struct TranscriptSegmentRow: View {
 
 struct ParticipantRow: View {
     @ObservedObject var participant: IdentifiedParticipant
-    var onRename: ((String) -> Void)?
+    var onRename: ((String, Person?) -> Void)?
+    var onMarkAsMe: (() -> Void)?
 
     @State private var isEditing = false
     @State private var editName = ""
+    @State private var searchResults: [Person] = []
+    @State private var showDropdown = false
+
+    @Environment(\.managedObjectContext) private var viewContext
 
     var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
         HStack(spacing: 8) {
             // Avatar
             Circle()
@@ -590,10 +633,70 @@ struct ParticipantRow: View {
 
             VStack(alignment: .leading, spacing: 1) {
                 if isEditing {
-                    TextField("Enter name", text: $editName, onCommit: commitName)
-                        .font(.caption)
-                        .textFieldStyle(.plain)
-                        .onExitCommand { isEditing = false }
+                    VStack(alignment: .leading, spacing: 2) {
+                        TextField("Search people...", text: $editName, onCommit: commitName)
+                            .font(.caption)
+                            .textFieldStyle(.plain)
+                            .onExitCommand { cancelEditing() }
+                            .onChange(of: editName) { _, newValue in
+                                searchPeople(query: newValue)
+                            }
+
+                        // Person search dropdown
+                        if showDropdown && !searchResults.isEmpty {
+                            VStack(alignment: .leading, spacing: 0) {
+                                ForEach(searchResults.prefix(5), id: \.objectID) { person in
+                                    Button(action: { selectPerson(person) }) {
+                                        HStack(spacing: 6) {
+                                            Text(person.wrappedName)
+                                                .font(.caption)
+                                                .fontWeight(.medium)
+                                            if let role = person.role, !role.isEmpty {
+                                                Text(role)
+                                                    .font(.caption2)
+                                                    .foregroundColor(.secondary)
+                                            }
+                                        }
+                                        .frame(maxWidth: .infinity, alignment: .leading)
+                                        .padding(.horizontal, 6)
+                                        .padding(.vertical, 4)
+                                    }
+                                    .buttonStyle(.plain)
+                                    .background(Color(NSColor.controlBackgroundColor))
+                                    .onHover { hovering in
+                                        if hovering {
+                                            NSCursor.pointingHand.push()
+                                        } else {
+                                            NSCursor.pop()
+                                        }
+                                    }
+                                }
+
+                                Divider()
+
+                                // Create new person option
+                                Button(action: commitNameAsNew) {
+                                    HStack(spacing: 4) {
+                                        Image(systemName: "plus.circle")
+                                            .font(.caption2)
+                                        Text("Create \"\(editName.trimmingCharacters(in: .whitespacesAndNewlines))\"")
+                                            .font(.caption)
+                                    }
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                                    .padding(.horizontal, 6)
+                                    .padding(.vertical, 4)
+                                }
+                                .buttonStyle(.plain)
+                                .foregroundColor(.blue)
+                                .disabled(editName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                            }
+                            .background(
+                                RoundedRectangle(cornerRadius: 6)
+                                    .fill(Color(NSColor.controlBackgroundColor))
+                                    .shadow(color: .black.opacity(0.1), radius: 4, y: 2)
+                            )
+                        }
+                    }
                 } else {
                     HStack(spacing: 4) {
                         Text(participant.displayName)
@@ -603,12 +706,20 @@ struct ParticipantRow: View {
                             .onTapGesture {
                                 editName = participant.name ?? ""
                                 isEditing = true
+                                searchPeople(query: editName)
                             }
 
                         if participant.isCurrentUser {
                             Text("(You)")
                                 .font(.caption2)
                                 .foregroundColor(.secondary)
+                        }
+
+                        if participant.namingMode == .linkedToPerson {
+                            Image(systemName: "link.circle.fill")
+                                .font(.caption2)
+                                .foregroundColor(.green)
+                                .help("Linked to Person record")
                         }
                     }
                 }
@@ -628,6 +739,65 @@ struct ParticipantRow: View {
                     .foregroundColor(.green)
             }
         }
+
+        // "This is me" button — lets user self-identify and train voice recognition
+        if !participant.isCurrentUser {
+            Button(action: { onMarkAsMe?() }) {
+                HStack(spacing: 4) {
+                    Image(systemName: "person.circle")
+                        .font(.caption2)
+                    Text("This is me")
+                        .font(.caption2)
+                }
+                .foregroundColor(.blue)
+            }
+            .buttonStyle(.plain)
+            .help("Identify yourself and train voice recognition")
+        } else {
+            HStack(spacing: 4) {
+                Image(systemName: "checkmark.seal.fill")
+                    .font(.caption2)
+                    .foregroundColor(.blue)
+                Text("You")
+                    .font(.caption2)
+                    .foregroundColor(.blue)
+            }
+        }
+        } // end VStack
+    }
+
+    // MARK: - Person Search
+
+    private func searchPeople(query: String) {
+        let trimmed = query.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else {
+            searchResults = []
+            showDropdown = false
+            return
+        }
+
+        let request: NSFetchRequest<Person> = Person.fetchRequest()
+        request.predicate = NSPredicate(format: "name CONTAINS[cd] %@", trimmed)
+        request.sortDescriptors = [NSSortDescriptor(keyPath: \Person.name, ascending: true)]
+        request.fetchLimit = 5
+
+        do {
+            searchResults = try viewContext.fetch(request)
+            showDropdown = true
+        } catch {
+            searchResults = []
+            showDropdown = false
+        }
+    }
+
+    private func selectPerson(_ person: Person) {
+        let name = person.wrappedName
+        participant.name = name
+        participant.person = person
+        participant.personRecord = person
+        participant.namingMode = .linkedToPerson
+        onRename?(name, person)
+        cancelEditing()
     }
 
     private func commitName() {
@@ -635,9 +805,19 @@ struct ParticipantRow: View {
         if !trimmed.isEmpty {
             participant.name = trimmed
             participant.namingMode = .namedByUser
-            onRename?(trimmed)
+            onRename?(trimmed, nil)
         }
+        cancelEditing()
+    }
+
+    private func commitNameAsNew() {
+        commitName()
+    }
+
+    private func cancelEditing() {
         isEditing = false
+        showDropdown = false
+        searchResults = []
     }
 
     private var initials: String {

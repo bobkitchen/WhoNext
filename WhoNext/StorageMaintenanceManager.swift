@@ -46,7 +46,7 @@ class StorageMaintenanceManager: ObservableObject {
             self.isPerformingMaintenance = true
         }
         
-        print("🧹 Starting storage maintenance...")
+        debugLog("🧹 Starting storage maintenance...")
         
         // 1. Delete expired audio files
         let deletedAudio = await deleteExpiredAudioFiles()
@@ -73,12 +73,12 @@ class StorageMaintenanceManager: ObservableObject {
         saveLastMaintenanceDate()
         
         // Log results
-        print("✅ Storage maintenance complete:")
-        print("   - Expired audio deleted: \(deletedAudio)")
-        print("   - Orphaned files cleaned: \(orphanedCleaned)")
-        print("   - Integrity issues fixed: \(integrityFixed)")
-        print("   - Storage optimized: \(storageOptimized ? "Yes" : "No")")
-        print("   - Total storage: \(report.formattedSize)")
+        debugLog("✅ Storage maintenance complete:")
+        debugLog("   - Expired audio deleted: \(deletedAudio)")
+        debugLog("   - Orphaned files cleaned: \(orphanedCleaned)")
+        debugLog("   - Integrity issues fixed: \(integrityFixed)")
+        debugLog("   - Storage optimized: \(storageOptimized ? "Yes" : "No")")
+        debugLog("   - Total storage: \(report.formattedSize)")
         
         // Send notification if significant cleanup
         if deletedAudio > 0 || orphanedCleaned > 0 {
@@ -154,15 +154,15 @@ class StorageMaintenanceManager: ObservableObject {
                         meeting.audioFilePath = nil
                         meeting.scheduledDeletion = nil
                         
-                        print("🗑️ Deleted expired audio: \(meeting.displayTitle)")
-                        print("   📝 Transcript and summary preserved")
+                        debugLog("🗑️ Deleted expired audio: \(meeting.displayTitle)")
+                        debugLog("   📝 Transcript and summary preserved")
                     }
                 }
             }
             
             try context.save()
         } catch {
-            print("❌ Error deleting expired audio: \(error)")
+            debugLog("❌ Error deleting expired audio: \(error)")
         }
         
         return deletedCount
@@ -198,9 +198,9 @@ class StorageMaintenanceManager: ObservableObject {
                         do {
                             try fileManager.removeItem(at: fileURL)
                             cleanedCount += 1
-                            print("🗑️ Removed orphaned file: \(fileName)")
+                            debugLog("🗑️ Removed orphaned file: \(fileName)")
                         } catch {
-                            print("❌ Failed to remove orphaned file: \(error)")
+                            debugLog("❌ Failed to remove orphaned file: \(error)")
                         }
                     }
                 }
@@ -229,7 +229,7 @@ class StorageMaintenanceManager: ObservableObject {
                     if !fileManager.fileExists(atPath: audioURL.path) {
                         meeting.audioFilePath = nil
                         fixedCount += 1
-                        print("🔧 Fixed invalid audio reference for: \(meeting.displayTitle)")
+                        debugLog("🔧 Fixed invalid audio reference for: \(meeting.displayTitle)")
                     }
                 }
             }
@@ -238,7 +238,7 @@ class StorageMaintenanceManager: ObservableObject {
                 try context.save()
             }
         } catch {
-            print("❌ Error verifying data integrity: \(error)")
+            debugLog("❌ Error verifying data integrity: \(error)")
         }
         
         return fixedCount
@@ -281,7 +281,7 @@ class StorageMaintenanceManager: ObservableObject {
                                 meeting.audioFilePath = compressedURL.path
                                 compressedCount += 1
                             } catch {
-                                print("❌ Failed to compress: \(error)")
+                                debugLog("❌ Failed to compress: \(error)")
                             }
                         }
                     }
@@ -290,12 +290,12 @@ class StorageMaintenanceManager: ObservableObject {
             
             if compressedCount > 0 {
                 try context.save()
-                print("📦 Compressed \(compressedCount) audio files")
+                debugLog("📦 Compressed \(compressedCount) audio files")
             }
             
             return compressedCount > 0
         } catch {
-            print("❌ Error optimizing storage: \(error)")
+            debugLog("❌ Error optimizing storage: \(error)")
             return false
         }
     }
@@ -332,7 +332,7 @@ class StorageMaintenanceManager: ObservableObject {
             let values = try fileURL.resourceValues(forKeys: [.volumeAvailableCapacityKey])
             return Int64(values.volumeAvailableCapacity ?? 0)
         } catch {
-            print("Error getting available disk space: \(error)")
+            debugLog("Error getting available disk space: \(error)")
             return 0
         }
     }
@@ -409,14 +409,14 @@ class StorageMaintenanceManager: ObservableObject {
                 }
             }
             
-            print("📅 Next maintenance scheduled for: \(nextRun)")
+            debugLog("📅 Next maintenance scheduled for: \(nextRun)")
         }
     }
     
     private func registerBackgroundTask() {
         // Register background task for macOS
         // Note: This would need proper implementation for production
-        print("📋 Background maintenance task registered")
+        debugLog("📋 Background maintenance task registered")
     }
     
     private func getNextScheduledMaintenance() -> Date? {

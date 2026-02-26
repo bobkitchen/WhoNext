@@ -38,9 +38,12 @@
         <attribute name="uuid" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
         <relationship name="actionItems" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="ActionItem" inverseName="conversation" inverseEntity="ActionItem"/>
         <relationship name="person" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="Person" inverseName="conversations" inverseEntity="Person"/>
-    </entity>
-    <entity name="Item" representedClassName="Item" syncable="YES">
-        <attribute name="timestamp" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <fetchIndex name="byDateIndex">
+            <fetchIndexElement property="date" type="Binary" order="descending"/>
+        </fetchIndex>
+        <fetchIndex name="byPersonIndex">
+            <fetchIndexElement property="person" type="Binary" order="ascending"/>
+        </fetchIndex>
     </entity>
     <entity name="Person" representedClassName="Person" syncable="YES">
         <attribute name="createdAt" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
@@ -53,6 +56,7 @@
         <attribute name="modifiedAt" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
         <attribute name="name" optional="YES" attributeType="String"/>
         <attribute name="notes" optional="YES" attributeType="String"/>
+        <attribute name="personCategory" optional="YES" attributeType="String" defaultValueString="colleague"/>
         <attribute name="photo" optional="YES" attributeType="Binary"/>
         <attribute name="role" optional="YES" attributeType="String"/>
         <attribute name="scheduledConversationDate" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
@@ -64,6 +68,12 @@
         <relationship name="conversations" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="Conversation" inverseName="person" inverseEntity="Conversation"/>
         <relationship name="groupMeetings" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="GroupMeeting" inverseName="attendees" inverseEntity="GroupMeeting"/>
         <relationship name="groups" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="Group" inverseName="members" inverseEntity="Group"/>
+        <fetchIndex name="byNameIndex">
+            <fetchIndexElement property="name" type="Binary" order="ascending"/>
+        </fetchIndex>
+        <fetchIndex name="bySoftDeletedIndex">
+            <fetchIndexElement property="isSoftDeleted" type="Binary" order="ascending"/>
+        </fetchIndex>
     </entity>
     <entity name="Group" representedClassName="Group" syncable="YES">
         <attribute name="createdAt" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
@@ -100,6 +110,12 @@
         <attribute name="transcriptData" optional="YES" attributeType="Binary"/>
         <relationship name="attendees" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="Person" inverseName="groupMeetings" inverseEntity="Person"/>
         <relationship name="group" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="Group" inverseName="meetings" inverseEntity="Group"/>
+        <fetchIndex name="byDateIndex">
+            <fetchIndexElement property="date" type="Binary" order="descending"/>
+        </fetchIndex>
+        <fetchIndex name="bySoftDeletedIndex">
+            <fetchIndexElement property="isSoftDeleted" type="Binary" order="ascending"/>
+        </fetchIndex>
     </entity>
     <entity name="UserProfileEntity" representedClassName="UserProfileEntity" syncable="YES">
         <attribute name="createdAt" optional="YES" attributeType="Date" usesScalarValueType="NO"/>

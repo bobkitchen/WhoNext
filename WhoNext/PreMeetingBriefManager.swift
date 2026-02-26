@@ -59,7 +59,7 @@ class PreMeetingBriefManager: ObservableObject {
         // Check if we've already generated briefs today
         if let lastGen = lastGenerationTime,
            calendar.isDate(lastGen, inSameDayAs: now) {
-            print("📋 Briefs already generated today at \(lastGen)")
+            debugLog("📋 Briefs already generated today at \(lastGen)")
             return
         }
 
@@ -73,15 +73,15 @@ class PreMeetingBriefManager: ObservableObject {
     @MainActor
     func generateBriefsForTodaysMeetings() async {
         guard !isGenerating else {
-            print("⏳ Brief generation already in progress")
+            debugLog("⏳ Brief generation already in progress")
             return
         }
 
         isGenerating = true
-        print("🌅 Starting morning brief generation...")
+        debugLog("🌅 Starting morning brief generation...")
 
         let todaysMeetings = getTodaysOneOnOneMeetings()
-        print("📅 Found \(todaysMeetings.count) 1:1 meetings for today")
+        debugLog("📅 Found \(todaysMeetings.count) 1:1 meetings for today")
 
         pendingMeetings = todaysMeetings.map { $0.id }
 
@@ -92,7 +92,7 @@ class PreMeetingBriefManager: ObservableObject {
 
         lastGenerationTime = Date()
         isGenerating = false
-        print("✅ Morning brief generation complete")
+        debugLog("✅ Morning brief generation complete")
     }
 
     /// Get all 1:1 meetings scheduled for today
@@ -117,17 +117,17 @@ class PreMeetingBriefManager: ObservableObject {
     /// Generate a brief for a specific meeting
     @MainActor
     func generateBriefForMeeting(_ meeting: UpcomingMeeting) async {
-        print("📝 Generating brief for: \(meeting.title)")
+        debugLog("📝 Generating brief for: \(meeting.title)")
 
         // Find the other attendee (not the user)
         guard let attendees = meeting.attendees, attendees.count == 2 else {
-            print("⚠️ Meeting doesn't have exactly 2 attendees")
+            debugLog("⚠️ Meeting doesn't have exactly 2 attendees")
             return
         }
 
         // Find Person record for the other attendee
         guard let person = findPersonForMeeting(attendees: attendees) else {
-            print("⚠️ No Person record found for attendees: \(attendees)")
+            debugLog("⚠️ No Person record found for attendees: \(attendees)")
             // Cache a placeholder indicating no Person found
             briefCache[meeting.id] = CachedBrief(
                 meetingID: meeting.id,
@@ -142,7 +142,7 @@ class PreMeetingBriefManager: ObservableObject {
         // Check if person has any conversations
         let conversationCount = person.conversations?.count ?? 0
         if conversationCount == 0 {
-            print("ℹ️ \(person.wrappedName) has no conversation history")
+            debugLog("ℹ️ \(person.wrappedName) has no conversation history")
             briefCache[meeting.id] = CachedBrief(
                 meetingID: meeting.id,
                 personID: person.id,
@@ -163,9 +163,9 @@ class PreMeetingBriefManager: ObservableObject {
                 briefContent: brief,
                 generatedAt: Date()
             )
-            print("✅ Brief generated for \(person.wrappedName)")
+            debugLog("✅ Brief generated for \(person.wrappedName)")
         } catch {
-            print("❌ Failed to generate brief: \(error)")
+            debugLog("❌ Failed to generate brief: \(error)")
             briefCache[meeting.id] = CachedBrief(
                 meetingID: meeting.id,
                 personID: person.id,
@@ -179,7 +179,7 @@ class PreMeetingBriefManager: ObservableObject {
     /// Generate brief asynchronously
     private func generateBriefAsync(for person: Person) async throws -> String {
         try await withCheckedThrowingContinuation { continuation in
-            let apiKey = UserDefaults.standard.string(forKey: "openAIKey") ?? ""
+            let apiKey = SecureStorage.getAPIKey(for: .openai)
             PreMeetingBriefService.generateBrief(for: person, apiKey: apiKey) { result in
                 switch result {
                 case .success(let brief):

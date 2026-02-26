@@ -91,7 +91,7 @@ struct EnhancedMeetingCard: View {
     // MARK: - Body
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: 8) {
             // Row 1: Meeting type badge + Duration + Time
             HStack(alignment: .top) {
                 HStack(spacing: 8) {
@@ -222,7 +222,7 @@ struct EnhancedMeetingCard: View {
                 }
             }
         }
-        .padding(16)
+        .padding(12)
         .background(Color(NSColor.controlBackgroundColor))
         .cornerRadius(12)
         .overlay(

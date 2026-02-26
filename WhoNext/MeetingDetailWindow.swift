@@ -494,6 +494,20 @@ struct MeetingDetailWindow: View {
 
 // MARK: - Window Helper
 
+/// Retains open detail windows to prevent premature deallocation during animations.
+/// Windows remove themselves from this set when closed via the delegate callback.
+private var openDetailWindows = Set<NSWindow>()
+
+/// Delegate that removes the window from the retained set on close.
+private class DetailWindowDelegate: NSObject, NSWindowDelegate {
+    func windowWillClose(_ notification: Notification) {
+        guard let window = notification.object as? NSWindow else { return }
+        openDetailWindows.remove(window)
+    }
+}
+
+private let detailWindowDelegate = DetailWindowDelegate()
+
 /// Opens a meeting detail window
 func openMeetingDetailWindow(
     for meeting: UpcomingMeeting,
@@ -517,11 +531,13 @@ func openMeetingDetailWindow(
 
     window.title = meeting.title
     window.center()
+    window.isReleasedWhenClosed = false
+    window.delegate = detailWindowDelegate
     window.contentView = NSHostingView(rootView: contentView)
     window.makeKeyAndOrderFront(nil)
 
-    // Keep window alive
-    window.isReleasedWhenClosed = false
+    // Keep a strong reference so the window isn't deallocated while visible
+    openDetailWindows.insert(window)
 }
 
 // MARK: - Preview

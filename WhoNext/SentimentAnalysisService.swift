@@ -427,7 +427,7 @@ class RelationshipHealthCalculator {
     
     /// Calculate overall relationship health score for a person (legacy method)
     func calculateHealthScore(for person: Person) -> Double {
-        return calculateHealthScore(for: person, relationshipType: .other)
+        return calculateHealthScore(for: person, relationshipType: .colleague)
     }
     
     /// Calculate context-aware relationship health score for a person
@@ -514,13 +514,17 @@ class RelationshipHealthCalculator {
             let consistencyBonus = calculateConsistencyBonus(conversations: conversations)
             adjustedScore += consistencyBonus
             
-        case .skipLevel:
-            // Skip level meetings should focus on feedback - check for engagement
+        case .teammate:
+            // Teammates should have regular engagement
             let engagementBonus = calculateEngagementBonus(conversations: conversations)
             adjustedScore += engagementBonus
-            
-        case .other:
-            // No specific adjustments for other relationships
+
+        case .colleague:
+            // No specific adjustments for colleagues
+            break
+
+        case .external:
+            // No specific adjustments for external contacts
             break
         }
         
@@ -600,7 +604,7 @@ class RelationshipHealthCalculator {
     
     /// Get days since last conversation
     private func getDaysSinceLastConversation(person: Person) -> Double {
-        guard let lastDate = person.lastContactDate else { return Double.infinity }
+        guard let lastDate = person.mostRecentContactDate else { return Double.infinity }
         return Date().timeIntervalSince(lastDate) / 86400 // Convert to days
     }
     

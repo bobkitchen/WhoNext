@@ -7,7 +7,8 @@ struct AnalyticsView: View {
     @Environment(\.managedObjectContext) private var viewContext
     @FetchRequest(
         entity: Person.entity(),
-        sortDescriptors: [NSSortDescriptor(key: "name", ascending: true)]
+        sortDescriptors: [NSSortDescriptor(key: "name", ascending: true)],
+        predicate: NSPredicate(format: "isSoftDeleted == false")
     ) var people: FetchedResults<Person>
     
     @State private var selectedTimeframe: TimelineView.TimeFrame = .week

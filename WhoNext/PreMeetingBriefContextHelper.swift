@@ -8,13 +8,13 @@ struct PreMeetingBriefContextHelper {
         // Core Profile Information
         context += "## PERSON PROFILE\n"
         let role = person.role ?? "Unknown"
-        let isDirectReport = person.isDirectReport
+        let categoryName = person.category.displayName
         let timezone = person.timezone ?? "Unknown"
         let scheduledDate = person.scheduledConversationDate
         let conversations = person.conversations as? Set<Conversation> ?? []
         
         context += "Role: \(role)\n"
-        context += "Direct Report: \(isDirectReport ? "Yes" : "No")\n"
+        context += "Category: \(categoryName)\n"
         context += "Timezone: \(timezone)\n"
         if let scheduledDate = scheduledDate {
             context += "Next Scheduled Conversation: \(scheduledDate.formatted())\n"

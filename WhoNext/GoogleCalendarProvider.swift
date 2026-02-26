@@ -228,9 +228,10 @@ class GoogleCalendarProvider: NSObject, CalendarProvider {
             
             authSession?.presentationContextProvider = self
             authSession?.prefersEphemeralWebBrowserSession = false
-            
-            if !authSession!.start() {
+
+            guard let session = authSession, session.start() else {
                 continuation.resume(throwing: CalendarProviderError.authenticationFailed)
+                return
             }
         }
     }
@@ -356,7 +357,7 @@ class GoogleCalendarProvider: NSObject, CalendarProvider {
             let json = try JSONSerialization.jsonObject(with: data) as? [String: Any]
             self.userEmail = json?["email"] as? String
         } catch {
-            print("Failed to fetch user email: \(error)")
+            debugLog("Failed to fetch user email: \(error)")
         }
     }
     
@@ -377,12 +378,18 @@ class GoogleCalendarProvider: NSObject, CalendarProvider {
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrService as String: "com.bobk.whonext.google",
             kSecAttrAccount as String: "google_oauth_token",
-            kSecValueData as String: data
+            kSecValueData as String: data,
+            kSecAttrAccessible as String: kSecAttrAccessibleAfterFirstUnlock
         ]
-        
+
         // Delete any existing item
-        SecItemDelete(query as CFDictionary)
-        
+        let deleteQuery: [String: Any] = [
+            kSecClass as String: kSecClassGenericPassword,
+            kSecAttrService as String: "com.bobk.whonext.google",
+            kSecAttrAccount as String: "google_oauth_token"
+        ]
+        SecItemDelete(deleteQuery as CFDictionary)
+
         // Add new item
         let status = SecItemAdd(query as CFDictionary, nil)
         guard status == errSecSuccess else {
@@ -424,8 +431,13 @@ class GoogleCalendarProvider: NSObject, CalendarProvider {
 
 // MARK: - Google OAuth Configuration
 struct GoogleOAuthConfig {
-    // These will be configured with your Google Cloud Console credentials
-    static let clientID = "654710857458-md2cpglkug04ah5ls0efn3oml7ev06gv.apps.googleusercontent.com"
+    // Load from Info.plist or GoogleService-Info.plist; falls back to bundled values
+    static let clientID: String = {
+        if let plistID = Bundle.main.object(forInfoDictionaryKey: "GOOGLE_OAUTH_CLIENT_ID") as? String, !plistID.isEmpty {
+            return plistID
+        }
+        return "654710857458-md2cpglkug04ah5ls0efn3oml7ev06gv.apps.googleusercontent.com"
+    }()
     static let clientSecret = ""  // For native apps, this can be empty or use PKCE
     static let redirectURI = "com.bobk.whonext:/oauth2redirect"
     static let scope = "https://www.googleapis.com/auth/calendar.readonly https://www.googleapis.com/auth/userinfo.email"

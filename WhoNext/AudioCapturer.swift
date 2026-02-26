@@ -21,6 +21,7 @@ class AudioCapturer: NSObject, ObservableObject {
     @Published var systemLevel: Float = 0
     @Published var lastError: Error?
     @Published private(set) var captureMode: CaptureMode = .full
+    @Published private(set) var isEchoCancellationActive: Bool = false
 
     // MARK: - Audio Streams
 
@@ -80,9 +81,28 @@ class AudioCapturer: NSObject, ObservableObject {
             captureMode = .full
             print("[AudioCapturer] Full audio capture (mic + system)")
         } catch {
-            // System audio failed - continue with mic only
-            captureMode = .microphoneOnly
-            print("[AudioCapturer] Screen recording permission denied - microphone only mode")
+            // Log the ACTUAL error — don't assume it's always permission denial
+            let nsError = error as NSError
+            print("[AudioCapturer] ⚠️ System audio capture FAILED:")
+            print("[AudioCapturer]   Error: \(error.localizedDescription)")
+            print("[AudioCapturer]   Domain: \(nsError.domain), Code: \(nsError.code)")
+            if let underlying = nsError.userInfo[NSUnderlyingErrorKey] as? NSError {
+                print("[AudioCapturer]   Underlying: \(underlying.domain) code \(underlying.code): \(underlying.localizedDescription)")
+            }
+
+            // Retry once after a brief delay — SCShareableContent can transiently fail
+            // right after app launch even with permissions granted
+            do {
+                try await Task.sleep(for: .milliseconds(500))
+                try await startSystemAudioCapture()
+                captureMode = .full
+                print("[AudioCapturer] Full audio capture (mic + system) — succeeded on retry")
+            } catch {
+                captureMode = .microphoneOnly
+                let retryError = error as NSError
+                print("[AudioCapturer] ⚠️ System audio retry also failed: \(retryError.domain) code \(retryError.code): \(retryError.localizedDescription)")
+                print("[AudioCapturer] Falling back to microphone only mode")
+            }
         }
 
         isCapturing = true
@@ -112,6 +132,7 @@ class AudioCapturer: NSObject, ObservableObject {
         micContinuation?.finish()
         systemContinuation?.finish()
 
+        isEchoCancellationActive = false
         isCapturing = false
         print("[AudioCapturer] Capture stopped")
     }
@@ -121,6 +142,18 @@ class AudioCapturer: NSObject, ObservableObject {
     private func startMicrophoneCapture() async throws {
         let engine = AVAudioEngine()
         let inputNode = engine.inputNode
+
+        // Enable AEC (Acoustic Echo Cancellation) via Voice Processing
+        // Must be called while engine is stopped. Eliminates remote speaker bleed from mic.
+        // Can fail with aggregate device errors (e.g., AirPods mic + external speakers).
+        do {
+            try inputNode.setVoiceProcessingEnabled(true)
+            isEchoCancellationActive = true
+            print("[AudioCapturer] ✅ AEC enabled (Voice Processing)")
+        } catch {
+            isEchoCancellationActive = false
+            print("[AudioCapturer] ⚠️ AEC failed: \(error.localizedDescription)")
+        }
 
         // Get input format
         let inputFormat = inputNode.outputFormat(forBus: 0)

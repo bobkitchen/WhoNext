@@ -131,10 +131,14 @@ class UserProfile: ObservableObject {
     // MARK: - Remote Change Listening
 
     private func setupRemoteChangeListener() {
+        // Use nil queue (posting thread) instead of .main to avoid running
+        // handler synchronously on the main thread during CloudKit's
+        // pre-commit phase, which causes "entangle context" crashes.
+        // The handler bounces to main thread internally via scheduleReload().
         NotificationCenter.default.addObserver(
             forName: .NSPersistentStoreRemoteChange,
             object: PersistenceController.shared.container.persistentStoreCoordinator,
-            queue: .main
+            queue: nil
         ) { [weak self] _ in
             self?.handleRemoteChange()
         }
@@ -144,7 +148,7 @@ class UserProfile: ObservableObject {
         // Signal initial sync completion if we were waiting
         if !hasReceivedRemoteChange {
             hasReceivedRemoteChange = true
-            print("👤 [UserProfile] First remote change received - CloudKit sync is active")
+            debugLog("👤 [UserProfile] First remote change received - CloudKit sync is active")
             signalInitialSyncComplete()
         }
         scheduleReload()
@@ -165,12 +169,12 @@ class UserProfile: ObservableObject {
     func waitForInitialSync() async {
         // If already synced, return immediately
         if isInitialSyncComplete || hasReceivedRemoteChange {
-            print("👤 [UserProfile] Initial sync already complete")
+            debugLog("👤 [UserProfile] Initial sync already complete")
             loadFromEntity()  // Reload to pick up any remote data
             return
         }
 
-        print("👤 [UserProfile] Waiting for initial CloudKit sync...")
+        debugLog("👤 [UserProfile] Waiting for initial CloudKit sync...")
 
         // Wait for either remote change or timeout
         await withCheckedContinuation { continuation in
@@ -180,7 +184,7 @@ class UserProfile: ObservableObject {
             Task {
                 try? await Task.sleep(nanoseconds: 5_000_000_000)
                 if !self.isInitialSyncComplete {
-                    print("👤 [UserProfile] Initial sync timeout (5s) - proceeding with local data")
+                    debugLog("👤 [UserProfile] Initial sync timeout (5s) - proceeding with local data")
                     self.signalInitialSyncComplete()
                 }
             }
@@ -188,7 +192,7 @@ class UserProfile: ObservableObject {
 
         // Reload after sync completes
         loadFromEntity()
-        print("👤 [UserProfile] Initial sync wait complete - profile loaded")
+        debugLog("👤 [UserProfile] Initial sync wait complete - profile loaded")
     }
 
     /// Debounced reload to prevent flooding during rapid CloudKit sync events
@@ -221,7 +225,7 @@ class UserProfile: ObservableObject {
         }
 
         lastReloadTime = Date()
-        print("👤 [UserProfile] Remote changes detected - checking for duplicates and reloading")
+        debugLog("👤 [UserProfile] Remote changes detected - checking for duplicates and reloading")
 
         // Re-run getOrCreate which will detect and merge any duplicates from other devices
         viewContext.perform { [self] in
@@ -262,7 +266,7 @@ class UserProfile: ObservableObject {
         voiceSampleCount = Int(entity.voiceSampleCount)
         lastVoiceUpdate = entity.lastVoiceUpdate
 
-        print("👤 [UserProfile] Loaded from Core Data: \(name), \(email)")
+        debugLog("👤 [UserProfile] Loaded from Core Data: \(name), \(email)")
 
         // Try to auto-populate from system if empty
         if name.isEmpty {
@@ -288,10 +292,10 @@ class UserProfile: ObservableObject {
             do {
                 if viewContext.hasChanges {
                     try viewContext.save()
-                    print("👤 [UserProfile] Saved to Core Data (will sync via CloudKit)")
+                    debugLog("👤 [UserProfile] Saved to Core Data (will sync via CloudKit)")
                 }
             } catch {
-                print("👤 [UserProfile] Error saving: \(error)")
+                debugLog("👤 [UserProfile] Error saving: \(error)")
             }
         }
     }
@@ -306,7 +310,7 @@ class UserProfile: ObservableObject {
             return
         }
 
-        print("👤 [UserProfile] Migrating from UserDefaults to Core Data...")
+        debugLog("👤 [UserProfile] Migrating from UserDefaults to Core Data...")
 
         // Check if there's existing data in UserDefaults
         let legacyName = defaults.string(forKey: LegacyKeys.userName) ?? ""
@@ -340,9 +344,9 @@ class UserProfile: ObservableObject {
 
             do {
                 try viewContext.save()
-                print("👤 [UserProfile] Migration complete!")
+                debugLog("👤 [UserProfile] Migration complete!")
             } catch {
-                print("👤 [UserProfile] Migration error: \(error)")
+                debugLog("👤 [UserProfile] Migration error: \(error)")
             }
         }
 
@@ -510,14 +514,7 @@ class UserProfile: ObservableObject {
     }
 
     private func cosineSimilarity(_ a: [Float], _ b: [Float]) -> Float {
-        guard a.count == b.count else { return 0.0 }
-
-        let dotProduct = zip(a, b).map(*).reduce(0, +)
-        let magnitudeA = sqrt(a.map { $0 * $0 }.reduce(0, +))
-        let magnitudeB = sqrt(b.map { $0 * $0 }.reduce(0, +))
-
-        guard magnitudeA > 0 && magnitudeB > 0 else { return 0.0 }
-        return dotProduct / (magnitudeA * magnitudeB)
+        VectorMath.cosineSimilarity(a, b)
     }
 
     /// Force refresh from Core Data (useful after sync)
@@ -535,22 +532,22 @@ class UserProfile: ObservableObject {
             do {
                 if viewContext.hasChanges {
                     try viewContext.save()
-                    print("👤 [UserProfile] Force sync triggered - should upload to CloudKit")
+                    debugLog("👤 [UserProfile] Force sync triggered - should upload to CloudKit")
                 }
             } catch {
-                print("👤 [UserProfile] Force sync error: \(error)")
+                debugLog("👤 [UserProfile] Force sync error: \(error)")
             }
         }
     }
 
     /// Debug: Print current voice profile status
     func debugPrintVoiceProfile() {
-        print("👤 ========== USER VOICE PROFILE STATUS ==========")
-        print("👤 Has Voice Profile: \(hasVoiceProfile)")
-        print("👤 Voice Sample Count: \(voiceSampleCount)")
-        print("👤 Voice Confidence: \(voiceConfidence)")
-        print("👤 Embedding Size: \(voiceEmbedding?.count ?? 0) floats")
-        print("👤 Last Voice Update: \(lastVoiceUpdate?.description ?? "never")")
-        print("👤 ================================================")
+        debugLog("👤 ========== USER VOICE PROFILE STATUS ==========")
+        debugLog("👤 Has Voice Profile: \(hasVoiceProfile)")
+        debugLog("👤 Voice Sample Count: \(voiceSampleCount)")
+        debugLog("👤 Voice Confidence: \(voiceConfidence)")
+        debugLog("👤 Embedding Size: \(voiceEmbedding?.count ?? 0) floats")
+        debugLog("👤 Last Voice Update: \(lastVoiceUpdate?.description ?? "never")")
+        debugLog("👤 ================================================")
     }
 }

@@ -6,6 +6,7 @@ struct ConversationsView: View {
     @Environment(\.managedObjectContext) private var viewContext
     @FetchRequest(
         sortDescriptors: [NSSortDescriptor(keyPath: \Conversation.date, ascending: false)],
+        predicate: NSPredicate(format: "isSoftDeleted == false"),
         animation: .default)
     private var conversations: FetchedResults<Conversation>
     

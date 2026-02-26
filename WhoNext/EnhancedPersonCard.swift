@@ -76,12 +76,7 @@ struct EnhancedPersonCard: View {
                             )
                     }
 
-                    if person.isDirectReport {
-                        Image(systemName: "star.fill")
-                            .font(.system(size: 10))
-                            .foregroundColor(.yellow)
-                            .symbolRenderingMode(.multicolor)
-                    }
+                    CategoryBadge(category: person.category)
 
                     Spacer()
                 }
@@ -256,13 +251,19 @@ struct EnhancedPersonCard: View {
         
         Divider()
         
-        if person.isDirectReport {
-            Button(action: removeFromDirectReports) {
-                Label("Remove from Direct Reports", systemImage: "star.slash")
-            }
-        } else {
-            Button(action: addToDirectReports) {
-                Label("Add to Direct Reports", systemImage: "star")
+        Menu("Set Category") {
+            ForEach(PersonCategory.allCases) { cat in
+                Button(action: {
+                    person.category = cat
+                    person.modifiedAt = Date()
+                    try? viewContext.save()
+                }) {
+                    if person.category == cat {
+                        Label(cat.displayName, systemImage: "checkmark")
+                    } else {
+                        Label(cat.displayName, systemImage: cat.icon)
+                    }
+                }
             }
         }
         
@@ -372,28 +373,21 @@ struct EnhancedPersonCard: View {
         selectedPerson = person
     }
     
-    private func addToDirectReports() {
-        person.isDirectReport = true
-        try? viewContext.save()
-    }
-    
-    private func removeFromDirectReports() {
-        person.isDirectReport = false
-        try? viewContext.save()
-    }
-    
     private func assignMeeting(_ item: DraggableMeetingItem, to person: Person) {
+        var oldPersonID: NSManagedObjectID?
         switch item.kind {
         case .conversation:
             let request = NSFetchRequest<Conversation>(entityName: "Conversation")
             request.predicate = NSPredicate(format: "uuid == %@", item.id as CVarArg)
             request.fetchLimit = 1
             if let conversation = try? viewContext.fetch(request).first {
-                let oldPerson = conversation.person
+                if let oldPerson = conversation.person,
+                   let name = oldPerson.name,
+                   InboxEntry.isSpeakerPlaceholder(name) {
+                    oldPersonID = oldPerson.objectID
+                }
                 conversation.person = person
                 conversation.modifiedAt = Date()
-                // Clean up speaker placeholder person if it has no remaining conversations
-                cleanUpPlaceholderIfEmpty(oldPerson)
             }
         case .groupMeeting:
             let request = NSFetchRequest<GroupMeeting>(entityName: "GroupMeeting")
@@ -405,18 +399,20 @@ struct EnhancedPersonCard: View {
             }
         }
         try? viewContext.save()
-    }
 
-    /// Delete a "Speaker X" placeholder person if they have no remaining conversations or group meetings
-    private func cleanUpPlaceholderIfEmpty(_ person: Person?) {
-        guard let person = person,
-              let name = person.name,
-              InboxEntry.isSpeakerPlaceholder(name) else { return }
-
-        let conversationCount = (person.conversations as? Set<Conversation>)?.count ?? 0
-        let groupMeetingCount = (person.groupMeetings as? Set<GroupMeeting>)?.count ?? 0
-        if conversationCount == 0 && groupMeetingCount == 0 {
-            viewContext.delete(person)
+        // Defer placeholder cleanup to a separate transaction so CloudKit sync
+        // can finish processing the reassignment before we delete the Person.
+        if let oldPersonID {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { [weak viewContext] in
+                guard let context = viewContext else { return }
+                guard let placeholder = try? context.existingObject(with: oldPersonID) as? Person else { return }
+                let conversationCount = (placeholder.conversations as? Set<Conversation>)?.count ?? 0
+                let groupMeetingCount = (placeholder.groupMeetings as? Set<GroupMeeting>)?.count ?? 0
+                if conversationCount == 0 && groupMeetingCount == 0 {
+                    context.delete(placeholder)
+                    try? context.save()
+                }
+            }
         }
     }
 
@@ -453,6 +449,27 @@ enum RelationshipHealth {
         case .needsAttention: return "Check-in"
         case .unknown: return "New"
         }
+    }
+}
+
+// MARK: - Category Badge
+struct CategoryBadge: View {
+    let category: PersonCategory
+
+    var body: some View {
+        HStack(spacing: 3) {
+            Image(systemName: category.icon)
+                .font(.system(size: 9))
+            Text(category.shortLabel)
+                .font(.system(size: 9, weight: .semibold))
+        }
+        .foregroundColor(category.color)
+        .padding(.horizontal, 6)
+        .padding(.vertical, 2)
+        .background(
+            Capsule()
+                .fill(category.color.opacity(0.15))
+        )
     }
 }
 

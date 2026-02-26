@@ -4,7 +4,10 @@ import SwiftUI
 struct TranscriptSegmentView: View {
     let segment: TranscriptSegment
     let expanded: Bool
-    
+    /// Callback when user wants to edit the speaker for this segment.
+    /// Receives the segment's speakerID so the parent can present a Person picker.
+    var onEditSpeaker: ((String?) -> Void)? = nil
+
     @State private var isHovered: Bool = false
     @State private var showActions: Bool = false
     
@@ -155,8 +158,7 @@ struct TranscriptSegmentView: View {
     }
     
     private func editSpeaker() {
-        // TODO: Implement speaker editing
-        showActions.toggle()
+        onEditSpeaker?(segment.speakerID)
     }
     
     private func flagImportant() {

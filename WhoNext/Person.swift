@@ -1,23 +1,85 @@
 import Foundation
 import CoreData
+import SwiftUI
+
+// MARK: - Person Category
+
+enum PersonCategory: String, CaseIterable, Identifiable {
+    case directReport = "directReport"
+    case teammate = "teammate"
+    case colleague = "colleague"
+    case external = "external"
+
+    var id: String { rawValue }
+
+    var displayName: String {
+        switch self {
+        case .directReport: return "Direct Report"
+        case .teammate: return "Teammate"
+        case .colleague: return "Colleague"
+        case .external: return "External"
+        }
+    }
+
+    var shortLabel: String {
+        switch self {
+        case .directReport: return "DR"
+        case .teammate: return "Team"
+        case .colleague: return "Org"
+        case .external: return "Ext"
+        }
+    }
+
+    var icon: String {
+        switch self {
+        case .directReport: return "arrow.down.right.circle.fill"
+        case .teammate: return "person.2.fill"
+        case .colleague: return "building.2.fill"
+        case .external: return "globe"
+        }
+    }
+
+    var color: Color {
+        switch self {
+        case .directReport: return .blue
+        case .teammate: return .green
+        case .colleague: return .orange
+        case .external: return .purple
+        }
+    }
+
+    var expectedMeetingFrequencyDays: Int {
+        switch self {
+        case .directReport: return 10
+        case .teammate: return 14
+        case .colleague: return 30
+        case .external: return 90
+        }
+    }
+}
+
+// MARK: - Person Entity
 
 @objc(Person)
 public class Person: NSManagedObject {
-    
+
     @nonobjc public class func fetchRequest() -> NSFetchRequest<Person> {
         return NSFetchRequest<Person>(entityName: "Person")
     }
-    
+
     @NSManaged public var identifier: UUID?
     @NSManaged public var isDirectReport: Bool
     @NSManaged public var name: String?
     @NSManaged public var notes: String?
+    @NSManaged public var personCategory: String?
     @NSManaged public var photo: Data?
     @NSManaged public var role: String?
     @NSManaged public var scheduledConversationDate: Date?
     @NSManaged public var timezone: String?
+    @NSManaged public var actionItems: NSSet?
     @NSManaged public var conversations: NSSet?  // Legacy single-person relationship
     @NSManaged public var groupMeetings: NSSet?  // Inverse of GroupMeeting.attendees
+    @NSManaged public var groups: NSSet?
     // conversationParticipations removed - ConversationParticipant entity disabled
 
     // Sync-related timestamp fields
@@ -31,6 +93,17 @@ public class Person: NSManagedObject {
     @NSManaged public var lastVoiceUpdate: Date?
     @NSManaged public var voiceConfidence: Float
     @NSManaged public var voiceSampleCount: Int32
+
+    // MARK: - Category Access
+
+    var category: PersonCategory {
+        get { PersonCategory(rawValue: personCategory ?? "") ?? .colleague }
+        set {
+            personCategory = newValue.rawValue
+            // Keep isDirectReport in sync for CloudKit backward compatibility
+            isDirectReport = (newValue == .directReport)
+        }
+    }
 
     // Guarantee that every newly-inserted Person gets a unique identifier
     public override func awakeFromInsert() {
@@ -67,7 +140,9 @@ extension Person {
             .sorted { ($0.date ?? .distantPast) > ($1.date ?? .distantPast) }
     }
 
-    public var lastContactDate: Date? {
+    /// Computed from conversations + group meetings. The xcdatamodel also has a stored
+    /// `lastContactDate` attribute — use this computed version for accurate data.
+    public var mostRecentContactDate: Date? {
         let lastConversation = conversationsArray.first?.date
         let lastGroupMeeting = groupMeetingsArray.first?.date
         switch (lastConversation, lastGroupMeeting) {
@@ -177,21 +252,6 @@ extension Person {
 
     /// Cosine similarity between two vectors
     private func cosineSimilarity(_ a: [Float], _ b: [Float]) -> Float {
-        guard a.count == b.count, !a.isEmpty else { return 0 }
-
-        var dotProduct: Float = 0
-        var normA: Float = 0
-        var normB: Float = 0
-
-        for i in 0..<a.count {
-            dotProduct += a[i] * b[i]
-            normA += a[i] * a[i]
-            normB += b[i] * b[i]
-        }
-
-        let denominator = sqrt(normA) * sqrt(normB)
-        guard denominator > 0 else { return 0 }
-
-        return dotProduct / denominator
+        VectorMath.cosineSimilarity(a, b)
     }
 } 

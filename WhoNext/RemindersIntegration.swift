@@ -32,25 +32,25 @@ class RemindersIntegration: ObservableObject {
     func checkAuthorization() {
         let status = EKEventStore.authorizationStatus(for: .reminder)
         isAuthorized = (status == .fullAccess || status == .authorized)
-        print("📋 Reminders authorization status: \(status.rawValue), isAuthorized: \(isAuthorized)")
+        debugLog("📋 Reminders authorization status: \(status.rawValue), isAuthorized: \(isAuthorized)")
     }
 
     /// Request access to reminders
     func requestAccess() async -> Bool {
         let currentStatus = EKEventStore.authorizationStatus(for: .reminder)
-        print("📋 Current Reminders status before request: \(currentStatus.rawValue)")
+        debugLog("📋 Current Reminders status before request: \(currentStatus.rawValue)")
 
         // If already denied, inform the user they need to go to Settings
         if currentStatus == .denied {
             await MainActor.run {
                 lastError = "Reminders access was denied. Please enable it in System Settings > Privacy & Security > Reminders."
             }
-            print("❌ Reminders access was previously denied - user must enable in System Settings")
+            debugLog("❌ Reminders access was previously denied - user must enable in System Settings")
             return false
         }
 
         do {
-            print("📋 Requesting full access to Reminders...")
+            debugLog("📋 Requesting full access to Reminders...")
             let granted = try await eventStore.requestFullAccessToReminders()
             await MainActor.run {
                 isAuthorized = granted
@@ -58,13 +58,13 @@ class RemindersIntegration: ObservableObject {
                     lastError = "Reminders access was not granted. Please enable it in System Settings > Privacy & Security > Reminders."
                 }
             }
-            print("📋 Reminders access granted: \(granted)")
+            debugLog("📋 Reminders access granted: \(granted)")
             return granted
         } catch {
             await MainActor.run {
                 lastError = "Failed to request Reminders access: \(error.localizedDescription)"
             }
-            print("❌ Failed to request Reminders access: \(error)")
+            debugLog("❌ Failed to request Reminders access: \(error)")
             return false
         }
     }
@@ -79,7 +79,7 @@ class RemindersIntegration: ObservableObject {
         }
         let calendars = eventStore.calendars(for: .reminder)
         availableLists = calendars.sorted { $0.title < $1.title }
-        print("📋 Found \(availableLists.count) reminder lists")
+        debugLog("📋 Found \(availableLists.count) reminder lists")
     }
 
     /// Get the target calendar for new reminders (selected or default)
@@ -119,7 +119,7 @@ class RemindersIntegration: ObservableObject {
                 await self?.handleStoreChanged()
             }
         }
-        print("📋 Started observing Reminders changes")
+        debugLog("📋 Started observing Reminders changes")
     }
 
     /// Stop observing changes
@@ -127,29 +127,31 @@ class RemindersIntegration: ObservableObject {
         if let observer = notificationObserver {
             NotificationCenter.default.removeObserver(observer)
             notificationObserver = nil
-            print("📋 Stopped observing Reminders changes")
+            debugLog("📋 Stopped observing Reminders changes")
         }
     }
 
-    /// Handle changes in the event store
+    /// Handle changes in the event store.
+    /// Uses a background context to avoid contention with CloudKit sync on viewContext.
     private func handleStoreChanged() async {
-        print("📋 EKEventStore changed - syncing reminders...")
-        let context = PersistenceController.shared.container.viewContext
-        await syncAllReminders(in: context)
+        debugLog("📋 EKEventStore changed - syncing reminders...")
+        let bgContext = PersistenceController.shared.container.newBackgroundContext()
+        bgContext.mergePolicy = NSMergeByPropertyObjectTrumpMergePolicy
+        await syncAllReminders(in: bgContext)
     }
 
     // MARK: - Create Reminder
 
     /// Create an Apple Reminder from an ActionItem
     func createReminder(from actionItem: ActionItem) async -> Bool {
-        print("📋 Creating reminder for: \(actionItem.title ?? "Untitled")")
+        debugLog("📋 Creating reminder for: \(actionItem.title ?? "Untitled")")
 
         // Request access if not authorized
         if !isAuthorized {
-            print("📋 Not authorized, requesting access...")
+            debugLog("📋 Not authorized, requesting access...")
             let granted = await requestAccess()
             if !granted {
-                print("❌ Reminders access not granted")
+                debugLog("❌ Reminders access not granted")
                 return false
             }
         }
@@ -157,10 +159,10 @@ class RemindersIntegration: ObservableObject {
         // Get target reminders calendar (selected or default)
         guard let calendar = getTargetCalendar() else {
             lastError = "No reminders list found. Please ensure you have a Reminders list set up."
-            print("❌ No reminders calendar found")
+            debugLog("❌ No reminders calendar found")
             return false
         }
-        print("📋 Using reminders list: \(calendar.title)")
+        debugLog("📋 Using reminders list: \(calendar.title)")
 
         // Create the reminder
         let reminder = EKReminder(eventStore: eventStore)
@@ -216,11 +218,11 @@ class RemindersIntegration: ObservableObject {
                 try context.save()
             }
 
-            print("✅ Created reminder: \(reminder.title ?? "Untitled")")
+            debugLog("✅ Created reminder: \(reminder.title ?? "Untitled")")
             return true
         } catch {
             lastError = error.localizedDescription
-            print("❌ Failed to create reminder: \(error)")
+            debugLog("❌ Failed to create reminder: \(error)")
             return false
         }
     }
@@ -266,7 +268,7 @@ class RemindersIntegration: ObservableObject {
         do {
             try eventStore.save(reminder, commit: true)
         } catch {
-            print("❌ Failed to update reminder: \(error)")
+            debugLog("❌ Failed to update reminder: \(error)")
         }
     }
 
@@ -282,9 +284,9 @@ class RemindersIntegration: ObservableObject {
 
         do {
             try eventStore.remove(reminder, commit: true)
-            print("🗑️ Deleted reminder: \(reminder.title ?? "Untitled")")
+            debugLog("🗑️ Deleted reminder: \(reminder.title ?? "Untitled")")
         } catch {
-            print("❌ Failed to delete reminder: \(error)")
+            debugLog("❌ Failed to delete reminder: \(error)")
         }
     }
 
@@ -313,7 +315,7 @@ class RemindersIntegration: ObservableObject {
             }
             try context.save()
         } catch {
-            print("❌ Failed to sync reminders: \(error)")
+            debugLog("❌ Failed to sync reminders: \(error)")
         }
     }
 }

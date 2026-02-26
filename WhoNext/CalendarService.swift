@@ -55,7 +55,7 @@ class CalendarService: ObservableObject {
         NotificationCenter.default.addObserver(
             self,
             selector: #selector(calendarSelectionChanged(_:)),
-            name: Notification.Name("CalendarSelectionChanged"),
+            name: .calendarSelectionChanged,
             object: nil
         )
         
@@ -141,7 +141,7 @@ class CalendarService: ObservableObject {
             // Sync to widget after fetching
             syncToWidget()
         } catch {
-            print("Error fetching meetings: \(error)")
+            debugLog("Error fetching meetings: \(error)")
             await MainActor.run {
                 self.upcomingMeetings = []
             }
@@ -154,7 +154,7 @@ class CalendarService: ObservableObject {
 
     /// Sync upcoming meetings to the desktop widget via App Groups
     func syncToWidget() {
-        print("🔄 Widget Sync: Starting sync with \(upcomingMeetings.count) meetings")
+        debugLog("🔄 Widget Sync: Starting sync with \(upcomingMeetings.count) meetings")
 
         // Convert UpcomingMeeting to SharedMeeting format for widget
         let sharedMeetings = upcomingMeetings.map { meeting -> SharedMeeting in
@@ -176,19 +176,19 @@ class CalendarService: ObservableObject {
 
                 if let otherName = otherParticipant {
                     participantName = otherName
-                    print("🔍 Widget: 1:1 meeting '\(meeting.title)' - other participant: '\(otherName)'")
+                    debugLog("🔍 Widget: 1:1 meeting '\(meeting.title)' - other participant: '\(otherName)'")
 
                     // Try to find matching Person in Core Data and get their photo
                     if let person = findPerson(byName: otherName) {
-                        print("✅ Widget: Found Person '\(person.name ?? "?")' for '\(otherName)'")
+                        debugLog("✅ Widget: Found Person '\(person.name ?? "?")' for '\(otherName)'")
                         if person.photo != nil {
                             participantPhotoData = SharedMeeting.createThumbnail(from: person.photo)
-                            print("📸 Widget: Found photo for '\(person.name ?? "?")'")
+                            debugLog("📸 Widget: Found photo for '\(person.name ?? "?")'")
                         } else {
-                            print("⚠️ Widget: Person '\(person.name ?? "?")' has no photo")
+                            debugLog("⚠️ Widget: Person '\(person.name ?? "?")' has no photo")
                         }
                     } else {
-                        print("⚠️ Widget: No Person found for '\(otherName)'")
+                        debugLog("⚠️ Widget: No Person found for '\(otherName)'")
                     }
                 }
             }
@@ -213,98 +213,114 @@ class CalendarService: ObservableObject {
 
             // Check if App Group is accessible
             guard let defaults = UserDefaults(suiteName: AppGroupConstants.groupIdentifier) else {
-                print("❌ Widget Sync: FAILED - Cannot access App Group '\(AppGroupConstants.groupIdentifier)'")
-                print("   → You need to add the App Group in Apple Developer portal")
+                debugLog("❌ Widget Sync: FAILED - Cannot access App Group '\(AppGroupConstants.groupIdentifier)'")
+                debugLog("   → You need to add the App Group in Apple Developer portal")
                 return
             }
 
             defaults.set(data, forKey: AppGroupConstants.meetingsKey)
             defaults.synchronize()  // Force immediate write
 
-            print("✅ Widget Sync: Saved \(sharedMeetings.count) meetings to App Group")
+            debugLog("✅ Widget Sync: Saved \(sharedMeetings.count) meetings to App Group")
             for meeting in sharedMeetings.prefix(3) {
-                print("   → \(meeting.title) at \(meeting.startDate)")
+                debugLog("   → \(meeting.title) at \(meeting.startDate)")
             }
 
             // Verify data was written
             if let savedData = defaults.data(forKey: AppGroupConstants.meetingsKey) {
-                print("✅ Widget Sync: Verified - \(savedData.count) bytes saved")
+                debugLog("✅ Widget Sync: Verified - \(savedData.count) bytes saved")
             } else {
-                print("❌ Widget Sync: Verification FAILED - data not readable")
+                debugLog("❌ Widget Sync: Verification FAILED - data not readable")
             }
 
         } catch {
-            print("❌ Widget Sync: Encoding error - \(error)")
+            debugLog("❌ Widget Sync: Encoding error - \(error)")
         }
 
         // Trigger widget refresh
         WidgetCenter.shared.reloadTimelines(ofKind: "WhoNextWidget")
-        print("🔄 Widget Sync: Requested widget timeline reload")
+        debugLog("🔄 Widget Sync: Requested widget timeline reload")
     }
 
-    /// Find a Person in Core Data by name or email (for widget participant photos)
+    /// Find a Person in Core Data by name or email (for widget participant photos).
+    /// Uses a dedicated background context to avoid contention with CloudKit sync
+    /// on the viewContext (which caused "entangle context after pre-commit" crashes).
     private func findPerson(byName name: String) -> Person? {
-        let context = PersistenceController.shared.container.viewContext
+        let container = PersistenceController.shared.container
+        let bgContext = container.newBackgroundContext()
+        bgContext.mergePolicy = NSMergeByPropertyObjectTrumpMergePolicy
 
-        // First, try exact name match
-        let exactRequest: NSFetchRequest<Person> = Person.fetchRequest()
-        exactRequest.predicate = NSPredicate(format: "name ==[cd] %@", name)
-        exactRequest.fetchLimit = 1
+        // Find the person's objectID on a background context, then pull into viewContext
+        var matchedObjectID: NSManagedObjectID?
 
-        if let exactMatch = try? context.fetch(exactRequest).first {
-            return exactMatch
-        }
+        bgContext.performAndWait {
+            // First, try exact name match
+            let exactRequest: NSFetchRequest<Person> = Person.fetchRequest()
+            exactRequest.predicate = NSPredicate(format: "name ==[cd] %@", name)
+            exactRequest.fetchLimit = 1
 
-        // If the input looks like an email, try matching by email
-        if name.contains("@") {
-            let emailRequest: NSFetchRequest<Person> = Person.fetchRequest()
-            emailRequest.predicate = NSPredicate(format: "email ==[cd] %@", name)
-            emailRequest.fetchLimit = 1
-
-            if let emailMatch = try? context.fetch(emailRequest).first {
-                return emailMatch
+            if let exactMatch = try? bgContext.fetch(exactRequest).first {
+                matchedObjectID = exactMatch.objectID
+                return
             }
 
-            // Also try extracting the name part from email (before @) for partial matching
-            let namePart = name.split(separator: "@").first.map(String.init) ?? ""
-            if !namePart.isEmpty {
-                let partialRequest: NSFetchRequest<Person> = Person.fetchRequest()
-                // e.g., "alice.lastname" -> try matching Person names containing "alice" or "lastname"
-                let nameParts = namePart.replacingOccurrences(of: ".", with: " ")
-                    .split(separator: " ")
-                    .map(String.init)
+            // If the input looks like an email, try matching by email
+            if name.contains("@") {
+                let emailRequest: NSFetchRequest<Person> = Person.fetchRequest()
+                emailRequest.predicate = NSPredicate(format: "email ==[cd] %@", name)
+                emailRequest.fetchLimit = 1
 
-                if let firstName = nameParts.first, firstName.count >= 3 {
-                    partialRequest.predicate = NSPredicate(format: "name CONTAINS[cd] %@", firstName)
-                    partialRequest.fetchLimit = 1
+                if let emailMatch = try? bgContext.fetch(emailRequest).first {
+                    matchedObjectID = emailMatch.objectID
+                    return
+                }
 
-                    if let partialMatch = try? context.fetch(partialRequest).first {
-                        return partialMatch
+                // Try extracting the name part from email for partial matching
+                let namePart = name.split(separator: "@").first.map(String.init) ?? ""
+                if !namePart.isEmpty {
+                    let nameParts = namePart.replacingOccurrences(of: ".", with: " ")
+                        .split(separator: " ")
+                        .map(String.init)
+
+                    if let first = nameParts.first, first.count >= 3 {
+                        let partialRequest: NSFetchRequest<Person> = Person.fetchRequest()
+                        partialRequest.predicate = NSPredicate(format: "name CONTAINS[cd] %@", first)
+                        partialRequest.fetchLimit = 1
+
+                        if let partialMatch = try? bgContext.fetch(partialRequest).first {
+                            matchedObjectID = partialMatch.objectID
+                            return
+                        }
                     }
+                }
+            }
+
+            // Try fuzzy/partial name match
+            let fuzzyRequest: NSFetchRequest<Person> = Person.fetchRequest()
+            fuzzyRequest.predicate = NSPredicate(format: "name CONTAINS[cd] %@", name)
+            fuzzyRequest.fetchLimit = 1
+
+            if let fuzzyMatch = try? bgContext.fetch(fuzzyRequest).first {
+                matchedObjectID = fuzzyMatch.objectID
+                return
+            }
+
+            // Try matching first word of the name
+            let firstName = name.split(separator: " ").first.map(String.init) ?? ""
+            if firstName.count >= 3 && firstName != name {
+                let firstNameRequest: NSFetchRequest<Person> = Person.fetchRequest()
+                firstNameRequest.predicate = NSPredicate(format: "name BEGINSWITH[cd] %@", firstName)
+                firstNameRequest.fetchLimit = 1
+
+                if let match = try? bgContext.fetch(firstNameRequest).first {
+                    matchedObjectID = match.objectID
                 }
             }
         }
 
-        // Try fuzzy/partial name match as last resort
-        let fuzzyRequest: NSFetchRequest<Person> = Person.fetchRequest()
-        fuzzyRequest.predicate = NSPredicate(format: "name CONTAINS[cd] %@", name)
-        fuzzyRequest.fetchLimit = 1
-
-        if let fuzzyMatch = try? context.fetch(fuzzyRequest).first {
-            return fuzzyMatch
-        }
-
-        // Try matching first word of the name
-        let firstName = name.split(separator: " ").first.map(String.init) ?? ""
-        if firstName.count >= 3 && firstName != name {
-            let firstNameRequest: NSFetchRequest<Person> = Person.fetchRequest()
-            firstNameRequest.predicate = NSPredicate(format: "name BEGINSWITH[cd] %@", firstName)
-            firstNameRequest.fetchLimit = 1
-
-            return try? context.fetch(firstNameRequest).first
-        }
-
-        return nil
+        // Materialize the Person on the viewContext using the objectID
+        guard let objectID = matchedObjectID else { return nil }
+        return container.viewContext.object(with: objectID) as? Person
     }
 
     /// Extract Teams meeting URL from notes and convert to msteams:// scheme
@@ -407,7 +423,7 @@ class CalendarService: ObservableObject {
         Task {
             if let calendars = try? await activeProvider.getAvailableCalendars() {
                 for calendar in calendars {
-                    print("Calendar: \(calendar.title) (\(calendar.id))")
+                    debugLog("Calendar: \(calendar.title) (\(calendar.id))")
                 }
             }
         }
