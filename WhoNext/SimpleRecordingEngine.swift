@@ -54,7 +54,7 @@ class SimpleRecordingEngine: ObservableObject {
     @Published private(set) var diarizationStrategy: DiarizationStrategy = .legacyDualDiarizer
 
     /// RMS threshold for VAD (Voice Activity Detection) in stream labeling / hybrid modes
-    private let vadRMSThreshold: Float = 0.01
+    private let vadRMSThreshold: Float = 0.003
 
     // MARK: - Multi-Speaker Detection (Dynamic Upgrade)
 
@@ -201,13 +201,9 @@ class SimpleRecordingEngine: ObservableObject {
         print("[SimpleRecordingEngine] Starting recording...")
 
         do {
-            // --- Phase 1: Parallel initialization ---
-            // Transcriber init, diarization init, and audio capture are independent
-            async let transcriberReady: Void = ensureTranscriberReady()
-            async let diarizationReady: Void = ensureDiarizationReady()
-            async let audioReady: Void = audioCapturer.startCapture()
-
-            // Do trivial sync setup while waiting for heavy work
+            // --- Phase 1: Start audio capture first ---
+            // Audio capture must complete before strategy selection so
+            // isEchoCancellationActive is set before ensureDiarizationReady() reads it.
             let meeting = LiveMeeting()
             meeting.calendarTitle = "Recording"
             meeting.startTime = Date()
@@ -219,10 +215,16 @@ class SimpleRecordingEngine: ObservableObject {
                 expectedAttendeeCount = meeting.expectedParticipants.count
             }
 
-            // Wait for all heavy work to finish
+            // Start audio capture first (sets AEC status)
+            try await audioCapturer.startCapture()
+
+            // Now run transcriber init + diarization ready in parallel
+            // (both depend on AEC status being set, but are independent of each other)
+            async let transcriberReady: Void = ensureTranscriberReady()
+            async let diarizationReady: Void = ensureDiarizationReady()
+
             try await transcriberReady
             _ = await diarizationReady  // non-throwing wrapper
-            try await audioReady
 
             // --- Phase 2: Start (all sequential deps satisfied) ---
             isRecording = true
@@ -546,10 +548,10 @@ class SimpleRecordingEngine: ObservableObject {
     }
 
     /// Perform transcription work off the main actor, then update UI on MainActor
-    private nonisolated func transcribeChunkInBackground(_ chunk: [Float], transcriber: any TranscriptionEngineProtocol) async -> (text: String, confidence: Float)? {
+    private nonisolated func transcribeChunkInBackground(_ chunk: [Float], transcriber: any TranscriptionEngineProtocol) async -> (text: String, confidence: Float, tokenTimings: [UnifiedTranscriptionResult.UnifiedTokenTiming]?)? {
         do {
             if let result = try await transcriber.transcribe(audioChunk: chunk) {
-                return (text: result.text, confidence: result.confidence)
+                return (text: result.text, confidence: result.confidence, tokenTimings: result.tokenTimings)
             }
         } catch {
             print("[SimpleRecordingEngine] Transcription error: \(error)")
@@ -573,20 +575,66 @@ class SimpleRecordingEngine: ObservableObject {
             return
         }
 
-        // Back on MainActor for UI updates
-        // Query speaker from diarization
+        #if canImport(FluidAudio)
+        // Word-level speaker attribution path: when token timings are available,
+        // align individual words to diarization segments and create one TranscriptSegment
+        // per speaker change (instead of one per entire chunk).
+        let chunkDuration = Double(chunk.count) / 16000.0
+        let chunkStartTime = max(0, recordingDuration - chunkDuration)
+
+        if let timings = result.tokenTimings, !timings.isEmpty {
+            let groups = segmentAligner.alignWords(wordTimings: timings, chunkStartTime: chunkStartTime)
+
+            if !groups.isEmpty {
+                for group in groups {
+                    let speakerName = resolveSpeakerName(for: group.speakerId)
+
+                    let segment = TranscriptSegment(
+                        text: group.text,
+                        timestamp: group.startTime,
+                        speakerID: group.speakerId,
+                        speakerName: speakerName,
+                        confidence: result.confidence,
+                        isFinalized: true
+                    )
+                    currentMeeting?.transcript.append(segment)
+                    currentMeeting?.wordCount += group.words.count
+
+                    print("[SimpleRecordingEngine] Added word-aligned segment (\(speakerName)): \"\(group.text.prefix(50))\"")
+                }
+                return
+            }
+            // Fall through to single-segment path if alignWords returned empty
+        }
+        #endif
+
+        // Single-segment fallback: one speaker per chunk (original behavior)
+        addSingleSegment(text: result.text, confidence: result.confidence)
+    }
+
+    /// Resolve a speaker ID to a display name using identified participants or formatting.
+    private func resolveSpeakerName(for speakerId: String) -> String {
+        #if canImport(FluidAudio)
+        if let participant = currentMeeting?.identifiedParticipants.first(where: { $0.speakerID == speakerId }),
+           participant.namingMode != .unnamed {
+            return participant.displayName
+        }
+        return SegmentAligner.formatSpeakerName(speakerId)
+        #else
+        return speakerId
+        #endif
+    }
+
+    /// Create a single TranscriptSegment for the entire chunk (original behavior / fallback).
+    private func addSingleSegment(text: String, confidence: Float) {
         var speakerID: String? = nil
         var speakerName: String? = nil
 
         #if canImport(FluidAudio)
-        // Use the chunk's actual timestamp rather than global recordingDuration.
-        // The transcription chunk corresponds to approximately the last chunkDuration
-        // of audio. Query the dominant speaker for that time window.
         let chunkDuration: TimeInterval = 10.0
         let segmentStart = max(0, recordingDuration - chunkDuration)
         if let speaker = segmentAligner.dominantSpeaker(for: segmentStart, duration: chunkDuration) {
             speakerID = speaker
-            // Use participant name if identified (by user, voice match, or auto-detection)
             if let participant = currentMeeting?.identifiedParticipants.first(where: { $0.speakerID == speaker }),
                participant.namingMode != .unnamed {
                 speakerName = participant.displayName
@@ -595,29 +643,26 @@ class SimpleRecordingEngine: ObservableObject {
             }
             print("[SimpleRecordingEngine] Speaker identified: \(speakerName ?? "unknown")")
         } else if let meeting = currentMeeting, let lastSpeaker = meeting.transcript.last?.speakerID {
-            // Temporal continuity fallback: when diarization is ambiguous,
-            // assume the same person is still speaking within a 10-second window
             speakerID = lastSpeaker
             speakerName = meeting.transcript.last?.speakerName
             print("[SimpleRecordingEngine] Speaker fallback (temporal continuity): \(speakerName ?? lastSpeaker)")
         }
         #endif
 
-        // Create segment and update meeting on MainActor
         let segment = TranscriptSegment(
-            text: result.text,
+            text: text,
             timestamp: recordingDuration,
             speakerID: speakerID,
             speakerName: speakerName,
-            confidence: result.confidence,
+            confidence: confidence,
             isFinalized: true
         )
 
         currentMeeting?.transcript.append(segment)
-        currentMeeting?.wordCount += result.text.split(separator: " ").count
+        currentMeeting?.wordCount += text.split(separator: " ").count
 
         let speakerInfo = speakerName ?? "unknown speaker"
-        print("[SimpleRecordingEngine] Added segment (\(speakerInfo)): \"\(result.text.prefix(50))...\"")
+        print("[SimpleRecordingEngine] Added segment (\(speakerInfo)): \"\(text.prefix(50))...\"")
     }
 
     // MARK: - Diarization Processing

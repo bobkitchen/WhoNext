@@ -117,10 +117,13 @@ class TranscriptionEngine: ObservableObject {
         print("[TranscriptionEngine] Processing \(audioChunk.count) samples, RMS: \(String(format: "%.4f", rms)), Peak: \(String(format: "%.4f", peak))")
 
         // Check for silence
-        if rms < 0.005 {
+        if rms < 0.001 {
             print("[TranscriptionEngine] Audio appears silent, skipping")
             return nil
         }
+
+        // Normalize audio to target RMS for consistent WhisperKit input
+        let normalizedAudio = normalizeAudio(audioChunk, targetRMS: 0.05)
 
         // Configure decoding options
         let options = DecodingOptions(
@@ -144,12 +147,38 @@ class TranscriptionEngine: ObservableObject {
         )
 
         // Transcribe
-        let results = try await whisperKit.transcribe(audioArray: audioChunk, decodeOptions: options)
+        let results = try await whisperKit.transcribe(audioArray: normalizedAudio, decodeOptions: options)
 
-        // Extract and filter text
+        // Extract text and derive per-word timings from WhisperKit segment timing
         var rawText = ""
+        var wordTimings: [UnifiedTranscriptionResult.UnifiedTokenTiming] = []
+
         for result in results {
             rawText += result.text
+
+            // WhisperKit provides segment-level start/end times.
+            // Distribute timing evenly across words within each segment.
+            for segment in result.segments {
+                let segWords = segment.text.trimmingCharacters(in: .whitespacesAndNewlines)
+                    .split(separator: " ")
+                    .map { String($0) }
+                guard !segWords.isEmpty else { continue }
+
+                let segStart = Double(segment.start)
+                let segEnd = Double(segment.end)
+                let wordDuration = (segEnd - segStart) / Double(segWords.count)
+
+                for (idx, word) in segWords.enumerated() {
+                    let wStart = segStart + Double(idx) * wordDuration
+                    let wEnd = wStart + wordDuration
+                    wordTimings.append(UnifiedTranscriptionResult.UnifiedTokenTiming(
+                        word: word,
+                        startTime: wStart,
+                        endTime: wEnd,
+                        confidence: 1.0
+                    ))
+                }
+            }
         }
 
         // Apply hallucination filter
@@ -165,7 +194,8 @@ class TranscriptionEngine: ObservableObject {
         return EngineTranscriptionResult(
             text: cleanedText,
             timestamp: Date(),
-            confidence: 1.0
+            confidence: 1.0,
+            segmentTimings: wordTimings.isEmpty ? nil : wordTimings
         )
 
         #else
@@ -267,6 +297,24 @@ class TranscriptionEngine: ObservableObject {
 
     // MARK: - Helpers
 
+    /// Normalize audio to a target RMS level for consistent transcription engine input.
+    /// Caps gain at 100x to avoid amplifying pure noise. Uses tanh soft-clipping.
+    private func normalizeAudio(_ samples: [Float], targetRMS: Float = 0.05) -> [Float] {
+        let currentRMS = calculateRMS(samples)
+        guard currentRMS > 0 else { return samples }
+
+        let gain = min(targetRMS / currentRMS, 100.0)  // Cap at 100x
+        if gain < 1.1 { return samples }  // Already at target level
+
+        print("[TranscriptionEngine] Normalizing audio: RMS \(String(format: "%.4f", currentRMS)) → \(String(format: "%.4f", targetRMS)) (gain: \(String(format: "%.1f", gain))x)")
+
+        return samples.map { sample in
+            let amplified = sample * gain
+            // tanh soft-clipping keeps output in [-1, 1]
+            return tanh(amplified)
+        }
+    }
+
     private func calculateRMS(_ samples: [Float]) -> Float {
         guard !samples.isEmpty else { return 0 }
         let sumOfSquares = samples.reduce(0) { $0 + $1 * $1 }
@@ -281,6 +329,8 @@ struct EngineTranscriptionResult: Sendable {
     let text: String
     let timestamp: Date
     let confidence: Float
+    /// Per-word timings derived from WhisperKit segment timing (evenly distributed within segments)
+    let segmentTimings: [UnifiedTranscriptionResult.UnifiedTokenTiming]?
 }
 
 enum TranscriptionEngineError: Error, LocalizedError {

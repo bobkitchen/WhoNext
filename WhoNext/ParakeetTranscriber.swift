@@ -128,13 +128,16 @@ class ParakeetTranscriber: ObservableObject {
         print("[ParakeetTranscriber] Processing \(audioChunk.count) samples (\(String(format: "%.1f", duration))s), RMS: \(String(format: "%.4f", rms))")
 
         // Check for silence
-        if rms < 0.005 {
+        if rms < 0.001 {
             print("[ParakeetTranscriber] Audio appears silent, skipping")
             return nil
         }
 
+        // Normalize audio to target RMS for consistent Parakeet input
+        let normalizedAudio = normalizeAudio(audioChunk, targetRMS: 0.05)
+
         // Pad short audio with silence (Parakeet requires >= 1.5s)
-        var processableAudio = audioChunk
+        var processableAudio = normalizedAudio
         if duration < minimumDurationSeconds {
             let neededSamples = Int(minimumDurationSeconds * sampleRate) - audioChunk.count
             processableAudio.append(contentsOf: [Float](repeating: 0, count: neededSamples))
@@ -269,6 +272,23 @@ class ParakeetTranscriber: ObservableObject {
     }
 
     // MARK: - Helpers
+
+    /// Normalize audio to a target RMS level for consistent Parakeet input.
+    /// Caps gain at 100x to avoid amplifying pure noise. Uses tanh soft-clipping.
+    private func normalizeAudio(_ samples: [Float], targetRMS: Float = 0.05) -> [Float] {
+        let currentRMS = calculateRMS(samples)
+        guard currentRMS > 0 else { return samples }
+
+        let gain = min(targetRMS / currentRMS, 100.0)  // Cap at 100x
+        if gain < 1.1 { return samples }  // Already at target level
+
+        print("[ParakeetTranscriber] Normalizing audio: RMS \(String(format: "%.4f", currentRMS)) → \(String(format: "%.4f", targetRMS)) (gain: \(String(format: "%.1f", gain))x)")
+
+        return samples.map { sample in
+            let amplified = sample * gain
+            return tanh(amplified)
+        }
+    }
 
     private func calculateRMS(_ samples: [Float]) -> Float {
         guard !samples.isEmpty else { return 0 }

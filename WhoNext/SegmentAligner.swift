@@ -3,6 +3,24 @@ import Foundation
 import FluidAudio
 #endif
 
+// MARK: - Word-Level Speaker Attribution Types
+
+/// A single word with absolute timing (recording-relative)
+struct WordWithTiming {
+    let word: String
+    let startTime: TimeInterval  // Absolute (recording-relative)
+    let endTime: TimeInterval
+}
+
+/// A group of consecutive words spoken by the same speaker
+struct SpeakerWordGroup {
+    let speakerId: String
+    let words: [WordWithTiming]
+    let startTime: TimeInterval
+    let endTime: TimeInterval
+    var text: String { words.map { $0.word }.joined(separator: " ") }
+}
+
 /// Aligns transcript segments with speaker diarization results
 /// Uses time-based matching to determine which speaker was talking during each transcript segment
 class SegmentAligner {
@@ -174,6 +192,109 @@ class SegmentAligner {
         lock.lock()
         defer { lock.unlock() }
         return micSegments.count + systemSegments.count
+    }
+
+    // MARK: - Word-Level Speaker Attribution
+
+    /// Align individual words to diarization segments, producing speaker-grouped word runs.
+    /// - Parameters:
+    ///   - wordTimings: Per-word timings from the transcription engine (chunk-relative)
+    ///   - chunkStartTime: Absolute recording time when this chunk started
+    /// - Returns: Array of SpeakerWordGroups with consecutive same-speaker words grouped together
+    func alignWords(wordTimings: [UnifiedTranscriptionResult.UnifiedTokenTiming], chunkStartTime: TimeInterval) -> [SpeakerWordGroup] {
+        lock.lock()
+        defer { lock.unlock() }
+
+        let allSegments = micSegments + systemSegments
+        guard !allSegments.isEmpty, !wordTimings.isEmpty else { return [] }
+
+        // Convert chunk-relative word times to absolute and assign speakers
+        var attributedWords: [(word: WordWithTiming, speakerId: String)] = []
+
+        for timing in wordTimings {
+            let absStart = chunkStartTime + timing.startTime
+            let absEnd = chunkStartTime + timing.endTime
+            let midpoint = (absStart + absEnd) / 2.0
+
+            let wordTiming = WordWithTiming(word: timing.word, startTime: absStart, endTime: absEnd)
+
+            // Strategy 1: Find segment containing the word's midpoint
+            var assignedSpeaker: String? = nil
+            for seg in allSegments {
+                if Double(seg.startTimeSeconds) <= midpoint && midpoint <= Double(seg.endTimeSeconds) {
+                    assignedSpeaker = seg.speakerId
+                    break
+                }
+            }
+
+            // Strategy 2: Overlap-weighted selection
+            if assignedSpeaker == nil {
+                var bestOverlap: Double = 0
+                for seg in allSegments {
+                    let segStart = Double(seg.startTimeSeconds)
+                    let segEnd = Double(seg.endTimeSeconds)
+                    let overlap = max(0, min(absEnd, segEnd) - max(absStart, segStart))
+                    if overlap > bestOverlap {
+                        bestOverlap = overlap
+                        assignedSpeaker = seg.speakerId
+                    }
+                }
+            }
+
+            // Strategy 3: Nearest-neighbor within 0.5s
+            if assignedSpeaker == nil {
+                var bestDistance: Double = 0.5
+                for seg in allSegments {
+                    let segMid = Double(seg.startTimeSeconds + seg.endTimeSeconds) / 2.0
+                    let distance = abs(midpoint - segMid)
+                    if distance < bestDistance {
+                        bestDistance = distance
+                        assignedSpeaker = seg.speakerId
+                    }
+                }
+            }
+
+            // Strategy 4: Last returned speaker fallback
+            let speaker = assignedSpeaker ?? lastReturnedSpeaker ?? "unknown"
+
+            // Apply speaker stabilizer
+            let stabilized = stabilizer.stabilize(rawLabel: speaker, currentLabel: lastReturnedSpeaker)
+            lastReturnedSpeaker = stabilized
+
+            attributedWords.append((word: wordTiming, speakerId: stabilized))
+        }
+
+        // Group consecutive same-speaker words into SpeakerWordGroups
+        var groups: [SpeakerWordGroup] = []
+        var currentGroupWords: [WordWithTiming] = []
+        var currentSpeaker: String = ""
+
+        for (word, speaker) in attributedWords {
+            if speaker != currentSpeaker && !currentGroupWords.isEmpty {
+                // Flush current group
+                groups.append(SpeakerWordGroup(
+                    speakerId: currentSpeaker,
+                    words: currentGroupWords,
+                    startTime: currentGroupWords.first!.startTime,
+                    endTime: currentGroupWords.last!.endTime
+                ))
+                currentGroupWords = []
+            }
+            currentSpeaker = speaker
+            currentGroupWords.append(word)
+        }
+
+        // Flush final group
+        if !currentGroupWords.isEmpty {
+            groups.append(SpeakerWordGroup(
+                speakerId: currentSpeaker,
+                words: currentGroupWords,
+                startTime: currentGroupWords.first!.startTime,
+                endTime: currentGroupWords.last!.endTime
+            ))
+        }
+
+        return groups
     }
     #endif
 

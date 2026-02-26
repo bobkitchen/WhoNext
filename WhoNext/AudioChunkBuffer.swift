@@ -114,17 +114,27 @@ actor AudioChunkBuffer {
 
         var mixed = [Float](repeating: 0, count: outputLength)
 
-        let hasMic = !micBuffer.isEmpty && micBuffer.contains { abs($0) > 0.001 }
-        let hasSystem = !systemBuffer.isEmpty && systemBuffer.contains { abs($0) > 0.001 }
+        let hasMic = !micBuffer.isEmpty && micBuffer.contains { abs($0) > 0.0001 }
+        let hasSystem = !systemBuffer.isEmpty && systemBuffer.contains { abs($0) > 0.0001 }
 
         if hasMic && hasSystem {
-            // Both sources have audio - mix with equal gain to prevent clipping
+            // Both sources have audio - adaptive mixing to avoid crushing quiet AEC signals.
+            // Estimate peak amplitude to decide if attenuation is needed.
+            var peakEstimate: Float = 0
+            let sampleStep = max(outputLength / 200, 1)  // Sample ~200 points for speed
+            for i in stride(from: 0, to: outputLength, by: sampleStep) {
+                let micSample = i < micBuffer.count ? abs(micBuffer[i]) : 0
+                let systemSample = i < systemBuffer.count ? abs(systemBuffer[i]) : 0
+                peakEstimate = max(peakEstimate, micSample + systemSample)
+            }
+
+            // Only attenuate if combined signal risks clipping
+            let gain: Float = peakEstimate > 0.8 ? 0.5 : 1.0
+
             for i in 0..<outputLength {
                 let micSample = i < micBuffer.count ? micBuffer[i] : 0
                 let systemSample = i < systemBuffer.count ? systemBuffer[i] : 0
-
-                // Apply 0.5 gain to each source to keep mixed signal in [-1, 1]
-                mixed[i] = micSample * 0.5 + systemSample * 0.5
+                mixed[i] = min(max((micSample + systemSample) * gain, -1.0), 1.0)
             }
 
         } else if hasMic {

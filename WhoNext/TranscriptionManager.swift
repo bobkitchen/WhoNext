@@ -92,7 +92,7 @@ extension TranscriptionEngine: TranscriptionEngineProtocol {
             text: result.text,
             timestamp: result.timestamp,
             confidence: result.confidence,
-            tokenTimings: nil  // WhisperKit doesn't provide per-word timing
+            tokenTimings: result.segmentTimings
         )
     }
 
