@@ -19,7 +19,8 @@ class VoicePrintManager: ObservableObject {
 
     // MARK: - Embedding Cache (avoids repeated Core Data fetches)
     /// Cache stores value types (not managed objects) so it's safe across contexts
-    private var cachedEmbeddingsData: [(personId: UUID, name: String, embedding: [Float], confidence: Float)]?
+    /// Each person stores all individual embeddings for best-of-N matching
+    private var cachedEmbeddingsData: [(personId: UUID, name: String, embeddings: [[Float]], confidence: Float)]?
     private var cacheTimestamp: Date = .distantPast
     private let cacheValidityInterval: TimeInterval = 30.0  // Cache valid for 30 seconds
 
@@ -90,6 +91,7 @@ class VoicePrintManager: ObservableObject {
     }
     
     /// Refresh the embeddings cache from Core Data on a background context
+    /// Stores all individual embeddings per person for best-of-N matching
     private func refreshEmbeddingsCache() async {
         await withCheckedContinuation { continuation in
             persistenceController.container.performBackgroundTask { context in
@@ -98,26 +100,36 @@ class VoicePrintManager: ObservableObject {
 
                 do {
                     let people = try context.fetch(request)
-                    var cached: [(personId: UUID, name: String, embedding: [Float], confidence: Float)] = []
+                    var cached: [(personId: UUID, name: String, embeddings: [[Float]], confidence: Float)] = []
 
                     for person in people {
                         if let storedData = person.voiceEmbeddings,
-                           let embedding = self.deserializeEmbedding(from: storedData),
                            let id = person.identifier {
-                            cached.append((
-                                personId: id,
-                                name: person.wrappedName,
-                                embedding: embedding,
-                                confidence: person.voiceConfidence
-                            ))
+                            // Try to get all individual embeddings first (best-of-N)
+                            if let allEmbeddings = self.deserializeAllEmbeddings(from: storedData), !allEmbeddings.isEmpty {
+                                cached.append((
+                                    personId: id,
+                                    name: person.wrappedName,
+                                    embeddings: allEmbeddings,
+                                    confidence: person.voiceConfidence
+                                ))
+                            } else if let singleEmbedding = self.deserializeEmbedding(from: storedData) {
+                                // Fallback: wrap single averaged embedding
+                                cached.append((
+                                    personId: id,
+                                    name: person.wrappedName,
+                                    embeddings: [singleEmbedding],
+                                    confidence: person.voiceConfidence
+                                ))
+                            }
                         }
                     }
 
                     self.cachedEmbeddingsData = cached
                     self.cacheTimestamp = Date()
-                    debugLog("[VoicePrintManager] 📦 Refreshed cache with \(cached.count) people (background)")
+                    debugLog("[VoicePrintManager] Refreshed cache with \(cached.count) people (background, best-of-N)")
                 } catch {
-                    debugLog("[VoicePrintManager] ❌ Error refreshing cache: \(error)")
+                    debugLog("[VoicePrintManager] Error refreshing cache: \(error)")
                     self.cachedEmbeddingsData = nil
                 }
                 continuation.resume()
@@ -154,29 +166,20 @@ class VoicePrintManager: ObservableObject {
             return nil
         }
 
-        debugLog("[VoicePrintManager] 🔍 Searching \(cached.count) cached voice embeddings...")
+        debugLog("[VoicePrintManager] Searching \(cached.count) cached voice embeddings (best-of-N)...")
 
         var bestMatch: (personId: UUID, name: String, similarity: Float)?
         var allMatches: [(String, Float)] = []  // For debug logging
 
         for entry in cached {
-            // Skip mismatched dimensions instead of silently failing
-            guard embedding.count == entry.embedding.count else {
-                debugLog("[VoicePrintManager] ⚠️ Dimension mismatch for \(entry.name): \(embedding.count) vs \(entry.embedding.count), skipping")
-                continue
-            }
+            // Best-of-N: find the maximum similarity across all stored embeddings
+            let similarity = bestOfNSimilarity(embedding, stored: entry.embeddings)
 
-            // Calculate cosine similarity
-            let similarity = cosineSimilarity(embedding, entry.embedding)
+            allMatches.append((entry.name, similarity))
 
-            // Apply confidence weighting based on voice sample count
-            let weightedSimilarity = similarity * entry.confidence
-
-            allMatches.append((entry.name, weightedSimilarity))
-
-            if weightedSimilarity > minimumConfidenceThreshold {
-                if bestMatch == nil || weightedSimilarity > bestMatch!.similarity {
-                    bestMatch = (personId: entry.personId, name: entry.name, similarity: weightedSimilarity)
+            if similarity > minimumConfidenceThreshold {
+                if bestMatch == nil || similarity > bestMatch!.similarity {
+                    bestMatch = (personId: entry.personId, name: entry.name, similarity: similarity)
                 }
             }
         }
@@ -227,9 +230,8 @@ class VoicePrintManager: ObservableObject {
             
             for person in attendeePeople where person.voiceEmbeddings != nil {
                 if let storedData = person.voiceEmbeddings,
-                   let storedEmbedding = deserializeEmbedding(from: storedData) {
-                    let similarity = cosineSimilarity(embedding, storedEmbedding)
-                    let weightedSimilarity = similarity * person.voiceConfidence
+                   let storedEmbeddings = deserializeAllEmbeddings(from: storedData) {
+                    let weightedSimilarity = bestOfNSimilarity(embedding, stored: storedEmbeddings)
                     
                     if weightedSimilarity > minimumConfidenceThreshold {
                         if bestMatch == nil || weightedSimilarity > bestMatch!.1 {
@@ -328,7 +330,35 @@ class VoicePrintManager: ObservableObject {
     }
     
     // MARK: - Helper Methods
-    
+
+    /// Deserialize all individual embeddings from stored data (for best-of-N matching)
+    /// Returns individual embeddings without averaging, unlike deserializeEmbedding()
+    private func deserializeAllEmbeddings(from data: Data) -> [[Float]]? {
+        // Try JSON array-of-arrays format (current standard)
+        if let embeddings = try? JSONDecoder().decode([[Float]].self, from: data), !embeddings.isEmpty {
+            return embeddings
+        }
+        // Try single-array JSON format (wrap in array)
+        if let single = try? JSONDecoder().decode([Float].self, from: data) {
+            return [single]
+        }
+        return nil
+    }
+
+    /// Best-of-N similarity: returns max cosine similarity across all stored embeddings
+    /// If even one clean embedding is stored, this finds it (unlike averaging which dilutes)
+    private func bestOfNSimilarity(_ query: [Float], stored: [[Float]]) -> Float {
+        var maxSimilarity: Float = 0
+        for storedEmbedding in stored {
+            guard query.count == storedEmbedding.count else { continue }
+            let similarity = cosineSimilarity(query, storedEmbedding)
+            if similarity > maxSimilarity {
+                maxSimilarity = similarity
+            }
+        }
+        return maxSimilarity
+    }
+
     /// Calculate cosine similarity between two embeddings
     private func cosineSimilarity(_ a: [Float], _ b: [Float]) -> Float {
         VectorMath.cosineSimilarity(a, b)

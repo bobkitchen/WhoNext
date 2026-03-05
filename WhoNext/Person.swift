@@ -244,10 +244,23 @@ extension Person {
         return average
     }
 
-    /// Calculate cosine similarity between this person's voice and a given embedding
+    /// Calculate cosine similarity between this person's voice and a given embedding (average-based)
     public func voiceSimilarity(to embedding: [Float]) -> Float {
         guard let averageEmbedding = averageVoiceEmbedding else { return 0 }
         return cosineSimilarity(averageEmbedding, embedding)
+    }
+
+    /// Best-of-N voice similarity: returns max cosine similarity across all stored embeddings
+    /// More robust than average-based matching when some samples are noisy
+    public func bestVoiceSimilarity(to embedding: [Float]) -> Float {
+        guard let embeddings = storedVoiceEmbeddings, !embeddings.isEmpty else { return 0 }
+        var maxSimilarity: Float = 0
+        for stored in embeddings {
+            guard stored.count == embedding.count else { continue }
+            let sim = cosineSimilarity(stored, embedding)
+            if sim > maxSimilarity { maxSimilarity = sim }
+        }
+        return maxSimilarity
     }
 
     /// Cosine similarity between two vectors
