@@ -1,8 +1,8 @@
 import Foundation
 import AVFoundation
 import CoreData
-#if canImport(FluidAudio)
-import FluidAudio
+#if canImport(AxiiDiarization)
+import AxiiDiarization
 #endif
 
 /// Integrates DiarizationManager with VoicePrintManager and LiveMeeting
@@ -29,7 +29,7 @@ class MeetingTypeDetector: ObservableObject {
     
     // MARK: - Meeting Type Detection
     
-    #if canImport(FluidAudio)
+    #if canImport(AxiiDiarization)
     /// Process diarization results to detect meeting type and update LiveMeeting
     func processDiarizationResults(_ results: DiarizationResult?, for meeting: LiveMeeting) {
         guard let results = results else {
@@ -265,7 +265,7 @@ extension LiveMeeting {
 
 // MARK: - Integration with MeetingRecordingEngine
 
-#if canImport(FluidAudio)
+#if canImport(AxiiDiarization)
 extension MeetingRecordingEngine {
     /// Process diarization and update meeting type
     func processDiarizationUpdate(_ results: DiarizationResult?) {

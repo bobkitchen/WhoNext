@@ -1,6 +1,6 @@
 import Foundation
-#if canImport(FluidAudio)
-import FluidAudio
+#if canImport(AxiiDiarization)
+import AxiiDiarization
 #endif
 
 // MARK: - Word-Level Speaker Attribution Types
@@ -27,7 +27,7 @@ class SegmentAligner {
 
     // MARK: - Properties
 
-    #if canImport(FluidAudio)
+    #if canImport(AxiiDiarization)
     /// Accumulated diarization segments from microphone audio
     private var micSegments: [TimedSpeakerSegment] = []
 
@@ -55,7 +55,7 @@ class SegmentAligner {
 
     // MARK: - Public Interface
 
-    #if canImport(FluidAudio)
+    #if canImport(AxiiDiarization)
 
     /// Prefix speaker IDs to distinguish mic vs system audio sources
     private static func prefixSegments(_ segments: [TimedSpeakerSegment], prefix: String) -> [TimedSpeakerSegment] {
@@ -71,7 +71,7 @@ class SegmentAligner {
     }
 
     /// Update with new diarization results from microphone
-    /// - Parameter result: New DiarizationResult from FluidAudio
+    /// - Parameter result: New DiarizationResult from diarization engine
     func updateDiarizationResults(_ result: DiarizationResult) {
         lock.lock()
         defer { lock.unlock() }
@@ -101,7 +101,7 @@ class SegmentAligner {
     }
 
     /// Update with new diarization results from system audio
-    /// - Parameter result: New DiarizationResult from FluidAudio
+    /// - Parameter result: New DiarizationResult from diarization engine
     func updateSystemDiarizationResults(_ result: DiarizationResult) {
         lock.lock()
         defer { lock.unlock() }
@@ -192,6 +192,20 @@ class SegmentAligner {
         lock.lock()
         defer { lock.unlock() }
         return micSegments.count + systemSegments.count
+    }
+
+    /// Remove all system segments for a given speaker ID (used for cross-stream deduplication).
+    /// - Parameter speakerId: Full prefixed speaker ID (e.g., "sys_1")
+    func removeSystemSpeaker(_ speakerId: String) {
+        lock.lock()
+        defer { lock.unlock() }
+        let before = systemSegments.count
+        systemSegments.removeAll { $0.speakerId == speakerId }
+        knownSpeakers.remove(speakerId)
+        let removed = before - systemSegments.count
+        if removed > 0 {
+            print("[SegmentAligner] Removed \(removed) segments for suppressed speaker '\(speakerId)'")
+        }
     }
 
     // MARK: - Word-Level Speaker Attribution
@@ -303,7 +317,7 @@ class SegmentAligner {
         lock.lock()
         defer { lock.unlock() }
 
-        #if canImport(FluidAudio)
+        #if canImport(AxiiDiarization)
         micSegments.removeAll()
         systemSegments.removeAll()
         knownSpeakers.removeAll()
@@ -319,9 +333,9 @@ class SegmentAligner {
 
 extension SegmentAligner {
 
-    /// Parse numeric speaker ID from FluidAudio format (e.g., "speaker_0" -> 0)
+    /// Parse numeric speaker ID from diarization format (e.g., "speaker_0" -> 0)
     static func parseNumericId(_ speakerId: String) -> Int {
-        // FluidAudio typically uses "speaker_0", "speaker_1", etc.
+        // Diarization typically uses "speaker_0", "speaker_1", etc.
         if let match = speakerId.range(of: #"\d+$"#, options: .regularExpression),
            let num = Int(speakerId[match]) {
             return num
@@ -344,7 +358,7 @@ extension SegmentAligner {
             sourceLabel = " (Remote)"
         }
 
-        // FluidAudio uses 1-based IDs like "1", "2" directly
+        // Diarization uses 1-based IDs like "1", "2" directly
         if let num = Int(cleanId) {
             return "Speaker \(num)\(sourceLabel)"
         }
@@ -363,7 +377,7 @@ extension SegmentAligner {
         lock.lock()
         defer { lock.unlock() }
 
-        #if canImport(FluidAudio)
+        #if canImport(AxiiDiarization)
         let speakerCount = knownSpeakers.count
         let allSegments = micSegments + systemSegments
         let segmentCount = allSegments.count

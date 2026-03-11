@@ -1,19 +1,19 @@
 import Foundation
 import AVFoundation
 
-/// Accumulates audio into 10-second chunks for optimal FluidAudio diarization processing
+/// Accumulates audio into 10-second chunks for optimal diarization processing
 /// Tracks timing information to align diarization results with transcription
 actor DiarizationBuffer {
 
     // MARK: - Configuration
 
-    /// Target duration for each chunk (FluidAudio optimal is 10s)
+    /// Target duration for each chunk (optimal is 10s)
     private let targetDuration: TimeInterval = 10.0
 
     /// Overlap duration for speaker continuity across chunks
     private let overlapDuration: TimeInterval = 1.0
 
-    /// Sample rate (16kHz for FluidAudio)
+    /// Sample rate (16kHz for diarization)
     private let sampleRate: Double = 16000.0
 
     // MARK: - Buffers

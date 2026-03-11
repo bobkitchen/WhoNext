@@ -36,7 +36,7 @@ class VoiceTrainingRecorder: ObservableObject {
     private var audioBuffers: [AVAudioPCMBuffer] = []
 
     // MARK: - Diarization for Voice Embedding
-    #if canImport(FluidAudio)
+    #if canImport(AxiiDiarization)
     private var diarizationManager: DiarizationManager?
     #endif
 
@@ -48,7 +48,7 @@ class VoiceTrainingRecorder: ObservableObject {
     // MARK: - Setup
 
     private func setupDiarization() {
-        #if canImport(FluidAudio)
+        #if canImport(AxiiDiarization)
         diarizationManager = DiarizationManager()
         Task {
             try? await diarizationManager?.initialize()
@@ -208,7 +208,7 @@ class VoiceTrainingRecorder: ObservableObject {
 
     /// Process recorded audio to extract voice embedding
     private func processAudioForEmbedding() async throws -> [Float] {
-        #if canImport(FluidAudio)
+        #if canImport(AxiiDiarization)
         guard let manager = diarizationManager else {
             throw VoiceTrainingError.diarizationUnavailable
         }
@@ -230,8 +230,8 @@ class VoiceTrainingRecorder: ObservableObject {
         return firstSegment.embedding
 
         #else
-        // Fallback: generate a random embedding (for testing without FluidAudio)
-        print("⚠️ FluidAudio not available, using mock embedding")
+        // Fallback: generate a random embedding (for testing without AxiiDiarization)
+        print("⚠️ AxiiDiarization not available, using mock embedding")
         return (0..<192).map { _ in Float.random(in: -1...1) }
         #endif
     }

@@ -264,7 +264,7 @@ enum TranscriptionEngineType: String, Codable, CaseIterable {
         case .whisperKit:
             return "OpenAI Whisper via WhisperKit. Good accuracy, moderate speed."
         case .parakeet:
-            return "NVIDIA Parakeet via FluidAudio. Fast (~209x RTF), multilingual."
+            return "NVIDIA Parakeet via AxiiDiarization. Fast (~209x RTF), multilingual."
         }
     }
 }
@@ -275,7 +275,7 @@ struct TranscriptionSettings: Codable {
     var useLocalTranscription: Bool = true
     var whisperRefinementEnabled: Bool = true
     var speakerDiarizationEnabled: Bool = true
-    var speakerSensitivity: Double = 0.70  // FluidAudio optimal: 0.7 achieves 17.7% DER. Range: 0.6-0.8 safe.
+    var speakerSensitivity: Double = 0.70  // Optimal: 0.7 achieves 17.7% DER. Range: 0.6-0.8 safe.
     var languageCode: String = "en-US"
     var punctuationEnabled: Bool = true
     var profanityFilterEnabled: Bool = false

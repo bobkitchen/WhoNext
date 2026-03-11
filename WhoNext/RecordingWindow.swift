@@ -159,6 +159,10 @@ struct RecordingWindowView: View {
     @ObservedObject private var recordingEngine = MeetingRecordingEngine.shared
     @State private var isNotesFocused = false
 
+    // Speaker merge state
+    @State private var pendingMerge: (sourceID: String, sourceName: String, destID: String, destName: String)?
+    @State private var showMergeConfirmation = false
+
     // Binding to sync notes with LiveMeeting
     private var userNotesBinding: Binding<NSAttributedString> {
         Binding(
@@ -198,6 +202,21 @@ struct RecordingWindowView: View {
             notesSection
         }
         .frame(minWidth: 500, minHeight: 400)
+        .alert("Merge Speakers", isPresented: $showMergeConfirmation) {
+            Button("Merge", role: .destructive) {
+                if let merge = pendingMerge {
+                    performSpeakerMerge(sourceID: merge.sourceID, destinationID: merge.destID)
+                }
+                pendingMerge = nil
+            }
+            Button("Cancel", role: .cancel) {
+                pendingMerge = nil
+            }
+        } message: {
+            if let merge = pendingMerge {
+                Text("Merge \"\(merge.sourceName)\" into \"\(merge.destName)\"?\n\nAll of \(merge.sourceName)'s segments will be reassigned to \(merge.destName). This also improves future voice recognition.")
+            }
+        }
     }
 
     // MARK: - Header
@@ -309,6 +328,19 @@ struct RecordingWindowView: View {
                 .padding(.horizontal, 16)
                 .padding(.top, 12)
 
+            // Offline re-diarization progress indicator
+            if recordingEngine.currentMeeting?.isRefiningLabels == true {
+                HStack(spacing: 6) {
+                    ProgressView()
+                        .controlSize(.small)
+                    Text("Refining speaker labels...")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 4)
+            }
+
             ScrollViewReader { proxy in
                 ScrollView {
                     LazyVStack(alignment: .leading, spacing: 8) {
@@ -360,6 +392,33 @@ struct RecordingWindowView: View {
                                 markParticipantAsMe(participant, in: meeting)
                             }
                         )
+                        .draggable(participant.speakerID)
+                        .dropDestination(for: String.self) { droppedIDs, _ in
+                            guard let sourceID = droppedIDs.first,
+                                  sourceID != participant.speakerID,
+                                  // Prevent cross-stream merges (mic_ into sys_ or vice versa)
+                                  sourceID.hasPrefix("mic_") == participant.speakerID.hasPrefix("mic_")
+                            else { return false }
+                            let sourceName = meeting.identifiedParticipants
+                                .first(where: { $0.speakerID == sourceID })?.displayName ?? sourceID
+                            pendingMerge = (
+                                sourceID: sourceID,
+                                sourceName: sourceName,
+                                destID: participant.speakerID,
+                                destName: participant.displayName
+                            )
+                            showMergeConfirmation = true
+                            return true
+                        } isTargeted: { isTargeted in
+                            // Visual feedback handled by SwiftUI drop highlight
+                        }
+                    }
+
+                    if meeting.identifiedParticipants.count >= 2 {
+                        Text("Drag a speaker onto another to merge")
+                            .font(.caption2)
+                            .foregroundColor(.secondary)
+                            .padding(.top, 4)
                     }
                 } else {
                     Text("No participants detected")
@@ -463,7 +522,7 @@ struct RecordingWindowView: View {
         }
 
         // Save voice embedding to UserProfile for future auto-identification
-        #if canImport(FluidAudio)
+        #if canImport(AxiiDiarization)
         let engine = SimpleRecordingEngine.shared
         // Get embedding from the diarization result's speaker database
         let rawId = participant.speakerID
@@ -479,6 +538,29 @@ struct RecordingWindowView: View {
         #endif
 
         print("[RecordingWindow] Marked \(participant.speakerID) as current user (\(userName))")
+    }
+
+    /// Merge two speakers: reassign transcript segments, update SpeakerCache, and feed VoicePrintManager
+    private func performSpeakerMerge(sourceID: String, destinationID: String) {
+        guard let meeting = recordingEngine.currentMeeting else { return }
+
+        // Get destination participant info before merge (for VoicePrintManager feedback)
+        let destPerson = meeting.identifiedParticipants
+            .first(where: { $0.speakerID == destinationID })?.personRecord
+
+        // 1. Merge in LiveMeeting (transcript segments + participant list)
+        let updatedCount = meeting.mergeSpeakers(sourceID: sourceID, into: destinationID)
+
+        // 2. Merge in SpeakerCache + feed VoicePrintManager for cross-session learning
+        #if canImport(AxiiDiarization)
+        let _ = SimpleRecordingEngine.shared.handleSpeakerMerge(
+            sourceID: sourceID,
+            destinationID: destinationID,
+            destinationPerson: destPerson
+        )
+        #endif
+
+        print("[RecordingWindow] Speaker merge complete: '\(sourceID)' → '\(destinationID)', \(updatedCount) segments updated")
     }
 
     /// Convert LiveMeeting.MeetingType to MeetingTypeBadge.MeetingType

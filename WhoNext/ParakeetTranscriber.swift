@@ -1,12 +1,12 @@
 import Foundation
 import AVFoundation
-#if canImport(FluidAudio)
-import FluidAudio
+#if canImport(AxiiDiarization)
+import AxiiDiarization
 #endif
 
-/// FluidAudio Parakeet TDT v3 transcription engine
+/// Parakeet TDT v3 transcription engine
 /// Processes audio chunks and returns clean text with per-word timing
-/// Uses the same FluidAudio framework as diarization, consolidating ML dependencies
+/// Uses the same AxiiDiarization framework as diarization, consolidating ML dependencies
 @MainActor
 class ParakeetTranscriber: ObservableObject {
 
@@ -20,13 +20,13 @@ class ParakeetTranscriber: ObservableObject {
     // MARK: - Configuration
 
     /// Model version: v2 = English only, v3 = Multilingual (25 languages)
-    #if canImport(FluidAudio)
+    #if canImport(AxiiDiarization)
     var modelVersion: AsrModelVersion = .v3
     #endif
 
     // MARK: - Private Properties
 
-    #if canImport(FluidAudio)
+    #if canImport(AxiiDiarization)
     private var asrManager: AsrManager?
     private var models: AsrModels?
     #endif
@@ -77,7 +77,7 @@ class ParakeetTranscriber: ObservableObject {
 
     /// Initialize with model download
     func initialize() async throws {
-        #if canImport(FluidAudio)
+        #if canImport(AxiiDiarization)
         print("[ParakeetTranscriber] Initializing with Parakeet TDT \(modelVersion == .v3 ? "v3 (Multilingual)" : "v2 (English)")...")
 
         do {
@@ -99,7 +99,7 @@ class ParakeetTranscriber: ObservableObject {
             throw ParakeetTranscriberError.modelLoadFailed(error.localizedDescription)
         }
         #else
-        print("[ParakeetTranscriber] FluidAudio not available")
+        print("[ParakeetTranscriber] AxiiDiarization not available")
         throw ParakeetTranscriberError.serviceUnavailable
         #endif
     }
@@ -114,7 +114,7 @@ class ParakeetTranscriber: ObservableObject {
             throw ParakeetTranscriberError.notReady
         }
 
-        #if canImport(FluidAudio)
+        #if canImport(AxiiDiarization)
         guard let asr = asrManager else {
             throw ParakeetTranscriberError.notReady
         }
@@ -173,7 +173,7 @@ class ParakeetTranscriber: ObservableObject {
 
     /// Reset transcription state (call at start of new recording)
     func resetState() {
-        #if canImport(FluidAudio)
+        #if canImport(AxiiDiarization)
         asrManager?.resetState()
         #endif
         print("[ParakeetTranscriber] State reset")
@@ -307,7 +307,7 @@ struct ParakeetTranscriptionResult: Sendable {
     let confidence: Float
     let processingTime: TimeInterval
 
-    #if canImport(FluidAudio)
+    #if canImport(AxiiDiarization)
     let tokenTimings: [TokenTiming]?
     #else
     let tokenTimings: [(token: String, startTime: TimeInterval, endTime: TimeInterval)]?
@@ -327,7 +327,7 @@ enum ParakeetTranscriberError: Error, LocalizedError {
         case .notReady:
             return "Parakeet transcriber not ready. Call initialize() first."
         case .serviceUnavailable:
-            return "FluidAudio is not available on this device."
+            return "AxiiDiarization is not available on this device."
         case .modelLoadFailed(let reason):
             return "Failed to load Parakeet model: \(reason)"
         case .transcriptionFailed(let reason):

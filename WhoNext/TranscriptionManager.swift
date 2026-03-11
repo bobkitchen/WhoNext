@@ -1,6 +1,6 @@
 import Foundation
-#if canImport(FluidAudio)
-import FluidAudio
+#if canImport(AxiiDiarization)
+import AxiiDiarization
 #endif
 
 // MARK: - Unified Result Type
@@ -113,7 +113,7 @@ extension ParakeetTranscriber: TranscriptionEngineProtocol {
         // Convert Parakeet token timings to unified format
         var unifiedTimings: [UnifiedTranscriptionResult.UnifiedTokenTiming]? = nil
 
-        #if canImport(FluidAudio)
+        #if canImport(AxiiDiarization)
         if let timings = result.tokenTimings {
             unifiedTimings = timings.map { timing in
                 UnifiedTranscriptionResult.UnifiedTokenTiming(
@@ -126,11 +126,54 @@ extension ParakeetTranscriber: TranscriptionEngineProtocol {
         }
         #endif
 
+        // Merge BPE sub-word tokens into whole words before returning
+        let mergedTimings = unifiedTimings.map { mergeBPETokens($0) }
+
         return UnifiedTranscriptionResult(
             text: result.text,
             timestamp: result.timestamp,
             confidence: result.confidence,
-            tokenTimings: unifiedTimings
+            tokenTimings: mergedTimings
         )
+    }
+
+    /// Merge BPE sub-word tokens into whole words using sentencepiece conventions.
+    /// Tokens starting with `▁` (U+2581) mark new word boundaries; others are continuations.
+    private func mergeBPETokens(_ timings: [UnifiedTranscriptionResult.UnifiedTokenTiming]) -> [UnifiedTranscriptionResult.UnifiedTokenTiming] {
+        guard !timings.isEmpty else { return [] }
+
+        var merged: [UnifiedTranscriptionResult.UnifiedTokenTiming] = []
+        var currentWord = ""
+        var currentStart: TimeInterval = 0
+        var currentEnd: TimeInterval = 0
+        var confidenceSum: Float = 0
+        var tokenCount: Float = 0
+
+        for timing in timings {
+            let token = timing.word
+            if token.hasPrefix("\u{2581}") || currentWord.isEmpty {
+                // Flush previous word
+                if !currentWord.isEmpty {
+                    merged.append(.init(word: currentWord, startTime: currentStart, endTime: currentEnd, confidence: confidenceSum / tokenCount))
+                }
+                // Start new word (strip ▁ prefix if present; first token may lack it)
+                currentWord = token.hasPrefix("\u{2581}") ? String(token.dropFirst()) : token
+                currentStart = timing.startTime
+                currentEnd = timing.endTime
+                confidenceSum = timing.confidence
+                tokenCount = 1
+            } else {
+                // Continuation of current word
+                currentWord += token
+                currentEnd = timing.endTime
+                confidenceSum += timing.confidence
+                tokenCount += 1
+            }
+        }
+        // Flush final word
+        if !currentWord.isEmpty {
+            merged.append(.init(word: currentWord, startTime: currentStart, endTime: currentEnd, confidence: confidenceSum / tokenCount))
+        }
+        return merged
     }
 }

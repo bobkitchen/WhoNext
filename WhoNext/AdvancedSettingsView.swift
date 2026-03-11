@@ -10,6 +10,8 @@ struct AdvancedSettingsView: View {
     @State private var showDeleteConversationsConfirmation = false
     @State private var showClearCacheConfirmation = false
     @State private var cacheSize: String = "Calculating..."
+    @State private var diagnosticExportStatus: String?
+    @State private var diagnosticSummary: String = ""
 
     @FetchRequest(
         sortDescriptors: [NSSortDescriptor(keyPath: \Person.name, ascending: true)],
@@ -32,6 +34,11 @@ struct AdvancedSettingsView: View {
 
             // Maintenance Section
             maintenanceSection
+
+            Divider()
+
+            // Diarization Diagnostics Section
+            diarizationDiagnosticsSection
 
             Divider()
 
@@ -167,6 +174,74 @@ struct AdvancedSettingsView: View {
         } message: {
             Text("This will remove temporary files and cached data. Your people and conversations will not be affected.")
         }
+    }
+
+    // MARK: - Diarization Diagnostics Section
+
+    private var diarizationDiagnosticsSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Diarization Diagnostics")
+                .font(.headline)
+
+            Text("Export diagnostic data from the last recording session for analysis.")
+                .font(.caption)
+                .foregroundColor(.secondary)
+
+            VStack(alignment: .leading, spacing: 12) {
+                HStack {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Export Diagnostics")
+                            .font(.subheadline)
+                        Text("Diarization output, SpeakerCache state, energy gate decisions")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                    Spacer()
+                    Button("Export JSON") {
+                        exportDiarizationDiagnostics()
+                    }
+                    .buttonStyle(.bordered)
+                    .controlSize(.small)
+                }
+
+                if let status = diagnosticExportStatus {
+                    Text(status)
+                        .font(.caption)
+                        .foregroundColor(status.contains("Error") ? .red : .green)
+                        .textSelection(.enabled)
+                }
+
+                if !diagnosticSummary.isEmpty {
+                    Text(diagnosticSummary)
+                        .font(.caption2)
+                        .foregroundColor(.secondary)
+                        .padding(8)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .background(Color(NSColor.textBackgroundColor))
+                        .cornerRadius(4)
+                        .textSelection(.enabled)
+                }
+            }
+            .padding()
+            .background(Color(NSColor.controlBackgroundColor))
+            .cornerRadius(8)
+        }
+        .onAppear {
+            diagnosticSummary = DiarizationDiagnostics.shared.summaryString()
+        }
+    }
+
+    private func exportDiarizationDiagnostics() {
+        do {
+            let url = try DiarizationDiagnostics.shared.exportToJSON()
+            diagnosticExportStatus = "Exported to: \(url.path)"
+
+            // Also open in Finder
+            NSWorkspace.shared.selectFile(url.path, inFileViewerRootedAtPath: url.deletingLastPathComponent().path)
+        } catch {
+            diagnosticExportStatus = "Error: \(error.localizedDescription)"
+        }
+        diagnosticSummary = DiarizationDiagnostics.shared.summaryString()
     }
 
     // MARK: - Danger Zone Section
