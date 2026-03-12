@@ -21,7 +21,7 @@ struct DataSyncSettingsView: View {
     @StateObject private var pdfProcessor = OrgChartProcessor()
     @State private var showModelWarning = false
     @State private var pendingFileURL: URL?
-    @AppStorage("openrouterModel") private var openrouterModel: String = "google/gemma-2-9b-it:free"
+    @AppStorage("openrouterModel") private var openrouterModel: String = "anthropic/claude-sonnet-4.6"
     @ObservedObject private var remindersIntegration = RemindersIntegration.shared
 
     @FetchRequest(
@@ -81,8 +81,8 @@ struct DataSyncSettingsView: View {
             }
         }
         .alert("Recommended Model for Org Charts", isPresented: $showModelWarning) {
-            Button("Switch to GPT-5") {
-                openrouterModel = "openai/gpt-5"
+            Button("Switch to Gemini 2.5 Pro") {
+                openrouterModel = "google/gemini-2.5-pro"
                 if let fileURL = pendingFileURL {
                     performOrgChartImport(fileURL)
                 }
@@ -98,7 +98,7 @@ struct DataSyncSettingsView: View {
                 pendingFileURL = nil
             }
         } message: {
-            Text("For best results with org chart imports, GPT-5 or GPT-5.2 are recommended.\n\nCurrent model: \(openrouterModel)")
+            Text("For best results with org chart imports, Gemini 2.5 Pro or Claude Opus 4.6 are recommended.\n\nCurrent model: \(openrouterModel)")
         }
         .alert("Force Upload All Data", isPresented: $showForceUploadConfirmation) {
             Button("Upload", role: .destructive) {
@@ -733,9 +733,9 @@ struct DataSyncSettingsView: View {
         importSuccess = nil
         importError = nil
 
-        let isGPTModel = openrouterModel.contains("gpt-") || openrouterModel.contains("openai/gpt")
+        let isRecommendedModel = openrouterModel.contains("gemini-2.5-pro") || openrouterModel.contains("claude-opus")
 
-        if !isGPTModel {
+        if !isRecommendedModel {
             pendingFileURL = fileURL
             showModelWarning = true
             return

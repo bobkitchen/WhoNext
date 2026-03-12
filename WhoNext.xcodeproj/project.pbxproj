@@ -15,6 +15,7 @@
 		7AA719D62F125CB3008468EA /* WhoNextWidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 7AA719C52F125CB1008468EA /* WhoNextWidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		7AABCDEF2DBC09000089D3DA /* FluidAudio in Frameworks */ = {isa = PBXBuildFile; productRef = 7AABCDEE2DBC09000089D3DA /* FluidAudio */; };
 		7AFD8D3F2F168024005A497C /* WhisperKit in Frameworks */ = {isa = PBXBuildFile; productRef = 7AWHISPER2F150001008468EA /* WhisperKit */; };
+		7AAXII012F1A0001008468EA /* AxiiDiarization in Frameworks */ = {isa = PBXBuildFile; productRef = 7AAXII022F1A0002008468EA /* AxiiDiarization */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -121,6 +122,7 @@
 				7A5791692D9940CC0018E162 /* SwiftCSV in Frameworks */,
 				7A1FD56D2DBC07E30089D3DA /* Down in Frameworks */,
 				7AABCDEF2DBC09000089D3DA /* FluidAudio in Frameworks */,
+				7AAXII012F1A0001008468EA /* AxiiDiarization in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -209,6 +211,7 @@
 				7A1FD56C2DBC07E30089D3DA /* Down */,
 				7AABCDEE2DBC09000089D3DA /* FluidAudio */,
 				7AWHISPER2F150001008468EA /* WhisperKit */,
+				7AAXII022F1A0002008468EA /* AxiiDiarization */,
 			);
 			productName = WhoNext;
 			productReference = 7AA52C322D97D8E700C2B563 /* WhoNext.app */;
@@ -322,6 +325,7 @@
 				7A1FD56B2DBC07E30089D3DA /* XCRemoteSwiftPackageReference "Down" */,
 				7AABCDED2DBC09000089D3DA /* XCRemoteSwiftPackageReference "FluidAudio" */,
 				7AWHISPER2F150000008468EA /* XCRemoteSwiftPackageReference "WhisperKit" */,
+				7AAXII002F1A0000008468EA /* XCLocalSwiftPackageReference "AxiiDiarization" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 7AA52C332D97D8E700C2B563 /* Products */;
@@ -551,7 +555,7 @@
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 007;
+				CURRENT_PROJECT_VERSION = 003;
 				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_ASSET_PATHS = "\"WhoNext/Preview Content\"";
 				DEVELOPMENT_TEAM = ZW6EQ2JWKC;
@@ -582,7 +586,7 @@
 					"@executable_path/../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 15.0;
-				MARKETING_VERSION = .7;
+				MARKETING_VERSION = .8;
 				PRODUCT_BUNDLE_IDENTIFIER = com.bobk.WhoNext;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
@@ -601,7 +605,7 @@
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 007;
+				CURRENT_PROJECT_VERSION = 003;
 				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_ASSET_PATHS = "\"WhoNext/Preview Content\"";
 				DEVELOPMENT_TEAM = ZW6EQ2JWKC;
@@ -632,7 +636,7 @@
 					"@executable_path/../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 15.0;
-				MARKETING_VERSION = .7;
+				MARKETING_VERSION = .8;
 				PRODUCT_BUNDLE_IDENTIFIER = com.bobk.WhoNext;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
@@ -866,6 +870,13 @@
 		};
 /* End XCRemoteSwiftPackageReference section */
 
+/* Begin XCLocalSwiftPackageReference section */
+		7AAXII002F1A0000008468EA /* XCLocalSwiftPackageReference "AxiiDiarization" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = AxiiDiarization;
+		};
+/* End XCLocalSwiftPackageReference section */
+
 /* Begin XCSwiftPackageProductDependency section */
 		7A1FD56C2DBC07E30089D3DA /* Down */ = {
 			isa = XCSwiftPackageProductDependency;
@@ -886,6 +897,10 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 7AWHISPER2F150000008468EA /* XCRemoteSwiftPackageReference "WhisperKit" */;
 			productName = WhisperKit;
+		};
+		7AAXII022F1A0002008468EA /* AxiiDiarization */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = AxiiDiarization;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

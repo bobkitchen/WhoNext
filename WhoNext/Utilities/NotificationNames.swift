@@ -10,4 +10,5 @@ extension Notification.Name {
     static let showRecordingDashboard = Notification.Name("showRecordingDashboard")
     static let triggerCSVImport = Notification.Name("triggerCSVImport")
     static let showParticipantConfirmation = Notification.Name("showParticipantConfirmation")
+    static let offlineRediarizationComplete = Notification.Name("offlineRediarizationComplete")
 }

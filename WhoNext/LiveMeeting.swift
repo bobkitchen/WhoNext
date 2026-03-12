@@ -42,6 +42,9 @@ class LiveMeeting: ObservableObject, Identifiable {
     @Published var transcript: [TranscriptSegment] = []
     @Published var identifiedParticipants: [IdentifiedParticipant] = []
     @Published var transcriptionProgress: Double = 0.0
+
+    // MARK: - Offline Re-diarization Status
+    @Published var isRefiningLabels: Bool = false
     
     // MARK: - Meeting Type Detection
     @Published var meetingType: MeetingType = .unknown
@@ -337,6 +340,72 @@ class LiveMeeting: ObservableObject, Identifiable {
         }
     }
 
+    /// Merge two speakers: reassign all source speaker's transcript segments to destination,
+    /// accumulate speaking time, and remove the source participant.
+    /// Returns the number of transcript segments that were reassigned.
+    @discardableResult
+    func mergeSpeakers(sourceID: String, into destinationID: String) -> Int {
+        guard sourceID != destinationID else { return 0 }
+
+        let destination = identifiedParticipants.first(where: { $0.speakerID == destinationID })
+        let source = identifiedParticipants.first(where: { $0.speakerID == sourceID })
+
+        // Reassign all transcript segments from source → destination
+        var updatedCount = 0
+        for i in transcript.indices where transcript[i].speakerID == sourceID {
+            transcript[i] = TranscriptSegment(
+                id: transcript[i].id,
+                text: transcript[i].text,
+                timestamp: transcript[i].timestamp,
+                speakerID: destinationID,
+                speakerName: destination?.displayName ?? transcript[i].speakerName,
+                confidence: transcript[i].confidence,
+                isFinalized: transcript[i].isFinalized,
+                diarizationSource: .userCorrected
+            )
+            updatedCount += 1
+        }
+
+        // Also update flushed (on-disk) segments for long meetings
+        if let filePath = flushFilePath,
+           FileManager.default.fileExists(atPath: filePath.path) {
+            do {
+                let data = try Data(contentsOf: filePath)
+                var flushed = try JSONDecoder().decode([TranscriptSegment].self, from: data)
+                for i in flushed.indices where flushed[i].speakerID == sourceID {
+                    flushed[i] = TranscriptSegment(
+                        id: flushed[i].id,
+                        text: flushed[i].text,
+                        timestamp: flushed[i].timestamp,
+                        speakerID: destinationID,
+                        speakerName: destination?.displayName ?? flushed[i].speakerName,
+                        confidence: flushed[i].confidence,
+                        isFinalized: flushed[i].isFinalized,
+                        diarizationSource: .userCorrected
+                    )
+                    updatedCount += 1
+                }
+                try JSONEncoder().encode(flushed).write(to: filePath, options: .atomic)
+            } catch {
+                print("[LiveMeeting] Failed to update flushed segments during merge: \(error)")
+            }
+        }
+
+        // Accumulate speaking time
+        if let source = source, let destination = destination {
+            destination.totalSpeakingTime += source.totalSpeakingTime
+        }
+
+        // Remove source participant
+        identifiedParticipants.removeAll { $0.speakerID == sourceID }
+
+        // Update meeting type based on new speaker count
+        updateMeetingType(speakerCount: identifiedParticipants.count, confidence: speakerDetectionConfidence)
+
+        print("[LiveMeeting] Merged speaker '\(sourceID)' → '\(destinationID)': \(updatedCount) segments reassigned, \(identifiedParticipants.count) speakers remaining")
+        return updatedCount
+    }
+
     /// Synchronize participants with the current speaker database
     /// Removes participants whose speaker IDs no longer exist (were merged)
     func syncParticipants(withSpeakerIDs validSpeakerIDs: Set<String>) {
@@ -357,6 +426,15 @@ class LiveMeeting: ObservableObject, Identifiable {
     }
 }
 
+// MARK: - Diarization Source
+
+/// Indicates how a transcript segment's speaker label was determined.
+enum DiarizationSource: String, Codable {
+    case streaming       // Real-time streaming diarization (higher DER, ~26%)
+    case offlineRefined  // Post-meeting offline re-diarization (lower DER, ~12-15%)
+    case userCorrected   // Manually corrected by user (Phase 2.5)
+}
+
 // MARK: - Transcript Segment
 
 struct TranscriptSegment: Identifiable, Codable {
@@ -367,8 +445,9 @@ struct TranscriptSegment: Identifiable, Codable {
     var speakerName: String? // Made mutable for live editing
     let confidence: Float
     let isFinalized: Bool // true if refined by Whisper, false if initial transcript
+    var diarizationSource: DiarizationSource // How the speaker label was determined
 
-    init(id: UUID = UUID(), text: String, timestamp: TimeInterval, speakerID: String?, speakerName: String?, confidence: Float, isFinalized: Bool) {
+    init(id: UUID = UUID(), text: String, timestamp: TimeInterval, speakerID: String?, speakerName: String?, confidence: Float, isFinalized: Bool, diarizationSource: DiarizationSource = .streaming) {
         self.id = id
         self.text = text
         self.timestamp = timestamp
@@ -376,6 +455,20 @@ struct TranscriptSegment: Identifiable, Codable {
         self.speakerName = speakerName
         self.confidence = confidence
         self.isFinalized = isFinalized
+        self.diarizationSource = diarizationSource
+    }
+
+    // Custom decoder for backward compatibility: previously serialized segments lack diarizationSource
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(UUID.self, forKey: .id)
+        text = try container.decode(String.self, forKey: .text)
+        timestamp = try container.decode(TimeInterval.self, forKey: .timestamp)
+        speakerID = try container.decodeIfPresent(String.self, forKey: .speakerID)
+        speakerName = try container.decodeIfPresent(String.self, forKey: .speakerName)
+        confidence = try container.decode(Float.self, forKey: .confidence)
+        isFinalized = try container.decode(Bool.self, forKey: .isFinalized)
+        diarizationSource = try container.decodeIfPresent(DiarizationSource.self, forKey: .diarizationSource) ?? .streaming
     }
 
     var formattedTimestamp: String {

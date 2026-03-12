@@ -69,7 +69,7 @@ class AIService {
     static let shared = AIService()
     
     @AppStorage("currentProvider") var currentProvider: AIProvider = .openrouter
-    @AppStorage("openrouterModel") var openrouterModel: String = "google/gemma-2-9b-it:free"
+    @AppStorage("openrouterModel") var openrouterModel: String = "anthropic/claude-sonnet-4.6"
     @AppStorage("openaiModel") var openaiModel: String = "gpt-5-nano"  // Configurable OpenAI model
     
     // Secure API key access
@@ -344,7 +344,7 @@ IMPORTANT FORMATTING RULES:
         request.setValue("2023-06-01", forHTTPHeaderField: "anthropic-version")
         
         let requestBody: [String: Any] = [
-            "model": "claude-sonnet-4-5-20250929",
+            "model": "claude-sonnet-4-6-20250514",
             "max_tokens": 8000,
             "system": formattingInstructions,
             "messages": messages
@@ -603,7 +603,7 @@ IMPORTANT FORMATTING RULES:
         let visionURL = "https://api.anthropic.com/v1/messages"
         
         let requestBody: [String: Any] = [
-            "model": "claude-sonnet-4-5-20250929",
+            "model": "claude-sonnet-4-6-20250514",
             "max_tokens": 8000,
             "system": """
             You are a helpful assistant for relationship management and conversation tracking.
@@ -958,7 +958,7 @@ IMPORTANT FORMATTING RULES:
         }
         
         let requestBody: [String: Any] = [
-            "model": "claude-sonnet-4-5-20250929",
+            "model": "claude-sonnet-4-6-20250514",
             "max_tokens": 3000, // Increased for multiple images
             "system": """
             You are a helpful assistant for relationship management and conversation tracking.

@@ -156,9 +156,16 @@ class UserProfile: ObservableObject {
 
     private func signalInitialSyncComplete() {
         guard !isInitialSyncComplete else { return }
-        isInitialSyncComplete = true
-        initialSyncContinuation?.resume()
+        // Must update @Published property on main thread to avoid crashing SwiftUI's
+        // FetchRequest.update() precondition when called from Core Data's background
+        // remote-change notification queue.
+        let continuation = initialSyncContinuation
         initialSyncContinuation = nil
+        DispatchQueue.main.async { [self] in
+            guard !isInitialSyncComplete else { return }
+            isInitialSyncComplete = true
+            continuation?.resume()
+        }
     }
 
     // MARK: - Initial Sync Waiting

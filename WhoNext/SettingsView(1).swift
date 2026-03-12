@@ -13,7 +13,7 @@ struct SettingsView: View {
     @State private var claudeApiKey: String = ""
     @State private var openrouterApiKey: String = ""
     @State private var hasLoadedKeys = false
-    @AppStorage("openrouterModel") private var openrouterModel: String = "google/gemma-2-9b-it:free"
+    @AppStorage("openrouterModel") private var openrouterModel: String = "anthropic/claude-sonnet-4.6"
     @AppStorage("aiProvider") private var aiProvider: String = "apple"
     @AppStorage("fallbackProvider") private var fallbackProvider: String = "openrouter"
     @AppStorage("dismissedPeople") private var dismissedPeopleData: Data = Data()
@@ -299,30 +299,24 @@ Best regards
                         }
                     }
                 }
-                Text("OpenRouter provides access to premium models (GPT-5.2, Claude Sonnet 4.5), mid-tier options (GPT-4o Mini, Claude Haiku), and free models through one API key.")
+                Text("OpenRouter provides access to Claude, Gemini, and open-source models through one API key.")
                     .font(.caption)
                     .foregroundColor(.secondary)
 
                 Text("Select Model")
                     .font(.subheadline)
                 Picker("Select Model", selection: $openrouterModel) {
-                    // FREE MODELS
-                    Text("🆓 Google Gemma 2 9B (FREE)").tag("google/gemma-2-9b-it:free")
-                    Text("🆓 Llama 3.1 8B (FREE)").tag("meta-llama/llama-3.1-8b-instruct:free")
+                    // Claude
+                    Text("⭐ Claude Opus 4.6 — Highest quality").tag("anthropic/claude-opus-4.6")
+                    Text("⭐ Claude Sonnet 4.6 — Best balance").tag("anthropic/claude-sonnet-4.6")
+                    Text("⚡ Claude Haiku 4.5 — Fast & efficient").tag("anthropic/claude-haiku-4.5")
 
-                    // BUDGET - OpenAI
-                    Text("⚡ GPT-4o Mini ($0.15/$0.60)").tag("openai/gpt-4o-mini")
-                    Text("⚡ GPT-4.1 Nano").tag("openai/gpt-4.1-nano")
+                    // Google
+                    Text("💎 Gemini 2.5 Pro — Google's best").tag("google/gemini-2.5-pro")
+                    Text("⚡ Gemini 2.5 Flash — Fast & affordable").tag("google/gemini-2.5-flash")
 
-                    // BUDGET - Claude
-                    Text("🤖 Claude 4.5 Haiku").tag("anthropic/claude-4.5-haiku")
-
-                    // PREMIUM - OpenAI
-                    Text("💎 GPT-5 ($1.25/$10)").tag("openai/gpt-5")
-                    Text("💎 GPT-5.2 ($1.75/$14)").tag("openai/gpt-5.2")
-
-                    // PREMIUM - Claude
-                    Text("⭐ Claude Sonnet 4.5 ($3/$15)").tag("anthropic/claude-sonnet-4.5")
+                    // Open-source
+                    Text("🤖 Qwen 3.5 27B — Dense multimodal").tag("qwen/qwen3.5-27b")
                 }
                 .pickerStyle(.menu)
                 Text("Current: \(openrouterModel)")
@@ -1065,7 +1059,7 @@ extension SettingsView {
         
         // Simple test message
         let requestBody: [String: Any] = [
-            "model": "claude-sonnet-4-20250514",
+            "model": "claude-sonnet-4-6-20250514",
             "max_tokens": 10,
             "messages": [
                 [

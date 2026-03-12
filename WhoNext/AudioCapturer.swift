@@ -38,6 +38,7 @@ class AudioCapturer: NSObject, ObservableObject {
     private var audioEngine: AVAudioEngine?
     private var scStream: SCStream?
     private var streamOutput: AudioStreamOutput?
+    private var videoSinkOutput: VideoSinkOutput?
 
     // Target format: 16kHz mono for WhisperKit
     private let targetSampleRate: Double = 16000.0
@@ -127,6 +128,7 @@ class AudioCapturer: NSObject, ObservableObject {
         }
         scStream = nil
         streamOutput = nil
+        videoSinkOutput = nil
 
         // Finish streams
         micContinuation?.finish()
@@ -143,17 +145,10 @@ class AudioCapturer: NSObject, ObservableObject {
         let engine = AVAudioEngine()
         let inputNode = engine.inputNode
 
-        // Enable AEC (Acoustic Echo Cancellation) via Voice Processing
-        // Must be called while engine is stopped. Eliminates remote speaker bleed from mic.
-        // Can fail with aggregate device errors (e.g., AirPods mic + external speakers).
-        do {
-            try inputNode.setVoiceProcessingEnabled(true)
-            isEchoCancellationActive = true
-            print("[AudioCapturer] ✅ AEC enabled (Voice Processing)")
-        } catch {
-            isEchoCancellationActive = false
-            print("[AudioCapturer] ⚠️ AEC failed: \(error.localizedDescription)")
-        }
+        // Voice Processing disabled — causes persistent DSP fault state on macOS,
+        // crushing mic to silence (RMS 0.0000). Mic format reverts to native device format.
+        isEchoCancellationActive = false
+        print("[AudioCapturer] Voice Processing disabled (AEC off)")
 
         // Get input format
         let inputFormat = inputNode.outputFormat(forBus: 0)
@@ -247,6 +242,14 @@ class AudioCapturer: NSObject, ObservableObject {
         // Create and start stream
         let stream = SCStream(filter: filter, configuration: config, delegate: nil)
         try stream.addStreamOutput(output, type: .audio, sampleHandlerQueue: .global(qos: .userInteractive))
+
+        // Sink video frames to suppress "_SCStream_RemoteVideoQueueOperationHandlerWithError" spam.
+        // SCStream requires video but we only use audio; without a video handler macOS logs
+        // "stream output NOT found. Dropping frame" on every frame.
+        let videoSink = VideoSinkOutput()
+        self.videoSinkOutput = videoSink
+        try stream.addStreamOutput(videoSink, type: .screen, sampleHandlerQueue: .global(qos: .background))
+
         try await stream.startCapture()
 
         self.scStream = stream
@@ -508,6 +511,17 @@ private class AudioStreamOutput: NSObject, SCStreamOutput {
         }
 
         return outputBuffer
+    }
+}
+
+// MARK: - Video Sink (suppresses SCStream frame-drop warnings)
+
+/// Minimal SCStreamOutput that silently consumes video frames.
+/// SCStream mandates video capture but we only need audio; without a registered
+/// video handler macOS logs "stream output NOT found. Dropping frame" per frame.
+private class VideoSinkOutput: NSObject, SCStreamOutput {
+    func stream(_ stream: SCStream, didOutputSampleBuffer sampleBuffer: CMSampleBuffer, of type: SCStreamOutputType) {
+        // Intentionally empty — frames are discarded.
     }
 }
 

@@ -65,6 +65,19 @@ struct WhoNextApp: App {
                 .keyboardShortcut("i", modifiers: [.command])
             }
             
+            CommandMenu("Developer") {
+                Button("Export Diarization Diagnostics") {
+                    Task { @MainActor in
+                        do {
+                            let url = try DiarizationDiagnostics.shared.exportToJSON()
+                            NSWorkspace.shared.selectFile(url.path, inFileViewerRootedAtPath: url.deletingLastPathComponent().path)
+                        } catch {
+                            print("[Developer] Diagnostic export failed: \(error)")
+                        }
+                    }
+                }
+                .keyboardShortcut("d", modifiers: [.command, .option, .shift])
+            }
             CommandMenu("Recording") {
                 Button("Start Monitoring") {
                     MeetingRecordingEngine.shared.startMonitoring()

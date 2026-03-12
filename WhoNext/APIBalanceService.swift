@@ -86,7 +86,7 @@ class APIBalanceService {
 
             // Minimal request to check key validity
             let body: [String: Any] = [
-                "model": "claude-sonnet-4-20250514",
+                "model": "claude-sonnet-4-6-20250514",
                 "max_tokens": 1,
                 "messages": [["role": "user", "content": "Hi"]]
             ]

@@ -1,6 +1,6 @@
 import Foundation
-#if canImport(AxiiDiarization)
-import AxiiDiarization
+#if canImport(ParakeetASR)
+import ParakeetASR
 #endif
 
 // MARK: - Unified Result Type
@@ -113,7 +113,7 @@ extension ParakeetTranscriber: TranscriptionEngineProtocol {
         // Convert Parakeet token timings to unified format
         var unifiedTimings: [UnifiedTranscriptionResult.UnifiedTokenTiming]? = nil
 
-        #if canImport(AxiiDiarization)
+        #if canImport(ParakeetASR)
         if let timings = result.tokenTimings {
             unifiedTimings = timings.map { timing in
                 UnifiedTranscriptionResult.UnifiedTokenTiming(

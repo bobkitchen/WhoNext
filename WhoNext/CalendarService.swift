@@ -264,18 +264,9 @@ class CalendarService: ObservableObject {
                 return
             }
 
-            // If the input looks like an email, try matching by email
+            // If the input looks like an email, try extracting the name part for partial matching
+            // Note: Person entity does not have an email attribute
             if name.contains("@") {
-                let emailRequest: NSFetchRequest<Person> = Person.fetchRequest()
-                emailRequest.predicate = NSPredicate(format: "email ==[cd] %@", name)
-                emailRequest.fetchLimit = 1
-
-                if let emailMatch = try? bgContext.fetch(emailRequest).first {
-                    matchedObjectID = emailMatch.objectID
-                    return
-                }
-
-                // Try extracting the name part from email for partial matching
                 let namePart = name.split(separator: "@").first.map(String.init) ?? ""
                 if !namePart.isEmpty {
                     let nameParts = namePart.replacingOccurrences(of: ".", with: " ")
