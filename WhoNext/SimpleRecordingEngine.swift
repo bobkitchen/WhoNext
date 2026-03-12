@@ -182,26 +182,29 @@ class SimpleRecordingEngine: ObservableObject {
 
     /// Initialize transcription engine and diarization ahead of time
     func preWarm() async {
+        // Create transcription engine based on settings
+        let settings = MeetingRecordingConfiguration.shared.transcriptionSettings
+        transcriber = TranscriptionManagerFactory.createEngine(for: settings)
         do {
-            // Create transcription engine based on settings
-            let settings = MeetingRecordingConfiguration.shared.transcriptionSettings
-            transcriber = TranscriptionManagerFactory.createEngine(for: settings)
             try await transcriber?.initialize()
-
             let engineName = settings.transcriptionEngine.displayName
             print("[SimpleRecordingEngine] Pre-warmed transcriber with engine: \(engineName)")
+        } catch {
+            print("[SimpleRecordingEngine] Transcriber pre-warm failed: \(error) — will record without transcription")
+        }
 
-            // Initialize diarization
-            #if canImport(AxiiDiarization)
+        // Initialize diarization (independent of transcriber)
+        #if canImport(AxiiDiarization)
+        do {
             try await systemDiarizationManager.initialize()
             print("[SimpleRecordingEngine] Pre-warmed system diarization manager (AxiiDiarization)")
-
-            await voicePrintManager.warmCache()
-            print("[SimpleRecordingEngine] Pre-warmed voice print cache")
-            #endif
         } catch {
-            print("[SimpleRecordingEngine] Pre-warm failed: \(error)")
+            print("[SimpleRecordingEngine] Diarization pre-warm failed: \(error)")
         }
+
+        await voicePrintManager.warmCache()
+        print("[SimpleRecordingEngine] Pre-warmed voice print cache")
+        #endif
     }
 
     // MARK: - Recording Control
@@ -250,7 +253,11 @@ class SimpleRecordingEngine: ObservableObject {
             async let transcriberReady: Void = ensureTranscriberReady()
             async let diarizationReady: Void = ensureDiarizationReady()
 
-            try await transcriberReady
+            do {
+                try await transcriberReady
+            } catch {
+                print("[SimpleRecordingEngine] Transcriber unavailable (\(error.localizedDescription)) — recording without transcription")
+            }
             _ = await diarizationReady  // non-throwing wrapper
 
             // Start diagnostic collection for this session
