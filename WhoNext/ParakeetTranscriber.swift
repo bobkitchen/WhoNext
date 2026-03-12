@@ -1,7 +1,7 @@
 import Foundation
 import AVFoundation
-#if canImport(ParakeetASR)
-import ParakeetASR
+#if canImport(FluidAudio)
+import FluidAudio
 #endif
 
 /// Parakeet TDT v3 transcription engine
@@ -20,13 +20,13 @@ class ParakeetTranscriber: ObservableObject {
     // MARK: - Configuration
 
     /// Model version: v2 = English only, v3 = Multilingual (25 languages)
-    #if canImport(ParakeetASR)
+    #if canImport(FluidAudio)
     var modelVersion: AsrModelVersion = .v3
     #endif
 
     // MARK: - Private Properties
 
-    #if canImport(ParakeetASR)
+    #if canImport(FluidAudio)
     private var asrManager: AsrManager?
     private var models: AsrModels?
     #endif
@@ -77,7 +77,7 @@ class ParakeetTranscriber: ObservableObject {
 
     /// Initialize with model download
     func initialize() async throws {
-        #if canImport(ParakeetASR)
+        #if canImport(FluidAudio)
         print("[ParakeetTranscriber] Initializing with Parakeet TDT \(modelVersion == .v3 ? "v3 (Multilingual)" : "v2 (English)")...")
 
         do {
@@ -114,7 +114,7 @@ class ParakeetTranscriber: ObservableObject {
             throw ParakeetTranscriberError.notReady
         }
 
-        #if canImport(ParakeetASR)
+        #if canImport(FluidAudio)
         guard let asr = asrManager else {
             throw ParakeetTranscriberError.notReady
         }
@@ -173,7 +173,7 @@ class ParakeetTranscriber: ObservableObject {
 
     /// Reset transcription state (call at start of new recording)
     func resetState() {
-        #if canImport(ParakeetASR)
+        #if canImport(FluidAudio)
         asrManager?.resetState()
         #endif
         print("[ParakeetTranscriber] State reset")
@@ -307,7 +307,7 @@ struct ParakeetTranscriptionResult: Sendable {
     let confidence: Float
     let processingTime: TimeInterval
 
-    #if canImport(ParakeetASR)
+    #if canImport(FluidAudio)
     let tokenTimings: [TokenTiming]?
     #else
     let tokenTimings: [(token: String, startTime: TimeInterval, endTime: TimeInterval)]?
