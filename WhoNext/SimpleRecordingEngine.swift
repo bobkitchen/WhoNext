@@ -519,6 +519,8 @@ class SimpleRecordingEngine: ObservableObject {
             await finalizeMeeting(meeting)
         }
 
+        // Meeting summary — always logged (visible without Xcode via session log export)
+        logMeetingSummary()
         print("[SimpleRecordingEngine] Recording stopped")
     }
 
@@ -1402,6 +1404,46 @@ class SimpleRecordingEngine: ObservableObject {
         }
 
         debugLog("[SimpleRecordingEngine] Meeting finalized: \(meeting.transcript.count) segments, \(meeting.wordCount) words")
+    }
+
+    private func logMeetingSummary() {
+        let duration = recordingDuration
+        let minutes = Int(duration) / 60
+        let seconds = Int(duration) % 60
+
+        #if canImport(AxiiDiarization)
+        let diarResult = systemDiarizationManager.lastResult
+        let speakerCount = diarResult?.speakerEmbeddings?.count ?? 0
+        let segmentCount = diarResult?.segments.count ?? 0
+        #else
+        let speakerCount = 0
+        let segmentCount = 0
+        #endif
+
+        let participants = currentMeeting?.identifiedParticipants ?? []
+        let identified = participants.filter { $0.namingMode == .linkedToPerson || $0.isCurrentUser }
+        let wordCount = currentMeeting?.wordCount ?? 0
+        let strategy = diarizationStrategy.rawValue
+
+        var summary = """
+        📊 [Meeting Summary] \(minutes)m \(seconds)s recorded
+           Strategy: \(strategy)
+           Speakers: \(speakerCount) detected, \(identified.count) identified
+        """
+
+        for p in identified {
+            let conf = String(format: "%.0f%%", p.confidence * 100)
+            let label = p.isCurrentUser ? "\(p.name) (you)" : p.name
+            summary += "\n      - \(label) \(conf)"
+        }
+
+        summary += """
+
+           Segments: \(segmentCount) diarization, \(currentMeeting?.transcript.count ?? 0) transcript
+           Words: \(wordCount)
+        """
+
+        debugLog(summary)
     }
 
     private func storeMeetingHandoff(_ meeting: LiveMeeting) {

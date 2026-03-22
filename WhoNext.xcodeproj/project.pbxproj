@@ -14,8 +14,8 @@
 		7AA719C92F125CB1008468EA /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 7AA719C82F125CB1008468EA /* SwiftUI.framework */; };
 		7AA719D62F125CB3008468EA /* WhoNextWidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 7AA719C52F125CB1008468EA /* WhoNextWidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		7AABCDEF2DBC09000089D3DA /* FluidAudio in Frameworks */ = {isa = PBXBuildFile; productRef = 7AABCDEE2DBC09000089D3DA /* FluidAudio */; };
-		7AFD8D3F2F168024005A497C /* WhisperKit in Frameworks */ = {isa = PBXBuildFile; productRef = 7AWHISPER2F150001008468EA /* WhisperKit */; };
 		7AAXII012F1A0001008468EA /* AxiiDiarization in Frameworks */ = {isa = PBXBuildFile; productRef = 7AAXII022F1A0002008468EA /* AxiiDiarization */; };
+		7AFD8D3F2F168024005A497C /* WhisperKit in Frameworks */ = {isa = PBXBuildFile; productRef = 7AWHISPER2F150001008468EA /* WhisperKit */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -835,6 +835,13 @@
 		};
 /* End XCConfigurationList section */
 
+/* Begin XCLocalSwiftPackageReference section */
+		7AAXII002F1A0000008468EA /* XCLocalSwiftPackageReference "AxiiDiarization" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = AxiiDiarization;
+		};
+/* End XCLocalSwiftPackageReference section */
+
 /* Begin XCRemoteSwiftPackageReference section */
 		7A1FD56B2DBC07E30089D3DA /* XCRemoteSwiftPackageReference "Down" */ = {
 			isa = XCRemoteSwiftPackageReference;
@@ -870,13 +877,6 @@
 		};
 /* End XCRemoteSwiftPackageReference section */
 
-/* Begin XCLocalSwiftPackageReference section */
-		7AAXII002F1A0000008468EA /* XCLocalSwiftPackageReference "AxiiDiarization" */ = {
-			isa = XCLocalSwiftPackageReference;
-			relativePath = AxiiDiarization;
-		};
-/* End XCLocalSwiftPackageReference section */
-
 /* Begin XCSwiftPackageProductDependency section */
 		7A1FD56C2DBC07E30089D3DA /* Down */ = {
 			isa = XCSwiftPackageProductDependency;
@@ -893,14 +893,14 @@
 			package = 7AABCDED2DBC09000089D3DA /* XCRemoteSwiftPackageReference "FluidAudio" */;
 			productName = FluidAudio;
 		};
+		7AAXII022F1A0002008468EA /* AxiiDiarization */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = AxiiDiarization;
+		};
 		7AWHISPER2F150001008468EA /* WhisperKit */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 7AWHISPER2F150000008468EA /* XCRemoteSwiftPackageReference "WhisperKit" */;
 			productName = WhisperKit;
-		};
-		7AAXII022F1A0002008468EA /* AxiiDiarization */ = {
-			isa = XCSwiftPackageProductDependency;
-			productName = AxiiDiarization;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

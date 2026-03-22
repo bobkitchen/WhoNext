@@ -50,6 +50,6 @@ func debugLog(_ items: Any..., separator: String = " ", terminator: String = "\n
     let output = items.map { "\($0)" }.joined(separator: separator)
     SessionLog.shared.append(output)
     #if DEBUG
-    debugLog(output, terminator: terminator)
+    print(output, terminator: terminator)
     #endif
 }

@@ -180,19 +180,19 @@ struct AdvancedSettingsView: View {
 
     private var diarizationDiagnosticsSection: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Diarization Diagnostics")
+            Text("Session Diagnostics")
                 .font(.headline)
 
-            Text("Export diagnostic data from the last recording session for analysis.")
+            Text("Export session log and diarization data for analysis.")
                 .font(.caption)
                 .foregroundColor(.secondary)
 
             VStack(alignment: .leading, spacing: 12) {
                 HStack {
                     VStack(alignment: .leading, spacing: 2) {
-                        Text("Export Diagnostics")
+                        Text("Export Session Log")
                             .font(.subheadline)
-                        Text("Diarization output, SpeakerCache state, energy gate decisions")
+                        Text("App log, diarization output, energy gate decisions, speaker identification")
                             .font(.caption)
                             .foregroundColor(.secondary)
                     }

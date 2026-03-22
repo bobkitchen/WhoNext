@@ -177,14 +177,17 @@ final class DiarizationDiagnostics {
 
     // MARK: - Export
 
-    /// Export all diagnostic events as JSON to a file, returning the URL.
+    /// Export all diagnostic events + session log as JSON to a file, returning the URL.
     func exportToJSON() throws -> URL {
+        let sessionLogEntries = SessionLog.shared.export()
         let export = DiagnosticExport(
             sessionStart: sessionStartTime ?? Date(),
             sessionEnd: Date(),
             eventCount: events.count,
             counters: counters,
-            events: events
+            events: events,
+            sessionLog: sessionLogEntries.map { SessionLogEntry(timestamp: $0.timestamp, message: $0.message) },
+            sessionLogCount: sessionLogEntries.count
         )
 
         let encoder = JSONEncoder()
@@ -194,14 +197,20 @@ final class DiarizationDiagnostics {
 
         let dateStr = ISO8601DateFormatter().string(from: Date())
             .replacingOccurrences(of: ":", with: "-")
-        let filename = "diarization-diagnostics-\(dateStr).json"
+        let filename = "whonext-session-\(dateStr).json"
 
         let documentsURL = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
         let fileURL = documentsURL.appendingPathComponent(filename)
         try data.write(to: fileURL)
 
-        print("[DiarizationDiagnostics] Exported \(events.count) events to \(fileURL.lastPathComponent)")
+        print("[Diagnostics] Exported \(events.count) diarization events + \(sessionLogEntries.count) log entries to \(fileURL.lastPathComponent)")
         return fileURL
+    }
+
+    /// Codable wrapper for session log entries in export
+    struct SessionLogEntry: Codable {
+        let timestamp: Date
+        let message: String
     }
 
     /// Get a summary string for display in settings UI
@@ -298,6 +307,8 @@ struct DiagnosticExport: Codable {
     let eventCount: Int
     let counters: DiarizationDiagnostics.PipelineCounters
     let events: [DiagnosticEvent]
+    var sessionLog: [DiarizationDiagnostics.SessionLogEntry]?
+    var sessionLogCount: Int?
 }
 
 // Make PipelineCounters codable
