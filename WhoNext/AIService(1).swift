@@ -5,18 +5,27 @@ enum AIProvider: String, CaseIterable {
     case openai = "openai"
     case claude = "claude"
     case openrouter = "openrouter"
-    
+    case apify = "apify"
+
     var displayName: String {
         switch self {
         case .openai: return "OpenAI"
         case .claude: return "Claude"
         case .openrouter: return "OpenRouter"
+        case .apify: return "Apify"
         }
     }
-    
+
     var requiresAPIKey: Bool {
         switch self {
+        case .openai, .claude, .openrouter, .apify: return true
+        }
+    }
+
+    var isAIProvider: Bool {
+        switch self {
         case .openai, .claude, .openrouter: return true
+        case .apify: return false
         }
     }
 }
@@ -87,7 +96,12 @@ class AIService {
         get { SecureStorage.getAPIKey(for: .openrouter) }
         set { SecureStorage.setAPIKey(newValue, for: .openrouter) }
     }
-    
+
+    var apifyApiKey: String {
+        get { SecureStorage.getAPIKey(for: .apify) }
+        set { SecureStorage.setAPIKey(newValue, for: .apify) }
+    }
+
     var apiKey: String {
         switch currentProvider {
         case .openai: return openaiApiKey
