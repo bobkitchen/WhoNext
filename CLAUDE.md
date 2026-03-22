@@ -8,17 +8,9 @@
 - macOS 26 is called **macOS Tahoe** (not Sequoia - that was macOS 15)
 
 ### Build Environment
-- **ALWAYS use Xcode Beta for building** - located at `/Applications/Xcode-beta.app`
-- Running on macOS 26 (Tahoe)
-- Uses Xcode beta for macOS 26 SDK support
-- Current SDK: MacOSX26.0.sdk (symlinked to MacOSX.sdk)
-
-### Build Commands
-When building from command line, always use:
-```bash
-/Applications/Xcode-beta.app/Contents/Developer/usr/bin/xcodebuild
-```
-NOT the standard `xcodebuild` command which points to the release version.
+- Running on macOS 26 (Tahoe) with Xcode 26.3 (release)
+- Standard `xcodebuild` is fine — no need for beta paths
+- Current SDK: MacOSX26.0.sdk
 
 ## Project Context
 
@@ -29,7 +21,7 @@ NOT the standard `xcodebuild` command which points to the release version.
 After deep investigation, the actual situation is:
 1. **SpeechAnalyzer, SpeechTranscriber, AssetInventory, and AnalyzerInput ARE in `/Library/Developer/CommandLineTools/SDKs/MacOSX26.0.sdk`**
 2. **They exist in the Swift interface files** at `/Library/Developer/CommandLineTools/SDKs/MacOSX26.0.sdk/System/Library/Frameworks/Speech.framework/Modules/Speech.swiftmodule/`
-3. **Xcode.app and Xcode-beta.app use different SDKs** (15.5 and 26.0 respectively) but neither has the new APIs
+3. **The new Speech APIs exist in the macOS 26.0 SDK**
 4. **To use these APIs, must compile with the CommandLineTools SDK**
 
 #### How Working Apps Use the APIs
@@ -179,8 +171,7 @@ IdentifiedParticipant[]  →  SerializableParticipant[]  →  ParticipantInfo[]
 5. Future: Person.voiceSimilarity(to:) used to auto-identify speakers
 
 ### Build Issues
-- Build may fail with standard Xcode if macOS 26 SDK is not available
-- Must use Xcode beta at `/Applications/Xcode-beta.app`
+- Requires macOS 26 SDK (included with Xcode 26.3)
 
 ## Recommended Immediate Fix
 
@@ -246,12 +237,8 @@ class ModernSpeechFramework {
 ### 3. Build Configuration - WORKING SOLUTION
 - **Platform must be macOS 26** in Package.swift or project settings
 - **The APIs exist in**: `/Library/Developer/CommandLineTools/SDKs/MacOSX26.0.sdk`
-- **Swift 6.2 is available**: In Xcode-beta.app at `/Applications/Xcode-beta.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swift`
-- **To compile with new APIs**:
-  ```bash
-  SDKROOT=/Library/Developer/CommandLineTools/SDKs/MacOSX26.0.sdk \
-  /Applications/Xcode-beta.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swift build
-  ```
+- **Swift 6.2 is available** via Xcode 26.3
+- **To compile with new APIs**: standard `swift build` or `xcodebuild` works with the macOS 26.0 SDK
 - **API differences from documentation**:
   - Use `AssetInventory.reserve(locale:)` not `allocate(locale:)`
   - Use `AssetInventory.reservedLocales` not `allocatedLocales`
