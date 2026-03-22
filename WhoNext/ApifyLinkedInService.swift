@@ -52,7 +52,7 @@ class ApifyLinkedInService: ObservableObject {
             query += " \"\(company)\""
         }
 
-        print("🔍 [LinkedIn] Searching via Apify Google: \(query)")
+        debugLog("🔍 [LinkedIn] Searching via Apify Google: \(query)")
 
         // Step 1: Start Google Search run
         let startURL = URL(string: "\(Self.apifyBase)/acts/\(Self.searchActor)/runs?token=\(token)")!
@@ -81,7 +81,7 @@ class ApifyLinkedInService: ObservableObject {
         let runId = runResponse.data.id
         let datasetId = runResponse.data.defaultDatasetId
 
-        print("🔍 [LinkedIn] Search run started: \(runId)")
+        debugLog("🔍 [LinkedIn] Search run started: \(runId)")
 
         // Step 2: Poll for completion
         let startTime = Date()
@@ -105,7 +105,7 @@ class ApifyLinkedInService: ObservableObject {
             let pollResponse = try JSONDecoder().decode(PollResponse.self, from: pollData)
             let status = pollResponse.data.status
 
-            print("🔍 [LinkedIn] Search poll: \(status)")
+            debugLog("🔍 [LinkedIn] Search poll: \(status)")
 
             if status == "SUCCEEDED" { break }
             if status != "RUNNING" && status != "READY" {
@@ -132,9 +132,9 @@ class ApifyLinkedInService: ObservableObject {
             }
         }
 
-        print("🔍 [LinkedIn] Found \(candidates.count) candidates")
+        debugLog("🔍 [LinkedIn] Found \(candidates.count) candidates")
         for (i, c) in candidates.enumerated() {
-            print("🔍 [LinkedIn]   [\(i)] \(c.name) — \(c.url)")
+            debugLog("🔍 [LinkedIn]   [\(i)] \(c.name) — \(c.url)")
         }
 
         return candidates

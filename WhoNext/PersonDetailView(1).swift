@@ -824,7 +824,7 @@ struct PersonDetailView: View {
     // MARK: - LinkedIn Enrichment
 
     private func startEnrichment() {
-        print("🔍 [LinkedIn] startEnrichment called, hasToken=\(ApifyLinkedInService.shared.hasToken)")
+        debugLog("🔍 [LinkedIn] startEnrichment called, hasToken=\(ApifyLinkedInService.shared.hasToken)")
         guard ApifyLinkedInService.shared.hasToken else {
             enrichState = .error("Apify API token not configured. Set it in Settings → LinkedIn Enrichment.")
             return
@@ -833,7 +833,7 @@ struct PersonDetailView: View {
         enrichState = .searching
         let name = person.name ?? ""
         let company = person.company
-        print("🔍 [LinkedIn] Searching for name='\(name)' company='\(company ?? "nil")")
+        debugLog("🔍 [LinkedIn] Searching for name='\(name)' company='\(company ?? "nil")")
 
         Task {
             do {
