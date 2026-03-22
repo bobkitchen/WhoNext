@@ -93,6 +93,8 @@ public class Person: NSManagedObject {
     @NSManaged public var lastVoiceUpdate: Date?
     @NSManaged public var voiceConfidence: Float
     @NSManaged public var voiceSampleCount: Int32
+    @NSManaged public var company: String?
+    @NSManaged public var linkedinUrl: String?
 
     // MARK: - Category Access
 

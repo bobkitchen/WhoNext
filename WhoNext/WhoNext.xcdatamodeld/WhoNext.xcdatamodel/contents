@@ -64,6 +64,8 @@
         <attribute name="voiceConfidence" optional="YES" attributeType="Float" defaultValueString="0.0" usesScalarValueType="YES"/>
         <attribute name="voiceEmbeddings" optional="YES" attributeType="Binary"/>
         <attribute name="voiceSampleCount" optional="YES" attributeType="Integer 32" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="company" optional="YES" attributeType="String"/>
+        <attribute name="linkedinUrl" optional="YES" attributeType="String"/>
         <relationship name="actionItems" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="ActionItem" inverseName="person" inverseEntity="ActionItem"/>
         <relationship name="conversations" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="Conversation" inverseName="person" inverseEntity="Conversation"/>
         <relationship name="groupMeetings" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="GroupMeeting" inverseName="attendees" inverseEntity="GroupMeeting"/>
