@@ -19,8 +19,8 @@ struct LinkedInProfile: Codable, Sendable {
     let publicIdentifier: String?
     let positions: [LinkedInPosition]?
     let educations: [LinkedInEducation]?
-    let skills: [String]?
-    let about: String?
+    let skills: [LinkedInSkill]?
+    let summary: String?
     let followerCount: Int?
     let connectionCount: Int?
     let profilePicture: String?
@@ -47,10 +47,10 @@ struct LinkedInProfile: Codable, Sendable {
         }
 
         // About
-        if let about = about, !about.isEmpty {
+        if let summary = summary, !summary.isEmpty {
             lines.append("")
             lines.append("## About")
-            lines.append(about)
+            lines.append(summary)
         }
 
         // Experience
@@ -83,7 +83,7 @@ struct LinkedInProfile: Codable, Sendable {
             for edu in educations {
                 let school = edu.schoolName ?? "Unknown School"
                 var detail = "**\(school)**"
-                let qualParts = [edu.degree, edu.fieldOfStudy].compactMap { $0 }
+                let qualParts = [edu.degreeName, edu.fieldOfStudy].compactMap { $0 }
                 if !qualParts.isEmpty {
                     detail += " — \(qualParts.joined(separator: ", "))"
                 }
@@ -100,7 +100,7 @@ struct LinkedInProfile: Codable, Sendable {
         // Skills
         if let skills = skills, !skills.isEmpty {
             lines.append("## Skills")
-            lines.append(skills.joined(separator: ", "))
+            lines.append(skills.map(\.skillName).joined(separator: ", "))
         }
 
         return lines.joined(separator: "\n")
@@ -154,8 +154,12 @@ struct LinkedInPosition: Codable, Sendable {
 
 struct LinkedInEducation: Codable, Sendable {
     let schoolName: String?
-    let degree: String?
+    let degreeName: String?
     let fieldOfStudy: String?
     let startYear: Int?
     let endYear: Int?
+}
+
+struct LinkedInSkill: Codable, Sendable {
+    let skillName: String
 }
