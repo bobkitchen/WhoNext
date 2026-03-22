@@ -23,7 +23,7 @@ struct LinkedInProfile: Codable, Sendable {
     let summary: String?
     let followerCount: Int?
     let connectionCount: Int?
-    let profilePicture: String?
+    let picture: String?
 
     var fullName: String {
         [firstName, lastName].compactMap { $0 }.joined(separator: " ")
