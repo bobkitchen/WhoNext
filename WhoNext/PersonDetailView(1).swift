@@ -837,7 +837,8 @@ struct PersonDetailView: View {
 
         Task {
             do {
-                let candidates = try await ApifyLinkedInService.shared.searchLinkedInProfiles(name: name, company: company)
+                let token = SecureStorage.getAPIKey(for: .apify)
+                let candidates = try await ApifyLinkedInService.shared.searchLinkedInProfiles(name: name, company: company, token: token)
                 await MainActor.run {
                     if candidates.isEmpty {
                         enrichState = .error("No LinkedIn profiles found for \"\(name)\". Check the name and company.")

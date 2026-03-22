@@ -38,107 +38,103 @@ class ApifyLinkedInService: ObservableObject {
         !apifyToken.isEmpty
     }
 
-    // MARK: - Search via DuckDuckGo
+    // MARK: - Search via Apify Google Search
 
-    nonisolated func searchLinkedInProfiles(name: String, company: String?) async throws -> [LinkedInCandidate] {
+    private static let searchActor = "apify~google-search-scraper"
+
+    nonisolated func searchLinkedInProfiles(name: String, company: String?, token: String) async throws -> [LinkedInCandidate] {
+        guard !token.isEmpty else {
+            throw LinkedInEnrichmentError.noApifyToken
+        }
+
         var query = "site:linkedin.com/in/ \"\(name)\""
         if let company = company, !company.isEmpty {
             query += " \"\(company)\""
         }
 
-        print("🔍 [LinkedIn] Searching: \(query)")
+        print("🔍 [LinkedIn] Searching via Apify Google: \(query)")
 
-        guard let encoded = query.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed),
-              let url = URL(string: "https://html.duckduckgo.com/html/?q=\(encoded)") else {
-            throw LinkedInEnrichmentError.searchFailed("Could not construct search URL")
+        // Step 1: Start Google Search run
+        let startURL = URL(string: "\(Self.apifyBase)/acts/\(Self.searchActor)/runs?token=\(token)")!
+        var startRequest = URLRequest(url: startURL)
+        startRequest.httpMethod = "POST"
+        startRequest.setValue("application/json", forHTTPHeaderField: "Content-Type")
+
+        let searchInput: [String: Any] = [
+            "queries": query,
+            "maxPagesPerQuery": 1,
+            "resultsPerPage": 5
+        ]
+        startRequest.httpBody = try JSONSerialization.data(withJSONObject: searchInput)
+
+        let (startData, _) = try await URLSession.shared.data(for: startRequest)
+
+        struct ApifyRunResponse: Codable {
+            struct RunData: Codable {
+                let id: String
+                let defaultDatasetId: String
+            }
+            let data: RunData
         }
 
-        print("🔍 [LinkedIn] URL: \(url)")
+        let runResponse = try JSONDecoder().decode(ApifyRunResponse.self, from: startData)
+        let runId = runResponse.data.id
+        let datasetId = runResponse.data.defaultDatasetId
 
-        var request = URLRequest(url: url)
-        request.setValue("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36", forHTTPHeaderField: "User-Agent")
+        print("🔍 [LinkedIn] Search run started: \(runId)")
 
-        let (data, _) = try await URLSession.shared.data(for: request)
-        guard let html = String(data: data, encoding: .utf8) else {
-            throw LinkedInEnrichmentError.searchFailed("Could not decode search response")
+        // Step 2: Poll for completion
+        let startTime = Date()
+        while true {
+            try await Task.sleep(for: .seconds(Self.pollInterval))
+
+            if Date().timeIntervalSince(startTime) > Self.maxPollDuration {
+                throw LinkedInEnrichmentError.timeout
+            }
+
+            let pollURL = URL(string: "\(Self.apifyBase)/acts/\(Self.searchActor)/runs/\(runId)?token=\(token)")!
+            let (pollData, _) = try await URLSession.shared.data(from: pollURL)
+
+            struct PollResponse: Codable {
+                struct PollData: Codable {
+                    let status: String
+                }
+                let data: PollData
+            }
+
+            let pollResponse = try JSONDecoder().decode(PollResponse.self, from: pollData)
+            let status = pollResponse.data.status
+
+            print("🔍 [LinkedIn] Search poll: \(status)")
+
+            if status == "SUCCEEDED" { break }
+            if status != "RUNNING" && status != "READY" {
+                throw LinkedInEnrichmentError.searchFailed("Google search run failed: \(status)")
+            }
         }
 
-        print("🔍 [LinkedIn] Got \(html.count) chars of HTML")
-        // Debug: print first 2000 chars to see actual DDG structure
-        print("🔍 [LinkedIn] HTML preview: \(String(html.prefix(2000)))")
+        // Step 3: Fetch results
+        let resultsURL = URL(string: "\(Self.apifyBase)/datasets/\(datasetId)/items?token=\(token)")!
+        let (resultsData, _) = try await URLSession.shared.data(from: resultsURL)
 
-        let results = parseSearchResults(html: html)
-        print("🔍 [LinkedIn] Parsed \(results.count) candidates")
-        for (i, c) in results.enumerated() {
-            print("🔍 [LinkedIn]   [\(i)] \(c.name) — \(c.url)")
-        }
-        return results
-    }
-
-    nonisolated private func parseSearchResults(html: String) -> [LinkedInCandidate] {
+        // Parse Apify Google Search response
+        let searchResults = try JSONDecoder().decode([GoogleSearchPage].self, from: resultsData)
         var candidates: [LinkedInCandidate] = []
 
-        // DuckDuckGo HTML results have <a class="result__a" href="...">Title</a>
-        // and <a class="result__snippet">Description</a>
-        let resultPattern = #"<a[^>]+class="result__a"[^>]+href="([^"]*linkedin\.com/in/[^"]*)"[^>]*>([^<]*)</a>"#
-        let snippetPattern = #"<a[^>]+class="result__snippet"[^>]*>([^<]*(?:<[^>]*>[^<]*)*)</a>"#
-
-        guard let resultRegex = try? NSRegularExpression(pattern: resultPattern, options: []),
-              let snippetRegex = try? NSRegularExpression(pattern: snippetPattern, options: []) else {
-            return candidates
+        for page in searchResults {
+            for result in (page.organicResults ?? []) {
+                guard let url = result.url, url.contains("linkedin.com/in/") else { continue }
+                candidates.append(LinkedInCandidate(
+                    url: url,
+                    name: result.title ?? "Unknown",
+                    headline: result.description ?? ""
+                ))
+            }
         }
 
-        let range = NSRange(html.startIndex..., in: html)
-        let resultMatches = resultRegex.matches(in: html, options: [], range: range)
-        let snippetMatches = snippetRegex.matches(in: html, options: [], range: range)
-
-        for (i, match) in resultMatches.enumerated() {
-            guard let urlRange = Range(match.range(at: 1), in: html),
-                  let titleRange = Range(match.range(at: 2), in: html) else { continue }
-
-            var urlString = String(html[urlRange])
-            // DuckDuckGo wraps URLs in redirects — extract the actual URL
-            if let linkedinRange = urlString.range(of: "linkedin.com/in/") {
-                let prefix = urlString[..<linkedinRange.lowerBound]
-                if prefix.contains("uddg=") || prefix.contains("//duckduckgo.com") {
-                    // Extract the linkedin URL from the redirect
-                    if let decoded = urlString.removingPercentEncoding,
-                       let start = decoded.range(of: "https://www.linkedin.com/in/") ?? decoded.range(of: "https://linkedin.com/in/") {
-                        urlString = String(decoded[start.lowerBound...])
-                        // Trim any trailing query params from DDG
-                        if let ampersand = urlString.firstIndex(of: "&") {
-                            urlString = String(urlString[..<ampersand])
-                        }
-                    }
-                }
-            }
-
-            // Ensure URL starts with https://
-            if !urlString.hasPrefix("http") {
-                urlString = "https://\(urlString)"
-            }
-
-            let title = String(html[titleRange])
-                .replacingOccurrences(of: "<[^>]+>", with: "", options: .regularExpression)
-                .trimmingCharacters(in: .whitespacesAndNewlines)
-
-            var headline = ""
-            if i < snippetMatches.count {
-                if let snippetRange = Range(snippetMatches[i].range(at: 1), in: html) {
-                    headline = String(html[snippetRange])
-                        .replacingOccurrences(of: "<[^>]+>", with: "", options: .regularExpression)
-                        .trimmingCharacters(in: .whitespacesAndNewlines)
-                }
-            }
-
-            // Only include actual LinkedIn profile URLs
-            guard urlString.contains("linkedin.com/in/") else { continue }
-
-            candidates.append(LinkedInCandidate(
-                url: urlString,
-                name: title,
-                headline: headline
-            ))
+        print("🔍 [LinkedIn] Found \(candidates.count) candidates")
+        for (i, c) in candidates.enumerated() {
+            print("🔍 [LinkedIn]   [\(i)] \(c.name) — \(c.url)")
         }
 
         return candidates
@@ -281,4 +277,16 @@ class ApifyLinkedInService: ObservableObject {
 
         person.modifiedAt = Date()
     }
+}
+
+// MARK: - Apify Google Search Response
+
+struct GoogleSearchPage: Codable {
+    let organicResults: [GoogleSearchResult]?
+}
+
+struct GoogleSearchResult: Codable {
+    let title: String?
+    let url: String?
+    let description: String?
 }
