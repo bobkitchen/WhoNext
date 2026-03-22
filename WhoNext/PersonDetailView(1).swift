@@ -878,7 +878,7 @@ struct PersonDetailView: View {
                 }
 
                 await MainActor.run {
-                    ApifyLinkedInService.shared.applyProfile(profile, to: person, linkedinUrl: url, photoData: photoData)
+                    ApifyLinkedInService.shared.applyProfile(profile, to: person, linkedinUrl: url, photoData: photoData, isReEnrich: true)
                     try? viewContext.save()
                     enrichState = .success
                     Task { try? await Task.sleep(for: .seconds(3)); enrichState = .idle }

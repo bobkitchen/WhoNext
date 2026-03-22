@@ -240,13 +240,13 @@ class ApifyLinkedInService: ObservableObject {
 
     // MARK: - Map to Person
 
-    func applyProfile(_ profile: LinkedInProfile, to person: Person, linkedinUrl: String, photoData: Data?) {
-        // Current position
+    func applyProfile(_ profile: LinkedInProfile, to person: Person, linkedinUrl: String, photoData: Data?, isReEnrich: Bool = false) {
+        // Current position — only set if empty (don't clobber manual edits)
         if let current = profile.currentPosition {
-            if let title = current.title {
+            if let title = current.title, person.role?.isEmpty ?? true {
                 person.role = title
             }
-            if let company = current.companyName {
+            if let company = current.companyName, person.company?.isEmpty ?? true {
                 person.company = company
             }
         }
@@ -254,7 +254,7 @@ class ApifyLinkedInService: ObservableObject {
         // LinkedIn URL
         person.linkedinUrl = linkedinUrl
 
-        // Photo
+        // Photo — always update (re-enrich gets fresh photo)
         if let photoData = photoData {
             person.photo = photoData
         }
@@ -267,11 +267,11 @@ class ApifyLinkedInService: ObservableObject {
             }
         }
 
-        // Notes — append if existing notes, replace if empty
+        // Notes — replace entirely on re-enrich, set if empty on first enrich
         let markdown = profile.formattedMarkdown()
-        if let existingNotes = person.notes, !existingNotes.isEmpty {
-            person.notes = existingNotes + "\n\n---\n\n## LinkedIn Profile\n\n" + markdown
-        } else {
+        if isReEnrich {
+            person.notes = markdown
+        } else if person.notes?.isEmpty ?? true {
             person.notes = markdown
         }
 
