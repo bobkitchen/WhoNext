@@ -46,10 +46,14 @@ class ApifyLinkedInService: ObservableObject {
             query += " \"\(company)\""
         }
 
+        print("🔍 [LinkedIn] Searching: \(query)")
+
         guard let encoded = query.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed),
               let url = URL(string: "https://html.duckduckgo.com/html/?q=\(encoded)") else {
             throw LinkedInEnrichmentError.searchFailed("Could not construct search URL")
         }
+
+        print("🔍 [LinkedIn] URL: \(url)")
 
         var request = URLRequest(url: url)
         request.setValue("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36", forHTTPHeaderField: "User-Agent")
@@ -59,7 +63,16 @@ class ApifyLinkedInService: ObservableObject {
             throw LinkedInEnrichmentError.searchFailed("Could not decode search response")
         }
 
-        return parseSearchResults(html: html)
+        print("🔍 [LinkedIn] Got \(html.count) chars of HTML")
+        // Debug: print first 2000 chars to see actual DDG structure
+        print("🔍 [LinkedIn] HTML preview: \(String(html.prefix(2000)))")
+
+        let results = parseSearchResults(html: html)
+        print("🔍 [LinkedIn] Parsed \(results.count) candidates")
+        for (i, c) in results.enumerated() {
+            print("🔍 [LinkedIn]   [\(i)] \(c.name) — \(c.url)")
+        }
+        return results
     }
 
     nonisolated private func parseSearchResults(html: String) -> [LinkedInCandidate] {
