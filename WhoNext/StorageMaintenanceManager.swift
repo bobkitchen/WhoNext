@@ -162,7 +162,7 @@ class StorageMaintenanceManager: ObservableObject {
             
             try context.save()
         } catch {
-            debugLog("❌ Error deleting expired audio: \(error)")
+            print("❌ Error deleting expired audio: \(error)")
         }
         
         return deletedCount
@@ -200,7 +200,7 @@ class StorageMaintenanceManager: ObservableObject {
                             cleanedCount += 1
                             debugLog("🗑️ Removed orphaned file: \(fileName)")
                         } catch {
-                            debugLog("❌ Failed to remove orphaned file: \(error)")
+                            print("❌ Failed to remove orphaned file: \(error)")
                         }
                     }
                 }
@@ -238,7 +238,7 @@ class StorageMaintenanceManager: ObservableObject {
                 try context.save()
             }
         } catch {
-            debugLog("❌ Error verifying data integrity: \(error)")
+            print("❌ Error verifying data integrity: \(error)")
         }
         
         return fixedCount
@@ -281,7 +281,7 @@ class StorageMaintenanceManager: ObservableObject {
                                 meeting.audioFilePath = compressedURL.path
                                 compressedCount += 1
                             } catch {
-                                debugLog("❌ Failed to compress: \(error)")
+                                print("❌ Failed to compress: \(error)")
                             }
                         }
                     }
@@ -295,7 +295,7 @@ class StorageMaintenanceManager: ObservableObject {
             
             return compressedCount > 0
         } catch {
-            debugLog("❌ Error optimizing storage: \(error)")
+            print("❌ Error optimizing storage: \(error)")
             return false
         }
     }
@@ -332,7 +332,7 @@ class StorageMaintenanceManager: ObservableObject {
             let values = try fileURL.resourceValues(forKeys: [.volumeAvailableCapacityKey])
             return Int64(values.volumeAvailableCapacity ?? 0)
         } catch {
-            debugLog("Error getting available disk space: \(error)")
+            print("Error getting available disk space: \(error)")
             return 0
         }
     }

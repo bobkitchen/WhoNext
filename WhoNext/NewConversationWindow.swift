@@ -116,7 +116,7 @@ struct NewConversationWindow: View {
     }
 
     private func saveConversation() {
-        guard let person = selectedPerson else { print("No person selected"); return }
+        guard let person = selectedPerson else { debugLog("No person selected"); return }
         let newConversation = Conversation(context: viewContext)
         newConversation.date = date
         newConversation.notes = richNotes.string // Save plain text for previews/legacy

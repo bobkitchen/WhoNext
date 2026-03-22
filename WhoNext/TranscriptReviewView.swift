@@ -709,7 +709,7 @@ struct TranscriptReviewView: View {
                     }
                 }
             } else {
-                debugLog("❌ WARNING: Conversation was not linked to any person!")
+                print("❌ WARNING: Conversation was not linked to any person!")
             }
             
             // Post notification to refresh any PersonDetailViews
@@ -717,7 +717,7 @@ struct TranscriptReviewView: View {
             
             showingSaveConfirmation = true
         } catch {
-            debugLog("❌ Error saving conversation: \(error)")
+            print("❌ Error saving conversation: \(error)")
             saveErrorMessage = "Failed to save conversation: \(error.localizedDescription)"
             showingSaveError = true
         }
@@ -734,7 +734,7 @@ struct TranscriptReviewView: View {
         } else {
             let trimmedName = newGroupName.trimmingCharacters(in: .whitespaces)
             guard !trimmedName.isEmpty else {
-                debugLog("❌ [GroupMeeting] No group name provided")
+                print("❌ [GroupMeeting] No group name provided")
                 return
             }
             group = WhoNext.Group(context: context)
@@ -822,7 +822,7 @@ struct TranscriptReviewView: View {
 
             showingSaveConfirmation = true
         } catch {
-            debugLog("❌ [GroupMeeting] Error saving: \(error)")
+            print("❌ [GroupMeeting] Error saving: \(error)")
             saveErrorMessage = "Failed to save group meeting: \(error.localizedDescription)"
             showingSaveError = true
         }
@@ -837,7 +837,7 @@ struct TranscriptReviewView: View {
             try data.write(to: file)
             debugLog("📊 Saved sentiment data to \(file.lastPathComponent)")
         } catch {
-            debugLog("⚠️ Failed to save sentiment data: \(error)")
+            print("⚠️ Failed to save sentiment data: \(error)")
         }
     }
 
@@ -860,7 +860,7 @@ struct TranscriptReviewView: View {
                 return existingPerson
             }
         } catch {
-            debugLog("👤 Error fetching person: \(error)")
+            print("👤 Error fetching person: \(error)")
         }
 
         // Create new person
@@ -899,7 +899,7 @@ struct TranscriptReviewView: View {
             }
             searchResults[participantName] = results
         } catch {
-            debugLog("🔍 Error searching people: \(error)")
+            print("🔍 Error searching people: \(error)")
             searchResults[participantName] = []
         }
     }
@@ -918,7 +918,7 @@ struct TranscriptReviewView: View {
         do {
             manualSearchResults = try context.fetch(request)
         } catch {
-            debugLog("🔍 Error searching manual people: \(error)")
+            print("🔍 Error searching manual people: \(error)")
             manualSearchResults = []
         }
     }
@@ -945,7 +945,7 @@ struct TranscriptReviewView: View {
         do {
             return try context.fetch(request).first
         } catch {
-            debugLog("❌ Error finding person by ID: \(error)")
+            print("❌ Error finding person by ID: \(error)")
             return nil
         }
     }

@@ -43,7 +43,7 @@ class MicrophoneActivityMonitor: ObservableObject {
     // MARK: - Public Methods
 
     func startMonitoring() {
-        print("🎤 Starting microphone activity monitoring...")
+        debugLog("🎤 Starting microphone activity monitoring...")
 
         checkTimer = Timer.scheduledTimer(withTimeInterval: 2.0, repeats: true) { [weak self] _ in
             self?.checkMicrophoneActivity()
@@ -54,7 +54,7 @@ class MicrophoneActivityMonitor: ObservableObject {
     }
 
     func stopMonitoring() {
-        print("🎤 Stopping microphone activity monitoring")
+        debugLog("🎤 Stopping microphone activity monitoring")
         checkTimer?.invalidate()
         checkTimer = nil
         resetActivity()
@@ -77,7 +77,7 @@ class MicrophoneActivityMonitor: ObservableObject {
             if isInUse && !wasMicInUse {
                 // Mic just became active
                 self.activityStartTime = Date()
-                print("🎤 Microphone activated by: \(appName ?? "Unknown")")
+                debugLog("🎤 Microphone activated by: \(appName ?? "Unknown")")
             } else if !isInUse && wasMicInUse {
                 // Mic just became inactive
                 self.handleMicrophoneDeactivated()
@@ -99,12 +99,12 @@ class MicrophoneActivityMonitor: ObservableObject {
         guard let appName = activeApplication else { return }
         hasNotifiedAboutCurrentActivity = true
 
-        print("📞 Potential meeting detected via microphone: \(appName) (duration: \(Int(activityDuration))s)")
+        debugLog("📞 Potential meeting detected via microphone: \(appName) (duration: \(Int(activityDuration))s)")
         onPotentialMeetingDetected?(appName)
     }
 
     private func handleMicrophoneDeactivated() {
-        print("🎤 Microphone deactivated (was active for \(Int(activityDuration))s)")
+        debugLog("🎤 Microphone deactivated (was active for \(Int(activityDuration))s)")
         resetActivity()
     }
 
@@ -209,7 +209,7 @@ class MicrophoneActivityMonitor: ObservableObject {
             // Log once about the limitation
             if !hasLoggedAccessibilityWarning {
                 hasLoggedAccessibilityWarning = true
-                print("🎤 [MicrophoneActivityMonitor] Accessibility API unavailable (sandboxed). Using basic app detection.")
+                debugLog("🎤 [MicrophoneActivityMonitor] Accessibility API unavailable (sandboxed). Using basic app detection.")
             }
             // Fall back: If the app is running and frontmost, assume it might be in a call
             return app.isActive

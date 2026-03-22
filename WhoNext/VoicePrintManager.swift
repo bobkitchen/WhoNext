@@ -65,7 +65,7 @@ class VoicePrintManager: ObservableObject {
             invalidateCache()
             debugLog("[VoicePrintManager] Saved voice embedding for \(person.wrappedName)")
         } catch {
-            debugLog("[VoicePrintManager] Error saving embedding: \(error)")
+            print("[VoicePrintManager] Error saving embedding: \(error)")
         }
     }
     
@@ -129,7 +129,7 @@ class VoicePrintManager: ObservableObject {
                     self.cacheTimestamp = Date()
                     debugLog("[VoicePrintManager] Refreshed cache with \(cached.count) people (background, best-of-N)")
                 } catch {
-                    debugLog("[VoicePrintManager] Error refreshing cache: \(error)")
+                    print("[VoicePrintManager] Error refreshing cache: \(error)")
                     self.cachedEmbeddingsData = nil
                 }
                 continuation.resume()
@@ -151,7 +151,7 @@ class VoicePrintManager: ObservableObject {
     /// Find matching person for a given embedding (uses caching to avoid repeated Core Data fetches)
     func findMatchingPerson(for embedding: [Float]) async -> (Person?, Float)? {
         guard !embedding.isEmpty else {
-            debugLog("[VoicePrintManager] ❌ Empty embedding")
+            print("[VoicePrintManager] ❌ Empty embedding")
             return nil
         }
 
@@ -200,7 +200,7 @@ class VoicePrintManager: ObservableObject {
             let person = try? context.fetch(request).first
             return (person, match.similarity)
         } else {
-            debugLog("[VoicePrintManager] ❌ No match above \(String(format: "%.0f%%", minimumConfidenceThreshold * 100)) threshold")
+            print("[VoicePrintManager] ❌ No match above \(String(format: "%.0f%%", minimumConfidenceThreshold * 100)) threshold")
         }
 
         return nil
@@ -448,7 +448,7 @@ class VoicePrintManager: ObservableObject {
             let results = try context.fetch(request)
             return results.first
         } catch {
-            debugLog("[VoicePrintManager] Error finding person by name '\(name)': \(error)")
+            print("[VoicePrintManager] Error finding person by name '\(name)': \(error)")
             return nil
         }
     }
@@ -472,7 +472,7 @@ class VoicePrintManager: ObservableObject {
                 )
             }
         } catch {
-            debugLog("[VoicePrintManager] Error fetching all embeddings: \(error)")
+            print("[VoicePrintManager] Error fetching all embeddings: \(error)")
             return []
         }
     }
@@ -494,7 +494,7 @@ class VoicePrintManager: ObservableObject {
             try context.save()
             debugLog("[VoicePrintManager] Cleared all voice data")
         } catch {
-            debugLog("[VoicePrintManager] Error clearing voice data: \(error)")
+            print("[VoicePrintManager] Error clearing voice data: \(error)")
         }
     }
 }
@@ -607,7 +607,7 @@ extension VoicePrintManager {
             let embeddings = try JSONDecoder().decode([[Float]].self, from: data)
             return embeddings
         } catch {
-            debugLog("❌ Failed to deserialize embeddings: \(error)")
+            print("❌ Failed to deserialize embeddings: \(error)")
             return nil
         }
     }
@@ -618,7 +618,7 @@ extension VoicePrintManager {
             let data = try JSONEncoder().encode(embeddings)
             return data
         } catch {
-            debugLog("❌ Failed to serialize embeddings: \(error)")
+            print("❌ Failed to serialize embeddings: \(error)")
             return nil
         }
     }

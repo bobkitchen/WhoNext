@@ -135,8 +135,8 @@ class FallbackNotificationManager: ObservableObject {
                 toProvider: toProvider
             )
 
-            print("🔔 [Fallback] \(reason.displayText)")
-            print("🔔 [Fallback] Switched from \(fromProvider) to \(toProvider)")
+            debugLog("🔔 [Fallback] \(reason.displayText)")
+            debugLog("🔔 [Fallback] Switched from \(fromProvider) to \(toProvider)")
         }
     }
 

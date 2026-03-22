@@ -105,8 +105,8 @@ struct PersistenceController {
         // ---------------------------------------------------------------------
         container.loadPersistentStores { storeDescription, error in
             if let error = error {
-                debugLog("❌ Core Data load error: \(error)")
-                debugLog("❌ Store description: \(storeDescription)")
+                print("❌ Core Data load error: \(error)")
+                print("❌ Store description: \(storeDescription)")
                 fatalError("❌ Core Data load error: \(error)")
             } else {
                 debugLog("✅ Core Data store loaded successfully")
@@ -166,9 +166,9 @@ struct PersistenceController {
             do {
                 try container.initializeCloudKitSchema(options: [])
                 UserDefaults.standard.set(true, forKey: hasInitializedKey)
-                print("☁️ [CloudKit] ✅ Schema initialized successfully (v2 — includes personCategory)")
+                debugLog("☁️ [CloudKit] ✅ Schema initialized successfully (v2 — includes personCategory)")
             } catch {
-                print("☁️ [CloudKit] ⚠️ Schema initialization failed: \(error)")
+                debugLog("☁️ [CloudKit] ⚠️ Schema initialization failed: \(error)")
                 // Don't save the flag - try again next launch
             }
         }
@@ -339,10 +339,10 @@ struct PersistenceController {
         let nsError = error as NSError
 
         // Log the raw error details first
-        debugLog("☁️ [CloudKit] ❌ ERROR DETAILS:")
-        debugLog("☁️ [CloudKit]   Domain: \(nsError.domain)")
-        debugLog("☁️ [CloudKit]   Code: \(nsError.code) - \(translateCKErrorCode(nsError.code))")
-        debugLog("☁️ [CloudKit]   Description: \(nsError.localizedDescription)")
+        print("☁️ [CloudKit] ❌ ERROR DETAILS:")
+        print("☁️ [CloudKit]   Domain: \(nsError.domain)")
+        print("☁️ [CloudKit]   Code: \(nsError.code) - \(translateCKErrorCode(nsError.code))")
+        print("☁️ [CloudKit]   Description: \(nsError.localizedDescription)")
 
         // Log underlying errors if present
         if let underlying = nsError.userInfo[NSUnderlyingErrorKey] as? NSError {
@@ -352,7 +352,7 @@ struct PersistenceController {
         if let ckError = error as? CKError {
             switch ckError.code {
             case .quotaExceeded:
-                debugLog("☁️ [CloudKit] ❌ QUOTA EXCEEDED - iCloud storage is full")
+                print("☁️ [CloudKit] ❌ QUOTA EXCEEDED - iCloud storage is full")
                 debugLog("☁️ [CloudKit] → User needs to free up iCloud storage or upgrade plan")
 
             case .networkFailure, .networkUnavailable:
@@ -361,18 +361,18 @@ struct PersistenceController {
             case .partialFailure:
                 debugLog("☁️ [CloudKit] ⚠️ Partial failure - some records synced")
                 if let partialErrors = ckError.userInfo[CKPartialErrorsByItemIDKey] as? [AnyHashable: Error] {
-                    debugLog("☁️ [CloudKit]   Partial errors (\(partialErrors.count) items):")
+                    print("☁️ [CloudKit]   Partial errors (\(partialErrors.count) items):")
                     for (recordID, recordError) in partialErrors.prefix(5) {
                         let recordNSError = recordError as NSError
-                        debugLog("☁️ [CloudKit]   - \(recordID): code \(recordNSError.code) - \(translateCKErrorCode(recordNSError.code))")
+                        print("☁️ [CloudKit]   - \(recordID): code \(recordNSError.code) - \(translateCKErrorCode(recordNSError.code))")
                     }
                     if partialErrors.count > 5 {
-                        debugLog("☁️ [CloudKit]   ... and \(partialErrors.count - 5) more errors")
+                        print("☁️ [CloudKit]   ... and \(partialErrors.count - 5) more errors")
                     }
                 }
 
             case .notAuthenticated:
-                debugLog("☁️ [CloudKit] ❌ NOT AUTHENTICATED - user needs to sign in to iCloud")
+                print("☁️ [CloudKit] ❌ NOT AUTHENTICATED - user needs to sign in to iCloud")
 
             case .serverResponseLost:
                 debugLog("☁️ [CloudKit] ⚠️ Server response lost - will retry")
@@ -381,12 +381,12 @@ struct PersistenceController {
                 debugLog("☁️ [CloudKit] ⚠️ CloudKit server busy - will retry")
 
             case .zoneNotFound:
-                debugLog("☁️ [CloudKit] ❌ ZONE NOT FOUND - The CloudKit zone doesn't exist!")
+                print("☁️ [CloudKit] ❌ ZONE NOT FOUND - The CloudKit zone doesn't exist!")
                 debugLog("☁️ [CloudKit] → This is likely the root cause of sync failures")
                 debugLog("☁️ [CloudKit] → Try 'Repair Sync' in Settings to recreate the zone")
 
             case .unknownItem:
-                debugLog("☁️ [CloudKit] ❌ UNKNOWN ITEM - Record or zone doesn't exist in CloudKit")
+                print("☁️ [CloudKit] ❌ UNKNOWN ITEM - Record or zone doesn't exist in CloudKit")
                 debugLog("☁️ [CloudKit] → Schema may not be deployed or zone is missing")
                 debugLog("☁️ [CloudKit] → Try 'Repair Sync' in Settings")
 
@@ -394,21 +394,21 @@ struct PersistenceController {
                 debugLog("☁️ [CloudKit] ⚠️ Operation cancelled")
 
             case .incompatibleVersion:
-                debugLog("☁️ [CloudKit] ❌ Incompatible version - schema mismatch")
+                print("☁️ [CloudKit] ❌ Incompatible version - schema mismatch")
                 debugLog("☁️ [CloudKit] → May need to run initializeCloudKitSchema()")
 
             case .assetFileNotFound:
                 debugLog("☁️ [CloudKit] ⚠️ Asset file not found - binary data issue")
 
             case .invalidArguments:
-                debugLog("☁️ [CloudKit] ❌ INVALID ARGUMENTS - Query or schema issue")
+                print("☁️ [CloudKit] ❌ INVALID ARGUMENTS - Query or schema issue")
                 debugLog("☁️ [CloudKit] → Check if schema is deployed to Production")
 
             default:
-                debugLog("☁️ [CloudKit] ⚠️ CloudKit error (\(ckError.code.rawValue)): \(ckError.localizedDescription)")
+                print("☁️ [CloudKit] ⚠️ CloudKit error (\(ckError.code.rawValue)): \(ckError.localizedDescription)")
             }
         } else {
-            debugLog("☁️ [CloudKit] ⚠️ Non-CKError sync error: \(error.localizedDescription)")
+            print("☁️ [CloudKit] ⚠️ Non-CKError sync error: \(error.localizedDescription)")
         }
     }
 
@@ -424,7 +424,7 @@ struct PersistenceController {
                     let containerID = CKContainer.default().containerIdentifier ?? "unknown"
                     debugLog("☁️ [CloudKit] Container: \(containerID)")
                 case .noAccount:
-                    debugLog("☁️ [CloudKit] ❌ NO iCloud account signed in!")
+                    print("☁️ [CloudKit] ❌ NO iCloud account signed in!")
                     debugLog("☁️ [CloudKit] ⚠️ Data will NOT sync between devices")
                     debugLog("☁️ [CloudKit] → Sign in to iCloud in System Preferences")
                 case .restricted:
@@ -433,7 +433,7 @@ struct PersistenceController {
                 case .couldNotDetermine:
                     debugLog("☁️ [CloudKit] ⚠️ Could not determine iCloud status")
                     if let error = error {
-                        debugLog("☁️ [CloudKit] Error: \(error.localizedDescription)")
+                        print("☁️ [CloudKit] Error: \(error.localizedDescription)")
                     }
                 case .temporarilyUnavailable:
                     debugLog("☁️ [CloudKit] ⚠️ iCloud temporarily unavailable")
@@ -482,7 +482,7 @@ struct PersistenceController {
                     try context.save()
                     debugLog("✅ Migrated \(people.count) people to personCategory")
                 } catch {
-                    debugLog("❌ personCategory migration failed: \(error)")
+                    print("❌ personCategory migration failed: \(error)")
                     return // Don't set the flag if migration failed
                 }
             }
@@ -607,7 +607,7 @@ struct PersistenceController {
                     if let ckError = error as? CKError, ckError.code == .unknownItem {
                         debugLog("☁️ \(recordType): Record type not found in schema")
                     } else {
-                        debugLog("☁️ \(recordType): Error querying - \(error.localizedDescription)")
+                        print("☁️ \(recordType): Error querying - \(error.localizedDescription)")
                     }
                 }
             }
@@ -617,7 +617,7 @@ struct PersistenceController {
     /// Force re-initialize CloudKit schema
     /// This creates sample records to ensure all fields are in the schema
     func forceSchemaReinitialization() {
-        print("☁️ [CloudKit] Forcing schema re-initialization...")
+        debugLog("☁️ [CloudKit] Forcing schema re-initialization...")
 
         // Clear both old and new flags so schema initialization runs again
         UserDefaults.standard.removeObject(forKey: "CloudKitSchemaInitialized_v1")
@@ -627,8 +627,8 @@ struct PersistenceController {
             do {
                 // Now do the actual initialization
                 try container.initializeCloudKitSchema(options: [])
-                print("☁️ [CloudKit] ✅ Schema force-initialized successfully")
-                print("☁️ [CloudKit] ⚠️ IMPORTANT: Deploy schema to Production in CloudKit Dashboard!")
+                debugLog("☁️ [CloudKit] ✅ Schema force-initialized successfully")
+                debugLog("☁️ [CloudKit] ⚠️ IMPORTANT: Deploy schema to Production in CloudKit Dashboard!")
 
                 UserDefaults.standard.set(true, forKey: "CloudKitSchemaInitialized_v2")
             } catch {
@@ -651,7 +651,7 @@ struct PersistenceController {
                 debugLog("☁️ [CloudKit] ✅ Zone exists: \(zone.zoneID.zoneName)")
                 debugLog("☁️ [CloudKit] Zone capabilities: \(zone.capabilities)")
             } else if let error = error {
-                debugLog("☁️ [CloudKit] ❌ Zone error: \(error.localizedDescription)")
+                print("☁️ [CloudKit] ❌ Zone error: \(error.localizedDescription)")
 
                 // Check if zone doesn't exist
                 if let ckError = error as? CKError, ckError.code == .zoneNotFound {
@@ -731,7 +731,7 @@ struct PersistenceController {
                     debugLog("☁️ [CloudKit] No changes to save")
                 }
             } catch {
-                debugLog("☁️ [CloudKit] ❌ Error saving force-sync changes: \(error)")
+                print("☁️ [CloudKit] ❌ Error saving force-sync changes: \(error)")
             }
         }
     }
@@ -780,7 +780,7 @@ struct PersistenceController {
                     try context.save()
                     debugLog("☁️ [CloudKit] ✅ Orphan repair saved: deleted \(deletedCount), fixed \(fixedCount)")
                 } catch {
-                    debugLog("☁️ [CloudKit] ❌ Error saving orphan repairs: \(error)")
+                    print("☁️ [CloudKit] ❌ Error saving orphan repairs: \(error)")
                 }
             } else {
                 debugLog("☁️ [CloudKit] No orphaned conversations found")
@@ -805,7 +805,7 @@ struct PersistenceController {
                 try context.execute(deleteRequest)
                 debugLog("☁️ [CloudKit] ✅ Purged persistent history")
             } catch {
-                debugLog("☁️ [CloudKit] ⚠️ Error purging history: \(error.localizedDescription)")
+                print("☁️ [CloudKit] ⚠️ Error purging history: \(error.localizedDescription)")
             }
         }
     }
@@ -836,7 +836,7 @@ struct PersistenceController {
                     try context.save()
                     debugLog("☁️ [CloudKit] ✅ Deleted \(deletedCount) orphaned conversations")
                 } catch {
-                    debugLog("☁️ [CloudKit] ❌ Error deleting orphans: \(error)")
+                    print("☁️ [CloudKit] ❌ Error deleting orphans: \(error)")
                 }
             }
         }
@@ -892,7 +892,7 @@ struct PersistenceController {
         } catch {
             let ckError = error as? CKError
             if ckError?.code == .zoneNotFound {
-                debugLog("☁️ [CloudKit] ❌ Zone NOT found - needs to be created")
+                print("☁️ [CloudKit] ❌ Zone NOT found - needs to be created")
             } else {
                 debugLog("☁️ [CloudKit] ⚠️ Zone check error: \(error.localizedDescription)")
             }
@@ -917,7 +917,7 @@ struct PersistenceController {
             let savedZone = try await privateDB.save(zone)
             debugLog("☁️ [CloudKit] ✅ Zone created: \(savedZone.zoneID.zoneName)")
         } catch {
-            debugLog("☁️ [CloudKit] ❌ Failed to create zone: \(error)")
+            print("☁️ [CloudKit] ❌ Failed to create zone: \(error)")
             throw error
         }
     }
@@ -941,7 +941,7 @@ struct PersistenceController {
         }
 
         guard status == .available else {
-            debugLog("☁️ [CloudKit] ❌ iCloud not available (status: \(status.rawValue))")
+            print("☁️ [CloudKit] ❌ iCloud not available (status: \(status.rawValue))")
             throw NSError(domain: "CloudKitRepair", code: 1, userInfo: [NSLocalizedDescriptionKey: "iCloud account not available. Please sign in to iCloud."])
         }
         debugLog("☁️ [CloudKit] ✅ iCloud account available")
@@ -960,9 +960,9 @@ struct PersistenceController {
             // Re-initialize
             try container.initializeCloudKitSchema(options: [])
             UserDefaults.standard.set(true, forKey: "CloudKitSchemaInitialized_v1")
-            print("☁️ [CloudKit] ✅ Schema re-initialized")
+            debugLog("☁️ [CloudKit] ✅ Schema re-initialized")
         } catch {
-            print("☁️ [CloudKit] ⚠️ Schema initialization warning: \(error.localizedDescription)")
+            debugLog("☁️ [CloudKit] ⚠️ Schema initialization warning: \(error.localizedDescription)")
             // Don't throw - this is sometimes expected
         }
         #else
@@ -1032,7 +1032,7 @@ struct PersistenceController {
         #if DEBUG
         try container.initializeCloudKitSchema(options: [])
         UserDefaults.standard.set(true, forKey: "CloudKitSchemaInitialized_v1")
-        print("☁️ [CloudKit] ✅ Schema initialized")
+        debugLog("☁️ [CloudKit] ✅ Schema initialized")
         #endif
 
         // Step 6: Clean up orphaned conversations before uploading

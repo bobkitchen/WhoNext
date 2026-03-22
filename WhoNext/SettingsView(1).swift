@@ -1305,7 +1305,7 @@ extension SettingsView {
         do {
             try viewContext.save()
         } catch {
-            debugLog("Failed to reset spoken to dates: \(error)")
+            print("Failed to reset spoken to dates: \(error)")
         }
         
         // Clear dismissed people
@@ -1319,7 +1319,7 @@ extension SettingsView {
         do {
             try viewContext.save()
         } catch {
-            debugLog("Failed to delete all people: \(error)")
+            print("Failed to delete all people: \(error)")
         }
     }
     
@@ -1367,7 +1367,7 @@ extension SettingsView {
         debugLog("🔍 [CSV] Split into \(lines.count) lines")
         
         guard lines.count > 1 else {
-            debugLog("❌ [CSV] Not enough lines in CSV content")
+            print("❌ [CSV] Not enough lines in CSV content")
             importError = "No data found in CSV content"
             return
         }
@@ -1442,12 +1442,12 @@ extension SettingsView {
                 importSuccess = successMsg
                 importError = nil
             } catch {
-                debugLog("❌ [CSV] Failed to save context: \(error)")
+                print("❌ [CSV] Failed to save context: \(error)")
                 importError = "Failed to save imported data: \(error.localizedDescription)"
                 importSuccess = nil
             }
         } catch {
-            debugLog("❌ [CSV] Failed to fetch existing people: \(error)")
+            print("❌ [CSV] Failed to fetch existing people: \(error)")
             importError = "Failed to check for duplicates: \(error.localizedDescription)"
         }
     }
@@ -1530,14 +1530,14 @@ struct OrgChartDropZone: View {
                                 debugLog("🔍 [DROP] Successfully loaded URL: \(url)")
                                 onDrop(url)
                             } else {
-                                debugLog("❌ [DROP] Failed to load URL")
+                                print("❌ [DROP] Failed to load URL")
                             }
                         }
                     } else {
-                        debugLog("❌ [DROP] Provider cannot load URL")
+                        print("❌ [DROP] Provider cannot load URL")
                     }
                 } else {
-                    debugLog("❌ [DROP] No providers found")
+                    print("❌ [DROP] No providers found")
                 }
                 return true
             }

@@ -121,7 +121,7 @@ class MeetingAssignmentManager: ObservableObject {
         // Save context
         do {
             try context.save()
-            print("✅ Meeting assigned successfully")
+            debugLog("✅ Meeting assigned successfully")
         } catch {
             print("❌ Failed to save assignment: \(error)")
         }

@@ -94,7 +94,7 @@ struct FormatButton: View {
 
 #Preview {
     RecordingNoteToolbar { action in
-        print("Format action: \(action)")
+        debugLog("Format action: \(action)")
     }
     .padding()
 }

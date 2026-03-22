@@ -857,7 +857,7 @@ struct DataSyncSettingsView: View {
             do {
                 try csv.write(to: url, atomically: true, encoding: .utf8)
             } catch {
-                print("Export failed: \(error)")
+                debugLog("Export failed: \(error)")
             }
         }
     }
@@ -893,7 +893,7 @@ struct DataSyncSettingsView: View {
             do {
                 try text.write(to: url, atomically: true, encoding: .utf8)
             } catch {
-                print("Export failed: \(error)")
+                debugLog("Export failed: \(error)")
             }
         }
     }

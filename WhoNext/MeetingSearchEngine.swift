@@ -170,7 +170,7 @@ class MeetingSearchEngine: ObservableObject {
                 )
             }
         } catch {
-            debugLog("Failed to search group meetings: \(error)")
+            print("Failed to search group meetings: \(error)")
             return []
         }
     }
@@ -246,7 +246,7 @@ class MeetingSearchEngine: ObservableObject {
                 )
             }
         } catch {
-            debugLog("Failed to search conversations: \(error)")
+            print("Failed to search conversations: \(error)")
             return []
         }
     }

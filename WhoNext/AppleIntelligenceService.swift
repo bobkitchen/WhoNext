@@ -13,10 +13,10 @@ class AppleIntelligenceService: ObservableObject {
     
     init() {
         #if canImport(FoundationModels)
-        print(" [AppleIntelligence] FoundationModels framework available, checking runtime...")
+        debugLog(" [AppleIntelligence] FoundationModels framework available, checking runtime...")
         checkFrameworkAvailability()
         #else
-        print(" [AppleIntelligence] FoundationModels framework not available")
+        debugLog(" [AppleIntelligence] FoundationModels framework not available")
         #endif
     }
     
@@ -25,12 +25,12 @@ class AppleIntelligenceService: ObservableObject {
         // Foundation Models requires macOS 26.0+ despite the import being available
         if #available(macOS 26.0, *) {
             isFrameworkAvailable = true
-            print("✅ [AppleIntelligence] Foundation Models available on macOS 26.0+")
+            debugLog("✅ [AppleIntelligence] Foundation Models available on macOS 26.0+")
         } else {
             isFrameworkAvailable = false
             let osVersion = ProcessInfo.processInfo.operatingSystemVersionString
-            print("ℹ️ [AppleIntelligence] Foundation Models requires macOS 26.0+, current: \(osVersion)")
-            print("ℹ️ [AppleIntelligence] App will use fallback AI services on this version")
+            debugLog("ℹ️ [AppleIntelligence] Foundation Models requires macOS 26.0+, current: \(osVersion)")
+            debugLog("ℹ️ [AppleIntelligence] App will use fallback AI services on this version")
         }
     }
     #endif
@@ -57,7 +57,7 @@ class AppleIntelligenceService: ObservableObject {
             return context
         }
         
-        print("⚠️ [AppleIntelligence] Context too long (\(context.count) chars), truncating to \(maxCharacters) chars")
+        debugLog("⚠️ [AppleIntelligence] Context too long (\(context.count) chars), truncating to \(maxCharacters) chars")
         
         // Intelligent truncation: keep recent conversations and person metadata
         let lines = context.components(separatedBy: .newlines)
@@ -114,7 +114,7 @@ class AppleIntelligenceService: ObservableObject {
         #if canImport(FoundationModels)
         if isFrameworkAvailable {
             do {
-                print("🤖 [AppleIntelligence] Generating meeting summary with Foundation Models")
+                debugLog("🤖 [AppleIntelligence] Generating meeting summary with Foundation Models")
                 
                 // Create a language model session with specialized instructions
                 let session = LanguageModelSession(instructions: """
@@ -134,9 +134,9 @@ class AppleIntelligenceService: ObservableObject {
                 
                 // Log which prompt is being used
                 if let customPrompt = userCustomPrompt, !customPrompt.isEmpty {
-                    print("📝 [AppleIntelligence] Using custom summarization prompt from user settings")
+                    debugLog("📝 [AppleIntelligence] Using custom summarization prompt from user settings")
                 } else {
-                    print("📝 [AppleIntelligence] Using default summarization prompt")
+                    debugLog("📝 [AppleIntelligence] Using default summarization prompt")
                 }
                 
                 let customPrompt = userCustomPrompt ?? """
@@ -204,23 +204,23 @@ class AppleIntelligenceService: ObservableObject {
                 
                 let prompt = finalPrompt
                 
-                print("🤖 [AppleIntelligence] Sending transcript to Foundation Models for summary...")
+                debugLog("🤖 [AppleIntelligence] Sending transcript to Foundation Models for summary...")
                 
                 // Send the prompt and get response using simpler API without options
                 // Research shows the simpler API is more stable in beta
                 do {
-                    print("🤖 [AppleIntelligence] Calling session.respond...")
+                    debugLog("🤖 [AppleIntelligence] Calling session.respond...")
                     let response = try await session.respond(to: prompt)
                     
                     // The response.content is already a String
                     let content = response.content
                     
                     guard !content.isEmpty else {
-                        print("⚠️ [AppleIntelligence] Response had empty content")
+                        debugLog("⚠️ [AppleIntelligence] Response had empty content")
                         throw AppleIntelligenceError.processingFailed
                     }
                     
-                    print("✅ [AppleIntelligence] Meeting summary generated successfully")
+                    debugLog("✅ [AppleIntelligence] Meeting summary generated successfully")
                     return content
                 } catch {
                     print("❌ [AppleIntelligence] Failed to generate summary: \(error)")
@@ -246,7 +246,7 @@ class AppleIntelligenceService: ObservableObject {
         #if canImport(FoundationModels)
         if isFrameworkAvailable {
             do {
-                print("🤖 [AppleIntelligence] Generating pre-meeting brief with Foundation Models")
+                debugLog("🤖 [AppleIntelligence] Generating pre-meeting brief with Foundation Models")
                 
                 // Get the user's custom prompt from UserDefaults
                     let customPrompt = UserDefaults.standard.string(forKey: "customPreMeetingPrompt") ?? """
@@ -287,24 +287,24 @@ ANALYSIS INSTRUCTIONS:
 Generate a comprehensive pre-meeting brief following the format above.
 """
                         
-                        print("🤖 [AppleIntelligence] Sending enhanced prompt to Foundation Models...")
-                        print("🤖 [AppleIntelligence] Context length: \(enhancedContext.count) characters")
+                        debugLog("🤖 [AppleIntelligence] Sending enhanced prompt to Foundation Models...")
+                        debugLog("🤖 [AppleIntelligence] Context length: \(enhancedContext.count) characters")
                         
                         // Send the prompt and get response using simpler API without options
                         // Research shows the simpler API is more stable in beta
                         do {
-                            print("🤖 [AppleIntelligence] Calling session.respond for pre-meeting brief...")
+                            debugLog("🤖 [AppleIntelligence] Calling session.respond for pre-meeting brief...")
                             let response = try await session.respond(to: prompt)
                             
                             // The response.content is already a String
                             let content = response.content
                             
                             guard !content.isEmpty else {
-                                print("⚠️ [AppleIntelligence] Response had empty content")
+                                debugLog("⚠️ [AppleIntelligence] Response had empty content")
                                 throw AppleIntelligenceError.processingFailed
                             }
                             
-                            print("✅ [AppleIntelligence] Pre-meeting brief generated successfully")
+                            debugLog("✅ [AppleIntelligence] Pre-meeting brief generated successfully")
                             return content
                         } catch {
                             print("❌ [AppleIntelligence] Failed to generate pre-meeting brief: \(error)")
@@ -337,7 +337,7 @@ Generate a comprehensive pre-meeting brief following the format above.
         #if canImport(FoundationModels)
         if isFrameworkAvailable {
             do {
-                print("🤖 [AppleIntelligence] Starting chat enhancement with Foundation Models")
+                debugLog("🤖 [AppleIntelligence] Starting chat enhancement with Foundation Models")
                 
                 // Create a language model session with specialized instructions
                 let session = LanguageModelSession(instructions: """
@@ -366,23 +366,23 @@ Generate a comprehensive pre-meeting brief following the format above.
                 If the information is limited, acknowledge this and provide what details are available.
                 """
                 
-                print("🤖 [AppleIntelligence] Sending prompt to Foundation Models...")
+                debugLog("🤖 [AppleIntelligence] Sending prompt to Foundation Models...")
                 
                 // Send the prompt and get response using simpler API without options
                 // Research shows the simpler API is more stable in beta
                 do {
-                    print("🤖 [AppleIntelligence] Calling session.respond for chat enhancement...")
+                    debugLog("🤖 [AppleIntelligence] Calling session.respond for chat enhancement...")
                     let response = try await session.respond(to: prompt)
                     
                     // The response.content is already a String
                     let content = response.content
                     
                     guard !content.isEmpty else {
-                        print("⚠️ [AppleIntelligence] Response had empty content")
+                        debugLog("⚠️ [AppleIntelligence] Response had empty content")
                         throw AppleIntelligenceError.processingFailed
                     }
                     
-                    print("✅ [AppleIntelligence] Chat response generated successfully")
+                    debugLog("✅ [AppleIntelligence] Chat response generated successfully")
                     return content
                 } catch {
                     print("❌ [AppleIntelligence] Failed to enhance chat: \(error)")
@@ -407,20 +407,20 @@ Generate a comprehensive pre-meeting brief following the format above.
     func extractParticipants(from transcript: String) async throws -> [String] {
         // Check if we're on macOS 26.0+ where Foundation Models are actually available
         guard #available(macOS 26.0, *) else {
-            print("⚠️ [AppleIntelligence] macOS 26.0+ required, current version too old")
+            debugLog("⚠️ [AppleIntelligence] macOS 26.0+ required, current version too old")
             throw AppleIntelligenceError.frameworkNotAvailable
         }
         
         // Additional runtime check for framework availability
         if !isFoundationModelsAvailable {
-            print("⚠️ [AppleIntelligence] Foundation Models not available on this system")
+            debugLog("⚠️ [AppleIntelligence] Foundation Models not available on this system")
             throw AppleIntelligenceError.frameworkNotAvailable
         }
         
         #if canImport(FoundationModels)
         if isFrameworkAvailable {
             do {
-                print("🤖 [AppleIntelligence] Extracting participants with Foundation Models")
+                debugLog("🤖 [AppleIntelligence] Extracting participants with Foundation Models")
                 
                 // Create a language model session with specialized instructions
                 let session = LanguageModelSession(instructions: """
@@ -471,19 +471,19 @@ Generate a comprehensive pre-meeting brief following the format above.
                 Only include names that appear before colons as speaker labels.
                 """
                 
-                print("🤖 [AppleIntelligence] Extracting participants from transcript...")
+                debugLog("🤖 [AppleIntelligence] Extracting participants from transcript...")
                 
                 // Send the prompt and get response using simpler API without options
                 // Research shows the simpler API is more stable in beta
                 do {
-                    print("🤖 [AppleIntelligence] Calling session.respond for participant extraction...")
+                    debugLog("🤖 [AppleIntelligence] Calling session.respond for participant extraction...")
                     let response = try await session.respond(to: prompt)
                     
                     // The response.content is already a String
                     let content = response.content
                     
                     guard !content.isEmpty else {
-                        print("⚠️ [AppleIntelligence] Response had empty content")
+                        debugLog("⚠️ [AppleIntelligence] Response had empty content")
                         throw AppleIntelligenceError.processingFailed
                     }
                     
@@ -506,7 +506,7 @@ Generate a comprehensive pre-meeting brief following the format above.
                         }
                         .filter { !$0.isEmpty }
                     
-                    print("✅ [AppleIntelligence] Found \(participants.count) participants: \(participants)")
+                    debugLog("✅ [AppleIntelligence] Found \(participants.count) participants: \(participants)")
                     return participants
                 } catch {
                     print("❌ [AppleIntelligence] Failed to extract participants: \(error)")

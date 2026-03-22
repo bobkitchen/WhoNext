@@ -72,7 +72,7 @@ struct WhoNextApp: App {
                             let url = try DiarizationDiagnostics.shared.exportToJSON()
                             NSWorkspace.shared.selectFile(url.path, inFileViewerRootedAtPath: url.deletingLastPathComponent().path)
                         } catch {
-                            print("[Developer] Diagnostic export failed: \(error)")
+                            debugLog("[Developer] Diagnostic export failed: \(error)")
                         }
                     }
                 }
@@ -221,7 +221,7 @@ struct WhoNextApp: App {
                 debugLog("✅ No user Person records to clean up")
             }
         } catch {
-            debugLog("❌ Failed to cleanup user Person records: \(error)")
+            print("❌ Failed to cleanup user Person records: \(error)")
         }
     }
 

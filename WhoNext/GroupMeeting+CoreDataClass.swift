@@ -154,7 +154,7 @@ public class GroupMeeting: NSManagedObject, @unchecked Sendable {
         do {
             try FileManager.default.removeItem(at: url)
             audioFilePath = nil
-            print("Deleted audio file for meeting \(identifier?.uuidString ?? "unknown")")
+            debugLog("Deleted audio file for meeting \(identifier?.uuidString ?? "unknown")")
         } catch {
             print("Failed to delete audio file: \(error)")
         }

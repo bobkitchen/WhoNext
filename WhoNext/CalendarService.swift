@@ -141,7 +141,7 @@ class CalendarService: ObservableObject {
             // Sync to widget after fetching
             syncToWidget()
         } catch {
-            debugLog("Error fetching meetings: \(error)")
+            print("Error fetching meetings: \(error)")
             await MainActor.run {
                 self.upcomingMeetings = []
             }
@@ -213,7 +213,7 @@ class CalendarService: ObservableObject {
 
             // Check if App Group is accessible
             guard let defaults = UserDefaults(suiteName: AppGroupConstants.groupIdentifier) else {
-                debugLog("❌ Widget Sync: FAILED - Cannot access App Group '\(AppGroupConstants.groupIdentifier)'")
+                print("❌ Widget Sync: FAILED - Cannot access App Group '\(AppGroupConstants.groupIdentifier)'")
                 debugLog("   → You need to add the App Group in Apple Developer portal")
                 return
             }
@@ -230,11 +230,11 @@ class CalendarService: ObservableObject {
             if let savedData = defaults.data(forKey: AppGroupConstants.meetingsKey) {
                 debugLog("✅ Widget Sync: Verified - \(savedData.count) bytes saved")
             } else {
-                debugLog("❌ Widget Sync: Verification FAILED - data not readable")
+                print("❌ Widget Sync: Verification FAILED - data not readable")
             }
 
         } catch {
-            debugLog("❌ Widget Sync: Encoding error - \(error)")
+            print("❌ Widget Sync: Encoding error - \(error)")
         }
 
         // Trigger widget refresh

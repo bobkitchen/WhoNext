@@ -229,7 +229,7 @@ struct TranscriptPopoutView: View {
             case .success(let url):
                 NSWorkspace.shared.open(url)
             case .failure(let error):
-                print("Export failed: \(error)")
+                debugLog("Export failed: \(error)")
             }
         }
     }

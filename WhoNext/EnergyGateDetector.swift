@@ -114,7 +114,7 @@ final class EnergyGateDetector {
             if logCounter >= logInterval {
                 logCounter = 0
                 let ratioDB = energyRatioDB(micRMS: micRMS, systemRMS: systemRMS)
-                print("[EnergyGate] ratio: \(String(format: "%.1f", ratioDB))dB  mic: \(String(format: "%.5f", micRMS))  sys: \(String(format: "%.5f", systemRMS))  speaking: \(isSpeaking)")
+                debugLog("[EnergyGate] ratio: \(String(format: "%.1f", ratioDB))dB  mic: \(String(format: "%.5f", micRMS))  sys: \(String(format: "%.5f", systemRMS))  speaking: \(isSpeaking)")
             }
 
             // Sliding window smoothing (majority vote)
@@ -142,7 +142,7 @@ final class EnergyGateDetector {
                 // Speech onset
                 speechStartTime = frameTime
                 let ratioDB = energyRatioDB(micRMS: micRMS, systemRMS: systemRMS)
-                print("[EnergyGate] ONSET at \(String(format: "%.2f", frameTime))s  mic: \(String(format: "%.5f", micRMS))  sys: \(String(format: "%.5f", systemRMS))  ratio: \(String(format: "%.1f", ratioDB))dB")
+                debugLog("[EnergyGate] ONSET at \(String(format: "%.2f", frameTime))s  mic: \(String(format: "%.5f", micRMS))  sys: \(String(format: "%.5f", systemRMS))  ratio: \(String(format: "%.1f", ratioDB))dB")
                 Task { @MainActor in
                     DiarizationDiagnostics.shared.logEnergyGateOnset(
                         at: frameTime, micRMS: micRMS, systemRMS: systemRMS, ratioDB: ratioDB
@@ -153,7 +153,7 @@ final class EnergyGateDetector {
                 if let start = speechStartTime {
                     let segEnd = frameTime + frameDuration
                     let segDuration = Float(segEnd - start)
-                    print("[EnergyGate] OFFSET at \(String(format: "%.2f", segEnd))s  duration: \(String(format: "%.2f", segDuration))s")
+                    debugLog("[EnergyGate] OFFSET at \(String(format: "%.2f", segEnd))s  duration: \(String(format: "%.2f", segDuration))s")
                     Task { @MainActor in
                         DiarizationDiagnostics.shared.logEnergyGateOffset(
                             at: segEnd, duration: TimeInterval(segDuration)
@@ -233,7 +233,7 @@ final class EnergyGateDetector {
         isCalibrated = true
         let speechThreshold = noiseFloor * noiseFloorMultiplier
         calibrationSamples.removeAll()
-        print("[EnergyGateDetector] Calibrated: noiseFloor=\(String(format: "%.5f", noiseFloor)) (raw median=\(String(format: "%.8f", medianNoiseFloor))), speechThreshold=\(String(format: "%.5f", speechThreshold)), ratioThresholdDB=\(String(format: "%.1f", ratioThresholdDB))dB, frames=\(calibrationFrameCount)")
+        debugLog("[EnergyGateDetector] Calibrated: noiseFloor=\(String(format: "%.5f", noiseFloor)) (raw median=\(String(format: "%.8f", medianNoiseFloor))), speechThreshold=\(String(format: "%.5f", speechThreshold)), ratioThresholdDB=\(String(format: "%.1f", ratioThresholdDB))dB, frames=\(calibrationFrameCount)")
 
         Task { @MainActor in
             DiarizationDiagnostics.shared.logEnergyGateCalibration(

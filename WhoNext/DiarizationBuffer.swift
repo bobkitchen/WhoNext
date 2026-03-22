@@ -72,7 +72,7 @@ actor DiarizationBuffer {
         isFirstChunk = true
 
         let chunkDuration = Double(chunk.count) / sampleRate
-        print("[DiarizationBuffer] Flushing \(String(format: "%.1f", chunkDuration))s chunk at \(String(format: "%.1f", startTime))s")
+        debugLog("[DiarizationBuffer] Flushing \(String(format: "%.1f", chunkDuration))s chunk at \(String(format: "%.1f", startTime))s")
 
         return (chunk: chunk, startTime: startTime)
     }
@@ -111,7 +111,7 @@ actor DiarizationBuffer {
         chunkStartTime = startTime + targetDuration - overlapDuration
 
         let chunkDuration = Double(chunk.count) / sampleRate
-        print("[DiarizationBuffer] Emitting \(String(format: "%.1f", chunkDuration))s chunk at \(String(format: "%.1f", startTime))s")
+        debugLog("[DiarizationBuffer] Emitting \(String(format: "%.1f", chunkDuration))s chunk at \(String(format: "%.1f", startTime))s")
 
         isFirstChunk = false
         return (chunk: chunk, startTime: startTime)

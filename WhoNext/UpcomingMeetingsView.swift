@@ -55,7 +55,7 @@ struct UpcomingMeetingsView: View {
                 } else {
                     // Handle access denied or error
                     if let error = error {
-                        print("Calendar access error: \(error)")
+                        debugLog("Calendar access error: \(error)")
                     }
                 }
             }

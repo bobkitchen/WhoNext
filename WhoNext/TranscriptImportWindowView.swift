@@ -391,7 +391,7 @@ struct TranscriptImportWindowView: View {
         // Load user notes taken during recording
         if let userNotes = meeting.userNotes, !userNotes.isEmpty {
             userNotesFromRecording = userNotes
-            print("📝 Loaded user notes from recording: \(userNotes.prefix(100))...")
+            debugLog("📝 Loaded user notes from recording: \(userNotes.prefix(100))...")
         }
 
         // Load participant data from recording
@@ -418,11 +418,11 @@ struct TranscriptImportWindowView: View {
             if !participantLabels.isEmpty {
                 let participantInfo = "Participants: \(participantLabels.joined(separator: ", "))\n\n"
                 transcriptText = participantInfo + transcriptText
-                print("📝 Including identified participants: \(participantLabels.joined(separator: ", "))")
+                debugLog("📝 Including identified participants: \(participantLabels.joined(separator: ", "))")
             }
         }
 
-        print("📝 Loaded recorded transcript from MeetingHandoff: \(transcriptText.prefix(100))...")
+        debugLog("📝 Loaded recorded transcript from MeetingHandoff: \(transcriptText.prefix(100))...")
 
         // Start processing immediately (no delay needed with in-memory handoff)
         startProcessing()
@@ -431,13 +431,13 @@ struct TranscriptImportWindowView: View {
     private func startProcessing() {
         // Guard against multiple processing calls
         guard !processingStarted else {
-            print("📊 TranscriptImportView: Processing already started, ignoring duplicate call")
+            debugLog("📊 TranscriptImportView: Processing already started, ignoring duplicate call")
             return
         }
         processingStarted = true
         hasStartedAutoProcessing = true
         processingError = nil
-        print("📊 TranscriptImportView: Starting processing")
+        debugLog("📊 TranscriptImportView: Starting processing")
 
         Task {
             let preIdentified = identifiedParticipants.isEmpty ? nil : identifiedParticipants
@@ -448,13 +448,13 @@ struct TranscriptImportWindowView: View {
                     processed.originalTranscript.timestamp = recordingDate
                 }
                 await MainActor.run {
-                    print("📊 TranscriptImportView: Processing succeeded, showing review screen")
+                    debugLog("📊 TranscriptImportView: Processing succeeded, showing review screen")
                     processedTranscript = processed
                     showingReviewScreen = true
                 }
             } else {
                 await MainActor.run {
-                    print("📊 TranscriptImportView: Processing failed")
+                    debugLog("📊 TranscriptImportView: Processing failed")
                     processingError = "Failed to process transcript. Please try again."
                     hasStartedAutoProcessing = false
                     processingStarted = false  // Allow retry

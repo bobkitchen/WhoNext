@@ -364,7 +364,7 @@ struct ChatView: View {
         do {
             people = try viewContext.fetch(fetchRequest)
         } catch {
-            debugLog("Failed to fetch people: \(error)")
+            print("Failed to fetch people: \(error)")
             people = []
         }
     }

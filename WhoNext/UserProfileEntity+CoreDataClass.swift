@@ -21,7 +21,7 @@ public class UserProfileEntity: NSManagedObject, @unchecked Sendable {
 
             if allProfiles.isEmpty {
                 // No profiles exist - create one with the singleton identifier
-                print("👤 [UserProfile] Creating new singleton profile")
+                debugLog("👤 [UserProfile] Creating new singleton profile")
                 return createSingletonProfile(in: context)
             }
 
@@ -30,7 +30,7 @@ public class UserProfileEntity: NSManagedObject, @unchecked Sendable {
                 // Merge any other profiles into the singleton, then delete them
                 let duplicates = allProfiles.filter { $0.identifier != singletonIdentifier }
                 if !duplicates.isEmpty {
-                    print("👤 [UserProfile] Found \(duplicates.count) duplicate profile(s) - merging...")
+                    debugLog("👤 [UserProfile] Found \(duplicates.count) duplicate profile(s) - merging...")
                     mergeDuplicates(duplicates, into: singleton, context: context)
                 }
                 return singleton
@@ -38,13 +38,13 @@ public class UserProfileEntity: NSManagedObject, @unchecked Sendable {
 
             // No singleton exists yet - migrate the most recent profile to become the singleton
             let mostRecent = allProfiles[0] // Already sorted by modifiedAt descending
-            print("👤 [UserProfile] Migrating existing profile to singleton identifier")
+            debugLog("👤 [UserProfile] Migrating existing profile to singleton identifier")
             mostRecent.identifier = singletonIdentifier
 
             // Merge any other profiles into this one, then delete them
             let duplicates = Array(allProfiles.dropFirst())
             if !duplicates.isEmpty {
-                print("👤 [UserProfile] Merging \(duplicates.count) duplicate profile(s)")
+                debugLog("👤 [UserProfile] Merging \(duplicates.count) duplicate profile(s)")
                 mergeDuplicates(duplicates, into: mostRecent, context: context)
             }
 
@@ -77,16 +77,16 @@ public class UserProfileEntity: NSManagedObject, @unchecked Sendable {
                 // Name
                 if (primary.name ?? "").isEmpty && !(duplicate.name ?? "").isEmpty {
                     primary.name = duplicate.name
-                    print("👤 [UserProfile] Merged name from duplicate: \(duplicate.name ?? "")")
+                    debugLog("👤 [UserProfile] Merged name from duplicate: \(duplicate.name ?? "")")
                 } else if dupIsNewer && !(duplicate.name ?? "").isEmpty {
                     primary.name = duplicate.name
-                    print("👤 [UserProfile] Using newer name: \(duplicate.name ?? "")")
+                    debugLog("👤 [UserProfile] Using newer name: \(duplicate.name ?? "")")
                 }
 
                 // Email
                 if (primary.email ?? "").isEmpty && !(duplicate.email ?? "").isEmpty {
                     primary.email = duplicate.email
-                    print("👤 [UserProfile] Merged email from duplicate")
+                    debugLog("👤 [UserProfile] Merged email from duplicate")
                 } else if dupIsNewer && !(duplicate.email ?? "").isEmpty {
                     primary.email = duplicate.email
                 }
@@ -118,7 +118,7 @@ public class UserProfileEntity: NSManagedObject, @unchecked Sendable {
                     primary.voiceConfidence = duplicate.voiceConfidence
                     primary.voiceSampleCount = duplicate.voiceSampleCount
                     primary.lastVoiceUpdate = duplicate.lastVoiceUpdate
-                    print("👤 [UserProfile] Using voice data with \(duplicate.voiceSampleCount) samples")
+                    debugLog("👤 [UserProfile] Using voice data with \(duplicate.voiceSampleCount) samples")
                 } else if duplicate.voiceSampleCount == primary.voiceSampleCount && dupIsNewer && duplicate.voiceEmbedding != nil {
                     primary.voiceEmbedding = duplicate.voiceEmbedding
                     primary.voiceConfidence = duplicate.voiceConfidence
@@ -134,14 +134,14 @@ public class UserProfileEntity: NSManagedObject, @unchecked Sendable {
 
             // Delete the duplicate
             context.delete(duplicate)
-            print("👤 [UserProfile] Deleted duplicate profile")
+            debugLog("👤 [UserProfile] Deleted duplicate profile")
         }
 
         // Save after merge
         do {
             if context.hasChanges {
                 try context.save()
-                print("👤 [UserProfile] Merge completed and saved")
+                debugLog("👤 [UserProfile] Merge completed and saved")
             }
         } catch {
             print("👤 [UserProfile] Error saving after merge: \(error)")

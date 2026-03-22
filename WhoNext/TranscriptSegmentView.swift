@@ -163,7 +163,7 @@ struct TranscriptSegmentView: View {
     
     private func flagImportant() {
         // TODO: Implement flagging
-        print("Flagged segment at \(segment.timestamp)")
+        debugLog("Flagged segment at \(segment.timestamp)")
     }
 }
 

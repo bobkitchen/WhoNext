@@ -26,7 +26,7 @@ class NativeSpeechFramework {
         let tempDir = FileManager.default.temporaryDirectory
         self.tempAudioURL = tempDir.appendingPathComponent("meeting_audio_\(UUID().uuidString).wav")
         
-        print("🎙️ Initializing Native Speech Framework for locale: \(locale.identifier)")
+        debugLog("🎙️ Initializing Native Speech Framework for locale: \(locale.identifier)")
     }
     
     // MARK: - Setup
@@ -41,7 +41,7 @@ class NativeSpeechFramework {
         // For now, we'll use SFSpeechRecognizer which is available
         // The actual SpeechAnalyzer/SpeechTranscriber APIs will be available
         // when the SDK is updated
-        print("✅ Native Speech Framework initialized")
+        debugLog("✅ Native Speech Framework initialized")
     }
     
     // MARK: - Transcription with Audio File
@@ -83,7 +83,7 @@ class NativeSpeechFramework {
         
         // Use on-device recognition if available
         if recognizer.supportsOnDeviceRecognition {
-            print("✅ Using on-device speech recognition")
+            debugLog("✅ Using on-device speech recognition")
         }
         
         // Create recognition request for the file
@@ -111,7 +111,7 @@ class NativeSpeechFramework {
                 if let result = result {
                     if result.isFinal {
                         let transcription = result.bestTranscription.formattedString
-                        print("✅ Transcription complete: \(transcription.prefix(100))...")
+                        debugLog("✅ Transcription complete: \(transcription.prefix(100))...")
                         continuation.resume(returning: transcription)
                     }
                 } else {
@@ -183,13 +183,13 @@ class NativeSpeechFramework {
             }
         }
         
-        print("✅ Started streaming transcription")
+        debugLog("✅ Started streaming transcription")
     }
     
     /// Stop streaming transcription
     func stopStreamingTranscription() {
         isTranscribing = false
-        print("🛑 Stopped streaming transcription")
+        debugLog("🛑 Stopped streaming transcription")
     }
     
     // MARK: - Helper Methods
@@ -232,7 +232,7 @@ class NativeSpeechFramework {
     deinit {
         // Clean up temp file
         try? FileManager.default.removeItem(at: tempAudioURL)
-        print("🧹 Native Speech Framework cleaned up")
+        debugLog("🧹 Native Speech Framework cleaned up")
     }
 }
 

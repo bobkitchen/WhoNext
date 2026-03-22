@@ -357,7 +357,7 @@ class GoogleCalendarProvider: NSObject, CalendarProvider {
             let json = try JSONSerialization.jsonObject(with: data) as? [String: Any]
             self.userEmail = json?["email"] as? String
         } catch {
-            debugLog("Failed to fetch user email: \(error)")
+            print("Failed to fetch user email: \(error)")
         }
     }
     

@@ -120,7 +120,7 @@ class VoiceTrainingRecorder: ObservableObject {
             }
         }
 
-        print("🎤 Started voice training recording")
+        debugLog("🎤 Started voice training recording")
     }
 
     /// Stop recording and process the voice sample
@@ -147,7 +147,7 @@ class VoiceTrainingRecorder: ObservableObject {
         isRecording = false
         recordingState = .processing
 
-        print("🎤 Stopped recording, processing \(duration)s of audio...")
+        debugLog("🎤 Stopped recording, processing \(duration)s of audio...")
 
         // Process the audio to extract voice embedding
         do {
@@ -157,7 +157,7 @@ class VoiceTrainingRecorder: ObservableObject {
             UserProfile.shared.addVoiceSample(embedding)
 
             recordingState = .completed
-            print("✅ Voice sample saved! Total samples: \(UserProfile.shared.voiceSampleCount)")
+            debugLog("✅ Voice sample saved! Total samples: \(UserProfile.shared.voiceSampleCount)")
 
             // Auto-reset after 2 seconds
             try? await Task.sleep(for: .seconds(2))
@@ -231,7 +231,7 @@ class VoiceTrainingRecorder: ObservableObject {
 
         #else
         // Fallback: generate a random embedding (for testing without AxiiDiarization)
-        print("⚠️ AxiiDiarization not available, using mock embedding")
+        debugLog("⚠️ AxiiDiarization not available, using mock embedding")
         return (0..<192).map { _ in Float.random(in: -1...1) }
         #endif
     }

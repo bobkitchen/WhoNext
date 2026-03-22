@@ -369,7 +369,7 @@ struct ConversationDetailView: View {
             // Post notification to refresh PersonDetailView
             NotificationCenter.default.post(name: .conversationUpdated, object: nil)
         } catch {
-            debugLog("Failed to save conversation changes: \(error)")
+            print("Failed to save conversation changes: \(error)")
         }
     }
 

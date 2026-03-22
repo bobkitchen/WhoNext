@@ -165,7 +165,7 @@ class PreMeetingBriefManager: ObservableObject {
             )
             debugLog("✅ Brief generated for \(person.wrappedName)")
         } catch {
-            debugLog("❌ Failed to generate brief: \(error)")
+            print("❌ Failed to generate brief: \(error)")
             briefCache[meeting.id] = CachedBrief(
                 meetingID: meeting.id,
                 personID: person.id,

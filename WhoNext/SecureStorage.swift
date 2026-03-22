@@ -210,7 +210,7 @@ class SecureStorage {
                 migrated += 1
                 debugLog("🔐 [SecureStorage] Migrated OpenAI API key")
             } catch {
-                debugLog("❌ [SecureStorage] Failed to migrate OpenAI key: \(error)")
+                print("❌ [SecureStorage] Failed to migrate OpenAI key: \(error)")
             }
         }
         
@@ -222,7 +222,7 @@ class SecureStorage {
                 migrated += 1
                 debugLog("🔐 [SecureStorage] Migrated Claude API key")
             } catch {
-                debugLog("❌ [SecureStorage] Failed to migrate Claude key: \(error)")
+                print("❌ [SecureStorage] Failed to migrate Claude key: \(error)")
             }
         }
         
@@ -234,7 +234,7 @@ class SecureStorage {
                 migrated += 1
                 debugLog("🔐 [SecureStorage] Migrated OpenRouter API key")
             } catch {
-                debugLog("❌ [SecureStorage] Failed to migrate OpenRouter key: \(error)")
+                print("❌ [SecureStorage] Failed to migrate OpenRouter key: \(error)")
             }
         }
         
@@ -275,7 +275,7 @@ extension SecureStorage {
         do {
             try storeAPIKey(key, for: provider)
         } catch {
-            debugLog("❌ [SecureStorage] Failed to store \(provider.displayName) key: \(error)")
+            print("❌ [SecureStorage] Failed to store \(provider.displayName) key: \(error)")
         }
     }
     
@@ -284,7 +284,7 @@ extension SecureStorage {
         do {
             try deleteAPIKey(for: provider)
         } catch {
-            debugLog("❌ [SecureStorage] Failed to delete \(provider.displayName) key: \(error)")
+            print("❌ [SecureStorage] Failed to delete \(provider.displayName) key: \(error)")
         }
     }
 }

@@ -140,10 +140,10 @@ class APIBalanceService {
                     // Calculate remaining balance
                     let remaining = totalCredits - totalUsage
 
-                    print("🔍 OpenRouter API Response:")
-                    print("  Total Credits: \(totalCredits)")
-                    print("  Total Usage: \(totalUsage)")
-                    print("  Remaining: \(remaining)")
+                    debugLog("🔍 OpenRouter API Response:")
+                    debugLog("  Total Credits: \(totalCredits)")
+                    debugLog("  Total Usage: \(totalUsage)")
+                    debugLog("  Remaining: \(remaining)")
 
                     // Show balance if user has purchased credits
                     if totalCredits > 0 {
@@ -156,7 +156,7 @@ class APIBalanceService {
                     // Log raw response for debugging
                     if let jsonString = String(data: data, encoding: .utf8) {
                         print("❌ Unable to parse OpenRouter response:")
-                        print(jsonString)
+                        debugLog(jsonString)
                     }
                     return Balance(provider: "OpenRouter", credits: nil, limit: nil, errorMessage: "Unable to parse response")
                 }

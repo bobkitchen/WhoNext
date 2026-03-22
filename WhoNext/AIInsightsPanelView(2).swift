@@ -275,14 +275,14 @@ struct AIInsightsPanelView: View {
         }
 
         // Debug logging
-        print("📝 [AI Context] Total context length: \(context.count) characters")
-        print("📝 [AI Context] Full context being sent to AI:")
-        print("=" + String(repeating: "=", count: 80))
-        print(context)
-        print("=" + String(repeating: "=", count: 80))
+        debugLog("📝 [AI Context] Total context length: \(context.count) characters")
+        debugLog("📝 [AI Context] Full context being sent to AI:")
+        debugLog("=" + String(repeating: "=", count: 80))
+        debugLog(context)
+        debugLog("=" + String(repeating: "=", count: 80))
 
         if context.contains("Notes:") {
-            print("✅ [AI Context] Context includes conversation notes")
+            debugLog("✅ [AI Context] Context includes conversation notes")
         } else {
             print("❌ [AI Context] WARNING: No conversation notes found in context")
         }

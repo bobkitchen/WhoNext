@@ -68,7 +68,7 @@ class AudioCapturer: NSObject, ObservableObject {
     func startCapture() async throws {
         guard !isCapturing else { return }
 
-        print("[AudioCapturer] Starting capture...")
+        debugLog("[AudioCapturer] Starting capture...")
 
         // Reset streams for new capture session
         setupStreams()
@@ -80,15 +80,15 @@ class AudioCapturer: NSObject, ObservableObject {
         do {
             try await startSystemAudioCapture()
             captureMode = .full
-            print("[AudioCapturer] Full audio capture (mic + system)")
+            debugLog("[AudioCapturer] Full audio capture (mic + system)")
         } catch {
             // Log the ACTUAL error — don't assume it's always permission denial
             let nsError = error as NSError
-            print("[AudioCapturer] ⚠️ System audio capture FAILED:")
+            debugLog("[AudioCapturer] ⚠️ System audio capture FAILED:")
             print("[AudioCapturer]   Error: \(error.localizedDescription)")
             print("[AudioCapturer]   Domain: \(nsError.domain), Code: \(nsError.code)")
             if let underlying = nsError.userInfo[NSUnderlyingErrorKey] as? NSError {
-                print("[AudioCapturer]   Underlying: \(underlying.domain) code \(underlying.code): \(underlying.localizedDescription)")
+                debugLog("[AudioCapturer]   Underlying: \(underlying.domain) code \(underlying.code): \(underlying.localizedDescription)")
             }
 
             // Retry once after a brief delay — SCShareableContent can transiently fail
@@ -97,23 +97,23 @@ class AudioCapturer: NSObject, ObservableObject {
                 try await Task.sleep(for: .milliseconds(500))
                 try await startSystemAudioCapture()
                 captureMode = .full
-                print("[AudioCapturer] Full audio capture (mic + system) — succeeded on retry")
+                debugLog("[AudioCapturer] Full audio capture (mic + system) — succeeded on retry")
             } catch {
                 captureMode = .microphoneOnly
                 let retryError = error as NSError
                 print("[AudioCapturer] ⚠️ System audio retry also failed: \(retryError.domain) code \(retryError.code): \(retryError.localizedDescription)")
-                print("[AudioCapturer] Falling back to microphone only mode")
+                debugLog("[AudioCapturer] Falling back to microphone only mode")
             }
         }
 
         isCapturing = true
-        print("[AudioCapturer] Capture started successfully in \(captureMode.rawValue) mode")
+        debugLog("[AudioCapturer] Capture started successfully in \(captureMode.rawValue) mode")
     }
 
     func stopCapture() {
         guard isCapturing else { return }
 
-        print("[AudioCapturer] Stopping capture...")
+        debugLog("[AudioCapturer] Stopping capture...")
 
         // Stop mic
         audioEngine?.stop()
@@ -136,7 +136,7 @@ class AudioCapturer: NSObject, ObservableObject {
 
         isEchoCancellationActive = false
         isCapturing = false
-        print("[AudioCapturer] Capture stopped")
+        debugLog("[AudioCapturer] Capture stopped")
     }
 
     // MARK: - Microphone Capture
@@ -148,11 +148,11 @@ class AudioCapturer: NSObject, ObservableObject {
         // Voice Processing disabled — causes persistent DSP fault state on macOS,
         // crushing mic to silence (RMS 0.0000). Mic format reverts to native device format.
         isEchoCancellationActive = false
-        print("[AudioCapturer] Voice Processing disabled (AEC off)")
+        debugLog("[AudioCapturer] Voice Processing disabled (AEC off)")
 
         // Get input format
         let inputFormat = inputNode.outputFormat(forBus: 0)
-        print("[AudioCapturer] Mic input format: \(inputFormat.sampleRate)Hz, \(inputFormat.channelCount) channels")
+        debugLog("[AudioCapturer] Mic input format: \(inputFormat.sampleRate)Hz, \(inputFormat.channelCount) channels")
 
         // Create target format (16kHz mono)
         guard let targetFormat = AVAudioFormat(
@@ -192,7 +192,7 @@ class AudioCapturer: NSObject, ObservableObject {
         try engine.start()
 
         self.audioEngine = engine
-        print("[AudioCapturer] Microphone capture started")
+        debugLog("[AudioCapturer] Microphone capture started")
     }
 
     // MARK: - System Audio Capture
@@ -253,7 +253,7 @@ class AudioCapturer: NSObject, ObservableObject {
         try await stream.startCapture()
 
         self.scStream = stream
-        print("[AudioCapturer] System audio capture started")
+        debugLog("[AudioCapturer] System audio capture started")
     }
 
     // MARK: - Buffer Conversion
@@ -278,7 +278,7 @@ class AudioCapturer: NSObject, ObservableObject {
         }
 
         if status == .error || error != nil {
-            print("[AudioCapturer] Conversion error: \(error?.localizedDescription ?? "unknown")")
+            debugLog("[AudioCapturer] Conversion error: \(error?.localizedDescription ?? "unknown")")
             return nil
         }
 
@@ -369,7 +369,7 @@ private class AudioStreamOutput: NSObject, SCStreamOutput {
 
         // Log format occasionally
         if logCounter % 500 == 0 {
-            print("[AudioStreamOutput] System audio format: \(sourceSampleRate)Hz, \(channelCount) ch, \(asbd.mBitsPerChannel) bits, flags: \(asbd.mFormatFlags)")
+            debugLog("[AudioStreamOutput] System audio format: \(sourceSampleRate)Hz, \(channelCount) ch, \(asbd.mBitsPerChannel) bits, flags: \(asbd.mFormatFlags)")
         }
         logCounter += 1
 
@@ -461,7 +461,7 @@ private class AudioStreamOutput: NSObject, SCStreamOutput {
                 }
             }
         } else {
-            print("[AudioStreamOutput] Unsupported format: \(asbd.mBitsPerChannel) bits, flags: \(asbd.mFormatFlags)")
+            debugLog("[AudioStreamOutput] Unsupported format: \(asbd.mBitsPerChannel) bits, flags: \(asbd.mFormatFlags)")
             return nil
         }
 

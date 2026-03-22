@@ -61,7 +61,7 @@ class AudioStorageManager {
     
     /// Compress an audio file after recording
     func compressAudioFile(_ fileURL: URL) async throws -> URL {
-        print("🗜️ Compressing audio file: \(fileURL.lastPathComponent)")
+        debugLog("🗜️ Compressing audio file: \(fileURL.lastPathComponent)")
         
         let inputFile = try AVAudioFile(forReading: fileURL)
         let format = inputFile.processingFormat
@@ -93,7 +93,7 @@ class AudioStorageManager {
         let compressedSize = try fileManager.attributesOfItem(atPath: fileURL.path)[.size] as? Int ?? 0
         let compressionRatio = Double(originalSize) / Double(compressedSize)
         
-        print("✅ Compression complete: \(formatBytes(originalSize)) → \(formatBytes(compressedSize)) (ratio: \(String(format: "%.1fx", compressionRatio)))")
+        debugLog("✅ Compression complete: \(formatBytes(originalSize)) → \(formatBytes(compressedSize)) (ratio: \(String(format: "%.1fx", compressionRatio)))")
         
         return fileURL
     }
@@ -110,8 +110,8 @@ class AudioStorageManager {
         // Also update Core Data if meeting exists
         updateMeetingAudioExpiration(meetingID: meetingID, expirationDate: deleteDate)
         
-        print("🗓️ Scheduled audio deletion for \(meetingID.uuidString) on \(deleteDate) (in \(days) days)")
-        print("📝 Note: Transcript and summary will be preserved permanently")
+        debugLog("🗓️ Scheduled audio deletion for \(meetingID.uuidString) on \(deleteDate) (in \(days) days)")
+        debugLog("📝 Note: Transcript and summary will be preserved permanently")
     }
     
     /// Update Core Data with audio expiration date
@@ -127,16 +127,16 @@ class AudioStorageManager {
             if let meeting = meetings.first {
                 meeting.scheduledDeletion = expirationDate
                 try context.save()
-                print("✅ Updated Core Data with audio expiration date")
+                debugLog("✅ Updated Core Data with audio expiration date")
             }
         } catch {
-            print("⚠️ Could not update Core Data with expiration: \(error)")
+            debugLog("⚠️ Could not update Core Data with expiration: \(error)")
         }
     }
     
     /// Delete expired audio files (but preserve transcripts and summaries)
     func deleteExpiredFiles() {
-        print("🧹 Checking for expired audio files (transcripts will be preserved)...")
+        debugLog("🧹 Checking for expired audio files (transcripts will be preserved)...")
         
         var scheduledDeletions = UserDefaults.standard.dictionary(forKey: "ScheduledAudioDeletions") as? [String: Date] ?? [:]
         let now = Date()
@@ -151,7 +151,7 @@ class AudioStorageManager {
                     do {
                         try fileManager.removeItem(at: fileURL)
                         deletedCount += 1
-                        print("🗑️ Deleted expired audio file: \(meetingID)")
+                        debugLog("🗑️ Deleted expired audio file: \(meetingID)")
                         
                         // Update Core Data to clear audio path but keep all other data
                         clearAudioPathInCoreData(meetingID: meetingID)
@@ -170,8 +170,8 @@ class AudioStorageManager {
         UserDefaults.standard.set(scheduledDeletions, forKey: "ScheduledAudioDeletions")
         
         if deletedCount > 0 {
-            print("✅ Deleted \(deletedCount) expired audio files")
-            print("📝 All transcripts, summaries, and action items have been preserved")
+            debugLog("✅ Deleted \(deletedCount) expired audio files")
+            debugLog("📝 All transcripts, summaries, and action items have been preserved")
         }
     }
     
@@ -189,10 +189,10 @@ class AudioStorageManager {
                 meeting.audioFilePath = nil
                 meeting.scheduledDeletion = nil
                 try context.save()
-                print("✅ Cleared audio path in Core Data, preserved transcript and summary")
+                debugLog("✅ Cleared audio path in Core Data, preserved transcript and summary")
             }
         } catch {
-            print("⚠️ Could not update Core Data: \(error)")
+            debugLog("⚠️ Could not update Core Data: \(error)")
         }
     }
     
@@ -254,7 +254,7 @@ class AudioStorageManager {
         if !fileManager.fileExists(atPath: audioDir.path) {
             do {
                 try fileManager.createDirectory(at: audioDir, withIntermediateDirectories: true)
-                print("📁 Created audio directory: \(audioDir.path)")
+                debugLog("📁 Created audio directory: \(audioDir.path)")
             } catch {
                 print("❌ Failed to create audio directory: \(error)")
             }
@@ -276,7 +276,7 @@ class AudioStorageManager {
     }
     
     private func performDailyCleanup() {
-        print("🧹 Performing daily cleanup...")
+        debugLog("🧹 Performing daily cleanup...")
         
         // Delete expired files
         deleteExpiredFiles()
@@ -286,7 +286,7 @@ class AudioStorageManager {
         
         // Log storage usage
         let usage = getStorageUsage()
-        print("💾 Storage usage: \(usage.formattedSize) across \(usage.fileCount) files")
+        debugLog("💾 Storage usage: \(usage.formattedSize) across \(usage.fileCount) files")
     }
     
     private func cleanupOrphanedFiles() {
@@ -305,7 +305,7 @@ class AudioStorageManager {
                             // Orphaned file - delete it
                             do {
                                 try fileManager.removeItem(at: fileURL)
-                                print("🗑️ Deleted orphaned file: \(fileName)")
+                                debugLog("🗑️ Deleted orphaned file: \(fileName)")
                             } catch {
                                 print("❌ Failed to delete orphaned file: \(error)")
                             }

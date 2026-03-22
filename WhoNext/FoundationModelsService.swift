@@ -160,19 +160,19 @@ class FoundationModelsService: ObservableObject {
     private func initialize() async {
         #if canImport(FoundationModels)
         do {
-            print("🤖 [FoundationModels] Initializing language model session...")
+            debugLog("🤖 [FoundationModels] Initializing language model session...")
             
             // Check availability first
             let availability = SystemLanguageModel.default.availability
             switch availability {
             case .available:
-                print("✅ [FoundationModels] Model is available")
+                debugLog("✅ [FoundationModels] Model is available")
             case .unavailable(let reason):
                 print("❌ [FoundationModels] Model unavailable: \(reason)")
                 isModelReady = false
                 return
             @unknown default:
-                print("⚠️ [FoundationModels] Unknown availability status")
+                debugLog("⚠️ [FoundationModels] Unknown availability status")
             }
             
             // Setup tools
@@ -186,7 +186,7 @@ class FoundationModelsService: ObservableObject {
             await session?.prewarm()
             
             isModelReady = true
-            print("✅ [FoundationModels] Session ready for use")
+            debugLog("✅ [FoundationModels] Session ready for use")
             
         } catch {
             print("❌ [FoundationModels] Initialization failed: \(error)")
@@ -194,7 +194,7 @@ class FoundationModelsService: ObservableObject {
             isModelReady = false
         }
         #else
-        print("⚠️ [FoundationModels] Framework not available on this OS version")
+        debugLog("⚠️ [FoundationModels] Framework not available on this OS version")
         isModelReady = false
         #endif
     }
@@ -206,7 +206,7 @@ class FoundationModelsService: ObservableObject {
         #if canImport(FoundationModels)
         // Tool setup would go here when Tool protocol is available
         // For now, tools array remains empty
-        print("🔧 [FoundationModels] Tool setup deferred - protocol not yet available")
+        debugLog("🔧 [FoundationModels] Tool setup deferred - protocol not yet available")
         #endif
     }
     
@@ -219,7 +219,7 @@ class FoundationModelsService: ObservableObject {
             throw FoundationModelsError.modelNotReady
         }
         
-        print("📝 [FoundationModels] Generating structured meeting summary...")
+        debugLog("📝 [FoundationModels] Generating structured meeting summary...")
         
         // Build context-aware prompt
         var contextPrefix = ""
@@ -255,7 +255,7 @@ class FoundationModelsService: ObservableObject {
         isResponding = false
         
         let summary = response.content
-        print("✅ [FoundationModels] Generated summary with \(summary.keyPoints.count) key points")
+        debugLog("✅ [FoundationModels] Generated summary with \(summary.keyPoints.count) key points")
         
         return summary
         #else
@@ -308,7 +308,7 @@ class FoundationModelsService: ObservableObject {
             throw FoundationModelsError.modelNotReady
         }
         
-        print("⚙️ [FoundationModels] Processing \(items.count) action items with tools...")
+        debugLog("⚙️ [FoundationModels] Processing \(items.count) action items with tools...")
         
         for item in items {
             let prompt = """
@@ -326,10 +326,10 @@ class FoundationModelsService: ObservableObject {
             let response = try await session.respond(to: prompt)
             isResponding = false
             
-            print("✅ Processed: \(response.content)")
+            debugLog("✅ Processed: \(response.content)")
         }
         
-        print("✅ [FoundationModels] Action items processed")
+        debugLog("✅ [FoundationModels] Action items processed")
         #endif
     }
     
@@ -359,7 +359,7 @@ class FoundationModelsService: ObservableObject {
         // Create new session with tools
         session = LanguageModelSession(tools: tools)
         await session?.prewarm()
-        print("🔄 [FoundationModels] Session reset")
+        debugLog("🔄 [FoundationModels] Session reset")
         #endif
     }
     
@@ -451,7 +451,7 @@ final class MeetingCalendarTool /* : Tool */ {
         ✅ Event scheduled successfully
         """
         
-        print("📅 [Tool] Calendar event created for '\(arguments.eventTitle)'")
+        debugLog("📅 [Tool] Calendar event created for '\(arguments.eventTitle)'")
         return result
     }
 }
@@ -481,7 +481,7 @@ final class MeetingEmailTool /* : Tool */ {
     nonisolated func call(arguments: Arguments) async throws -> String {
         // Implementation would integrate with email service
         let result = "Created email draft to \(arguments.recipients.count) recipients with subject: \(arguments.subject)"
-        print("✉️ [Tool] \(result)")
+        debugLog("✉️ [Tool] \(result)")
         return result
     }
 }
@@ -513,7 +513,7 @@ final class TaskManagementTool /* : Tool */ {
         let assigneeText = arguments.assignee ?? "Unassigned"
         let dueDateText = arguments.dueDate ?? "No due date"
         let result = "Created task '\(arguments.taskTitle)' assigned to \(assigneeText) with \(arguments.priority) priority, due: \(dueDateText)"
-        print("✓ [Tool] \(result)")
+        debugLog("✓ [Tool] \(result)")
         return result
     }
 }

@@ -356,7 +356,7 @@ struct EnhancedPersonCard: View {
         
         if let url = URL(string: mailtoString) {
             NSWorkspace.shared.open(url)
-            print("✅ Email opened in default mail client for scheduling with \(person.name ?? "person")")
+            debugLog("✅ Email opened in default mail client for scheduling with \(person.name ?? "person")")
         }
     }
     

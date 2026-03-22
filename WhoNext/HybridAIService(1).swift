@@ -444,7 +444,7 @@ class HybridAIService: ObservableObject {
             
             // Try to parse JSON response
             guard let data = cleanedResponse.data(using: .utf8) else {
-                debugLog("🤖 Failed to convert response to data")
+                print("🤖 Failed to convert response to data")
                 throw HybridAIError.allProvidersFailed
             }
             

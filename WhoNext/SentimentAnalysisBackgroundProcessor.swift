@@ -198,7 +198,7 @@ class SentimentAnalysisBackgroundProcessor: ObservableObject {
         } catch {
             processingState = .failed(error)
             isProcessing = false
-            debugLog("Failed to start sentiment analysis processing: \(error)")
+            print("Failed to start sentiment analysis processing: \(error)")
             lastError = error.localizedDescription
         }
     }

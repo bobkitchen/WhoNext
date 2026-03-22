@@ -58,7 +58,7 @@ class SentimentAnalysisService {
             } else {
                 // Fallback to basic sentiment analysis without custom model
                 self.sentimentPredictor = nil
-                print("⚠️ Custom sentiment model not found, using basic analysis")
+                debugLog("⚠️ Custom sentiment model not found, using basic analysis")
             }
         } catch {
             self.sentimentPredictor = nil
@@ -173,7 +173,7 @@ class SentimentAnalysisService {
             let response = try await AIService.shared.sendMessage(prompt)
             return parseAISentimentResponse(response, originalText: combinedText)
         } catch {
-            print("AI sentiment analysis failed, falling back to basic analysis: \(error)")
+            debugLog("AI sentiment analysis failed, falling back to basic analysis: \(error)")
             return await analyzeConversation(summary: summary, notes: notes)
         }
     }
@@ -187,7 +187,7 @@ class SentimentAnalysisService {
                 return lastAnalysis == nil || analysisVersion != currentAnalysisVersion
             }
         
-        print("🤖 Starting AI-powered sentiment analysis for \(conversationsNeedingAnalysis.count) conversations")
+        debugLog("🤖 Starting AI-powered sentiment analysis for \(conversationsNeedingAnalysis.count) conversations")
         
         for (index, conversation) in conversationsNeedingAnalysis.enumerated() {
             // Try AI analysis first, fallback to basic if it fails
@@ -212,7 +212,7 @@ class SentimentAnalysisService {
             try? await Task.sleep(nanoseconds: 100_000_000) // 0.1 seconds
         }
         
-        print("✅ Completed sentiment analysis for \(conversationsNeedingAnalysis.count) conversations")
+        debugLog("✅ Completed sentiment analysis for \(conversationsNeedingAnalysis.count) conversations")
     }
     
     // MARK: - Private Analysis Methods

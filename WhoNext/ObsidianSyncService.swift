@@ -82,7 +82,7 @@ class ObsidianSyncService: ObservableObject {
             debugLog("📓 Obsidian: Vault set to \(url.path)")
         } catch {
             lastError = "Failed to save vault access: \(error.localizedDescription)"
-            debugLog("❌ Obsidian: Bookmark error - \(error)")
+            print("❌ Obsidian: Bookmark error - \(error)")
         }
     }
 
@@ -106,7 +106,7 @@ class ObsidianSyncService: ObservableObject {
 
             return url
         } catch {
-            debugLog("❌ Obsidian: Failed to resolve bookmark - \(error)")
+            print("❌ Obsidian: Failed to resolve bookmark - \(error)")
             return nil
         }
     }
@@ -181,7 +181,7 @@ class ObsidianSyncService: ObservableObject {
                 try writeConversation(conv, to: vault)
             } catch {
                 totalErrors += 1
-                debugLog("❌ Obsidian: Failed to write conversation - \(error)")
+                print("❌ Obsidian: Failed to write conversation - \(error)")
             }
         }
 
@@ -195,7 +195,7 @@ class ObsidianSyncService: ObservableObject {
                 try writeGroupMeeting(meeting, to: vault)
             } catch {
                 totalErrors += 1
-                debugLog("❌ Obsidian: Failed to write group meeting - \(error)")
+                print("❌ Obsidian: Failed to write group meeting - \(error)")
             }
         }
 
@@ -213,11 +213,11 @@ class ObsidianSyncService: ObservableObject {
                 try writePersonNote(person, to: vault)
             } catch {
                 totalErrors += 1
-                debugLog("❌ Obsidian: Failed to write person - \(error)")
+                print("❌ Obsidian: Failed to write person - \(error)")
             }
         }
 
-        debugLog("📓 Obsidian: Full sync complete - \(conversations.count) convs, \(groupMeetings.count) group meetings, \(people.count) people (\(totalErrors) errors)")
+        print("📓 Obsidian: Full sync complete - \(conversations.count) convs, \(groupMeetings.count) group meetings, \(people.count) people (\(totalErrors) errors)")
 
         await MainActor.run {
             syncInProgress = false
@@ -239,7 +239,7 @@ class ObsidianSyncService: ObservableObject {
             do {
                 try ensureDirectories(in: vault)
             } catch {
-                debugLog("❌ Obsidian: Directory creation failed - \(error)")
+                print("❌ Obsidian: Directory creation failed - \(error)")
                 return
             }
 
@@ -260,7 +260,7 @@ class ObsidianSyncService: ObservableObject {
                         try writePersonNote(person, to: vault)
                     }
                 } catch {
-                    debugLog("❌ Obsidian: Incremental conv sync error - \(error)")
+                    print("❌ Obsidian: Incremental conv sync error - \(error)")
                 }
             }
 
@@ -279,7 +279,7 @@ class ObsidianSyncService: ObservableObject {
             do {
                 try ensureDirectories(in: vault)
             } catch {
-                debugLog("❌ Obsidian: Directory creation failed - \(error)")
+                print("❌ Obsidian: Directory creation failed - \(error)")
                 return
             }
 
@@ -300,7 +300,7 @@ class ObsidianSyncService: ObservableObject {
                         try writePersonNote(person, to: vault)
                     }
                 } catch {
-                    debugLog("❌ Obsidian: Incremental group meeting sync error - \(error)")
+                    print("❌ Obsidian: Incremental group meeting sync error - \(error)")
                 }
             }
 

@@ -69,14 +69,14 @@ class WhisperKitTranscriber: ObservableObject {
 
     init(model: WhisperModel = .base) {
         self.selectedModel = model
-        print("📱 [WhisperKitTranscriber] Initialized with model: \(model.rawValue)")
+        debugLog("📱 [WhisperKitTranscriber] Initialized with model: \(model.rawValue)")
     }
 
     // MARK: - Model Management
 
     /// Initialize WhisperKit and download model if needed
     func initialize() async throws {
-        print("🔄 [WhisperKitTranscriber] Initializing with model: \(selectedModel.rawValue)")
+        debugLog("🔄 [WhisperKitTranscriber] Initializing with model: \(selectedModel.rawValue)")
 
         #if canImport(WhisperKit)
         do {
@@ -95,7 +95,7 @@ class WhisperKitTranscriber: ObservableObject {
             modelLoaded = true
             isReady = true
             isDownloadingModel = false
-            print("✅ [WhisperKitTranscriber] WhisperKit ready with model: \(selectedModel.rawValue)")
+            debugLog("✅ [WhisperKitTranscriber] WhisperKit ready with model: \(selectedModel.rawValue)")
 
         } catch {
             isDownloadingModel = false
@@ -104,7 +104,7 @@ class WhisperKitTranscriber: ObservableObject {
             throw TranscriptionError.modelLoadFailed(error.localizedDescription)
         }
         #else
-        print("⚠️ [WhisperKitTranscriber] WhisperKit not available")
+        debugLog("⚠️ [WhisperKitTranscriber] WhisperKit not available")
         throw TranscriptionError.serviceUnavailable
         #endif
     }
@@ -127,7 +127,7 @@ class WhisperKitTranscriber: ObservableObject {
     /// Start a new transcription session
     func startTranscribing() {
         guard isReady else {
-            print("⚠️ [WhisperKitTranscriber] Not ready - call initialize() first")
+            debugLog("⚠️ [WhisperKitTranscriber] Not ready - call initialize() first")
             return
         }
 
@@ -136,7 +136,7 @@ class WhisperKitTranscriber: ObservableObject {
         audioBuffer = []
         transcriptionStartTime = Date()
         lastTranscriptionTime = 0
-        print("🎙️ [WhisperKitTranscriber] Started transcription session")
+        debugLog("🎙️ [WhisperKitTranscriber] Started transcription session")
     }
 
     /// Process audio buffer and return transcription
@@ -144,13 +144,13 @@ class WhisperKitTranscriber: ObservableObject {
     /// - Returns: Transcribed text with timing information
     func processAudioBuffer(_ buffer: AVAudioPCMBuffer) async throws -> TranscriptionResult {
         guard isTranscribing, isReady else {
-            print("⚠️ [WhisperKitTranscriber] processAudioBuffer called but not ready - isTranscribing: \(isTranscribing), isReady: \(isReady)")
+            debugLog("⚠️ [WhisperKitTranscriber] processAudioBuffer called but not ready - isTranscribing: \(isTranscribing), isReady: \(isReady)")
             throw TranscriptionError.notReady
         }
 
         #if canImport(WhisperKit)
         guard let whisperKit else {
-            print("⚠️ [WhisperKitTranscriber] processAudioBuffer - whisperKit is nil")
+            debugLog("⚠️ [WhisperKitTranscriber] processAudioBuffer - whisperKit is nil")
             throw TranscriptionError.notReady
         }
 
@@ -165,7 +165,7 @@ class WhisperKitTranscriber: ObservableObject {
         guard bufferDuration >= minBufferDuration else {
             // Log buffer accumulation every ~5 seconds
             if Int(bufferDuration * 10) % 50 == 0 && bufferDuration > 0.1 {
-                print("📊 [WhisperKitTranscriber] Buffering audio: \(String(format: "%.1f", bufferDuration))s / \(minBufferDuration)s needed")
+                debugLog("📊 [WhisperKitTranscriber] Buffering audio: \(String(format: "%.1f", bufferDuration))s / \(minBufferDuration)s needed")
             }
             return TranscriptionResult(text: "", segments: [], timestamp: lastTranscriptionTime)
         }
@@ -182,17 +182,17 @@ class WhisperKitTranscriber: ObservableObject {
         let maxSample = audioBuffer.max() ?? 0
         let minSample = audioBuffer.min() ?? 0
 
-        print("🎙️ [WhisperKitTranscriber] Transcribing \(String(format: "%.1f", bufferDuration))s of audio (\(audioBuffer.count) samples)")
-        print("📊 [WhisperKitTranscriber] Buffer stats - RMS: \(String(format: "%.6f", rms)), Range: [\(String(format: "%.4f", minSample)), \(String(format: "%.4f", maxSample))]")
+        debugLog("🎙️ [WhisperKitTranscriber] Transcribing \(String(format: "%.1f", bufferDuration))s of audio (\(audioBuffer.count) samples)")
+        debugLog("📊 [WhisperKitTranscriber] Buffer stats - RMS: \(String(format: "%.6f", rms)), Range: [\(String(format: "%.4f", minSample)), \(String(format: "%.4f", maxSample))]")
 
         // NOTE: Removed audio normalization - it was causing clipping and distortion
         // which made Whisper hallucinate. The audio pipeline should deliver proper levels.
 
         // Check if audio might have issues
         if rms < 0.001 {
-            print("⚠️ [WhisperKitTranscriber] Audio appears to be silence (RMS < 0.001)")
+            debugLog("⚠️ [WhisperKitTranscriber] Audio appears to be silence (RMS < 0.001)")
         } else if minSample <= -0.99 || maxSample >= 0.99 {
-            print("⚠️ [WhisperKitTranscriber] Audio may be clipping (peaks at limits)")
+            debugLog("⚠️ [WhisperKitTranscriber] Audio may be clipping (peaks at limits)")
         }
 
         // Transcribe the audio with explicit options
@@ -232,9 +232,9 @@ class WhisperKitTranscriber: ObservableObject {
 
         // Log result
         if !fullText.isEmpty {
-            print("✅ [WhisperKitTranscriber] Transcribed: \"\(fullText.prefix(100))...\"")
+            debugLog("✅ [WhisperKitTranscriber] Transcribed: \"\(fullText.prefix(100))...\"")
         } else {
-            print("📝 [WhisperKitTranscriber] No speech detected in this segment")
+            debugLog("📝 [WhisperKitTranscriber] No speech detected in this segment")
         }
 
         // Clear processed audio (keep small overlap for continuity)
@@ -254,7 +254,7 @@ class WhisperKitTranscriber: ObservableObject {
     func stopTranscribing() {
         isTranscribing = false
         audioBuffer = []
-        print("🛑 [WhisperKitTranscriber] Stopped transcription session")
+        debugLog("🛑 [WhisperKitTranscriber] Stopped transcription session")
     }
 
     /// Transcribe a complete audio file
@@ -270,7 +270,7 @@ class WhisperKitTranscriber: ObservableObject {
             throw TranscriptionError.notReady
         }
 
-        print("📄 [WhisperKitTranscriber] Transcribing file: \(url.lastPathComponent)")
+        debugLog("📄 [WhisperKitTranscriber] Transcribing file: \(url.lastPathComponent)")
 
         let results = try await whisperKit.transcribe(audioPath: url.path)
 
@@ -313,7 +313,7 @@ class WhisperKitTranscriber: ObservableObject {
 
         // Log audio format occasionally (every ~100 calls)
         if audioBufferDiagnosticCounter % 100 == 0 {
-            print("📊 [WhisperKitTranscriber] Input audio format: \(inputSampleRate)Hz, \(channelCount) channel(s), \(frameLength) frames")
+            debugLog("📊 [WhisperKitTranscriber] Input audio format: \(inputSampleRate)Hz, \(channelCount) channel(s), \(frameLength) frames")
         }
         audioBufferDiagnosticCounter += 1
 
@@ -330,7 +330,7 @@ class WhisperKitTranscriber: ObservableObject {
             ) {
                 bufferToConvert = resampledBuffer
                 if audioBufferDiagnosticCounter % 100 == 1 {
-                    print("📊 [WhisperKitTranscriber] Resampled from \(inputSampleRate)Hz \(channelCount)ch to \(targetSampleRate)Hz mono: \(frameLength) → \(resampledBuffer.frameLength) frames")
+                    debugLog("📊 [WhisperKitTranscriber] Resampled from \(inputSampleRate)Hz \(channelCount)ch to \(targetSampleRate)Hz mono: \(frameLength) → \(resampledBuffer.frameLength) frames")
                 }
             } else {
                 print("⚠️ [WhisperKitTranscriber] Failed to resample audio buffer")
@@ -346,7 +346,7 @@ class WhisperKitTranscriber: ObservableObject {
             let rms = sqrt(sumOfSquares / Float(samples.count))
             let maxSample = samples.max() ?? 0
             let minSample = samples.min() ?? 0
-            print("📊 [WhisperKitTranscriber] After conversion: \(samples.count) samples at 16kHz, RMS: \(String(format: "%.6f", rms)), Range: [\(String(format: "%.4f", minSample)), \(String(format: "%.4f", maxSample))]")
+            debugLog("📊 [WhisperKitTranscriber] After conversion: \(samples.count) samples at 16kHz, RMS: \(String(format: "%.6f", rms)), Range: [\(String(format: "%.4f", minSample)), \(String(format: "%.4f", maxSample))]")
         }
 
         return samples

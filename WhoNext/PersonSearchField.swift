@@ -205,7 +205,7 @@ struct PersonSearchField: View {
         
         // Add safety check for Core Data context
         guard viewContext.persistentStoreCoordinator != nil else {
-            print("⚠️ Core Data context not ready for search")
+            debugLog("⚠️ Core Data context not ready for search")
             searchResults = []
             showingSuggestions = false
             return
@@ -240,7 +240,7 @@ struct PersonSearchField: View {
     private func createNewPerson() {
         // Add safety check for Core Data context
         guard viewContext.persistentStoreCoordinator != nil else {
-            print("⚠️ Core Data context not ready for creating person")
+            debugLog("⚠️ Core Data context not ready for creating person")
             return
         }
         

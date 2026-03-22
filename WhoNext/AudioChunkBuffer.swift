@@ -102,7 +102,7 @@ actor AudioChunkBuffer {
 
         // Log emission
         let chunkDuration = Double(chunk.count) / sampleRate
-        print("[AudioChunkBuffer] Emitting \(String(format: "%.1f", chunkDuration))s chunk (\(chunk.count) samples)")
+        debugLog("[AudioChunkBuffer] Emitting \(String(format: "%.1f", chunkDuration))s chunk (\(chunk.count) samples)")
 
         return chunk
     }

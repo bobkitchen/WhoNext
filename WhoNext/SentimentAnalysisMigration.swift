@@ -21,7 +21,7 @@ class SentimentAnalysisMigration {
             return false // No conversations, no migration needed
         } catch {
             // If we get an error accessing the fields, migration is likely needed
-            print("Migration check error: \(error)")
+            debugLog("Migration check error: \(error)")
             return true
         }
     }
@@ -53,7 +53,7 @@ class SentimentAnalysisMigration {
             
             if needsSave {
                 try context.save()
-                print("✅ Initial sentiment analysis setup completed for \(conversations.count) conversations")
+                debugLog("✅ Initial sentiment analysis setup completed for \(conversations.count) conversations")
             }
         } catch {
             print("❌ Error during initial sentiment analysis setup: \(error)")

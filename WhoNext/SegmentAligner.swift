@@ -50,7 +50,7 @@ class SegmentAligner {
     // MARK: - Initialization
 
     init() {
-        print("[SegmentAligner] Initialized")
+        debugLog("[SegmentAligner] Initialized")
     }
 
     // MARK: - Public Interface
@@ -81,7 +81,7 @@ class SegmentAligner {
         // Defensive cap
         if micSegments.count > 5000 {
             micSegments = Array(micSegments.suffix(5000))
-            print("[SegmentAligner] ⚠️ Mic segment cap hit: trimmed to 5000")
+            debugLog("[SegmentAligner] ⚠️ Mic segment cap hit: trimmed to 5000")
         }
 
         // Track known speakers
@@ -94,10 +94,10 @@ class SegmentAligner {
             let allSegments = micSegments + systemSegments
             let activeIds = Set(allSegments.map { $0.speakerId })
             knownSpeakers = knownSpeakers.intersection(activeIds)
-            print("[SegmentAligner] ⚠️ Speaker cap hit: pruned to \(knownSpeakers.count) active speakers")
+            debugLog("[SegmentAligner] ⚠️ Speaker cap hit: pruned to \(knownSpeakers.count) active speakers")
         }
 
-        print("[SegmentAligner] Updated mic with \(result.segments.count) segments, \(knownSpeakers.count) unique speakers total")
+        debugLog("[SegmentAligner] Updated mic with \(result.segments.count) segments, \(knownSpeakers.count) unique speakers total")
     }
 
     /// Update with new diarization results from system audio
@@ -111,7 +111,7 @@ class SegmentAligner {
         // Defensive cap
         if systemSegments.count > 5000 {
             systemSegments = Array(systemSegments.suffix(5000))
-            print("[SegmentAligner] ⚠️ System segment cap hit: trimmed to 5000")
+            debugLog("[SegmentAligner] ⚠️ System segment cap hit: trimmed to 5000")
         }
 
         // Track known speakers
@@ -124,10 +124,10 @@ class SegmentAligner {
             let allSegments = micSegments + systemSegments
             let activeIds = Set(allSegments.map { $0.speakerId })
             knownSpeakers = knownSpeakers.intersection(activeIds)
-            print("[SegmentAligner] ⚠️ Speaker cap hit: pruned to \(knownSpeakers.count) active speakers")
+            debugLog("[SegmentAligner] ⚠️ Speaker cap hit: pruned to \(knownSpeakers.count) active speakers")
         }
 
-        print("[SegmentAligner] Updated system with \(result.segments.count) segments, \(knownSpeakers.count) unique speakers total")
+        debugLog("[SegmentAligner] Updated system with \(result.segments.count) segments, \(knownSpeakers.count) unique speakers total")
     }
 
     /// Find the dominant speaker for a transcript time range
@@ -204,7 +204,7 @@ class SegmentAligner {
         knownSpeakers.remove(speakerId)
         let removed = before - systemSegments.count
         if removed > 0 {
-            print("[SegmentAligner] Removed \(removed) segments for suppressed speaker '\(speakerId)'")
+            debugLog("[SegmentAligner] Removed \(removed) segments for suppressed speaker '\(speakerId)'")
         }
     }
 
@@ -325,7 +325,7 @@ class SegmentAligner {
         lastReturnedSpeaker = nil
         #endif
 
-        print("[SegmentAligner] Reset")
+        debugLog("[SegmentAligner] Reset")
     }
 }
 

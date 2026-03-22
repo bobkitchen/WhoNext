@@ -302,7 +302,7 @@ class UserProfile: ObservableObject {
                     debugLog("👤 [UserProfile] Saved to Core Data (will sync via CloudKit)")
                 }
             } catch {
-                debugLog("👤 [UserProfile] Error saving: \(error)")
+                print("👤 [UserProfile] Error saving: \(error)")
             }
         }
     }

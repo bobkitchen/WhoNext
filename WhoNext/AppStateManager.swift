@@ -58,7 +58,7 @@ class AppStateManager: ObservableObject {
     
     private func setupBindings() {
         // Temporarily simplified - direct AppStateManager usage only
-        print("🚀 AppStateManager initialized with selectedTab: \(selectedTab)")
+        debugLog("🚀 AppStateManager initialized with selectedTab: \(selectedTab)")
     }
     
     private func initializeApp() {

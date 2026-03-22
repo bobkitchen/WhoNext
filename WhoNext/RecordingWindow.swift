@@ -533,11 +533,11 @@ struct RecordingWindowView: View {
         if let result = engine.diarizationManagerResult,
            let embedding = result.speakerDatabase?[rawId], !embedding.isEmpty {
             UserProfile.shared.addVoiceSample(embedding)
-            print("[RecordingWindow] Saved voice embedding to UserProfile from \(participant.speakerID)")
+            debugLog("[RecordingWindow] Saved voice embedding to UserProfile from \(participant.speakerID)")
         }
         #endif
 
-        print("[RecordingWindow] Marked \(participant.speakerID) as current user (\(userName))")
+        debugLog("[RecordingWindow] Marked \(participant.speakerID) as current user (\(userName))")
     }
 
     /// Merge two speakers: reassign transcript segments, update SpeakerCache, and feed VoicePrintManager
@@ -560,7 +560,7 @@ struct RecordingWindowView: View {
         )
         #endif
 
-        print("[RecordingWindow] Speaker merge complete: '\(sourceID)' → '\(destinationID)', \(updatedCount) segments updated")
+        debugLog("[RecordingWindow] Speaker merge complete: '\(sourceID)' → '\(destinationID)', \(updatedCount) segments updated")
     }
 
     /// Convert LiveMeeting.MeetingType to MeetingTypeBadge.MeetingType

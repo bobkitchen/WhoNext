@@ -48,8 +48,8 @@ class ChatContextService {
 
         let strategy = determineContextStrategy(for: message)
 
-        print("🔍 [ChatContext] Strategy: \(strategy) for message: \(String(message.prefix(50)))...")
-        print("🔍 [ChatContext] Filtered out current user, including \(filteredPeople.count) of \(people.count) people")
+        debugLog("🔍 [ChatContext] Strategy: \(strategy) for message: \(String(message.prefix(50)))...")
+        debugLog("🔍 [ChatContext] Filtered out current user, including \(filteredPeople.count) of \(people.count) people")
 
         switch strategy {
         case .minimal:
@@ -142,7 +142,7 @@ class ChatContextService {
             
             // Check if adding this person would exceed context limits
             if contextSize + personContext.count > maxContextSize {
-                print("🔍 [ChatContext] Context limit reached, included \(includedPeople) people")
+                debugLog("🔍 [ChatContext] Context limit reached, included \(includedPeople) people")
                 break
             }
             
@@ -310,7 +310,7 @@ class ChatContextService {
         let timezone = person.timezone ?? "Unknown"
         let conversations = person.conversations as? Set<Conversation> ?? []
 
-        print("📋 [PersonContext] Building context for: \(name), conversations: \(conversations.count)")
+        debugLog("📋 [PersonContext] Building context for: \(name), conversations: \(conversations.count)")
 
         var context = """
 
@@ -323,7 +323,7 @@ class ChatContextService {
         // Add background notes if available
         if let notes = person.notes, !notes.isEmpty {
             context += "\nBackground: \(notes)"
-            print("  ✅ Added background notes (\(notes.count) chars)")
+            debugLog("  ✅ Added background notes (\(notes.count) chars)")
         }
 
         // Add scheduled conversation info
@@ -343,10 +343,10 @@ class ChatContextService {
             let recentConversations = Array(sortedConversations.prefix(limit))
 
             context += "\n\nRecent Conversations:"
-            print("  📝 Including \(recentConversations.count) of \(conversations.count) conversations")
+            debugLog("  📝 Including \(recentConversations.count) of \(conversations.count) conversations")
 
             for (index, conversation) in recentConversations.enumerated() {
-                print("    📄 Processing conversation \(index + 1)")
+                debugLog("    📄 Processing conversation \(index + 1)")
 
                 // Validation flags
                 var dateWarning = ""
@@ -363,7 +363,7 @@ class ChatContextService {
                         print("      ❌ WARNING: Conversation dated in future!")
                     } else if daysSince == 0, let notes = conversation.notes, notes.count > 1000 {
                         dateWarning = " [⚠️ DATED TODAY - extensive notes suggest may be misdated]"
-                        print("      ⚠️ WARNING: Extensive notes but dated today")
+                        debugLog("      ⚠️ WARNING: Extensive notes but dated today")
                     }
 
                     // Check for date/created mismatch
@@ -371,28 +371,28 @@ class ChatContextService {
                         let daysDiff = abs(Calendar.current.dateComponents([.day], from: date, to: createdDate).day ?? 0)
                         if daysDiff > 7 {
                             dateWarning += " [Created \(daysDiff) days after meeting date - verify accuracy]"
-                            print("      ⚠️ WARNING: \(daysDiff) day gap between meeting and creation")
+                            debugLog("      ⚠️ WARNING: \(daysDiff) day gap between meeting and creation")
                         }
                     }
 
                     let timeContext = daysSince == 0 ? "Today" : daysSince == 1 ? "Yesterday" : "\(daysSince) days ago"
                     context += "\n- \(date.formatted(date: .abbreviated, time: .omitted)) (\(timeContext))\(dateWarning)"
-                    print("      Date: \(date)")
+                    debugLog("      Date: \(date)")
                 } else {
                     context += "\n- [No date recorded - INCOMPLETE DATA]"
-                    print("      ⚠️ No date on this conversation")
+                    debugLog("      ⚠️ No date on this conversation")
                 }
 
                 if let summary = conversation.summary, !summary.isEmpty {
                     context += "\n  Summary: \(summary)"
-                    print("      ✅ Added summary (\(summary.count) chars)")
+                    debugLog("      ✅ Added summary (\(summary.count) chars)")
                 }
 
                 if let notes = conversation.notes, !notes.isEmpty {
                     context += "\n  Notes: \(notes)"
-                    print("      ✅ Added notes (\(notes.count) chars)")
+                    debugLog("      ✅ Added notes (\(notes.count) chars)")
                 } else {
-                    print("      ⚠️ No notes for this conversation")
+                    debugLog("      ⚠️ No notes for this conversation")
                 }
 
                 // Add engagement metrics if available
@@ -401,7 +401,7 @@ class ChatContextService {
                 }
             }
         } else {
-            print("  ⚠️ No conversations found for \(name)")
+            debugLog("  ⚠️ No conversations found for \(name)")
         }
 
         context += "\n" + String(repeating: "-", count: 40)
@@ -449,7 +449,7 @@ extension ChatContextService {
             return context
         }
         
-        print("🔍 [ChatContext] Context too large (\(context.count) chars), optimizing for \(provider)")
+        debugLog("🔍 [ChatContext] Context too large (\(context.count) chars), optimizing for \(provider)")
         
         // Intelligent truncation preserving structure
         let lines = context.components(separatedBy: .newlines)

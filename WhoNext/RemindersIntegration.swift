@@ -45,7 +45,7 @@ class RemindersIntegration: ObservableObject {
             await MainActor.run {
                 lastError = "Reminders access was denied. Please enable it in System Settings > Privacy & Security > Reminders."
             }
-            debugLog("❌ Reminders access was previously denied - user must enable in System Settings")
+            print("❌ Reminders access was previously denied - user must enable in System Settings")
             return false
         }
 
@@ -64,7 +64,7 @@ class RemindersIntegration: ObservableObject {
             await MainActor.run {
                 lastError = "Failed to request Reminders access: \(error.localizedDescription)"
             }
-            debugLog("❌ Failed to request Reminders access: \(error)")
+            print("❌ Failed to request Reminders access: \(error)")
             return false
         }
     }
@@ -151,7 +151,7 @@ class RemindersIntegration: ObservableObject {
             debugLog("📋 Not authorized, requesting access...")
             let granted = await requestAccess()
             if !granted {
-                debugLog("❌ Reminders access not granted")
+                print("❌ Reminders access not granted")
                 return false
             }
         }
@@ -159,7 +159,7 @@ class RemindersIntegration: ObservableObject {
         // Get target reminders calendar (selected or default)
         guard let calendar = getTargetCalendar() else {
             lastError = "No reminders list found. Please ensure you have a Reminders list set up."
-            debugLog("❌ No reminders calendar found")
+            print("❌ No reminders calendar found")
             return false
         }
         debugLog("📋 Using reminders list: \(calendar.title)")
@@ -222,7 +222,7 @@ class RemindersIntegration: ObservableObject {
             return true
         } catch {
             lastError = error.localizedDescription
-            debugLog("❌ Failed to create reminder: \(error)")
+            print("❌ Failed to create reminder: \(error)")
             return false
         }
     }
@@ -268,7 +268,7 @@ class RemindersIntegration: ObservableObject {
         do {
             try eventStore.save(reminder, commit: true)
         } catch {
-            debugLog("❌ Failed to update reminder: \(error)")
+            print("❌ Failed to update reminder: \(error)")
         }
     }
 
@@ -286,7 +286,7 @@ class RemindersIntegration: ObservableObject {
             try eventStore.remove(reminder, commit: true)
             debugLog("🗑️ Deleted reminder: \(reminder.title ?? "Untitled")")
         } catch {
-            debugLog("❌ Failed to delete reminder: \(error)")
+            print("❌ Failed to delete reminder: \(error)")
         }
     }
 
@@ -315,7 +315,7 @@ class RemindersIntegration: ObservableObject {
             }
             try context.save()
         } catch {
-            debugLog("❌ Failed to sync reminders: \(error)")
+            print("❌ Failed to sync reminders: \(error)")
         }
     }
 }

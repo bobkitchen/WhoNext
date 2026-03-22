@@ -117,13 +117,13 @@ class AIService {
 
         // Force migration to OpenRouter if still using old providers
         if currentProvider != .openrouter {
-            print("🔄 Migrating provider from \(currentProvider) to OpenRouter")
+            debugLog("🔄 Migrating provider from \(currentProvider) to OpenRouter")
             currentProvider = .openrouter
         }
     }
     
     func sendMessage(_ message: String, context: String? = nil) async throws -> String {
-        print("🔍 [AIService] Using provider: \(currentProvider)")
+        debugLog("🔍 [AIService] Using provider: \(currentProvider)")
         switch currentProvider {
         case .openai:
             return try await sendMessageOpenAI(message, context: context)
@@ -134,7 +134,7 @@ class AIService {
                 let result = try await sendMessageOpenRouter(message, context: context)
                 // Check if OpenRouter gave a meaningful response
                 if result.trimmingCharacters(in: .whitespacesAndNewlines).count < 10 {
-                    print("⚠️ [OpenRouter] Response too short, falling back to OpenAI")
+                    debugLog("⚠️ [OpenRouter] Response too short, falling back to OpenAI")
                     if !openaiApiKey.isEmpty {
                         return try await sendMessageOpenAI(message, context: context)
                     } else {
@@ -154,15 +154,15 @@ class AIService {
     }
     
     private func sendMessageOpenAI(_ message: String, context: String? = nil) async throws -> String {
-        print("🔍 [OpenAI Chat] Starting chat message")
-        print("🔍 [OpenAI Chat] Message: \(String(message.prefix(100)))...")
+        debugLog("🔍 [OpenAI Chat] Starting chat message")
+        debugLog("🔍 [OpenAI Chat] Message: \(String(message.prefix(100)))...")
         
         guard !openaiApiKey.isEmpty else {
             print("❌ [OpenAI Chat] API key is missing")
             throw AIError.missingAPIKey
         }
         
-        print("🔍 [OpenAI Chat] API key present: \(!openaiApiKey.isEmpty)")
+        debugLog("🔍 [OpenAI Chat] API key present: \(!openaiApiKey.isEmpty)")
         
         // GPT-5 models have different parameter requirements
         let model = openaiModel  // Use configurable model
@@ -189,7 +189,7 @@ IMPORTANT FORMATTING RULES:
             // Add context if provided
             if let context = context {
                 combinedMessage += "Context:\n\(context)\n\n"
-                print("🔍 [OpenAI Chat] Context provided: \(String(context.prefix(100)))...")
+                debugLog("🔍 [OpenAI Chat] Context provided: \(String(context.prefix(100)))...")
             }
             
             // Add the user's message/prompt
@@ -203,7 +203,7 @@ IMPORTANT FORMATTING RULES:
                 "content": combinedMessage
             ])
             
-            print("🔍 [OpenAI Chat] Using GPT-5 format - combined message length: \(combinedMessage.count) chars")
+            debugLog("🔍 [OpenAI Chat] Using GPT-5 format - combined message length: \(combinedMessage.count) chars")
         } else {
             // GPT-4 and older models support system messages
             // System message with just formatting instructions
@@ -211,7 +211,7 @@ IMPORTANT FORMATTING RULES:
             
             if let context = context {
                 messages.append(["role": "system", "content": context])
-                print("🔍 [OpenAI Chat] Context provided: \(String(context.prefix(100)))...")
+                debugLog("🔍 [OpenAI Chat] Context provided: \(String(context.prefix(100)))...")
             }
             
             messages.append([
@@ -233,7 +233,7 @@ IMPORTANT FORMATTING RULES:
                 "messages": messages,
                 "max_completion_tokens": 8000
             ]
-            print("🔍 [OpenAI Chat] Using GPT-5 configuration with max_completion_tokens")
+            debugLog("🔍 [OpenAI Chat] Using GPT-5 configuration with max_completion_tokens")
         } else {
             // GPT-4 configuration: uses max_tokens and temperature
             requestBody = [
@@ -242,16 +242,16 @@ IMPORTANT FORMATTING RULES:
                 "max_tokens": 8000,
                 "temperature": 0.7
             ]
-            print("🔍 [OpenAI Chat] Using GPT-4 configuration with max_tokens and temperature")
+            debugLog("🔍 [OpenAI Chat] Using GPT-4 configuration with max_tokens and temperature")
         }
         
         // Log the exact request being sent
         if let jsonData = try? JSONSerialization.data(withJSONObject: requestBody),
            let jsonString = String(data: jsonData, encoding: .utf8) {
-            print("🔍 [OpenAI Chat] Full request body: \(jsonString)")
+            debugLog("🔍 [OpenAI Chat] Full request body: \(jsonString)")
         }
         
-        print("🔍 [OpenAI Chat] Request body created, sending to API...")
+        debugLog("🔍 [OpenAI Chat] Request body created, sending to API...")
         
         request.httpBody = try JSONSerialization.data(withJSONObject: requestBody)
         
@@ -262,41 +262,41 @@ IMPORTANT FORMATTING RULES:
             throw AIError.invalidResponse
         }
         
-        print("🔍 [OpenAI Chat] Response status: \(httpResponse.statusCode)")
+        debugLog("🔍 [OpenAI Chat] Response status: \(httpResponse.statusCode)")
         
         if httpResponse.statusCode == 200 {
             let responseString = String(data: data, encoding: .utf8) ?? "No response data"
-            print("🔍 [OpenAI Chat] Raw response: \(responseString)")  // Log FULL response for debugging
+            debugLog("🔍 [OpenAI Chat] Raw response: \(responseString)")  // Log FULL response for debugging
             
             // Try to parse as JSON first to see structure
             if let jsonObject = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
-                print("🔍 [OpenAI Chat] JSON structure: \(jsonObject.keys)")
+                debugLog("🔍 [OpenAI Chat] JSON structure: \(jsonObject.keys)")
                 if let choices = jsonObject["choices"] as? [[String: Any]] {
-                    print("🔍 [OpenAI Chat] Choices count: \(choices.count)")
+                    debugLog("🔍 [OpenAI Chat] Choices count: \(choices.count)")
                     if let firstChoice = choices.first {
-                        print("🔍 [OpenAI Chat] First choice keys: \(firstChoice.keys)")
+                        debugLog("🔍 [OpenAI Chat] First choice keys: \(firstChoice.keys)")
                         if let message = firstChoice["message"] as? [String: Any] {
-                            print("🔍 [OpenAI Chat] Message keys: \(message.keys)")
-                            print("🔍 [OpenAI Chat] Message content: \(message["content"] ?? "nil")")
+                            debugLog("🔍 [OpenAI Chat] Message keys: \(message.keys)")
+                            debugLog("🔍 [OpenAI Chat] Message content: \(message["content"] ?? "nil")")
                         }
                     }
                 }
                 if let usage = jsonObject["usage"] as? [String: Any] {
-                    print("🔍 [OpenAI Chat] Token usage: \(usage)")
+                    debugLog("🔍 [OpenAI Chat] Token usage: \(usage)")
                 }
             }
             
             do {
                 let decodedResponse = try JSONDecoder().decode(OpenAIResponse.self, from: data)
                 let content = decodedResponse.choices.first?.message.content ?? "No response content."
-                print("🔍 [OpenAI Chat] Success! Response length: \(content.count) characters")
+                debugLog("🔍 [OpenAI Chat] Success! Response length: \(content.count) characters")
                 
                 // If content is empty, log more details
                 if content.isEmpty || content == "No response content." {
-                    print("⚠️ [OpenAI Chat] Empty or default content received")
-                    print("⚠️ [OpenAI Chat] Choices count: \(decodedResponse.choices.count)")
-                    print("⚠️ [OpenAI Chat] Usage: \(decodedResponse.usage)")
-                    print("⚠️ [OpenAI Chat] Model: \(decodedResponse.model)")
+                    debugLog("⚠️ [OpenAI Chat] Empty or default content received")
+                    debugLog("⚠️ [OpenAI Chat] Choices count: \(decodedResponse.choices.count)")
+                    debugLog("⚠️ [OpenAI Chat] Usage: \(decodedResponse.usage)")
+                    debugLog("⚠️ [OpenAI Chat] Model: \(decodedResponse.model)")
                 }
                 
                 return content
@@ -384,7 +384,7 @@ IMPORTANT FORMATTING RULES:
     }
     
     private func sendMessageOpenRouter(_ message: String, context: String? = nil) async throws -> String {
-        print("🔍 [OpenRouter] Starting sendMessageOpenRouter")
+        debugLog("🔍 [OpenRouter] Starting sendMessageOpenRouter")
         
         // Formatting instructions to ensure good markdown output
         let formattingInstructions = """
@@ -403,12 +403,12 @@ IMPORTANT FORMATTING RULES:
         ]
         
         if let context = context {
-            print("🔍 [OpenRouter] Context received length: \(context.count) characters")
-            print("🔍 [OpenRouter] Context preview: \(String(context.prefix(200)))...")
+            debugLog("🔍 [OpenRouter] Context received length: \(context.count) characters")
+            debugLog("🔍 [OpenRouter] Context preview: \(String(context.prefix(200)))...")
             
             // For very large contexts, add it as a separate system message
             if context.count > 10000 {
-                print("⚠️ [OpenRouter] Large context detected (\(context.count) chars), splitting into chunks")
+                debugLog("⚠️ [OpenRouter] Large context detected (\(context.count) chars), splitting into chunks")
                 // Add context in chunks to avoid token limits
                 let chunkSize = 8000
                 var startIndex = context.startIndex
@@ -425,7 +425,7 @@ IMPORTANT FORMATTING RULES:
                 messages.append(["role": "system", "content": "Team Information Context:\n\(context)"])
             }
         } else {
-            print("⚠️ [OpenRouter] No context provided!")
+            debugLog("⚠️ [OpenRouter] No context provided!")
         }
         
         // Add user message with context reminder
@@ -444,7 +444,7 @@ IMPORTANT FORMATTING RULES:
             "temperature": 0.7
         ]
         
-        print("🔍 [OpenRouter] Request body structure: model=\(openrouterModel), messages count=\(messages.count)")
+        debugLog("🔍 [OpenRouter] Request body structure: model=\(openrouterModel), messages count=\(messages.count)")
         
         let url = URL(string: "https://openrouter.ai/api/v1/chat/completions")!
         var request = URLRequest(url: url)
@@ -458,30 +458,30 @@ IMPORTANT FORMATTING RULES:
             throw error
         }
         
-        print("🔍 [OpenRouter] Sending request...")
+        debugLog("🔍 [OpenRouter] Sending request...")
         
         do {
             let (data, response) = try await URLSession.shared.data(for: request)
-            print("🔍 [OpenRouter] Response status: \((response as? HTTPURLResponse)?.statusCode ?? 0)")
+            debugLog("🔍 [OpenRouter] Response status: \((response as? HTTPURLResponse)?.statusCode ?? 0)")
             
             if let httpResponse = response as? HTTPURLResponse {
-                print("🔍 [OpenRouter] Response headers: \(httpResponse.allHeaderFields)")
+                debugLog("🔍 [OpenRouter] Response headers: \(httpResponse.allHeaderFields)")
             }
             
             let jsonResponse = try JSONSerialization.jsonObject(with: data) as? [String: Any]
-            print("🔍 [OpenRouter] Full response: \(jsonResponse ?? [:])")
+            debugLog("🔍 [OpenRouter] Full response: \(jsonResponse ?? [:])")
             
             if let choices = jsonResponse?["choices"] as? [[String: Any]],
                let firstChoice = choices.first,
                let message = firstChoice["message"] as? [String: Any],
                let content = message["content"] as? String {
-                print("🔍 [OpenRouter] Decoded content: \(content)")
+                debugLog("🔍 [OpenRouter] Decoded content: \(content)")
                 return content.trimmingCharacters(in: .whitespacesAndNewlines)
             }
             
             // Check for usage info
             if let usage = jsonResponse?["usage"] as? [String: Any] {
-                print("🔍 [OpenRouter] Token usage: \(usage)")
+                debugLog("🔍 [OpenRouter] Token usage: \(usage)")
             }
             
             throw AIError.invalidResponse
@@ -509,9 +509,9 @@ IMPORTANT FORMATTING RULES:
             return
         }
         
-        print("🔍 [OpenAI] Starting single image analysis")
-        print("🔍 [OpenAI] Image data length: \(imageData.count)")
-        print("🔍 [OpenAI] API key present: \(!apiKey.isEmpty)")
+        debugLog("🔍 [OpenAI] Starting single image analysis")
+        debugLog("🔍 [OpenAI] Image data length: \(imageData.count)")
+        debugLog("🔍 [OpenAI] API key present: \(!apiKey.isEmpty)")
         
         let visionURL = "https://api.openai.com/v1/chat/completions"
         
@@ -543,8 +543,8 @@ IMPORTANT FORMATTING RULES:
         do {
             let jsonData = try JSONSerialization.data(withJSONObject: requestBody)
             let jsonString = String(data: jsonData, encoding: .utf8) ?? "Failed to convert"
-            print("🔍 [OpenAI] Request body size: \(jsonData.count) bytes")
-            print("🔍 [OpenAI] Request preview: \(String(jsonString.prefix(300)))...")
+            debugLog("🔍 [OpenAI] Request body size: \(jsonData.count) bytes")
+            debugLog("🔍 [OpenAI] Request preview: \(String(jsonString.prefix(300)))...")
         } catch {
             print("❌ [OpenAI] Failed to serialize request: \(error)")
         }
@@ -567,7 +567,7 @@ IMPORTANT FORMATTING RULES:
             return
         }
         
-        print("🔍 [OpenAI] Sending request to: \(visionURL)")
+        debugLog("🔍 [OpenAI] Sending request to: \(visionURL)")
         
         URLSession.shared.dataTask(with: request) { data, response, error in
             if let error = error {
@@ -583,9 +583,9 @@ IMPORTANT FORMATTING RULES:
                 return
             }
             
-            print("🔍 [OpenAI] Response status: \(httpResponse.statusCode)")
+            debugLog("🔍 [OpenAI] Response status: \(httpResponse.statusCode)")
             let responseString = String(data: data, encoding: .utf8) ?? "No response data"
-            print("🔍 [OpenAI] Raw response: \(String(responseString.prefix(500)))...")
+            debugLog("🔍 [OpenAI] Raw response: \(String(responseString.prefix(500)))...")
             
             do {
                 if httpResponse.statusCode == 200 {
@@ -593,7 +593,7 @@ IMPORTANT FORMATTING RULES:
                     let choices = jsonResponse?["choices"] as? [[String: Any]]
                     let message = choices?.first?["message"] as? [String: Any]
                     let content = message?["content"] as? String ?? "No response content."
-                    print("🔍 [OpenAI] Success! Response length: \(content.count) characters")
+                    debugLog("🔍 [OpenAI] Success! Response length: \(content.count) characters")
                     completion(.success(content))
                 } else {
                     let errorResponse = try? JSONSerialization.jsonObject(with: data) as? [String: Any]
@@ -683,8 +683,8 @@ IMPORTANT FORMATTING RULES:
                 if httpResponse.statusCode == 200 {
                     let decodedResponse = try JSONDecoder().decode(ClaudeResponse.self, from: data)
                     let content = decodedResponse.content.first?.text ?? "No response content."
-                    print("🔍 [AI] Image analysis successful, response length: \(content.count) characters")
-                    print("🔍 [AI] Response preview: \(String(content.prefix(200)))...")
+                    debugLog("🔍 [AI] Image analysis successful, response length: \(content.count) characters")
+                    debugLog("🔍 [AI] Response preview: \(String(content.prefix(200)))...")
                     completion(.success(content))
                 } else {
                     let errorResponse = try? JSONSerialization.jsonObject(with: data) as? [String: Any]
@@ -706,8 +706,8 @@ IMPORTANT FORMATTING RULES:
             return
         }
 
-        print("🔍 [OpenRouter] Starting vision analysis with model: \(openrouterModel)")
-        print("🔍 [OpenRouter] Image data length: \(imageData.count)")
+        debugLog("🔍 [OpenRouter] Starting vision analysis with model: \(openrouterModel)")
+        debugLog("🔍 [OpenRouter] Image data length: \(imageData.count)")
 
         let visionURL = "https://openrouter.ai/api/v1/chat/completions"
 
@@ -760,7 +760,7 @@ IMPORTANT FORMATTING RULES:
             return
         }
 
-        print("🔍 [OpenRouter] Sending request to: \(visionURL)")
+        debugLog("🔍 [OpenRouter] Sending request to: \(visionURL)")
 
         URLSession.shared.dataTask(with: request) { data, response, error in
             if let error = error {
@@ -776,9 +776,9 @@ IMPORTANT FORMATTING RULES:
                 return
             }
 
-            print("🔍 [OpenRouter] Response status: \(httpResponse.statusCode)")
+            debugLog("🔍 [OpenRouter] Response status: \(httpResponse.statusCode)")
             let responseString = String(data: data, encoding: .utf8) ?? "No response data"
-            print("🔍 [OpenRouter] Raw response: \(String(responseString.prefix(500)))...")
+            debugLog("🔍 [OpenRouter] Raw response: \(String(responseString.prefix(500)))...")
 
             do {
                 if httpResponse.statusCode == 200 {
@@ -786,7 +786,7 @@ IMPORTANT FORMATTING RULES:
                     let choices = jsonResponse?["choices"] as? [[String: Any]]
                     let message = choices?.first?["message"] as? [String: Any]
                     let content = message?["content"] as? String ?? "No response content."
-                    print("🔍 [OpenRouter] Success! Response length: \(content.count) characters")
+                    debugLog("🔍 [OpenRouter] Success! Response length: \(content.count) characters")
                     completion(.success(content))
                 } else {
                     let errorResponse = try? JSONSerialization.jsonObject(with: data) as? [String: Any]
@@ -804,7 +804,7 @@ IMPORTANT FORMATTING RULES:
 
     // MARK: - Multi-Image Analysis with Format Support
     func analyzeMultipleImagesWithVision(imageDataArray: [(base64: String, format: String)], prompt: String, completion: @escaping (Result<String, Error>) -> Void) {
-        print("🔍 [AI] analyzeMultipleImagesWithVision called with provider: \(currentProvider)")
+        debugLog("🔍 [AI] analyzeMultipleImagesWithVision called with provider: \(currentProvider)")
         
         switch currentProvider {
         case .openai:
@@ -829,12 +829,12 @@ IMPORTANT FORMATTING RULES:
             return
         }
         
-        print("🔍 [AI] Starting multi-image analysis with \(imageDataArray.count) images")
-        print("🔍 [AI] Prompt length: \(prompt.count) characters")
+        debugLog("🔍 [AI] Starting multi-image analysis with \(imageDataArray.count) images")
+        debugLog("🔍 [AI] Prompt length: \(prompt.count) characters")
         
         // Calculate total payload size for logging
         let totalImageSize = imageDataArray.reduce(0) { $0 + $1.base64.count }
-        print("🔍 [AI] Total image data size: \(totalImageSize / 1024 / 1024)MB")
+        debugLog("🔍 [AI] Total image data size: \(totalImageSize / 1024 / 1024)MB")
         
         let visionURL = "https://api.openai.com/v1/chat/completions"
         
@@ -893,7 +893,7 @@ IMPORTANT FORMATTING RULES:
         sessionConfig.timeoutIntervalForResource = 300.0 // 5 minutes for entire resource
         let customSession = URLSession(configuration: sessionConfig)
         
-        print("🔍 [AI] Sending request with extended timeout (120s request, 300s resource)")
+        debugLog("🔍 [AI] Sending request with extended timeout (120s request, 300s resource)")
         
         customSession.dataTask(with: request) { data, response, error in
             if let error = error {
@@ -912,13 +912,13 @@ IMPORTANT FORMATTING RULES:
             do {
                 if httpResponse.statusCode == 200 {
                     let responseString = String(data: data, encoding: .utf8) ?? "No response data"
-                    print("🔍 [OpenAI] Raw response: \(String(responseString.prefix(200)))...")
+                    debugLog("🔍 [OpenAI] Raw response: \(String(responseString.prefix(200)))...")
                     
                     let jsonResponse = try JSONSerialization.jsonObject(with: data) as? [String: Any]
                     let choices = jsonResponse?["choices"] as? [[String: Any]]
                     let message = choices?.first?["message"] as? [String: Any]
                     let content = message?["content"] as? String ?? "No response content."
-                    print("🔍 [AI] Multi-image analysis successful, response length: \(content.count) characters")
+                    debugLog("🔍 [AI] Multi-image analysis successful, response length: \(content.count) characters")
                     completion(.success(content))
                 } else {
                     let errorData = String(data: data, encoding: .utf8) ?? "No error data"
@@ -943,12 +943,12 @@ IMPORTANT FORMATTING RULES:
             return
         }
         
-        print("🔍 [AI] Starting multi-image analysis with \(imageDataArray.count) images")
-        print("🔍 [AI] Prompt length: \(prompt.count) characters")
+        debugLog("🔍 [AI] Starting multi-image analysis with \(imageDataArray.count) images")
+        debugLog("🔍 [AI] Prompt length: \(prompt.count) characters")
         
         // Calculate total payload size for logging
         let totalImageSize = imageDataArray.reduce(0) { $0 + $1.base64.count }
-        print("🔍 [AI] Total image data size: \(totalImageSize / 1024 / 1024)MB")
+        debugLog("🔍 [AI] Total image data size: \(totalImageSize / 1024 / 1024)MB")
         
         let visionURL = "https://api.anthropic.com/v1/messages"
         
@@ -1017,7 +1017,7 @@ IMPORTANT FORMATTING RULES:
         sessionConfig.timeoutIntervalForResource = 300.0 // 5 minutes for entire resource
         let customSession = URLSession(configuration: sessionConfig)
         
-        print("🔍 [AI] Sending Claude request with extended timeout (120s request, 300s resource)")
+        debugLog("🔍 [AI] Sending Claude request with extended timeout (120s request, 300s resource)")
         
         customSession.dataTask(with: request) { data, response, error in
             if let error = error {
@@ -1036,8 +1036,8 @@ IMPORTANT FORMATTING RULES:
                 if httpResponse.statusCode == 200 {
                     let decodedResponse = try JSONDecoder().decode(ClaudeResponse.self, from: data)
                     let content = decodedResponse.content.first?.text ?? "No response content."
-                    print("🔍 [AI] Multi-image analysis successful, response length: \(content.count) characters")
-                    print("🔍 [AI] Response preview: \(String(content.prefix(200)))...")
+                    debugLog("🔍 [AI] Multi-image analysis successful, response length: \(content.count) characters")
+                    debugLog("🔍 [AI] Response preview: \(String(content.prefix(200)))...")
                     completion(.success(content))
                 } else {
                     let errorResponse = try? JSONSerialization.jsonObject(with: data) as? [String: Any]
@@ -1058,11 +1058,11 @@ IMPORTANT FORMATTING RULES:
             return
         }
 
-        print("🔍 [OpenRouter] Starting multi-image analysis with \(imageDataArray.count) images")
-        print("🔍 [OpenRouter] Prompt length: \(prompt.count) characters")
+        debugLog("🔍 [OpenRouter] Starting multi-image analysis with \(imageDataArray.count) images")
+        debugLog("🔍 [OpenRouter] Prompt length: \(prompt.count) characters")
 
         let totalImageSize = imageDataArray.reduce(0) { $0 + $1.base64.count }
-        print("🔍 [OpenRouter] Total image data size: \(totalImageSize / 1024 / 1024)MB")
+        debugLog("🔍 [OpenRouter] Total image data size: \(totalImageSize / 1024 / 1024)MB")
 
         let visionURL = "https://openrouter.ai/api/v1/chat/completions"
 
@@ -1130,7 +1130,7 @@ IMPORTANT FORMATTING RULES:
         sessionConfig.timeoutIntervalForResource = 300.0
         let customSession = URLSession(configuration: sessionConfig)
 
-        print("🔍 [OpenRouter] Sending request with extended timeout (120s request, 300s resource)")
+        debugLog("🔍 [OpenRouter] Sending request with extended timeout (120s request, 300s resource)")
 
         customSession.dataTask(with: request) { data, response, error in
             if let error = error {
@@ -1149,13 +1149,13 @@ IMPORTANT FORMATTING RULES:
             do {
                 if httpResponse.statusCode == 200 {
                     let responseString = String(data: data, encoding: .utf8) ?? "No response data"
-                    print("🔍 [OpenRouter] Raw response: \(String(responseString.prefix(200)))...")
+                    debugLog("🔍 [OpenRouter] Raw response: \(String(responseString.prefix(200)))...")
 
                     let jsonResponse = try JSONSerialization.jsonObject(with: data) as? [String: Any]
                     let choices = jsonResponse?["choices"] as? [[String: Any]]
                     let message = choices?.first?["message"] as? [String: Any]
                     let content = message?["content"] as? String ?? "No response content."
-                    print("🔍 [OpenRouter] Multi-image analysis successful, response length: \(content.count) characters")
+                    debugLog("🔍 [OpenRouter] Multi-image analysis successful, response length: \(content.count) characters")
                     completion(.success(content))
                 } else {
                     let errorData = String(data: data, encoding: .utf8) ?? "No error data"

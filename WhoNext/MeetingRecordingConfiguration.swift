@@ -294,7 +294,7 @@ struct TranscriptionSettings: Codable {
             let migrationKey = "speakerSensitivityMigrated_v2"
             if !UserDefaults.standard.bool(forKey: migrationKey) {
                 if self.speakerSensitivity >= 0.84 || self.speakerSensitivity < 0.60 {
-                    print("[TranscriptionSettings] Migrating speaker sensitivity from \(self.speakerSensitivity) to optimal 0.70")
+                    debugLog("[TranscriptionSettings] Migrating speaker sensitivity from \(self.speakerSensitivity) to optimal 0.70")
                     self.speakerSensitivity = 0.70
                     self.saveToUserDefaults()
                 }

@@ -72,26 +72,26 @@ class ParakeetTranscriber: ObservableObject {
     // MARK: - Initialization
 
     init() {
-        print("[ParakeetTranscriber] Initialized")
+        debugLog("[ParakeetTranscriber] Initialized")
     }
 
     /// Initialize with model download
     func initialize() async throws {
         #if canImport(FluidAudio)
-        print("[ParakeetTranscriber] Initializing with Parakeet TDT \(modelVersion == .v3 ? "v3 (Multilingual)" : "v2 (English)")...")
+        debugLog("[ParakeetTranscriber] Initializing with Parakeet TDT \(modelVersion == .v3 ? "v3 (Multilingual)" : "v2 (English)")...")
 
         do {
             // Download and load models (auto-downloads from HuggingFace if needed)
-            print("[ParakeetTranscriber] Downloading/loading ASR models...")
+            debugLog("[ParakeetTranscriber] Downloading/loading ASR models...")
             models = try await AsrModels.downloadAndLoad(version: modelVersion)
-            print("[ParakeetTranscriber] ASR models loaded successfully")
+            debugLog("[ParakeetTranscriber] ASR models loaded successfully")
 
             // Create and initialize ASR manager
             asrManager = AsrManager()
             try await asrManager?.initialize(models: models!)
 
             isReady = true
-            print("[ParakeetTranscriber] Ready with Parakeet TDT \(modelVersion == .v3 ? "v3" : "v2")")
+            debugLog("[ParakeetTranscriber] Ready with Parakeet TDT \(modelVersion == .v3 ? "v3" : "v2")")
 
         } catch {
             lastError = error
@@ -99,7 +99,7 @@ class ParakeetTranscriber: ObservableObject {
             throw ParakeetTranscriberError.modelLoadFailed(error.localizedDescription)
         }
         #else
-        print("[ParakeetTranscriber] AxiiDiarization not available")
+        debugLog("[ParakeetTranscriber] AxiiDiarization not available")
         throw ParakeetTranscriberError.serviceUnavailable
         #endif
     }
@@ -125,11 +125,11 @@ class ParakeetTranscriber: ObservableObject {
         // Calculate audio stats
         let rms = calculateRMS(audioChunk)
         let duration = Double(audioChunk.count) / sampleRate
-        print("[ParakeetTranscriber] Processing \(audioChunk.count) samples (\(String(format: "%.1f", duration))s), RMS: \(String(format: "%.4f", rms))")
+        debugLog("[ParakeetTranscriber] Processing \(audioChunk.count) samples (\(String(format: "%.1f", duration))s), RMS: \(String(format: "%.4f", rms))")
 
         // Check for silence
         if rms < 0.001 {
-            print("[ParakeetTranscriber] Audio appears silent, skipping")
+            debugLog("[ParakeetTranscriber] Audio appears silent, skipping")
             return nil
         }
 
@@ -141,7 +141,7 @@ class ParakeetTranscriber: ObservableObject {
         if duration < minimumDurationSeconds {
             let neededSamples = Int(minimumDurationSeconds * sampleRate) - audioChunk.count
             processableAudio.append(contentsOf: [Float](repeating: 0, count: neededSamples))
-            print("[ParakeetTranscriber] Padded audio from \(String(format: "%.1f", duration))s to \(minimumDurationSeconds)s")
+            debugLog("[ParakeetTranscriber] Padded audio from \(String(format: "%.1f", duration))s to \(minimumDurationSeconds)s")
         }
 
         // Transcribe
@@ -151,13 +151,13 @@ class ParakeetTranscriber: ObservableObject {
         let cleanedText = filterHallucinations(result.text)
 
         if cleanedText.isEmpty {
-            print("[ParakeetTranscriber] No valid speech after filtering")
+            debugLog("[ParakeetTranscriber] No valid speech after filtering")
             return nil
         }
 
         // Log performance
         let rtfx = result.duration / result.processingTime
-        print("[ParakeetTranscriber] Transcribed in \(String(format: "%.2f", result.processingTime))s (\(String(format: "%.1f", rtfx))x real-time): \"\(cleanedText.prefix(100))\"")
+        debugLog("[ParakeetTranscriber] Transcribed in \(String(format: "%.2f", result.processingTime))s (\(String(format: "%.1f", rtfx))x real-time): \"\(cleanedText.prefix(100))\"")
 
         return ParakeetTranscriptionResult(
             text: cleanedText,
@@ -176,7 +176,7 @@ class ParakeetTranscriber: ObservableObject {
         #if canImport(FluidAudio)
         asrManager?.resetState()
         #endif
-        print("[ParakeetTranscriber] State reset")
+        debugLog("[ParakeetTranscriber] State reset")
     }
 
     // MARK: - Hallucination Filtering
@@ -282,7 +282,7 @@ class ParakeetTranscriber: ObservableObject {
         let gain = min(targetRMS / currentRMS, 100.0)  // Cap at 100x
         if gain < 1.1 { return samples }  // Already at target level
 
-        print("[ParakeetTranscriber] Normalizing audio: RMS \(String(format: "%.4f", currentRMS)) → \(String(format: "%.4f", targetRMS)) (gain: \(String(format: "%.1f", gain))x)")
+        debugLog("[ParakeetTranscriber] Normalizing audio: RMS \(String(format: "%.4f", currentRMS)) → \(String(format: "%.4f", targetRMS)) (gain: \(String(format: "%.1f", gain))x)")
 
         return samples.map { sample in
             let amplified = sample * gain

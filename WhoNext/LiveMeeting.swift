@@ -252,7 +252,7 @@ class LiveMeeting: ObservableObject, Identifiable {
 
         // Keep only recent segments in memory
         transcript = Array(transcript.suffix(maxSegmentsInMemory))
-        print("💾 [LiveMeeting] Flushed \(segmentsToFlush) segments to disk (\(flushedSegmentCount) total on disk), keeping \(transcript.count) in memory")
+        debugLog("💾 [LiveMeeting] Flushed \(segmentsToFlush) segments to disk (\(flushedSegmentCount) total on disk), keeping \(transcript.count) in memory")
     }
 
     /// Get full transcript including flushed segments from disk
@@ -402,7 +402,7 @@ class LiveMeeting: ObservableObject, Identifiable {
         // Update meeting type based on new speaker count
         updateMeetingType(speakerCount: identifiedParticipants.count, confidence: speakerDetectionConfidence)
 
-        print("[LiveMeeting] Merged speaker '\(sourceID)' → '\(destinationID)': \(updatedCount) segments reassigned, \(identifiedParticipants.count) speakers remaining")
+        debugLog("[LiveMeeting] Merged speaker '\(sourceID)' → '\(destinationID)': \(updatedCount) segments reassigned, \(identifiedParticipants.count) speakers remaining")
         return updatedCount
     }
 
@@ -418,7 +418,7 @@ class LiveMeeting: ObservableObject, Identifiable {
 
         let removedCount = previousCount - identifiedParticipants.count
         if removedCount > 0 {
-            print("🔄 [LiveMeeting] Synced participants: removed \(removedCount) merged speakers, \(identifiedParticipants.count) remaining")
+            debugLog("🔄 [LiveMeeting] Synced participants: removed \(removedCount) merged speakers, \(identifiedParticipants.count) remaining")
 
             // Update meeting type based on new speaker count
             updateMeetingType(speakerCount: identifiedParticipants.count, confidence: speakerDetectionConfidence)

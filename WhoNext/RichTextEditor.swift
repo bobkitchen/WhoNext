@@ -19,14 +19,14 @@ class ActiveNotesTextViewTracker {
     func setActive(_ textView: NSTextView) {
         activeTextView = textView
         lastSelectedRange = textView.selectedRange()
-        print("📝 NotesTracker: Text view registered, selection: \(lastSelectedRange)")
+        debugLog("📝 NotesTracker: Text view registered, selection: \(lastSelectedRange)")
     }
 
     /// Call this to save the selection before focus is lost
     func saveSelection() {
         if let textView = activeTextView {
             lastSelectedRange = textView.selectedRange()
-            print("📝 NotesTracker: Saved selection before focus loss: \(lastSelectedRange)")
+            debugLog("📝 NotesTracker: Saved selection before focus loss: \(lastSelectedRange)")
         }
     }
 
@@ -37,30 +37,30 @@ class ActiveNotesTextViewTracker {
 
     /// Apply formatting to the active text view
     func applyBold() {
-        print("📝 NotesTracker: applyBold called")
+        debugLog("📝 NotesTracker: applyBold called")
         applyFontTrait(.boldFontMask)
     }
 
     func applyItalic() {
-        print("📝 NotesTracker: applyItalic called")
+        debugLog("📝 NotesTracker: applyItalic called")
         applyFontTrait(.italicFontMask)
     }
 
     func applyUnderline() {
-        print("📝 NotesTracker: applyUnderline called, activeTextView: \(activeTextView != nil), selection: \(lastSelectedRange)")
+        debugLog("📝 NotesTracker: applyUnderline called, activeTextView: \(activeTextView != nil), selection: \(lastSelectedRange)")
         guard let textView = activeTextView,
               let textStorage = textView.textStorage else {
-            print("📝 NotesTracker: No active text view!")
+            debugLog("📝 NotesTracker: No active text view!")
             return
         }
 
         let selectedRange = lastSelectedRange
         guard selectedRange.length > 0 else {
-            print("📝 NotesTracker: No text selected (selection length is 0)")
+            debugLog("📝 NotesTracker: No text selected (selection length is 0)")
             return
         }
         guard selectedRange.location + selectedRange.length <= textStorage.length else {
-            print("📝 NotesTracker: Selection out of bounds")
+            debugLog("📝 NotesTracker: Selection out of bounds")
             return
         }
 
@@ -80,27 +80,27 @@ class ActiveNotesTextViewTracker {
         }
 
         textStorage.endEditing()
-        print("📝 NotesTracker: Underline applied successfully")
+        debugLog("📝 NotesTracker: Underline applied successfully")
 
         // Restore focus and selection
         restoreFocus()
     }
 
     func applyHighlight() {
-        print("📝 NotesTracker: applyHighlight called")
+        debugLog("📝 NotesTracker: applyHighlight called")
         guard let textView = activeTextView,
               let textStorage = textView.textStorage else {
-            print("📝 NotesTracker: No active text view!")
+            debugLog("📝 NotesTracker: No active text view!")
             return
         }
 
         let selectedRange = lastSelectedRange
         guard selectedRange.length > 0 else {
-            print("📝 NotesTracker: No text selected (selection length is 0)")
+            debugLog("📝 NotesTracker: No text selected (selection length is 0)")
             return
         }
         guard selectedRange.location + selectedRange.length <= textStorage.length else {
-            print("📝 NotesTracker: Selection out of bounds")
+            debugLog("📝 NotesTracker: Selection out of bounds")
             return
         }
 
@@ -120,15 +120,15 @@ class ActiveNotesTextViewTracker {
         }
 
         textStorage.endEditing()
-        print("📝 NotesTracker: Highlight applied successfully")
+        debugLog("📝 NotesTracker: Highlight applied successfully")
 
         restoreFocus()
     }
 
     func insertBulletList() {
-        print("📝 NotesTracker: insertBulletList called")
+        debugLog("📝 NotesTracker: insertBulletList called")
         guard let textView = activeTextView else {
-            print("📝 NotesTracker: No active text view!")
+            debugLog("📝 NotesTracker: No active text view!")
             return
         }
         restoreFocus()
@@ -136,9 +136,9 @@ class ActiveNotesTextViewTracker {
     }
 
     func insertNumberedList() {
-        print("📝 NotesTracker: insertNumberedList called")
+        debugLog("📝 NotesTracker: insertNumberedList called")
         guard let textView = activeTextView else {
-            print("📝 NotesTracker: No active text view!")
+            debugLog("📝 NotesTracker: No active text view!")
             return
         }
         restoreFocus()
@@ -147,21 +147,21 @@ class ActiveNotesTextViewTracker {
 
     private func applyFontTrait(_ trait: NSFontTraitMask) {
         let traitName = trait == .boldFontMask ? "Bold" : "Italic"
-        print("📝 NotesTracker: applyFontTrait(\(traitName)) called, activeTextView: \(activeTextView != nil), selection: \(lastSelectedRange)")
+        debugLog("📝 NotesTracker: applyFontTrait(\(traitName)) called, activeTextView: \(activeTextView != nil), selection: \(lastSelectedRange)")
 
         guard let textView = activeTextView,
               let textStorage = textView.textStorage else {
-            print("📝 NotesTracker: No active text view!")
+            debugLog("📝 NotesTracker: No active text view!")
             return
         }
 
         let selectedRange = lastSelectedRange
         guard selectedRange.length > 0 else {
-            print("📝 NotesTracker: No text selected (selection length is 0)")
+            debugLog("📝 NotesTracker: No text selected (selection length is 0)")
             return
         }
         guard selectedRange.location + selectedRange.length <= textStorage.length else {
-            print("📝 NotesTracker: Selection out of bounds (range: \(selectedRange), text length: \(textStorage.length))")
+            debugLog("📝 NotesTracker: Selection out of bounds (range: \(selectedRange), text length: \(textStorage.length))")
             return
         }
 
@@ -169,7 +169,7 @@ class ActiveNotesTextViewTracker {
 
         textStorage.enumerateAttribute(.font, in: selectedRange, options: []) { value, range, _ in
             guard let currentFont = value as? NSFont else {
-                print("📝 NotesTracker: No font attribute found at range \(range)")
+                debugLog("📝 NotesTracker: No font attribute found at range \(range)")
                 return
             }
 
@@ -185,7 +185,7 @@ class ActiveNotesTextViewTracker {
                 newFont = NSFontManager.shared.convert(currentFont, toHaveTrait: trait)
             }
             textStorage.addAttribute(.font, value: newFont, range: range)
-            print("📝 NotesTracker: Applied \(traitName) to range \(range)")
+            debugLog("📝 NotesTracker: Applied \(traitName) to range \(range)")
         }
 
         textStorage.endEditing()
@@ -197,7 +197,7 @@ class ActiveNotesTextViewTracker {
         guard let textView = activeTextView else { return }
         textView.window?.makeFirstResponder(textView)
         textView.setSelectedRange(lastSelectedRange)
-        print("📝 NotesTracker: Restored focus and selection to \(lastSelectedRange)")
+        debugLog("📝 NotesTracker: Restored focus and selection to \(lastSelectedRange)")
     }
 }
 
@@ -486,7 +486,7 @@ class NotesTextView: NSTextView {
 
     override func becomeFirstResponder() -> Bool {
         let result = super.becomeFirstResponder()
-        print("📝 NotesTextView: becomeFirstResponder called, result: \(result)")
+        debugLog("📝 NotesTextView: becomeFirstResponder called, result: \(result)")
         if result {
             // Register as the active notes text view
             ActiveNotesTextViewTracker.shared.setActive(self)
@@ -495,7 +495,7 @@ class NotesTextView: NSTextView {
     }
 
     override func resignFirstResponder() -> Bool {
-        print("📝 NotesTextView: resignFirstResponder called")
+        debugLog("📝 NotesTextView: resignFirstResponder called")
         // Save selection before losing focus
         ActiveNotesTextViewTracker.shared.saveSelection()
         return super.resignFirstResponder()

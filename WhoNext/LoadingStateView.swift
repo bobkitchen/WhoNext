@@ -145,7 +145,7 @@ extension View {
             isLoading: true,
             style: .primary
         ) {
-            print("Button tapped")
+            debugLog("Button tapped")
         }
         
         LoadingButton(
@@ -154,7 +154,7 @@ extension View {
             isLoading: false,
             style: .secondary
         ) {
-            print("Save tapped")
+            debugLog("Save tapped")
         }
     }
     .padding()

@@ -10,7 +10,7 @@ class OrgChartProcessor: ObservableObject {
     private let openAIService = AIService.shared
     
     func processOrgChartFile(_ fileURL: URL, completion: @escaping (Result<String, Error>) -> Void) {
-        print("🔍 [OrgChart] Starting file processing: \(fileURL.lastPathComponent)")
+        debugLog("🔍 [OrgChart] Starting file processing: \(fileURL.lastPathComponent)")
         
         DispatchQueue.main.async {
             self.isProcessing = true
@@ -20,20 +20,20 @@ class OrgChartProcessor: ObservableObject {
         
         DispatchQueue.global(qos: .userInitiated).async {
             let fileExtension = fileURL.pathExtension.lowercased()
-            print("🔍 [OrgChart] File extension detected: \(fileExtension)")
+            debugLog("🔍 [OrgChart] File extension detected: \(fileExtension)")
             
             do {
                 var images: [NSImage] = []
                 
                 switch fileExtension {
                 case "pdf":
-                    print("🔍 [OrgChart] Processing as PDF file")
+                    debugLog("🔍 [OrgChart] Processing as PDF file")
                     self.updateStatus("Converting PDF to images...")
                     images = try self.convertPDFToImages(fileURL)
-                    print("🔍 [OrgChart] PDF converted to \(images.count) images")
+                    debugLog("🔍 [OrgChart] PDF converted to \(images.count) images")
                     
                 case "ppt", "pptx":
-                    print("🔍 [OrgChart] PowerPoint file detected - showing error")
+                    debugLog("🔍 [OrgChart] PowerPoint file detected - showing error")
                     self.updateStatus("Processing PowerPoint file...")
                     // PowerPoint files need to be converted to images first
                     // For now, we'll provide a helpful error message
@@ -43,13 +43,13 @@ class OrgChartProcessor: ObservableObject {
                     ])
                     
                 case "jpg", "jpeg", "png", "tiff", "gif", "bmp":
-                    print("🔍 [OrgChart] Processing as image file")
+                    debugLog("🔍 [OrgChart] Processing as image file")
                     self.updateStatus("Loading image...")
                     guard let image = NSImage(contentsOf: fileURL) else {
                         print("❌ [OrgChart] Failed to load image from: \(fileURL)")
                         throw NSError(domain: "OrgChartProcessor", code: 2, userInfo: [NSLocalizedDescriptionKey: "Failed to load image file"])
                     }
-                    print("🔍 [OrgChart] Image loaded successfully, size: \(image.size)")
+                    debugLog("🔍 [OrgChart] Image loaded successfully, size: \(image.size)")
                     images = [image]
                     
                 default:
@@ -147,7 +147,7 @@ class OrgChartProcessor: ObservableObject {
     }
     
     private func processImagesWithAI(_ images: [NSImage], completion: @escaping (Result<String, Error>) -> Void) {
-        print("🔍 [OrgChart] Starting AI processing with \(images.count) images")
+        debugLog("🔍 [OrgChart] Starting AI processing with \(images.count) images")
         
         updateStatus("Analyzing org chart with AI...")
         
@@ -165,7 +165,7 @@ class OrgChartProcessor: ObservableObject {
         Only return the CSV data, no other text or explanation.
         """
         
-        print("🔍 [OrgChart] Converting first image to base64...")
+        debugLog("🔍 [OrgChart] Converting first image to base64...")
         
         // Process the first image (for now, we'll focus on single image processing)
         guard let firstImage = images.first else {
@@ -184,17 +184,17 @@ class OrgChartProcessor: ObservableObject {
         }
         
         let base64String = jpegData.base64EncodedString()
-        print("🔍 [OrgChart] Image converted to base64, size: \(base64String.count) characters")
+        debugLog("🔍 [OrgChart] Image converted to base64, size: \(base64String.count) characters")
         
-        print("🔍 [OrgChart] Sending request to OpenAI Vision API...")
+        debugLog("🔍 [OrgChart] Sending request to OpenAI Vision API...")
         
         openAIService.analyzeImageWithVision(imageData: base64String, prompt: prompt) { result in
-            print("🔍 [OrgChart] Received response from OpenAI Vision API")
+            debugLog("🔍 [OrgChart] Received response from OpenAI Vision API")
             
             switch result {
             case .success(let csvContent):
-                print("✅ [OrgChart] AI analysis successful")
-                print("🔍 [OrgChart] CSV content preview (first 200 chars): \(String(csvContent.prefix(200)))")
+                debugLog("✅ [OrgChart] AI analysis successful")
+                debugLog("🔍 [OrgChart] CSV content preview (first 200 chars): \(String(csvContent.prefix(200)))")
                 
                 DispatchQueue.main.async {
                     self.isProcessing = false

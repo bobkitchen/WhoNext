@@ -152,7 +152,7 @@ class DiarizationManager: ObservableObject {
             isInitialized = true
             debugLog("✅ [DiarizationManager] AxiiDiarization pipeline initialized")
         } catch {
-            debugLog("❌ [DiarizationManager] Failed to initialize: \(error)")
+            print("❌ [DiarizationManager] Failed to initialize: \(error)")
             lastError = error
             throw DiarizationError.initializationFailed(error.localizedDescription)
         }
@@ -165,7 +165,7 @@ class DiarizationManager: ObservableObject {
         guard isEnabled, isInitialized else { return }
 
         guard let floatSamples = convertBufferToFloatArray(buffer) else {
-            debugLog("⚠️ [DiarizationManager] Failed to convert audio buffer")
+            print("⚠️ [DiarizationManager] Failed to convert audio buffer")
             return
         }
 
@@ -261,7 +261,7 @@ class DiarizationManager: ObservableObject {
             currentSpeakers = Array(uniqueSpeakers).sorted()
 
         } catch {
-            debugLog("❌ [DiarizationManager] Chunk processing failed: \(error)")
+            print("❌ [DiarizationManager] Chunk processing failed: \(error)")
             lastError = error
         }
     }
@@ -313,7 +313,7 @@ class DiarizationManager: ObservableObject {
             debugLog("✅ [DiarizationManager] Finalized: \(result.speakerCount) speakers, \(smoothed.count) segments")
             return result
         } catch {
-            debugLog("❌ [DiarizationManager] Finalization failed: \(error)")
+            print("❌ [DiarizationManager] Finalization failed: \(error)")
             return lastResult
         }
     }

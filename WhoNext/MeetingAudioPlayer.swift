@@ -210,7 +210,7 @@ struct MeetingAudioPlayer: View {
     
     private func exportAudio() {
         // Will be handled by ExportManager
-        print("Export audio requested")
+        debugLog("Export audio requested")
     }
     
     private func jumpToTranscript(_ segment: TranscriptSegment) {

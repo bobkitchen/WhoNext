@@ -66,7 +66,7 @@ class TranscriptionEngine: ObservableObject {
             selectedModel = model
         }
 
-        print("[TranscriptionEngine] Initializing with model: \(selectedModel)")
+        debugLog("[TranscriptionEngine] Initializing with model: \(selectedModel)")
 
         #if canImport(WhisperKit)
         do {
@@ -80,7 +80,7 @@ class TranscriptionEngine: ObservableObject {
             )
 
             isReady = true
-            print("[TranscriptionEngine] Ready with model: \(selectedModel)")
+            debugLog("[TranscriptionEngine] Ready with model: \(selectedModel)")
 
         } catch {
             lastError = error
@@ -88,7 +88,7 @@ class TranscriptionEngine: ObservableObject {
             throw TranscriptionEngineError.modelLoadFailed(error.localizedDescription)
         }
         #else
-        print("[TranscriptionEngine] WhisperKit not available")
+        debugLog("[TranscriptionEngine] WhisperKit not available")
         throw TranscriptionEngineError.serviceUnavailable
         #endif
     }
@@ -114,11 +114,11 @@ class TranscriptionEngine: ObservableObject {
         // Log audio stats
         let rms = calculateRMS(audioChunk)
         let peak = audioChunk.max { abs($0) < abs($1) }.map { abs($0) } ?? 0
-        print("[TranscriptionEngine] Processing \(audioChunk.count) samples, RMS: \(String(format: "%.4f", rms)), Peak: \(String(format: "%.4f", peak))")
+        debugLog("[TranscriptionEngine] Processing \(audioChunk.count) samples, RMS: \(String(format: "%.4f", rms)), Peak: \(String(format: "%.4f", peak))")
 
         // Check for silence
         if rms < 0.001 {
-            print("[TranscriptionEngine] Audio appears silent, skipping")
+            debugLog("[TranscriptionEngine] Audio appears silent, skipping")
             return nil
         }
 
@@ -185,11 +185,11 @@ class TranscriptionEngine: ObservableObject {
         let cleanedText = filterHallucinations(rawText)
 
         if cleanedText.isEmpty {
-            print("[TranscriptionEngine] No valid speech after filtering")
+            debugLog("[TranscriptionEngine] No valid speech after filtering")
             return nil
         }
 
-        print("[TranscriptionEngine] Transcribed: \"\(cleanedText.prefix(100))\"")
+        debugLog("[TranscriptionEngine] Transcribed: \"\(cleanedText.prefix(100))\"")
 
         return EngineTranscriptionResult(
             text: cleanedText,
@@ -306,7 +306,7 @@ class TranscriptionEngine: ObservableObject {
         let gain = min(targetRMS / currentRMS, 100.0)  // Cap at 100x
         if gain < 1.1 { return samples }  // Already at target level
 
-        print("[TranscriptionEngine] Normalizing audio: RMS \(String(format: "%.4f", currentRMS)) → \(String(format: "%.4f", targetRMS)) (gain: \(String(format: "%.1f", gain))x)")
+        debugLog("[TranscriptionEngine] Normalizing audio: RMS \(String(format: "%.4f", currentRMS)) → \(String(format: "%.4f", targetRMS)) (gain: \(String(format: "%.1f", gain))x)")
 
         return samples.map { sample in
             let amplified = sample * gain

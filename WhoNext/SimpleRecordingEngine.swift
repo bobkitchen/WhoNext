@@ -142,7 +142,7 @@ class SimpleRecordingEngine: ObservableObject {
 
     private init() {
         setupObservers()
-        print("[SimpleRecordingEngine] Initialized")
+        debugLog("[SimpleRecordingEngine] Initialized")
     }
 
     private func setupObservers() {
@@ -173,7 +173,7 @@ class SimpleRecordingEngine: ObservableObject {
         audioCapturer.$isEchoCancellationActive
             .receive(on: RunLoop.main)
             .sink { active in
-                print("[SimpleRecordingEngine] AEC status: \(active ? "active" : "inactive")")
+                debugLog("[SimpleRecordingEngine] AEC status: \(active ? "active" : "inactive")")
             }
             .store(in: &cancellables)
     }
@@ -188,22 +188,22 @@ class SimpleRecordingEngine: ObservableObject {
         do {
             try await transcriber?.initialize()
             let engineName = settings.transcriptionEngine.displayName
-            print("[SimpleRecordingEngine] Pre-warmed transcriber with engine: \(engineName)")
+            debugLog("[SimpleRecordingEngine] Pre-warmed transcriber with engine: \(engineName)")
         } catch {
-            print("[SimpleRecordingEngine] Transcriber pre-warm failed: \(error) — will record without transcription")
+            debugLog("[SimpleRecordingEngine] Transcriber pre-warm failed: \(error) — will record without transcription")
         }
 
         // Initialize diarization (independent of transcriber)
         #if canImport(AxiiDiarization)
         do {
             try await systemDiarizationManager.initialize()
-            print("[SimpleRecordingEngine] Pre-warmed system diarization manager (AxiiDiarization)")
+            debugLog("[SimpleRecordingEngine] Pre-warmed system diarization manager (AxiiDiarization)")
         } catch {
-            print("[SimpleRecordingEngine] Diarization pre-warm failed: \(error)")
+            debugLog("[SimpleRecordingEngine] Diarization pre-warm failed: \(error)")
         }
 
         await voicePrintManager.warmCache()
-        print("[SimpleRecordingEngine] Pre-warmed voice print cache")
+        debugLog("[SimpleRecordingEngine] Pre-warmed voice print cache")
         #endif
     }
 
@@ -224,11 +224,11 @@ class SimpleRecordingEngine: ObservableObject {
     /// Start recording
     func startRecording() async {
         guard !isRecording else {
-            print("[SimpleRecordingEngine] Already recording")
+            debugLog("[SimpleRecordingEngine] Already recording")
             return
         }
 
-        print("[SimpleRecordingEngine] Starting recording...")
+        debugLog("[SimpleRecordingEngine] Starting recording...")
 
         do {
             // --- Phase 1: Start audio capture first ---
@@ -256,7 +256,7 @@ class SimpleRecordingEngine: ObservableObject {
             do {
                 try await transcriberReady
             } catch {
-                print("[SimpleRecordingEngine] Transcriber unavailable (\(error.localizedDescription)) — recording without transcription")
+                debugLog("[SimpleRecordingEngine] Transcriber unavailable (\(error.localizedDescription)) — recording without transcription")
             }
             _ = await diarizationReady  // non-throwing wrapper
 
@@ -290,7 +290,7 @@ class SimpleRecordingEngine: ObservableObject {
             let settings = MeetingRecordingConfiguration.shared.transcriptionSettings
             transcriber = TranscriptionManagerFactory.createEngine(for: settings)
             try await transcriber?.initialize()
-            print("[SimpleRecordingEngine] Transcriber initialized: \(settings.transcriptionEngine.displayName)")
+            debugLog("[SimpleRecordingEngine] Transcriber initialized: \(settings.transcriptionEngine.displayName)")
         }
         transcriber?.resetState()
     }
@@ -310,7 +310,7 @@ class SimpleRecordingEngine: ObservableObject {
         } else {
             diarizationStrategy = .groupStreaming
         }
-        print("[SimpleRecordingEngine] 🎯 Strategy: \(diarizationStrategy.rawValue) (AEC: \(aecAvailable), attendees: \(attendeeCount))")
+        debugLog("[SimpleRecordingEngine] 🎯 Strategy: \(diarizationStrategy.rawValue) (AEC: \(aecAvailable), attendees: \(attendeeCount))")
 
         // --- Initialize Based on Strategy ---
         switch diarizationStrategy {
@@ -318,7 +318,7 @@ class SimpleRecordingEngine: ObservableObject {
             // AEC 1:1: mic=local, system=remote. No diarization needed.
             detectedSpeakerCount = 2
             hasRemoteAudio = true
-            print("[SimpleRecordingEngine] Stream labeling mode: no diarizers created")
+            debugLog("[SimpleRecordingEngine] Stream labeling mode: no diarizers created")
 
         case .streamLabelingNoAEC:
             // 1:1 without AEC: energy gate on mic, Axii on system (constrained to 1 remote speaker)
@@ -331,16 +331,16 @@ class SimpleRecordingEngine: ObservableObject {
             )
             do {
                 try await systemDiarizationManager.initialize()
-                print("[SimpleRecordingEngine] System diarization initialized (streamLabelingNoAEC, maxSpeakers: 1)")
+                debugLog("[SimpleRecordingEngine] System diarization initialized (streamLabelingNoAEC, maxSpeakers: 1)")
             } catch {
-                print("[SimpleRecordingEngine] System diarization init failed: \(error)")
+                debugLog("[SimpleRecordingEngine] System diarization init failed: \(error)")
             }
 
             await preloadKnownSpeakersForMeeting()
 
             hasRemoteAudio = true
             detectedSpeakerCount = 2
-            print("[SimpleRecordingEngine] 1:1 no-AEC mode: energy gate on mic, Axii on system")
+            debugLog("[SimpleRecordingEngine] 1:1 no-AEC mode: energy gate on mic, Axii on system")
 
         case .groupStreaming:
             // Group: energy gate on mic, Axii on system (auto-detect N remote speakers)
@@ -354,16 +354,16 @@ class SimpleRecordingEngine: ObservableObject {
             )
             do {
                 try await systemDiarizationManager.initialize()
-                print("[SimpleRecordingEngine] System diarization initialized (groupStreaming, maxSpeakers: \(remoteSpeakers + 1))")
+                debugLog("[SimpleRecordingEngine] System diarization initialized (groupStreaming, maxSpeakers: \(remoteSpeakers + 1))")
             } catch {
-                print("[SimpleRecordingEngine] System diarization init failed: \(error)")
+                debugLog("[SimpleRecordingEngine] System diarization init failed: \(error)")
             }
 
             await preloadKnownSpeakersForMeeting()
 
             hasRemoteAudio = true
             detectedSpeakerCount = attendeeCount
-            print("[SimpleRecordingEngine] Group streaming mode: energy gate on mic, Axii on system")
+            debugLog("[SimpleRecordingEngine] Group streaming mode: energy gate on mic, Axii on system")
         }
 
         await systemDiarizationBuffer.reset()
@@ -413,9 +413,9 @@ class SimpleRecordingEngine: ObservableObject {
 
         if !knownSpeakers.isEmpty {
             systemDiarizationManager.preloadKnownSpeakers(knownSpeakers)
-            print("[SimpleRecordingEngine] 🎯 Pre-loaded \(knownSpeakers.count) known speakers for guided diarization")
+            debugLog("[SimpleRecordingEngine] 🎯 Pre-loaded \(knownSpeakers.count) known speakers for guided diarization")
         } else {
-            print("[SimpleRecordingEngine] ⚠️ No known voice profiles available for guided diarization")
+            debugLog("[SimpleRecordingEngine] ⚠️ No known voice profiles available for guided diarization")
         }
     }
     /// Merge two speakers and feed the correction back to VoicePrintManager.
@@ -429,7 +429,7 @@ class SimpleRecordingEngine: ObservableObject {
         // Feed the merged embedding to VoicePrintManager for cross-session voice learning
         if let centroid = sourceCentroid, let person = destinationPerson {
             voicePrintManager.saveEmbeddingWithFeedback(centroid, for: person, wasConfirmed: true)
-            print("[SimpleRecordingEngine] Voice learning: saved merged embedding to \(person.wrappedName)")
+            debugLog("[SimpleRecordingEngine] Voice learning: saved merged embedding to \(person.wrappedName)")
         }
 
         return sourceCentroid
@@ -439,11 +439,11 @@ class SimpleRecordingEngine: ObservableObject {
     /// Stop recording
     func stopRecording() async {
         guard isRecording else {
-            print("[SimpleRecordingEngine] Not recording")
+            debugLog("[SimpleRecordingEngine] Not recording")
             return
         }
 
-        print("[SimpleRecordingEngine] Stopping recording...")
+        debugLog("[SimpleRecordingEngine] Stopping recording...")
 
         // Ensure state is always cleaned up, even if finalization throws
         defer {
@@ -525,7 +525,7 @@ class SimpleRecordingEngine: ObservableObject {
     // MARK: - Audio Processing
 
     private func processAudioStreams() async {
-        print("[SimpleRecordingEngine] Starting audio stream processing (strategy: \(diarizationStrategy.rawValue))")
+        debugLog("[SimpleRecordingEngine] Starting audio stream processing (strategy: \(diarizationStrategy.rawValue))")
 
         // Get streams on main actor before entering task group
         let micStream = audioCapturer.micStream!
@@ -589,7 +589,7 @@ class SimpleRecordingEngine: ObservableObject {
 
         }
 
-        print("[SimpleRecordingEngine] Audio stream processing ended")
+        debugLog("[SimpleRecordingEngine] Audio stream processing ended")
     }
 
     /// Perform transcription work off the main actor, then update UI on MainActor
@@ -599,21 +599,21 @@ class SimpleRecordingEngine: ObservableObject {
                 return (text: result.text, confidence: result.confidence, tokenTimings: result.tokenTimings)
             }
         } catch {
-            print("[SimpleRecordingEngine] Transcription error: \(error)")
+            debugLog("[SimpleRecordingEngine] Transcription error: \(error)")
         }
         return nil
     }
 
     private func transcribeChunk(_ chunk: [Float]) async {
         guard let transcriber else {
-            print("[SimpleRecordingEngine] Transcriber not initialized")
+            debugLog("[SimpleRecordingEngine] Transcriber not initialized")
             return
         }
 
         // Log chunk stats
         let stats = await chunkBuffer.getStats()
-        print("[SimpleRecordingEngine] Transcribing chunk: \(chunk.count) samples")
-        print("[SimpleRecordingEngine] Buffer stats: \(stats.description)")
+        debugLog("[SimpleRecordingEngine] Transcribing chunk: \(chunk.count) samples")
+        debugLog("[SimpleRecordingEngine] Buffer stats: \(stats.description)")
 
         // Perform heavy transcription work off MainActor
         guard let result = await transcribeChunkInBackground(chunk, transcriber: transcriber) else {
@@ -645,7 +645,7 @@ class SimpleRecordingEngine: ObservableObject {
                     currentMeeting?.transcript.append(segment)
                     currentMeeting?.wordCount += group.words.count
 
-                    print("[SimpleRecordingEngine] Added word-aligned segment (\(speakerName)): \"\(group.text.prefix(50))\"")
+                    debugLog("[SimpleRecordingEngine] Added word-aligned segment (\(speakerName)): \"\(group.text.prefix(50))\"")
                 }
                 return
             }
@@ -686,11 +686,11 @@ class SimpleRecordingEngine: ObservableObject {
             } else {
                 speakerName = SegmentAligner.formatSpeakerName(speaker)
             }
-            print("[SimpleRecordingEngine] Speaker identified: \(speakerName ?? "unknown")")
+            debugLog("[SimpleRecordingEngine] Speaker identified: \(speakerName ?? "unknown")")
         } else if let meeting = currentMeeting, let lastSpeaker = meeting.transcript.last?.speakerID {
             speakerID = lastSpeaker
             speakerName = meeting.transcript.last?.speakerName
-            print("[SimpleRecordingEngine] Speaker fallback (temporal continuity): \(speakerName ?? lastSpeaker)")
+            debugLog("[SimpleRecordingEngine] Speaker fallback (temporal continuity): \(speakerName ?? lastSpeaker)")
         }
         #endif
 
@@ -707,7 +707,7 @@ class SimpleRecordingEngine: ObservableObject {
         currentMeeting?.wordCount += text.split(separator: " ").count
 
         let speakerInfo = speakerName ?? "unknown speaker"
-        print("[SimpleRecordingEngine] Added segment (\(speakerInfo)): \"\(text.prefix(50))...\"")
+        debugLog("[SimpleRecordingEngine] Added segment (\(speakerInfo)): \"\(text.prefix(50))...\"")
     }
 
     // MARK: - Diarization Processing
@@ -715,7 +715,7 @@ class SimpleRecordingEngine: ObservableObject {
     #if canImport(AxiiDiarization)
     /// Process a system audio diarization chunk through the Axii pipeline
     private func processSystemDiarizationChunk(_ chunk: [Float], startTime: TimeInterval) async {
-        print("[SimpleRecordingEngine] Processing system diarization chunk: \(chunk.count) samples at \(String(format: "%.1f", startTime))s")
+        debugLog("[SimpleRecordingEngine] Processing system diarization chunk: \(chunk.count) samples at \(String(format: "%.1f", startTime))s")
 
         let format = AVAudioFormat(standardFormatWithSampleRate: 16000, channels: 1)!
         guard let buffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: AVAudioFrameCount(chunk.count)) else {
@@ -733,18 +733,18 @@ class SimpleRecordingEngine: ObservableObject {
         await systemDiarizationManager.processAudioBuffer(buffer)
 
         if let error = systemDiarizationManager.lastError {
-            print("[SimpleRecordingEngine] System diarization error: \(error.localizedDescription)")
+            debugLog("[SimpleRecordingEngine] System diarization error: \(error.localizedDescription)")
         }
 
         if let result = systemDiarizationManager.lastResult {
-            print("[SimpleRecordingEngine] System diarization result: \(result.segments.count) segments, \(result.speakerCount) speakers")
+            debugLog("[SimpleRecordingEngine] System diarization result: \(result.segments.count) segments, \(result.speakerCount) speakers")
             segmentAligner.updateSystemDiarizationResults(result)
 
             // Speaker count = 1 (local via energy gate) + system diarizer remote speakers
             let systemSpeakers = systemDiarizationManager.totalSpeakerCount
             let effectiveCount = 1 + systemSpeakers
             if effectiveCount != detectedSpeakerCount {
-                print("[SimpleRecordingEngine] Speaker count updated (\(diarizationStrategy.rawValue)): \(detectedSpeakerCount) -> \(effectiveCount) (1 local + \(systemSpeakers) remote)")
+                debugLog("[SimpleRecordingEngine] Speaker count updated (\(diarizationStrategy.rawValue)): \(detectedSpeakerCount) -> \(effectiveCount) (1 local + \(systemSpeakers) remote)")
             }
             detectedSpeakerCount = effectiveCount
             updateMeetingType(speakerCount: effectiveCount)
@@ -754,7 +754,7 @@ class SimpleRecordingEngine: ObservableObject {
 
             // Auto-upgrade: if streamLabelingNoAEC and Axii detects >1 remote speaker, upgrade
             if diarizationStrategy == .streamLabelingNoAEC && systemSpeakers > 1 {
-                print("[SimpleRecordingEngine] 🔄 Auto-upgrading: streamLabelingNoAEC → groupStreaming (detected \(systemSpeakers) remote speakers)")
+                debugLog("[SimpleRecordingEngine] 🔄 Auto-upgrading: streamLabelingNoAEC → groupStreaming (detected \(systemSpeakers) remote speakers)")
                 diarizationStrategy = .groupStreaming
             }
 
@@ -808,7 +808,7 @@ class SimpleRecordingEngine: ObservableObject {
                 participant.namingMode = .linkedToPerson
             }
             meeting.identifiedParticipants.append(participant)
-            print("[SimpleRecordingEngine] 👤 Stream labeling: added local speaker participant")
+            debugLog("[SimpleRecordingEngine] 👤 Stream labeling: added local speaker participant")
         }
     }
 
@@ -848,7 +848,7 @@ class SimpleRecordingEngine: ObservableObject {
             participant.speakerID = "sys_remote_1"
             participant.isCurrentUser = false
             meeting.identifiedParticipants.append(participant)
-            print("[SimpleRecordingEngine] 👤 Stream labeling: added remote speaker participant")
+            debugLog("[SimpleRecordingEngine] 👤 Stream labeling: added remote speaker participant")
         }
 
         // Feed energy to multi-speaker detector
@@ -904,7 +904,7 @@ class SimpleRecordingEngine: ObservableObject {
                 participant.namingMode = .linkedToPerson
             }
             meeting.identifiedParticipants.append(participant)
-            print("[SimpleRecordingEngine] 👤 Energy gate: added local speaker participant")
+            debugLog("[SimpleRecordingEngine] 👤 Energy gate: added local speaker participant")
         }
     }
 
@@ -952,7 +952,7 @@ class SimpleRecordingEngine: ObservableObject {
         for (speakerId, clusterEmbedding) in db {
             let similarity = cosineSimilarity(userEmbedding, clusterEmbedding)
             if similarity > 0.70 {
-                print("[SimpleRecordingEngine] 🔇 Suppressing system cluster '\(speakerId)' — cosine similarity \(String(format: "%.3f", similarity)) to local user voice")
+                debugLog("[SimpleRecordingEngine] 🔇 Suppressing system cluster '\(speakerId)' — cosine similarity \(String(format: "%.3f", similarity)) to local user voice")
                 // Remove this cluster's segments from the aligner
                 segmentAligner.removeSystemSpeaker("sys_\(speakerId)")
                 // Remove from identified participants
@@ -1067,7 +1067,7 @@ class SimpleRecordingEngine: ObservableObject {
         if cv > energyCVThreshold {
             multiSpeakerEvidenceCount += 1
             if multiSpeakerEvidenceCount == multiSpeakerEvidenceThreshold {
-                print("[SimpleRecordingEngine] 🔍 Multi-speaker detected on system stream (CV: \(String(format: "%.2f", cv)) > \(energyCVThreshold), evidence: \(multiSpeakerEvidenceCount))")
+                debugLog("[SimpleRecordingEngine] 🔍 Multi-speaker detected on system stream (CV: \(String(format: "%.2f", cv)) > \(energyCVThreshold), evidence: \(multiSpeakerEvidenceCount))")
                 Task {
                     await upgradeToGroupStreaming()
                 }
@@ -1098,7 +1098,7 @@ class SimpleRecordingEngine: ObservableObject {
     func upgradeToGroupStreaming() async {
         guard diarizationStrategy == .streamLabeling else { return }
 
-        print("[SimpleRecordingEngine] 🔄 Upgrading strategy: streamLabeling → groupStreaming")
+        debugLog("[SimpleRecordingEngine] 🔄 Upgrading strategy: streamLabeling → groupStreaming")
         diarizationStrategy = .groupStreaming
 
         // Initialize system diarizer and energy gate on-the-fly
@@ -1114,7 +1114,7 @@ class SimpleRecordingEngine: ObservableObject {
         do {
             try await systemDiarizationManager.initialize()
             await preloadKnownSpeakersForMeeting()
-            print("[SimpleRecordingEngine] ✅ Group streaming diarizer initialized mid-recording")
+            debugLog("[SimpleRecordingEngine] ✅ Group streaming diarizer initialized mid-recording")
 
             // Feed buffered system audio for catch-up
             await feedCatchUpBufferToDiarizer()
@@ -1132,26 +1132,26 @@ class SimpleRecordingEngine: ObservableObject {
     /// Feed accumulated system audio buffer to the newly initialized diarizer for catch-up.
     private func feedCatchUpBufferToDiarizer() async {
         guard !systemAudioCatchUpBuffer.isEmpty else {
-            print("[SimpleRecordingEngine] No catch-up audio to feed")
+            debugLog("[SimpleRecordingEngine] No catch-up audio to feed")
             return
         }
 
         let bufferCount = systemAudioCatchUpBuffer.count
         let totalSeconds = Double(catchUpBufferFrameCount) / 16000.0
-        print("[SimpleRecordingEngine] 🔄 Feeding \(bufferCount) catch-up buffers (\(String(format: "%.1f", totalSeconds))s) to system diarizer")
+        debugLog("[SimpleRecordingEngine] 🔄 Feeding \(bufferCount) catch-up buffers (\(String(format: "%.1f", totalSeconds))s) to system diarizer")
 
         for buffer in systemAudioCatchUpBuffer {
             await systemDiarizationManager.processAudioBuffer(buffer)
         }
 
-        print("[SimpleRecordingEngine] ✅ Catch-up buffer fed to diarizer")
+        debugLog("[SimpleRecordingEngine] ✅ Catch-up buffer fed to diarizer")
     }
 
     /// Update expected attendee count mid-recording. Triggers strategy upgrade if needed.
     func updateExpectedAttendeeCount(_ count: Int) async {
         let oldCount = expectedAttendeeCount
         expectedAttendeeCount = count
-        print("[SimpleRecordingEngine] Expected attendee count updated: \(oldCount.map(String.init) ?? "nil") → \(count)")
+        debugLog("[SimpleRecordingEngine] Expected attendee count updated: \(oldCount.map(String.init) ?? "nil") → \(count)")
 
         if count > 2 && diarizationStrategy == .streamLabeling {
             await upgradeToGroupStreaming()
@@ -1197,7 +1197,7 @@ class SimpleRecordingEngine: ObservableObject {
         }
 
         if savedCount > 0 {
-            print("[SimpleRecordingEngine] 🧠 Post-meeting voice learning: saved \(savedCount) embeddings")
+            debugLog("[SimpleRecordingEngine] 🧠 Post-meeting voice learning: saved \(savedCount) embeddings")
         }
     }
 
@@ -1256,7 +1256,7 @@ class SimpleRecordingEngine: ObservableObject {
         backfillCursor = newCursor
 
         if backfilledCount > 0 {
-            print("[SimpleRecordingEngine] Backfilled speaker labels for \(backfilledCount) transcript segments (cursor at \(backfillCursor))")
+            debugLog("[SimpleRecordingEngine] Backfilled speaker labels for \(backfilledCount) transcript segments (cursor at \(backfillCursor))")
         }
     }
 
@@ -1306,7 +1306,7 @@ class SimpleRecordingEngine: ObservableObject {
                         participant.personRecord = matchedPerson
                         participant.person = matchedPerson
                         participant.confidence = match.1
-                        print("[SimpleRecordingEngine] 🎤 Voice match: \(matchedPerson.wrappedName) (confidence: \(String(format: "%.0f%%", match.1 * 100)))")
+                        debugLog("[SimpleRecordingEngine] 🎤 Voice match: \(matchedPerson.wrappedName) (confidence: \(String(format: "%.0f%%", match.1 * 100)))")
                     }
                 }
 
@@ -1329,21 +1329,21 @@ class SimpleRecordingEngine: ObservableObject {
                             for i in meeting.transcript.indices where meeting.transcript[i].speakerID == other.speakerID {
                                 meeting.transcript[i].speakerName = revertName
                             }
-                            print("[SimpleRecordingEngine] ⚠️ Reverted \(other.speakerID) — voice ID says \(speakerId) is the real user")
+                            debugLog("[SimpleRecordingEngine] ⚠️ Reverted \(other.speakerID) — voice ID says \(speakerId) is the real user")
                         }
 
                         // Save this speaker's embedding for future voice recognition improvement
                         if let embedding = result.speakerDatabase?[rawId], !embedding.isEmpty {
                             UserProfile.shared.addVoiceSample(embedding)
-                            print("[SimpleRecordingEngine] 🎤 Saved voice embedding to UserProfile from \(speakerId)")
+                            debugLog("[SimpleRecordingEngine] 🎤 Saved voice embedding to UserProfile from \(speakerId)")
                         }
 
-                        print("[SimpleRecordingEngine] 👤 Auto-identified current user as speaker \(speakerId)")
+                        debugLog("[SimpleRecordingEngine] 👤 Auto-identified current user as speaker \(speakerId)")
                     }
                 }
 
                 meeting.identifiedParticipants.append(participant)
-                print("[SimpleRecordingEngine] Added participant: \(participant.displayName)")
+                debugLog("[SimpleRecordingEngine] Added participant: \(participant.displayName)")
 
                 // Backfill existing transcript segments with the participant's display name
                 if participant.namingMode != .unnamed {
@@ -1351,7 +1351,7 @@ class SimpleRecordingEngine: ObservableObject {
                     for i in meeting.transcript.indices where meeting.transcript[i].speakerID == speakerId {
                         meeting.transcript[i].speakerName = displayName
                     }
-                    print("[SimpleRecordingEngine] Backfilled transcript with name '\(displayName)' for speaker \(speakerId)")
+                    debugLog("[SimpleRecordingEngine] Backfilled transcript with name '\(displayName)' for speaker \(speakerId)")
                 }
             }
         }
@@ -1385,7 +1385,7 @@ class SimpleRecordingEngine: ObservableObject {
     // MARK: - Meeting Finalization
 
     private func finalizeMeeting(_ meeting: LiveMeeting) async {
-        print("[SimpleRecordingEngine] Finalizing meeting...")
+        debugLog("[SimpleRecordingEngine] Finalizing meeting...")
 
         // Update final duration
         meeting.duration = recordingDuration
@@ -1401,7 +1401,7 @@ class SimpleRecordingEngine: ObservableObject {
             RecordingWindowManager.shared.hide()
         }
 
-        print("[SimpleRecordingEngine] Meeting finalized: \(meeting.transcript.count) segments, \(meeting.wordCount) words")
+        debugLog("[SimpleRecordingEngine] Meeting finalized: \(meeting.transcript.count) segments, \(meeting.wordCount) words")
     }
 
     private func storeMeetingHandoff(_ meeting: LiveMeeting) {
@@ -1432,7 +1432,7 @@ class SimpleRecordingEngine: ObservableObject {
                 localSpeaker.name = userName
                 localSpeaker.namingMode = .linkedToPerson
             }
-            print("[SimpleRecordingEngine] 👤 Auto-identified sole mic speaker as current user: \(localSpeaker.speakerID)")
+            debugLog("[SimpleRecordingEngine] 👤 Auto-identified sole mic speaker as current user: \(localSpeaker.speakerID)")
         }
 
         // Build participant data with voice embeddings
@@ -1459,7 +1459,7 @@ class SimpleRecordingEngine: ObservableObject {
         )
         MeetingHandoff.shared.store(pending)
 
-        print("[SimpleRecordingEngine] Stored meeting handoff (\(meeting.identifiedParticipants.count) participants)")
+        debugLog("[SimpleRecordingEngine] Stored meeting handoff (\(meeting.identifiedParticipants.count) participants)")
     }
 
     // MARK: - Monitoring (Simplified)
@@ -1468,12 +1468,12 @@ class SimpleRecordingEngine: ObservableObject {
         // Simplified: just mark as monitoring
         // Auto-detection to be added in future phase
         isMonitoring = true
-        print("[SimpleRecordingEngine] Monitoring started (passive)")
+        debugLog("[SimpleRecordingEngine] Monitoring started (passive)")
     }
 
     func stopMonitoring() {
         isMonitoring = false
-        print("[SimpleRecordingEngine] Monitoring stopped")
+        debugLog("[SimpleRecordingEngine] Monitoring stopped")
     }
 
     // MARK: - Permission Management
@@ -1500,7 +1500,7 @@ class SimpleRecordingEngine: ObservableObject {
     func resetPermissionPrompts() {
         // Clear any saved permission dismissal flags
         UserDefaults.standard.removeObject(forKey: "permissionPromptsDismissed")
-        print("[SimpleRecordingEngine] Permission prompts reset")
+        debugLog("[SimpleRecordingEngine] Permission prompts reset")
     }
 }
 

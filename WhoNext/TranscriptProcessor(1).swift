@@ -186,24 +186,24 @@ class TranscriptProcessor: ObservableObject {
     func processTranscript(_ rawText: String, preIdentifiedParticipants: [SerializableParticipant]? = nil, userNotes: String? = nil, recordingDuration: TimeInterval = 0) async -> ProcessedTranscript? {
         isProcessing = true
         currentPhase = .analyzing
-        print("📊 TranscriptProcessor: Starting processing")
+        debugLog("📊 TranscriptProcessor: Starting processing")
 
         do {
             // Step 1: Parse and detect format
             currentPhase = .analyzing
             processingStatus = "Analyzing transcript format..."
-            print("📊 TranscriptProcessor: Phase 1 - Analyzing")
+            debugLog("📊 TranscriptProcessor: Phase 1 - Analyzing")
             let transcriptData = parseTranscript(rawText)
 
             // Step 2: Extract participants (use pre-identified if available)
             currentPhase = .participants
             processingStatus = "Identifying participants..."
-            print("📊 TranscriptProcessor: Phase 2 - Participants")
+            debugLog("📊 TranscriptProcessor: Phase 2 - Participants")
             let participants: [ParticipantInfo]
             if let preIdentified = preIdentifiedParticipants, !preIdentified.isEmpty {
                 // Use pre-identified participants from recording
                 participants = preIdentified.map { ParticipantInfo(from: $0) }
-                print("📝 Using \(participants.count) pre-identified participants from recording")
+                debugLog("📝 Using \(participants.count) pre-identified participants from recording")
             } else {
                 // Fall back to extraction from transcript
                 participants = await extractParticipants(from: transcriptData)
@@ -212,13 +212,13 @@ class TranscriptProcessor: ObservableObject {
             // Step 3: Generate summary first (title depends on it)
             currentPhase = .summary
             processingStatus = "Generating summary..."
-            print("📊 TranscriptProcessor: Phase 3 - Summary")
+            debugLog("📊 TranscriptProcessor: Phase 3 - Summary")
             let summary = await generateSummary(from: transcriptData, participants: participants, userNotes: userNotes)
 
             // Step 4: Run action items, sentiment, and title in parallel
             currentPhase = .actions
             processingStatus = "Extracting details..."
-            print("📊 TranscriptProcessor: Phase 4 - Parallel (actions + sentiment + title)")
+            debugLog("📊 TranscriptProcessor: Phase 4 - Parallel (actions + sentiment + title)")
 
             async let actionItemsFuture = extractActionItems(from: transcriptData)
             async let sentimentFuture = analyzeContextualSentiment(from: transcriptData, participants: participants)
@@ -230,7 +230,7 @@ class TranscriptProcessor: ObservableObject {
 
             currentPhase = .finalizing
             processingStatus = "Finalizing..."
-            print("📊 TranscriptProcessor: Phase 5 - Finalizing")
+            debugLog("📊 TranscriptProcessor: Phase 5 - Finalizing")
 
             let processedTranscript = ProcessedTranscript(
                 summary: summary,
@@ -248,14 +248,14 @@ class TranscriptProcessor: ObservableObject {
             currentPhase = .complete
             isProcessing = false
             processingStatus = "Complete"
-            print("📊 TranscriptProcessor: Processing complete!")
+            debugLog("📊 TranscriptProcessor: Processing complete!")
             return processedTranscript
 
         } catch {
             ErrorManager.shared.handle(error, context: "Failed to process transcript")
             currentPhase = .idle
             isProcessing = false
-            print("📊 TranscriptProcessor: Processing failed with error: \(error)")
+            debugLog("📊 TranscriptProcessor: Processing failed with error: \(error)")
             return nil
         }
     }
@@ -277,11 +277,11 @@ class TranscriptProcessor: ObservableObject {
     
     public func detectTranscriptFormat(_ text: String) -> TranscriptFormat {
         let lowerText = text.lowercased()
-        print("🔍 Detecting transcript format for text preview: \(String(text.prefix(100)))...")
+        debugLog("🔍 Detecting transcript format for text preview: \(String(text.prefix(100)))...")
         
         // Check for Zoom patterns
         if lowerText.contains("zoom") || text.contains("00:") || text.contains("PM") || text.contains("AM") {
-            print("🔍 Detected format: .zoom")
+            debugLog("🔍 Detected format: .zoom")
             return .zoom
         }
         
@@ -294,25 +294,25 @@ class TranscriptProcessor: ObservableObject {
         
         for pattern in speakerPatterns {
             if text.range(of: pattern, options: [.regularExpression]) != nil {
-                print("🔍 Detected format: .generic (matched pattern: \(pattern))")
+                debugLog("🔍 Detected format: .generic (matched pattern: \(pattern))")
                 return .generic
             }
         }
         
         // Check for Teams patterns
         if lowerText.contains("teams") || lowerText.contains("microsoft") {
-            print("🔍 Detected format: .teams")
+            debugLog("🔍 Detected format: .teams")
             return .teams
         }
         
-        print("🔍 Detected format: .manual")
+        debugLog("🔍 Detected format: .manual")
         return .manual
     }
     
     private func extractParticipantNames(from text: String, format: TranscriptFormat) -> [String] {
         var participants = Set<String>()
         let lines = text.components(separatedBy: .newlines)
-        print("🔍 Extracting participant names from \(lines.count) lines for format: \(format)")
+        debugLog("🔍 Extracting participant names from \(lines.count) lines for format: \(format)")
         
         switch format {
         case .zoom, .generic:
@@ -323,7 +323,7 @@ class TranscriptProcessor: ObservableObject {
                     let name = String(trimmedLine[..<colonIndex]).trimmingCharacters(in: .whitespacesAndNewlines)
                     if isValidParticipantName(name) {
                         participants.insert(name)
-                        print("🔍 Found participant via colon pattern: '\(name)'")
+                        debugLog("🔍 Found participant via colon pattern: '\(name)'")
                     }
                 }
             }
@@ -338,7 +338,7 @@ class TranscriptProcessor: ObservableObject {
                         let name = String(text[range]).trimmingCharacters(in: .whitespacesAndNewlines)
                         if isValidParticipantName(name) {
                             participants.insert(name)
-                            print("🔍 Found participant via bracket pattern: '\(name)'")
+                            debugLog("🔍 Found participant via bracket pattern: '\(name)'")
                         }
                     }
                 }
@@ -363,7 +363,7 @@ class TranscriptProcessor: ObservableObject {
                             let name = String(text[range]).trimmingCharacters(in: .whitespacesAndNewlines)
                             if isValidParticipantName(name) {
                                 participants.insert(name)
-                                print("🔍 Found participant via pattern '\(pattern)': '\(name)'")
+                                debugLog("🔍 Found participant via pattern '\(pattern)': '\(name)'")
                             }
                         }
                     }
@@ -371,7 +371,7 @@ class TranscriptProcessor: ObservableObject {
             }
         }
         
-        print("🔍 Extracted participants: \(Array(participants).sorted())")
+        debugLog("🔍 Extracted participants: \(Array(participants).sorted())")
         return Array(participants).sorted()
     }
     
@@ -432,7 +432,7 @@ class TranscriptProcessor: ObservableObject {
                 // Validate it looks like a speaker label (not a timestamp or URL)
                 if isValidParticipantName(potentialLabel) {
                     actualSpeakerLabels.insert(potentialLabel.lowercased())
-                    print("🔍 Found speaker label: '\(potentialLabel)'")
+                    debugLog("🔍 Found speaker label: '\(potentialLabel)'")
                 }
             }
 
@@ -445,13 +445,13 @@ class TranscriptProcessor: ObservableObject {
                         .trimmingCharacters(in: .whitespacesAndNewlines)
                     if isValidParticipantName(potentialLabel) {
                         actualSpeakerLabels.insert(potentialLabel.lowercased())
-                        print("🔍 Found bracketed speaker label: '\(potentialLabel)'")
+                        debugLog("🔍 Found bracketed speaker label: '\(potentialLabel)'")
                     }
                 }
             }
         }
 
-        print("🔍 Actual speaker labels found in transcript: \(actualSpeakerLabels)")
+        debugLog("🔍 Actual speaker labels found in transcript: \(actualSpeakerLabels)")
 
         // Validate each extracted participant against actual speaker labels
         for participant in participants {
@@ -460,7 +460,7 @@ class TranscriptProcessor: ObservableObject {
             // Check for exact match
             if actualSpeakerLabels.contains(participantLower) {
                 validatedParticipants.append(participant)
-                print("✅ Validated participant: '\(participant)' (exact match)")
+                debugLog("✅ Validated participant: '\(participant)' (exact match)")
                 continue
             }
 
@@ -469,7 +469,7 @@ class TranscriptProcessor: ObservableObject {
             for label in actualSpeakerLabels {
                 if label.contains(participantLower) || participantLower.contains(label) {
                     validatedParticipants.append(participant)
-                    print("✅ Validated participant: '\(participant)' (partial match with '\(label)')")
+                    debugLog("✅ Validated participant: '\(participant)' (partial match with '\(label)')")
                     foundMatch = true
                     break
                 }
@@ -505,11 +505,11 @@ class TranscriptProcessor: ObservableObject {
 
         guard voiceSpeakerCount > 0 else { return participants }
 
-        print("🎤 Voice analysis detected \(voiceSpeakerCount) speaker(s)")
+        debugLog("🎤 Voice analysis detected \(voiceSpeakerCount) speaker(s)")
 
         // If we have more participants than voice-detected speakers, trim to match
         if participants.count > voiceSpeakerCount {
-            print("⚠️ Trimming participants from \(participants.count) to \(voiceSpeakerCount) based on voice analysis")
+            debugLog("⚠️ Trimming participants from \(participants.count) to \(voiceSpeakerCount) based on voice analysis")
             return Array(participants.prefix(voiceSpeakerCount))
         }
 
@@ -526,8 +526,8 @@ class TranscriptProcessor: ObservableObject {
     // MARK: - AI Processing Methods
     
     private func extractParticipants(from transcript: TranscriptData) async -> [ParticipantInfo] {
-        print("🔍 Starting participant extraction for format: \(transcript.detectedFormat)")
-        print("🔍 Transcript preview: \(String(transcript.rawText.prefix(200)))...")
+        debugLog("🔍 Starting participant extraction for format: \(transcript.detectedFormat)")
+        debugLog("🔍 Transcript preview: \(String(transcript.rawText.prefix(200)))...")
         
         // Check for voice analysis metadata
         var voiceDetectedSpeakerCount = 0
@@ -539,12 +539,12 @@ class TranscriptProcessor: ObservableObject {
                     voiceDetectedSpeakerCount = Int(number.output) ?? 0
                 }
             }
-            print("🎤 Voice analysis metadata found: \(voiceDetectedSpeakerCount) speaker(s)")
+            debugLog("🎤 Voice analysis metadata found: \(voiceDetectedSpeakerCount) speaker(s)")
         }
         
         // If voice analysis detected only 1 speaker, short-circuit the extraction
         if voiceDetectedSpeakerCount == 1 {
-            print("🎤 Single speaker detected by voice analysis, extracting single participant")
+            debugLog("🎤 Single speaker detected by voice analysis, extracting single participant")
             
             // Try to find the speaker name from the transcript
             var speakerName = "Speaker"
@@ -560,44 +560,44 @@ class TranscriptProcessor: ObservableObject {
                 }
             }
             
-            print("🎤 Single speaker identified as: \(speakerName)")
+            debugLog("🎤 Single speaker identified as: \(speakerName)")
             return await createParticipantInfoWithMatching(from: [speakerName])
         }
         
         // Otherwise, proceed with normal AI extraction
         do {
-            print("🔍 Attempting AI participant extraction...")
+            debugLog("🔍 Attempting AI participant extraction...")
             var participantNames = try await hybridAI.extractParticipants(from: transcript.rawText)
-            print("🔍 AI returned \(participantNames.count) participants: \(participantNames)")
+            debugLog("🔍 AI returned \(participantNames.count) participants: \(participantNames)")
 
             // CRITICAL: Validate that extracted names actually appear as speaker labels
             // This prevents names mentioned in conversation from being incorrectly identified
             participantNames = validateParticipantsAsSpeakers(participantNames, in: transcript.rawText)
-            print("🔍 After validation: \(participantNames.count) participants: \(participantNames)")
+            debugLog("🔍 After validation: \(participantNames.count) participants: \(participantNames)")
 
             // Constrain by voice analysis speaker count if available
             participantNames = constrainByVoiceAnalysis(participantNames, transcript: transcript.rawText)
-            print("🔍 After voice constraint: \(participantNames.count) participants: \(participantNames)")
+            debugLog("🔍 After voice constraint: \(participantNames.count) participants: \(participantNames)")
 
             if !participantNames.isEmpty {
                 return await createParticipantInfoWithMatching(from: participantNames)
             }
         } catch {
-            print("🔍 AI participant extraction failed: \(error)")
+            debugLog("🔍 AI participant extraction failed: \(error)")
         }
 
-        print("🔍 Falling back to manual parsing...")
+        debugLog("🔍 Falling back to manual parsing...")
         // Fallback to simple parsing based on transcript format
         var fallbackNames = extractParticipantNames(from: transcript.rawText, format: transcript.detectedFormat)
-        print("🔍 Manual parsing found \(fallbackNames.count) participants: \(fallbackNames)")
+        debugLog("🔍 Manual parsing found \(fallbackNames.count) participants: \(fallbackNames)")
 
         // Also validate manual parsing results
         fallbackNames = validateParticipantsAsSpeakers(fallbackNames, in: transcript.rawText)
-        print("🔍 After validation: \(fallbackNames.count) participants: \(fallbackNames)")
+        debugLog("🔍 After validation: \(fallbackNames.count) participants: \(fallbackNames)")
 
         // Constrain by voice analysis
         fallbackNames = constrainByVoiceAnalysis(fallbackNames, transcript: transcript.rawText)
-        print("🔍 After voice constraint: \(fallbackNames.count) participants: \(fallbackNames)")
+        debugLog("🔍 After voice constraint: \(fallbackNames.count) participants: \(fallbackNames)")
 
         return await createParticipantInfoWithMatching(from: fallbackNames)
     }
@@ -608,7 +608,7 @@ class TranscriptProcessor: ObservableObject {
         for name in names {
             // Skip if this is the current user
             if UserProfile.shared.isCurrentUser(name) {
-                print("🔍 Skipping current user: \(name)")
+                debugLog("🔍 Skipping current user: \(name)")
                 continue
             }
 
@@ -623,9 +623,9 @@ class TranscriptProcessor: ObservableObject {
             participantInfos.append(participantInfo)
 
             if let match = matchedPerson {
-                print("🔍 Auto-matched '\(name)' to existing person: '\(match.name ?? "Unknown")' (confidence: high)")
+                debugLog("🔍 Auto-matched '\(name)' to existing person: '\(match.name ?? "Unknown")' (confidence: high)")
             } else {
-                print("🔍 No match found for '\(name)' - will need manual selection")
+                debugLog("🔍 No match found for '\(name)' - will need manual selection")
             }
         }
 
@@ -639,7 +639,7 @@ class TranscriptProcessor: ObservableObject {
             
             do {
                 let allPeople = try context.fetch(request)
-                print("🔍 Searching \(allPeople.count) people for match to '\(participantName)'")
+                debugLog("🔍 Searching \(allPeople.count) people for match to '\(participantName)'")
                 
                 var bestMatch: Person?
                 var bestScore = 0.0
@@ -648,7 +648,7 @@ class TranscriptProcessor: ObservableObject {
                     guard let personName = person.name else { continue }
                     
                     let score = calculateNameSimilarity(participantName, personName)
-                    print("🔍 Comparing '\(participantName)' vs '\(personName)': score \(String(format: "%.2f", score))")
+                    debugLog("🔍 Comparing '\(participantName)' vs '\(personName)': score \(String(format: "%.2f", score))")
                     
                     // Require a minimum confidence threshold
                     if score > bestScore && score >= 0.7 {
@@ -658,7 +658,7 @@ class TranscriptProcessor: ObservableObject {
                 }
                 
                 if let match = bestMatch {
-                    print("🔍 Best match for '\(participantName)': '\(match.name ?? "Unknown")' (score: \(String(format: "%.2f", bestScore)))")
+                    debugLog("🔍 Best match for '\(participantName)': '\(match.name ?? "Unknown")' (score: \(String(format: "%.2f", bestScore)))")
                 }
                 
                 return bestMatch
