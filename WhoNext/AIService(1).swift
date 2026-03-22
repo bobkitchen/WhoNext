@@ -107,6 +107,7 @@ class AIService {
         case .openai: return openaiApiKey
         case .claude: return claudeApiKey
         case .openrouter: return openrouterApiKey
+        case .apify: return openrouterApiKey
         }
     }
     
@@ -128,7 +129,7 @@ class AIService {
             return try await sendMessageOpenAI(message, context: context)
         case .claude:
             return try await sendMessageClaude(message, context: context)
-        case .openrouter:
+        case .openrouter, .apify:
             do {
                 let result = try await sendMessageOpenRouter(message, context: context)
                 // Check if OpenRouter gave a meaningful response
@@ -496,7 +497,7 @@ IMPORTANT FORMATTING RULES:
             analyzeImageWithVisionOpenAI(imageData: imageData, prompt: prompt, completion: completion)
         case .claude:
             analyzeImageWithVisionClaude(imageData: imageData, prompt: prompt, completion: completion)
-        case .openrouter:
+        case .openrouter, .apify:
             analyzeImageWithVisionOpenRouter(imageData: imageData, prompt: prompt, completion: completion)
         }
     }
@@ -810,7 +811,7 @@ IMPORTANT FORMATTING RULES:
             analyzeMultipleImagesWithVisionOpenAI(imageDataArray: imageDataArray, prompt: prompt, completion: completion)
         case .claude:
             analyzeMultipleImagesWithVisionClaude(imageDataArray: imageDataArray, prompt: prompt, completion: completion)
-        case .openrouter:
+        case .openrouter, .apify:
             analyzeMultipleImagesWithVisionOpenRouter(imageDataArray: imageDataArray, prompt: prompt, completion: completion)
         }
     }

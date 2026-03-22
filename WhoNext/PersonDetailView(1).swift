@@ -58,12 +58,18 @@ struct PersonDetailView: View {
     @ObservedObject private var hybridAI = HybridAIService.shared
     @State private var preMeetingBriefWindowController: PreMeetingBriefWindowController?
     @State private var profileWindowController: ProfileWindowController?
-    @State private var showLinkedInImport = false
-    @State private var experienceText: String?
-    @State private var educationText: String?
-    @State private var isProcessingProfile = false
-    @State private var clipboardError: String?
-    @State private var photoSaved = false
+
+    // LinkedIn Enrichment
+    enum LinkedInEnrichState {
+        case idle
+        case searching
+        case selecting([LinkedInCandidate])
+        case enriching(String) // URL being enriched
+        case success
+        case error(String)
+    }
+    @State private var enrichState: LinkedInEnrichState = .idle
+    @State private var showCandidatePicker = false
 
     init(person: Person) {
         self.person = person
@@ -226,164 +232,111 @@ struct PersonDetailView: View {
         )
     }
 
-    // MARK: - LinkedIn Import Section
+    // MARK: - LinkedIn Enrichment Section
 
     @ViewBuilder
     private var linkedInImportView: some View {
         VStack(alignment: .leading, spacing: 12) {
-            // Collapsible header
-            Button(action: { withAnimation(.easeInOut(duration: 0.2)) { showLinkedInImport.toggle() } }) {
-                HStack {
-                    Image(systemName: showLinkedInImport ? "chevron.down" : "chevron.right")
-                        .font(.system(size: 10, weight: .semibold))
-                        .foregroundColor(.secondary)
-                        .frame(width: 16)
-
-                    Image(systemName: "doc.badge.arrow.up")
-                        .font(.system(size: 14))
-                        .foregroundColor(.accentColor)
-
-                    Text("Import LinkedIn Profile")
-                        .font(.system(size: 14, weight: .semibold))
-                        .foregroundColor(.primary)
-
-                    Spacer()
-
-                    if person.notes?.isEmpty ?? true {
-                        Text("No profile data")
-                            .font(.system(size: 11))
-                            .foregroundColor(.orange)
-                            .padding(.horizontal, 8)
-                            .padding(.vertical, 3)
-                            .background(Color.orange.opacity(0.1))
-                            .clipShape(Capsule())
-                    }
-                }
-                .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
-
-            // Expandable content
-            if showLinkedInImport {
-                VStack(alignment: .leading, spacing: 12) {
-                    // Paste buttons row 1: Experience & Education
-                    HStack(spacing: 10) {
-                        Button(action: pasteExperience) {
-                            HStack(spacing: 6) {
-                                Image(systemName: "doc.on.clipboard")
-                                    .font(.system(size: 12))
-                                Text("Paste Experience")
-                                    .font(.system(size: 12, weight: .medium))
-                            }
-                        }
-                        .buttonStyle(LiquidGlassButtonStyle(variant: .primary, size: .small))
-                        .disabled(isProcessingProfile)
-
-                        Button(action: pasteEducation) {
-                            HStack(spacing: 6) {
-                                Image(systemName: "graduationcap")
-                                    .font(.system(size: 12))
-                                Text("Paste Education")
-                                    .font(.system(size: 12, weight: .medium))
-                            }
-                        }
-                        .buttonStyle(LiquidGlassButtonStyle(variant: .secondary, size: .small))
-                        .disabled(isProcessingProfile)
-                    }
-
-                    // Paste buttons row 2: Photo
-                    Button(action: pastePhoto) {
+            // Enrich button
+            switch enrichState {
+            case .idle:
+                if person.linkedinUrl != nil {
+                    Button(action: { reEnrich() }) {
                         HStack(spacing: 6) {
-                            Image(systemName: photoSaved ? "checkmark" : "photo.on.rectangle")
+                            Image(systemName: "arrow.triangle.2.circlepath")
                                 .font(.system(size: 12))
-                            Text(photoSaved ? "Photo Saved" : "Paste Photo")
-                                .font(.system(size: 12, weight: .medium))
+                            Text("Re-enrich from LinkedIn")
+                                .font(.system(size: 13, weight: .medium))
                         }
                     }
-                    .buttonStyle(LiquidGlassButtonStyle(variant: .secondary, size: .small))
-                    .disabled(isProcessingProfile)
-
-                    // Status chips
-                    if experienceText != nil || educationText != nil {
-                        VStack(alignment: .leading, spacing: 4) {
-                            if let exp = experienceText {
-                                HStack(spacing: 6) {
-                                    Image(systemName: "checkmark.circle.fill")
-                                        .font(.system(size: 11))
-                                        .foregroundColor(.green)
-                                    Text("Experience ready (\(exp.count.formatted()) chars)")
-                                        .font(.system(size: 11, weight: .medium))
-                                        .foregroundColor(.secondary)
-                                }
-                            }
-                            if let edu = educationText {
-                                HStack(spacing: 6) {
-                                    Image(systemName: "checkmark.circle.fill")
-                                        .font(.system(size: 11))
-                                        .foregroundColor(.green)
-                                    Text("Education ready (\(edu.count.formatted()) chars)")
-                                        .font(.system(size: 11, weight: .medium))
-                                        .foregroundColor(.secondary)
-                                }
-                            }
+                    .buttonStyle(.plain)
+                    .foregroundColor(.accentColor)
+                } else {
+                    Button(action: { startEnrichment() }) {
+                        HStack(spacing: 6) {
+                            Image(systemName: "person.badge.plus")
+                                .font(.system(size: 14))
+                            Text("Enrich from LinkedIn")
+                                .font(.system(size: 13, weight: .semibold))
                         }
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 8)
+                        .background(Color.accentColor.opacity(0.1))
+                        .clipShape(RoundedRectangle(cornerRadius: 8))
                     }
-
-                    // Process Profile button (appears when experience is pasted)
-                    if experienceText != nil {
-                        Button(action: processProfile) {
-                            HStack(spacing: 6) {
-                                if isProcessingProfile {
-                                    ProgressView()
-                                        .scaleEffect(0.6)
-                                        .frame(width: 14, height: 14)
-                                } else {
-                                    Image(systemName: "sparkles")
-                                        .font(.system(size: 12))
-                                }
-                                Text(isProcessingProfile ? "Processing..." : "Process Profile")
-                                    .font(.system(size: 12, weight: .medium))
-                            }
-                        }
-                        .buttonStyle(LiquidGlassButtonStyle(variant: .primary, size: .small))
-                        .disabled(isProcessingProfile)
-
-                        Text("AI will structure and summarize")
-                            .font(.system(size: 10))
-                            .foregroundColor(.secondary)
-                    }
-
-                    // Instruction text
-                    Text("Copy experience and education sections from LinkedIn (highlight and Cmd+C, or Cmd+A from the details pages). Right-click profile photo \u{2192} Copy Image for photo.")
-                        .font(.system(size: 11))
-                        .foregroundColor(.secondary)
-
-                    // Error display
-                    if let error = clipboardError {
-                        Text(error)
-                            .font(.system(size: 11))
-                            .foregroundColor(.red)
-                            .padding(.horizontal, 8)
-                            .padding(.vertical, 4)
-                            .background(Color.red.opacity(0.1))
-                            .cornerRadius(4)
-                    }
-
-                    // Divider
-                    HStack {
-                        Rectangle().fill(Color.secondary.opacity(0.2)).frame(height: 1)
-                        Text("or drag a LinkedIn PDF")
-                            .font(.system(size: 10))
-                            .foregroundColor(.secondary)
-                        Rectangle().fill(Color.secondary.opacity(0.2)).frame(height: 1)
-                    }
-
-                    // PDF drop zone (existing fallback)
-                    CompactLinkedInDropZone { markdown in
-                        saveLinkedInMarkdown(markdown)
-                    }
+                    .buttonStyle(.plain)
+                    .foregroundColor(.accentColor)
                 }
-                .transition(.opacity.combined(with: .move(edge: .top)))
+
+            case .searching:
+                HStack(spacing: 8) {
+                    ProgressView()
+                        .controlSize(.small)
+                    Text("Searching for \(person.name ?? "person") on LinkedIn...")
+                        .font(.system(size: 12))
+                        .foregroundColor(.secondary)
+                }
+
+            case .selecting:
+                // Handled by sheet
+                HStack(spacing: 8) {
+                    ProgressView()
+                        .controlSize(.small)
+                    Text("Select a profile...")
+                        .font(.system(size: 12))
+                        .foregroundColor(.secondary)
+                }
+
+            case .enriching:
+                HStack(spacing: 8) {
+                    ProgressView()
+                        .controlSize(.small)
+                    Text("Enriching profile...")
+                        .font(.system(size: 12))
+                        .foregroundColor(.secondary)
+                }
+
+            case .success:
+                HStack(spacing: 6) {
+                    Image(systemName: "checkmark.circle.fill")
+                        .foregroundColor(.green)
+                        .font(.system(size: 14))
+                    Text("Profile enriched successfully")
+                        .font(.system(size: 12))
+                        .foregroundColor(.secondary)
+                }
+
+            case .error(let message):
+                VStack(alignment: .leading, spacing: 6) {
+                    HStack(spacing: 6) {
+                        Image(systemName: "exclamationmark.triangle.fill")
+                            .foregroundColor(.red)
+                            .font(.system(size: 14))
+                        Text(message)
+                            .font(.system(size: 12))
+                            .foregroundColor(.red)
+                    }
+                    Button("Try Again") { enrichState = .idle }
+                        .font(.system(size: 12))
+                        .buttonStyle(.plain)
+                        .foregroundColor(.accentColor)
+                }
+            }
+        }
+        .sheet(isPresented: $showCandidatePicker) {
+            if case .selecting(let candidates) = enrichState {
+                LinkedInCandidatePickerView(
+                    candidates: candidates,
+                    personName: person.name ?? "Unknown",
+                    onSelect: { candidate in
+                        showCandidatePicker = false
+                        enrichFromCandidate(candidate)
+                    },
+                    onCancel: {
+                        showCandidatePicker = false
+                        enrichState = .idle
+                    }
+                )
             }
         }
         .padding(16)
@@ -427,7 +380,7 @@ struct PersonDetailView: View {
                         .font(.system(size: 14, weight: .medium))
                         .foregroundColor(.secondary)
 
-                    Text("Paste LinkedIn profile text above, drop a PDF, or add notes via Edit")
+                    Text("Use 'Enrich from LinkedIn' above or add notes via Edit")
                         .font(.system(size: 12))
                         .foregroundColor(.secondary)
                         .multilineTextAlignment(.center)
@@ -868,187 +821,99 @@ struct PersonDetailView: View {
         NSPasteboard.general.setString(text, forType: .string)
     }
 
-    // MARK: - Clipboard Paste Actions
+    // MARK: - LinkedIn Enrichment
 
-    private func pasteExperience() {
-        guard let text = NSPasteboard.general.string(forType: .string) else {
-            clipboardError = "No text found on clipboard. Copy the Experience section from LinkedIn first."
+    private func startEnrichment() {
+        guard ApifyLinkedInService.shared.hasToken else {
+            enrichState = .error("Apify API token not configured. Set it in Settings → LinkedIn Enrichment.")
             return
         }
 
-        guard text.count >= 50 else {
-            clipboardError = "Clipboard text is too short (\(text.count) chars). Please copy the full Experience section."
-            return
-        }
-
-        clipboardError = nil
-        experienceText = text
-    }
-
-    private func pasteEducation() {
-        guard let text = NSPasteboard.general.string(forType: .string) else {
-            clipboardError = "No text found on clipboard. Copy the Education section from LinkedIn first."
-            return
-        }
-
-        guard text.count >= 30 else {
-            clipboardError = "Clipboard text is too short (\(text.count) chars). Please copy the full Education section."
-            return
-        }
-
-        clipboardError = nil
-        educationText = text
-    }
-
-    private func processProfile() {
-        guard let experience = experienceText else { return }
-
-        isProcessingProfile = true
-        clipboardError = nil
+        enrichState = .searching
+        let name = person.name ?? ""
+        let company = person.company
 
         Task {
             do {
-                let markdown = try await structureLinkedInClipboard(experience: experience, education: educationText)
+                let candidates = try await ApifyLinkedInService.shared.searchLinkedInProfiles(name: name, company: company)
                 await MainActor.run {
-                    saveLinkedInMarkdown(markdown)
-                    experienceText = nil
-                    educationText = nil
-                    isProcessingProfile = false
+                    if candidates.isEmpty {
+                        enrichState = .error("No LinkedIn profiles found for \"\(name)\". Check the name and company.")
+                    } else if candidates.count == 1 {
+                        enrichFromCandidate(candidates[0])
+                    } else {
+                        enrichState = .selecting(candidates)
+                        showCandidatePicker = true
+                    }
                 }
             } catch {
                 await MainActor.run {
-                    clipboardError = "Failed to structure profile: \(error.localizedDescription)"
-                    isProcessingProfile = false
+                    enrichState = .error(error.localizedDescription)
                 }
             }
         }
     }
 
-    private func pastePhoto() {
-        let pasteboard = NSPasteboard.general
-        if let image = NSImage(pasteboard: pasteboard) {
-            if let tiffData = image.tiffRepresentation,
-               let bitmap = NSBitmapImageRep(data: tiffData),
-               let jpegData = bitmap.representation(using: .jpeg, properties: [.compressionFactor: 0.8]) {
-                person.photo = jpegData
-                person.modifiedAt = Date()
-                do {
-                    try viewContext.save()
-                    photoSaved = true
-                    // Reset after 2 seconds
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
-                        photoSaved = false
-                    }
-                    debugLog("✅ [PersonDetail] Photo pasted and saved for \(person.name ?? "Unknown")")
-                } catch {
-                    clipboardError = "Failed to save photo: \(error.localizedDescription)"
+    private func reEnrich() {
+        guard let url = person.linkedinUrl else { return }
+        guard ApifyLinkedInService.shared.hasToken else {
+            enrichState = .error("Apify API token not configured. Set it in Settings → LinkedIn Enrichment.")
+            return
+        }
+
+        enrichState = .enriching(url)
+        let token = SecureStorage.getAPIKey(for: .apify)
+
+        Task {
+            do {
+                let profile = try await ApifyLinkedInService.shared.enrichProfile(url: url, token: token)
+                let photoData: Data?
+                if let photoUrl = profile.profilePicture {
+                    photoData = try? await ApifyLinkedInService.shared.downloadPhoto(from: photoUrl)
+                } else {
+                    photoData = nil
                 }
-            }
-        } else {
-            clipboardError = "No image found on clipboard. Right-click a photo and choose 'Copy Image' first."
-        }
-    }
 
-    private func saveLinkedInMarkdown(_ markdown: String) {
-        person.notes = markdown
-        person.modifiedAt = Date()
-
-        // Extract location and set timezone if not already set
-        if person.timezone?.isEmpty ?? true || person.timezone == "UTC" {
-            if let location = extractLocationFromMarkdown(markdown) {
-                let timezone = TimezoneMapper.mapLocationToTimezone(location)
-                person.timezone = timezone
-                debugLog("🌍 [PersonDetail] Set timezone to \(timezone) based on location: \(location)")
-            }
-        }
-
-        do {
-            try viewContext.save()
-            debugLog("✅ [PersonDetail] LinkedIn profile data saved for \(person.name ?? "Unknown")")
-            withAnimation {
-                showLinkedInImport = false
-            }
-        } catch {
-            debugLog("❌ [PersonDetail] Failed to save LinkedIn data: \(error)")
-            ErrorManager.shared.handle(error, context: "Failed to save LinkedIn profile data")
-        }
-    }
-
-    private func structureLinkedInClipboard(experience: String, education: String?) async throws -> String {
-        let educationBlock = education.map { String($0.prefix(3000)) } ?? "Not provided"
-
-        let prompt = """
-        Parse this LinkedIn profile data and return structured markdown.
-
-        EXPERIENCE TEXT (copied from LinkedIn Experience section):
-        ---
-        \(String(experience.prefix(12000)))
-        ---
-
-        EDUCATION TEXT (copied from LinkedIn Education section):
-        ---
-        \(educationBlock)
-        ---
-
-        Return markdown in this EXACT format:
-
-        **{Full Name}**
-        {Headline/Current Title}
-        📍 {Location}
-
-        ## Summary
-        Write 2-3 sentences assessing this person's professional profile:
-        - Seniority level (junior/mid/senior/executive) based on titles and career progression
-        - Geographic breadth — how many countries or regions they've worked in
-        - Education relevance — how their education relates to their career path
-        Be specific and cite evidence from the data.
-
-        ## Experience
-        **{Job Title}**
-        {Company Name} · {Location}
-        {Date Range}
-        {Brief description if available}
-
-        (Continue for ALL jobs...)
-
-        ## Education
-        **{School Name}**
-        {Degree} - {Field of Study}
-        {Years}
-
-        ## Skills
-        • {Skill 1}
-        • {Skill 2}
-        ...
-
-        IMPORTANT RULES:
-        1. Extract ALL work experience entries with locations
-        2. IGNORE navigation bar text, footer, "People also viewed", ads
-        3. Keep exact company and school names
-        4. The Summary section is REQUIRED — analyze seniority, geography, and education
-        5. If education text was not provided, omit the Education section
-        6. Respond ONLY with the formatted markdown
-        """
-
-        let aiService = AIService.shared
-        return try await aiService.sendMessage(prompt)
-    }
-
-    // MARK: - Location & Timezone Helpers
-
-    private func extractLocationFromMarkdown(_ markdown: String) -> String? {
-        // Look for location line with 📍 emoji
-        let lines = markdown.components(separatedBy: "\n")
-        for line in lines {
-            let trimmed = line.trimmingCharacters(in: .whitespaces)
-            if trimmed.hasPrefix("📍") {
-                let location = trimmed.replacingOccurrences(of: "📍", with: "").trimmingCharacters(in: .whitespaces)
-                if !location.isEmpty {
-                    return location
+                await MainActor.run {
+                    ApifyLinkedInService.shared.applyProfile(profile, to: person, linkedinUrl: url, photoData: photoData)
+                    try? viewContext.save()
+                    enrichState = .success
+                    Task { try? await Task.sleep(for: .seconds(3)); enrichState = .idle }
+                }
+            } catch {
+                await MainActor.run {
+                    enrichState = .error(error.localizedDescription)
                 }
             }
         }
-        return nil
+    }
+
+    private func enrichFromCandidate(_ candidate: LinkedInCandidate) {
+        enrichState = .enriching(candidate.url)
+        let token = SecureStorage.getAPIKey(for: .apify)
+
+        Task {
+            do {
+                let profile = try await ApifyLinkedInService.shared.enrichProfile(url: candidate.url, token: token)
+                let photoData: Data?
+                if let photoUrl = profile.profilePicture {
+                    photoData = try? await ApifyLinkedInService.shared.downloadPhoto(from: photoUrl)
+                } else {
+                    photoData = nil
+                }
+
+                await MainActor.run {
+                    ApifyLinkedInService.shared.applyProfile(profile, to: person, linkedinUrl: candidate.url, photoData: photoData)
+                    try? viewContext.save()
+                    enrichState = .success
+                    Task { try? await Task.sleep(for: .seconds(3)); enrichState = .idle }
+                }
+            } catch {
+                await MainActor.run {
+                    enrichState = .error(error.localizedDescription)
+                }
+            }
+        }
     }
 
     // mapLocationToTimezone moved to Utilities/TimezoneMapper.swift
