@@ -12,6 +12,7 @@ struct SettingsView: View {
     @State private var apiKey: String = ""
     @State private var claudeApiKey: String = ""
     @State private var openrouterApiKey: String = ""
+    @State private var apifyApiKey: String = ""
     @State private var hasLoadedKeys = false
     @AppStorage("openrouterModel") private var openrouterModel: String = "anthropic/claude-sonnet-4.6"
     @AppStorage("aiProvider") private var aiProvider: String = "apple"
@@ -214,6 +215,7 @@ Best regards
                 apiKey = SecureStorage.getAPIKey(for: .openai)
                 claudeApiKey = SecureStorage.getAPIKey(for: .claude)
                 openrouterApiKey = SecureStorage.getAPIKey(for: .openrouter)
+                apifyApiKey = SecureStorage.getAPIKey(for: .apify)
                 hasLoadedKeys = true
             }
         }
@@ -241,6 +243,15 @@ Best regards
                     SecureStorage.clearAPIKey(for: .openrouter)
                 } else {
                     SecureStorage.setAPIKey(newValue, for: .openrouter)
+                }
+            }
+        }
+        .onChange(of: apifyApiKey) { _, newValue in
+            if hasLoadedKeys {
+                if newValue.isEmpty {
+                    SecureStorage.clearAPIKey(for: .apify)
+                } else {
+                    SecureStorage.setAPIKey(newValue, for: .apify)
                 }
             }
         }
@@ -454,6 +465,29 @@ Best regards
                 .background(Color(NSColor.controlBackgroundColor))
                 .cornerRadius(8)
             }
+
+            Divider()
+
+            // LinkedIn Enrichment
+            VStack(alignment: .leading, spacing: 12) {
+                Text("LinkedIn Enrichment")
+                    .font(.system(size: 16, weight: .semibold))
+
+                Text("Enrich contacts with LinkedIn profile data via Apify. Get a token at apify.com — $5 free credit (~2,500 profiles).")
+                    .font(.system(size: 12))
+                    .foregroundColor(.secondary)
+
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Apify API Token")
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundColor(.secondary)
+                    SecureField("apify_api_...", text: $apifyApiKey)
+                        .textFieldStyle(.roundedBorder)
+                }
+            }
+            .padding()
+            .background(RoundedRectangle(cornerRadius: 12).fill(Color(.controlBackgroundColor)))
+
             .alert("Reset Prompt to Default?", isPresented: $showResetPromptConfirmation) {
                 Button("Reset", role: .destructive) {
                     if let type = promptTypeToReset {
