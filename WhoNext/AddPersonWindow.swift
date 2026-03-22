@@ -5,6 +5,7 @@ import UniformTypeIdentifiers
 struct AddPersonWindow: View {
     @State private var editingName: String = ""
     @State private var editingRole: String = ""
+    @State private var editingCompany: String = ""
     @State private var editingTimezone: String = ""
     @State private var showingTimezoneDropdown: Bool = false
     @State private var editingNotes: String = ""
@@ -97,7 +98,15 @@ struct AddPersonWindow: View {
                                 TextField("Job title or role", text: $editingRole)
                                     .textFieldStyle(.roundedBorder)
                             }
-                            
+
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text("Company / Organization")
+                                    .font(.system(size: 12, weight: .medium))
+                                    .foregroundColor(.secondary)
+                                TextField("Company or organization name", text: $editingCompany)
+                                    .textFieldStyle(.roundedBorder)
+                            }
+
                             VStack(alignment: .leading, spacing: 4) {
                                 Text("Timezone")
                                     .font(.system(size: 12, weight: .medium))
@@ -199,6 +208,7 @@ struct AddPersonWindow: View {
                     newPerson.identifier = UUID()
                     newPerson.name = editingName.trimmingCharacters(in: .whitespacesAndNewlines)
                     newPerson.role = editingRole.trimmingCharacters(in: .whitespacesAndNewlines)
+                    newPerson.company = editingCompany.trimmingCharacters(in: .whitespacesAndNewlines)
                     newPerson.timezone = editingTimezone.trimmingCharacters(in: .whitespacesAndNewlines)
                     newPerson.category = editingCategory
                     newPerson.notes = editingNotes.trimmingCharacters(in: .whitespacesAndNewlines)
