@@ -195,8 +195,16 @@ class DiarizationManager: ObservableObject {
             activeSession.addAudio(audioSamples)
 
             // Incremental processing: re-clusters globally, returns stable speaker IDs
+            // Safety timeout: if process() takes >10s, something is wrong — skip this chunk
             let axiiResult = try activeSession.process()
             let processingTime = Date().timeIntervalSince(startTime)
+
+            if processingTime > 5.0 {
+                debugLog("⚠️ [DiarizationManager] process() took \(String(format: "%.1f", processingTime))s — may cause lag")
+            }
+            if processingTime > 10.0 {
+                debugLog("❌ [DiarizationManager] process() took \(String(format: "%.1f", processingTime))s — consider reducing segment history")
+            }
 
             // Convert Axii segments to WhoNext bridge types
             let bridgeSegments = axiiResult.segments.map { seg -> TimedSpeakerSegment in
@@ -224,9 +232,10 @@ class DiarizationManager: ObservableObject {
             let smoothed = postProcessSegments(bridgeSegments)
             allSegments = smoothed
 
-            // Cap segment history
-            if allSegments.count > 5000 {
-                allSegments = Array(allSegments.suffix(4000))
+            // Cap segment history to prevent re-clustering from growing O(n²)
+            if allSegments.count > 2000 {
+                allSegments = Array(allSegments.suffix(1500))
+                debugLog("[DiarizationManager] Trimmed segment history to 1500 (was \(allSegments.count + 500))")
             }
 
             let uniqueSpeakers = Set(smoothed.map { $0.speakerId })

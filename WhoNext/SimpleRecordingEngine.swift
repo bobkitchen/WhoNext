@@ -276,6 +276,7 @@ class SimpleRecordingEngine: ObservableObject {
             }
 
             print("[SimpleRecordingEngine] Recording started")
+            SessionLog.shared.flush()
 
         } catch {
             print("[SimpleRecordingEngine] Failed to start: \(error)")
@@ -521,6 +522,7 @@ class SimpleRecordingEngine: ObservableObject {
 
         // Meeting summary — always logged (visible without Xcode via session log export)
         logMeetingSummary()
+        SessionLog.shared.flush()
         print("[SimpleRecordingEngine] Recording stopped")
     }
 

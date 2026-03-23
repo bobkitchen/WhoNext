@@ -11,7 +11,7 @@ final class EnergyGateDetector {
     // MARK: - Configuration
 
     /// Minimum mic-to-system energy ratio (in dB) to classify a frame as local speech.
-    /// 10dB (~3.2x amplitude) reduces false positives from VoIP bleed vs the old 5dB.
+    /// 6dB (~2x amplitude) — lowered from 10dB which was too aggressive and missed local speech.
     let ratioThresholdDB: Float
 
     /// Number of samples per frame (30ms at 16kHz = 480 samples)
@@ -64,13 +64,23 @@ final class EnergyGateDetector {
     private var logCounter = 0
     private let logInterval: Int
 
+    /// 30-second diagnostic summary
+    private var summaryCounter = 0
+    private let summaryInterval: Int
+    private var summaryOnsetCount = 0
+    private var summaryTotalSpeechFrames = 0
+    private var summaryTotalFrames = 0
+    private var summaryMaxRatioDB: Float = -100
+    private var summaryMinRatioDB: Float = 100
+
     // MARK: - Init
 
-    /// - Parameter ratioThresholdDB: Mic-to-system energy ratio threshold in dB (default 10dB).
-    init(ratioThresholdDB: Float = 10.0) {
+    /// - Parameter ratioThresholdDB: Mic-to-system energy ratio threshold in dB (default 6dB).
+    init(ratioThresholdDB: Float = 6.0) {
         self.ratioThresholdDB = ratioThresholdDB
         self.calibrationFramesNeeded = Int(calibrationDuration * 16000.0 / Double(frameSamples))
         self.logInterval = Int(1.0 * 16000.0 / Double(frameSamples))
+        self.summaryInterval = Int(30.0 * 16000.0 / Double(frameSamples))
     }
 
     // MARK: - Public API
@@ -109,12 +119,24 @@ final class EnergyGateDetector {
             // Speech detection: mic above adaptive threshold AND energy ratio check
             let isSpeechFrame = detectSpeech(micRMS: micRMS, systemRMS: systemRMS)
 
-            // Periodic ratio logging for calibration data
-            logCounter += 1
-            if logCounter >= logInterval {
-                logCounter = 0
-                let ratioDB = energyRatioDB(micRMS: micRMS, systemRMS: systemRMS)
-                debugLog("[EnergyGate] ratio: \(String(format: "%.1f", ratioDB))dB  mic: \(String(format: "%.5f", micRMS))  sys: \(String(format: "%.5f", systemRMS))  speaking: \(isSpeaking)")
+            // Track stats for 30s summary
+            let ratioDB = energyRatioDB(micRMS: micRMS, systemRMS: systemRMS)
+            summaryTotalFrames += 1
+            if isSpeechFrame { summaryTotalSpeechFrames += 1 }
+            summaryMaxRatioDB = max(summaryMaxRatioDB, ratioDB)
+            summaryMinRatioDB = min(summaryMinRatioDB, ratioDB)
+
+            // 30-second diagnostic summary
+            summaryCounter += 1
+            if summaryCounter >= summaryInterval {
+                let speechPct = summaryTotalFrames > 0 ? Float(summaryTotalSpeechFrames) / Float(summaryTotalFrames) * 100 : 0
+                debugLog("[EnergyGate] 📊 30s summary: local speech \(String(format: "%.0f", speechPct))% of frames, \(summaryOnsetCount) onsets, ratio range \(String(format: "%.1f", summaryMinRatioDB))–\(String(format: "%.1f", summaryMaxRatioDB))dB, threshold: \(String(format: "%.1f", ratioThresholdDB))dB")
+                summaryCounter = 0
+                summaryOnsetCount = 0
+                summaryTotalSpeechFrames = 0
+                summaryTotalFrames = 0
+                summaryMaxRatioDB = -100
+                summaryMinRatioDB = 100
             }
 
             // Sliding window smoothing (majority vote)
@@ -141,7 +163,7 @@ final class EnergyGateDetector {
             if isSpeaking && !previouslySpeaking {
                 // Speech onset
                 speechStartTime = frameTime
-                let ratioDB = energyRatioDB(micRMS: micRMS, systemRMS: systemRMS)
+                summaryOnsetCount += 1
                 debugLog("[EnergyGate] ONSET at \(String(format: "%.2f", frameTime))s  mic: \(String(format: "%.5f", micRMS))  sys: \(String(format: "%.5f", systemRMS))  ratio: \(String(format: "%.1f", ratioDB))dB")
                 Task { @MainActor in
                     DiarizationDiagnostics.shared.logEnergyGateOnset(
