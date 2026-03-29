@@ -275,11 +275,11 @@ class SimpleRecordingEngine: ObservableObject {
                 await processAudioStreams()
             }
 
-            print("[SimpleRecordingEngine] Recording started")
+            debugLog("[SimpleRecordingEngine] Recording started")
             SessionLog.shared.flush()
 
         } catch {
-            print("[SimpleRecordingEngine] Failed to start: \(error)")
+            debugLog("[SimpleRecordingEngine] Failed to start: \(error)")
             recordingState = .error(error.localizedDescription)
             currentMeeting = nil
         }
@@ -523,7 +523,7 @@ class SimpleRecordingEngine: ObservableObject {
         // Meeting summary — always logged (visible without Xcode via session log export)
         logMeetingSummary()
         SessionLog.shared.flush()
-        print("[SimpleRecordingEngine] Recording stopped")
+        debugLog("[SimpleRecordingEngine] Recording stopped")
     }
 
     // MARK: - Audio Processing
@@ -723,7 +723,7 @@ class SimpleRecordingEngine: ObservableObject {
 
         let format = AVAudioFormat(standardFormatWithSampleRate: 16000, channels: 1)!
         guard let buffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: AVAudioFrameCount(chunk.count)) else {
-            print("[SimpleRecordingEngine] Failed to create audio buffer for system diarization")
+            debugLog("[SimpleRecordingEngine] Failed to create audio buffer for system diarization")
             return
         }
 
@@ -870,7 +870,7 @@ class SimpleRecordingEngine: ObservableObject {
             do {
                 try writeBufferToWAV(buffer, writer: writer)
             } catch {
-                print("[SimpleRecordingEngine] Failed to write mic audio to file: \(error)")
+                debugLog("[SimpleRecordingEngine] Failed to write mic audio to file: \(error)")
             }
         }
 
@@ -931,7 +931,7 @@ class SimpleRecordingEngine: ObservableObject {
                 try writeBufferToWAV(buffer, writer: writer)
                 await MainActor.run { DiarizationDiagnostics.shared.counters.wavFramesWritten += Int(buffer.frameLength) }
             } catch {
-                print("[SimpleRecordingEngine] Failed to write system audio to file: \(error)")
+                debugLog("[SimpleRecordingEngine] Failed to write system audio to file: \(error)")
             }
         }
 
@@ -955,7 +955,7 @@ class SimpleRecordingEngine: ObservableObject {
 
         for (speakerId, clusterEmbedding) in db {
             let similarity = cosineSimilarity(userEmbedding, clusterEmbedding)
-            if similarity > 0.70 {
+            if similarity > 0.80 {
                 debugLog("[SimpleRecordingEngine] 🔇 Suppressing system cluster '\(speakerId)' — cosine similarity \(String(format: "%.3f", similarity)) to local user voice")
                 // Remove this cluster's segments from the aligner
                 segmentAligner.removeSystemSpeaker("sys_\(speakerId)")
@@ -1123,7 +1123,7 @@ class SimpleRecordingEngine: ObservableObject {
             // Feed buffered system audio for catch-up
             await feedCatchUpBufferToDiarizer()
         } catch {
-            print("[SimpleRecordingEngine] ❌ Failed to initialize group streaming diarizer: \(error)")
+            debugLog("[SimpleRecordingEngine] ❌ Failed to initialize group streaming diarizer: \(error)")
         }
 
         // Clean up detection state — no longer needed

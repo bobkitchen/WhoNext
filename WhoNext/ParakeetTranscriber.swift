@@ -95,7 +95,7 @@ class ParakeetTranscriber: ObservableObject {
 
         } catch {
             lastError = error
-            print("[ParakeetTranscriber] Failed to initialize: \(error)")
+            debugLog("[ParakeetTranscriber] Failed to initialize: \(error)")
             throw ParakeetTranscriberError.modelLoadFailed(error.localizedDescription)
         }
         #else
@@ -174,7 +174,9 @@ class ParakeetTranscriber: ObservableObject {
     /// Reset transcription state (call at start of new recording)
     func resetState() {
         #if canImport(FluidAudio)
-        asrManager?.resetState()
+        Task {
+            await asrManager?.resetState()
+        }
         #endif
         debugLog("[ParakeetTranscriber] State reset")
     }

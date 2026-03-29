@@ -1,5 +1,8 @@
 import Accelerate
 import Foundation
+import os
+
+private let clusterLog = Logger(subsystem: "com.axii.diarization", category: "clustering")
 
 /// Agglomerative hierarchical clustering using cosine similarity.
 /// Maintains stable cluster IDs across incremental calls.
@@ -41,6 +44,7 @@ final class SpeakerClustering {
 
         // Agglomerative clustering: merge most similar pair until below threshold
         var activeClusters = Set(0..<n)
+        var mergeCount = 0
 
         while activeClusters.count > 1 {
             // Find most similar pair
@@ -70,6 +74,8 @@ final class SpeakerClustering {
             let membersI = labels.enumerated().filter { $0.element == bestI }.map { $0.offset }
             let membersJ = labels.enumerated().filter { $0.element == bestJ }.map { $0.offset }
 
+            clusterLog.debug("[Merge] clusters \(bestI)(\(membersI.count) members) + \(bestJ)(\(membersJ.count) members) at similarity \(String(format: "%.3f", bestSim))")
+
             // Update labels
             for idx in membersJ {
                 labels[idx] = bestI
@@ -81,7 +87,10 @@ final class SpeakerClustering {
             centroids[bestI] = averageCentroid(memberEmbs)
             centroids.removeValue(forKey: bestJ)
             activeClusters.remove(bestJ)
+            mergeCount += 1
         }
+
+        clusterLog.info("[Cluster] \(n) embeddings → \(activeClusters.count) clusters after \(mergeCount) merges (threshold=\(String(format: "%.2f", threshold)))")
 
         // Map local cluster labels to stable global labels
         var localToGlobal: [Int: Int] = [:]
@@ -93,8 +102,8 @@ final class SpeakerClustering {
             }
         }
 
-        // Update stored centroids
-        previousCentroids.removeAll()
+        // Update stored centroids incrementally — do NOT clear all previous centroids.
+        // Only update entries that were matched or add new ones.
         for (localLabel, globalLabel) in localToGlobal {
             if let c = centroids[localLabel] {
                 previousCentroids[globalLabel] = c
@@ -109,7 +118,7 @@ final class SpeakerClustering {
     /// Assign a global label for a centroid, matching to previous centroids if similar.
     private func assignLabel(for embedding: [Float]) -> Int {
         var bestLabel: Int?
-        var bestSim: Float = 0.6  // minimum similarity to reuse a label
+        var bestSim: Float = 0.78  // Raised from 0.6 — require strong similarity to reuse a label
 
         for (label, centroid) in previousCentroids {
             let sim = cosineSimilarity(embedding, centroid)
@@ -120,12 +129,14 @@ final class SpeakerClustering {
         }
 
         if let label = bestLabel {
+            clusterLog.debug("[Label] Reusing label \(label) (similarity \(String(format: "%.3f", bestSim)))")
             previousCentroids[label] = embedding
             return label
         }
 
         let label = nextClusterLabel
         nextClusterLabel += 1
+        clusterLog.debug("[Label] New label \(label) (best previous similarity was \(String(format: "%.3f", bestSim)))")
         previousCentroids[label] = embedding
         return label
     }

@@ -1,5 +1,8 @@
 import Foundation
 import Accelerate
+import os
+
+private let diarizationLog = Logger(subsystem: "com.axii.diarization", category: "session")
 
 /// Core streaming orchestrator: accumulates audio, runs inference, clusters speakers.
 ///
@@ -32,6 +35,10 @@ public final class DiarizationSession {
 
     // Track enriched embeddings per known speaker
     private var enrichedEmbeddingsMap: [String: [[Float]]] = [:]
+
+    // Sliding window: track how much audio we've already processed with Sortformer
+    private var processedMelFrameCount: Int = 0
+    private var allEmbeddings: [(segment: SegmentMerger.MergedSegment, embedding: [Float])] = []
 
     // MARK: - Init
 
@@ -88,6 +95,7 @@ public final class DiarizationSession {
 
     private func runPipeline(isFinal: Bool) throws -> AxiiDiarizationResult {
         let totalSamples = audioBuffer.count
+        let audioDuration = Double(totalSamples) / sampleRate
         guard totalSamples >= Int(sampleRate * 0.5) else {
             return AxiiDiarizationResult(segments: [])
         }
@@ -98,52 +106,99 @@ public final class DiarizationSession {
             return AxiiDiarizationResult(segments: [])
         }
 
-        // Step 2: Sortformer inference in windows of maxInputFrames (1024)
-        // Each mel frame = hop/SR = 160/16000 = 0.01s, so 1024 frames = 10.24s
+        // Step 2: Sortformer inference — sliding window optimization
+        // Only process NEW mel frames since last call (unless final)
         let maxFrames = SortformerModel.maxInputFrames
         let hopSeconds = 160.0 / sampleRate  // 0.01s per mel frame
         let downsample = SortformerModel.downsampleFactor  // 8
         let outputFrameStep = hopSeconds * Double(downsample)  // 0.08s per output frame
 
-        var allProbabilities: [[Float]] = []
-        var windowOffset = 0
+        // For sliding window: start from where we left off, with overlap for boundary accuracy
+        let overlapFrames = isFinal ? 0 : min(maxFrames / 2, processedMelFrameCount)
+        let startFrame = isFinal ? 0 : max(0, processedMelFrameCount - overlapFrames)
+
+        var newProbabilities: [[Float]] = []
+        var windowOffset = startFrame
 
         while windowOffset < allMelFrames.count {
             let windowEnd = min(windowOffset + maxFrames, allMelFrames.count)
             let windowFrames = Array(allMelFrames[windowOffset..<windowEnd])
 
             let windowProbs = try pipeline.sortformerModel.predict(melFrames: windowFrames)
-            allProbabilities.append(contentsOf: windowProbs)
+            newProbabilities.append(contentsOf: windowProbs)
 
             windowOffset += maxFrames
         }
 
-        guard !allProbabilities.isEmpty else {
+        // Update processed frame count for next call
+        if !isFinal {
+            processedMelFrameCount = allMelFrames.count
+        }
+
+        guard !newProbabilities.isEmpty else {
             return AxiiDiarizationResult(segments: [])
         }
 
+        // Diagnostic: Log Sortformer channel activity
+        if !newProbabilities.isEmpty {
+            let numChannels = newProbabilities[0].count
+            var channelMaxes = [Float](repeating: 0, count: numChannels)
+            var channelActiveFrames = [Int](repeating: 0, count: numChannels)
+            for frame in newProbabilities {
+                for ch in 0..<min(numChannels, frame.count) {
+                    channelMaxes[ch] = max(channelMaxes[ch], frame[ch])
+                    if frame[ch] >= 0.25 { channelActiveFrames[ch] += 1 }
+                }
+            }
+            let channelReport = (0..<numChannels).map { ch in
+                "ch\(ch): max=\(String(format: "%.2f", channelMaxes[ch])) active=\(channelActiveFrames[ch])/\(newProbabilities.count)"
+            }.joined(separator: ", ")
+            diarizationLog.info("[Sortformer] \(audioDuration, format: .fixed(precision: 1))s audio, \(newProbabilities.count) frames | \(channelReport)")
+        }
+
         // Step 3: Detect segments via hysteresis thresholding
+        // Use lower onset (0.25) to detect secondary speakers in mono mixed audio
+        let startTimeOffset = isFinal ? 0.0 : Double(startFrame) * hopSeconds
         let rawSegments = SegmentDetector.detect(
-            probabilities: allProbabilities,
+            probabilities: newProbabilities,
             frameStep: outputFrameStep,
-            onsetThreshold: 0.4,
-            offsetThreshold: 0.6
+            onsetThreshold: 0.25,
+            offsetThreshold: 0.65
         )
+
+        // Diagnostic: Log raw segments per channel
+        var segsByChannel: [Int: Int] = [:]
+        for seg in rawSegments { segsByChannel[seg.speakerChannel, default: 0] += 1 }
+        diarizationLog.info("[SegDetect] \(rawSegments.count) raw segments | by channel: \(segsByChannel.sorted(by: { $0.key < $1.key }).map { "ch\($0.key)=\($0.value)" }.joined(separator: ", "))")
 
         // Step 4: Merge segments (padding, min duration, gap merge)
         let mergedSegments = SegmentMerger.merge(
             rawSegments,
             padding: 0.2,
-            minDuration: 0.25,
+            minDuration: 0.3,
             maxGap: 0.5
         )
 
-        // Step 5: Extract WeSpeaker embeddings for each segment
-        var segmentEmbeddings: [(segment: SegmentMerger.MergedSegment, embedding: [Float])] = []
+        // Diagnostic: Log merged segments per channel
+        var mergedByChannel: [Int: Int] = [:]
+        for seg in mergedSegments { mergedByChannel[seg.speakerChannel, default: 0] += 1 }
+        diarizationLog.info("[SegMerge] \(mergedSegments.count) merged segments | by channel: \(mergedByChannel.sorted(by: { $0.key < $1.key }).map { "ch\($0.key)=\($0.value)" }.joined(separator: ", "))")
+
+        // Step 5: Extract WeSpeaker embeddings for new segments
+        var newSegmentEmbeddings: [(segment: SegmentMerger.MergedSegment, embedding: [Float])] = []
 
         for seg in mergedSegments {
-            let startSample = Int(seg.start * sampleRate)
-            let endSample = min(Int(seg.end * sampleRate), totalSamples)
+            // Adjust segment times for sliding window offset
+            let adjustedStart = seg.start + startTimeOffset
+            let adjustedEnd = seg.end + startTimeOffset
+            let adjustedSeg = SegmentMerger.MergedSegment(
+                speakerChannel: seg.speakerChannel,
+                start: adjustedStart,
+                end: adjustedEnd
+            )
+
+            let startSample = Int(adjustedStart * sampleRate)
+            let endSample = min(Int(adjustedEnd * sampleRate), totalSamples)
             guard endSample > startSample else { continue }
 
             let segmentAudio = Array(audioBuffer[startSample..<endSample])
@@ -155,20 +210,59 @@ public final class DiarizationSession {
             guard !fbank.isEmpty else { continue }
 
             if let embedding = try? pipeline.wespeakerModel.predict(fbankFrames: fbank) {
-                segmentEmbeddings.append((segment: seg, embedding: embedding))
+                newSegmentEmbeddings.append((segment: adjustedSeg, embedding: embedding))
             }
         }
 
+        // For incremental calls, accumulate embeddings; for final, use all
+        if isFinal {
+            allEmbeddings = newSegmentEmbeddings
+        } else {
+            allEmbeddings.append(contentsOf: newSegmentEmbeddings)
+            // Cap to prevent unbounded growth (keep most recent)
+            let maxEmbeddings = 500
+            if allEmbeddings.count > maxEmbeddings {
+                allEmbeddings = Array(allEmbeddings.suffix(maxEmbeddings))
+            }
+        }
+
+        let segmentEmbeddings = allEmbeddings
+
         guard !segmentEmbeddings.isEmpty else {
+            diarizationLog.warning("[Pipeline] No embeddings extracted from \(mergedSegments.count) merged segments")
             return AxiiDiarizationResult(segments: [])
         }
 
-        // Step 6: Cluster embeddings → speaker assignments
+        // Diagnostic: Log inter-embedding similarities
         let embeddings = segmentEmbeddings.map { $0.embedding }
+        if embeddings.count >= 2 {
+            var sims: [Float] = []
+            for i in 0..<min(embeddings.count, 20) {
+                for j in (i+1)..<min(embeddings.count, 20) {
+                    sims.append(cosineSimilarity(embeddings[i], embeddings[j]))
+                }
+            }
+            if !sims.isEmpty {
+                let minSim = sims.min() ?? 0
+                let maxSim = sims.max() ?? 0
+                let avgSim = sims.reduce(0, +) / Float(sims.count)
+                diarizationLog.info("[Embeddings] \(embeddings.count) total | similarity min=\(String(format: "%.3f", minSim)) max=\(String(format: "%.3f", maxSim)) avg=\(String(format: "%.3f", avgSim))")
+            }
+        } else {
+            diarizationLog.info("[Embeddings] Only \(embeddings.count) embedding(s) — cannot compute similarity")
+        }
+
+        // Step 6: Cluster embeddings → speaker assignments
         let clusterLabels = clusteringState.cluster(
             embeddings: embeddings,
             threshold: pipeline.clusteringThreshold
         )
+
+        // Diagnostic: Log clustering result
+        let uniqueClusters = Set(clusterLabels)
+        var clusterSizes: [Int: Int] = [:]
+        for label in clusterLabels { clusterSizes[label, default: 0] += 1 }
+        diarizationLog.info("[Clustering] \(uniqueClusters.count) clusters from \(embeddings.count) embeddings | sizes: \(clusterSizes.sorted(by: { $0.key < $1.key }).map { "c\($0.key)=\($0.value)" }.joined(separator: ", "))")
 
         // Step 7: Match clusters against known speakers
         var clusterEmbeddings: [Int: [[Float]]] = [:]
@@ -263,6 +357,18 @@ public final class DiarizationSession {
             }
         }
         return nil
+    }
+
+    private func cosineSimilarity(_ a: [Float], _ b: [Float]) -> Float {
+        guard a.count == b.count, !a.isEmpty else { return 0 }
+        var dot: Float = 0
+        var normA: Float = 0
+        var normB: Float = 0
+        vDSP_dotpr(a, 1, b, 1, &dot, vDSP_Length(a.count))
+        vDSP_dotpr(a, 1, a, 1, &normA, vDSP_Length(a.count))
+        vDSP_dotpr(b, 1, b, 1, &normB, vDSP_Length(b.count))
+        let denom = sqrt(normA) * sqrt(normB)
+        return denom > 0 ? dot / denom : 0
     }
 
     private func centroid(_ embeddings: [[Float]]) -> [Float] {
