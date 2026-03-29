@@ -152,7 +152,7 @@ class DiarizationManager: ObservableObject {
             isInitialized = true
             debugLog("✅ [DiarizationManager] AxiiDiarization pipeline initialized")
         } catch {
-            print("❌ [DiarizationManager] Failed to initialize: \(error)")
+            debugLog("❌ [DiarizationManager] Failed to initialize: \(error)")
             lastError = error
             throw DiarizationError.initializationFailed(error.localizedDescription)
         }
@@ -165,7 +165,7 @@ class DiarizationManager: ObservableObject {
         guard isEnabled, isInitialized else { return }
 
         guard let floatSamples = convertBufferToFloatArray(buffer) else {
-            print("⚠️ [DiarizationManager] Failed to convert audio buffer")
+            debugLog("⚠️ [DiarizationManager] Failed to convert audio buffer")
             return
         }
 
@@ -270,7 +270,7 @@ class DiarizationManager: ObservableObject {
             currentSpeakers = Array(uniqueSpeakers).sorted()
 
         } catch {
-            print("❌ [DiarizationManager] Chunk processing failed: \(error)")
+            debugLog("❌ [DiarizationManager] Chunk processing failed: \(error)")
             lastError = error
         }
     }
@@ -322,7 +322,7 @@ class DiarizationManager: ObservableObject {
             debugLog("✅ [DiarizationManager] Finalized: \(result.speakerCount) speakers, \(smoothed.count) segments")
             return result
         } catch {
-            print("❌ [DiarizationManager] Finalization failed: \(error)")
+            debugLog("❌ [DiarizationManager] Finalization failed: \(error)")
             return lastResult
         }
     }
@@ -333,7 +333,7 @@ class DiarizationManager: ObservableObject {
     func matchAgainstCache(embedding: [Float]) -> String? {
         guard let activeSession = session else { return nil }
         // Use Axii's built-in speaker matching
-        if let match = activeSession.matchSpeaker(embedding: embedding, threshold: 0.6) {
+        if let match = activeSession.matchSpeaker(embedding: embedding, threshold: 0.80) {
             return match.id
         }
         return nil
@@ -570,6 +570,8 @@ class DiarizationManager: ObservableObject {
     }
 
     /// Apply post-processing to smooth diarization results.
+    /// Merges adjacent same-speaker segments and handles short segments
+    /// WITHOUT losing speaker identity (preserves original speaker ID).
     private func postProcessSegments(_ segments: [TimedSpeakerSegment]) -> [TimedSpeakerSegment] {
         guard segments.count > 1 else { return segments }
 
@@ -582,15 +584,25 @@ class DiarizationManager: ObservableObject {
 
             if currentDuration < minSegmentDuration {
                 if smoothed.isEmpty {
-                    current = TimedSpeakerSegment(
-                        speakerId: next.speakerId,
-                        embedding: next.embedding,
-                        startTimeSeconds: current.startTimeSeconds,
-                        endTimeSeconds: next.endTimeSeconds,
-                        qualityScore: next.qualityScore
-                    )
+                    // Short first segment: keep its OWN speaker identity, just extend the time range.
+                    // Previously this replaced current's speaker with next's speaker — causing identity loss.
+                    if current.speakerId == next.speakerId {
+                        // Same speaker — merge naturally
+                        current = TimedSpeakerSegment(
+                            speakerId: current.speakerId,
+                            embedding: current.embedding,
+                            startTimeSeconds: current.startTimeSeconds,
+                            endTimeSeconds: next.endTimeSeconds,
+                            qualityScore: max(current.qualityScore, next.qualityScore)
+                        )
+                    } else {
+                        // Different speakers — keep both as separate segments
+                        smoothed.append(current)
+                        current = next
+                    }
                     continue
                 } else if let last = smoothed.last, last.speakerId == next.speakerId {
+                    // Short segment sandwiched between same-speaker segments — absorb it
                     smoothed.removeLast()
                     current = TimedSpeakerSegment(
                         speakerId: last.speakerId,

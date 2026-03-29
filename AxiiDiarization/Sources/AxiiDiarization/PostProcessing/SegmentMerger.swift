@@ -18,7 +18,7 @@ enum SegmentMerger {
     static func merge(
         _ segments: [SegmentDetector.RawSegment],
         padding: Double = 0.2,
-        minDuration: Double = 0.25,
+        minDuration: Double = 0.3,
         maxGap: Double = 0.5
     ) -> [MergedSegment] {
         guard !segments.isEmpty else { return [] }

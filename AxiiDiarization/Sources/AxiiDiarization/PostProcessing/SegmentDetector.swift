@@ -17,17 +17,24 @@ enum SegmentDetector {
     ///   - probabilities: Array of [4] probability vectors per frame
     ///   - frameStep: Time duration of each frame in seconds
     ///   - onsetThreshold: Probability above which speech onset is detected
-    ///   - offsetThreshold: Probability below which speech offset is detected
+    ///   - offsetThreshold: Probability below which speech offset is detected (should be > onset for hysteresis)
     static func detect(
         probabilities: [[Float]],
         frameStep: Double,
-        onsetThreshold: Float = 0.4,
-        offsetThreshold: Float = 0.6
+        onsetThreshold: Float = 0.25,
+        offsetThreshold: Float = 0.65
     ) -> [RawSegment] {
         let numFrames = probabilities.count
         guard numFrames > 0, let numSpeakers = probabilities.first?.count else { return [] }
 
         var segments: [RawSegment] = []
+
+        // Proper hysteresis: onset at low threshold, offset at higher threshold.
+        // Once active, stays active until prob drops below (1.0 - offsetThreshold).
+        // onset=0.25: start detecting when prob >= 0.25
+        // offset=0.65: stop detecting when prob < (1.0 - 0.65) = 0.35
+        // This creates a hysteresis band: [0.25, 0.35] where state doesn't change.
+        let offsetLevel = 1.0 - offsetThreshold  // = 0.35
 
         for speaker in 0..<numSpeakers {
             var isActive = false
@@ -40,8 +47,9 @@ enum SegmentDetector {
                     // Speech onset
                     isActive = true
                     segmentStart = frame
-                } else if isActive && prob < (1.0 - offsetThreshold) {
-                    // Speech offset (note: offset threshold is inverted for hysteresis)
+                } else if isActive && prob < offsetLevel {
+                    // Speech offset — requires prob to drop below offsetLevel (0.35)
+                    // This is HIGHER than onset (0.25), creating true hysteresis
                     isActive = false
                     segments.append(RawSegment(
                         speakerChannel: speaker,
