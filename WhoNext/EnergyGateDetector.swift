@@ -41,12 +41,20 @@ final class EnergyGateDetector {
 
     // MARK: - State
 
-    /// Adaptive noise floor (calibrated from first 2s)
+    /// Adaptive noise floor (initially calibrated from first 2s, then continuously adapted)
     private var noiseFloor: Float = 0
     private var isCalibrated = false
     private var calibrationSamples: [Float] = []
     private var calibrationFrameCount = 0
     private let calibrationFramesNeeded: Int
+
+    /// Adaptive noise floor decay rate — when mic is quiet and system is silent,
+    /// slowly lower the noise floor toward current ambient level.
+    /// This handles the case where initial calibration was done during loud system audio
+    /// (e.g., YouTube playing) and the noise floor is stuck too high.
+    private let adaptationRate: Float = 0.02
+    private var adaptationFrameCounter = 0
+    private let adaptationInterval = 10  // Adapt every 10 quiet frames (~300ms)
 
     /// Sliding window of speech/silence decisions for smoothing
     private var smoothingWindow: [Bool] = []
@@ -118,6 +126,26 @@ final class EnergyGateDetector {
 
             // Speech detection: mic above adaptive threshold AND energy ratio check
             let isSpeechFrame = detectSpeech(micRMS: micRMS, systemRMS: systemRMS)
+
+            // Adaptive noise floor: when mic is quiet (not speech) and system is silent,
+            // gradually lower the noise floor toward current ambient level.
+            // This fixes the case where initial calibration happened during loud system audio
+            // (e.g., YouTube playing → mic picks up speaker bleed → noise floor set too high).
+            if !isSpeechFrame && systemRMS < systemSilenceThreshold && micRMS > 0 {
+                adaptationFrameCounter += 1
+                if adaptationFrameCounter >= adaptationInterval {
+                    let oldFloor = noiseFloor
+                    // Exponential moving average toward current quiet mic level
+                    noiseFloor = noiseFloor * (1.0 - adaptationRate) + micRMS * adaptationRate
+                    noiseFloor = max(noiseFloor, absoluteMinimumNoiseFloor)
+                    if abs(oldFloor - noiseFloor) > 0.001 {
+                        debugLog("[EnergyGate] 🔄 Noise floor adapted: \(String(format: "%.5f", oldFloor)) → \(String(format: "%.5f", noiseFloor)) (speechThreshold: \(String(format: "%.5f", noiseFloor * noiseFloorMultiplier)))")
+                    }
+                    adaptationFrameCounter = 0
+                }
+            } else {
+                adaptationFrameCounter = 0
+            }
 
             // Track stats for 30s summary
             let ratioDB = energyRatioDB(micRMS: micRMS, systemRMS: systemRMS)
@@ -229,6 +257,7 @@ final class EnergyGateDetector {
         isSpeaking = false
         speechStartTime = nil
         logCounter = 0
+        adaptationFrameCounter = 0
     }
 
     // MARK: - Private
