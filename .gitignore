@@ -15,5 +15,8 @@ xcuserdata/
 # SQL scripts (one-off)
 *.sql
 
+# Duplicate model files (originals in WhoNext/Models/)
+CoreMLModels/
+
 # Worktrees
 .worktrees/
