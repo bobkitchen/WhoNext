@@ -118,7 +118,7 @@ final class SpeakerClustering {
     /// Assign a global label for a centroid, matching to previous centroids if similar.
     private func assignLabel(for embedding: [Float]) -> Int {
         var bestLabel: Int?
-        var bestSim: Float = 0.78  // Raised from 0.6 — require strong similarity to reuse a label
+        var bestSim: Float = 0.70  // Require good similarity to reuse a label (was 0.78 — too strict, caused over-fragmentation)
 
         for (label, centroid) in previousCentroids {
             let sim = cosineSimilarity(embedding, centroid)
