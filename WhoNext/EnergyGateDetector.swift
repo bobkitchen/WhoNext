@@ -17,11 +17,13 @@ final class EnergyGateDetector {
     /// Number of samples per frame (30ms at 16kHz = 480 samples)
     private let frameSamples = 480
 
-    /// Number of frames for sliding window smoothing (120ms = 4 frames at 30ms)
-    private let smoothingWindowSize = 4
+    /// Number of frames for sliding window smoothing (240ms = 8 frames at 30ms)
+    /// Longer window bridges natural pauses within words/sentences
+    private let smoothingWindowSize = 8
 
-    /// Number of hangover frames (90ms = 3 frames at 30ms)
-    private let hangoverFrames = 3
+    /// Number of hangover frames (300ms = 10 frames at 30ms)
+    /// Prevents speech from fragmenting into micro-segments at natural pauses
+    private let hangoverFrames = 10
 
     /// Noise floor calibration duration in seconds
     private let calibrationDuration: TimeInterval = 2.0
@@ -36,8 +38,9 @@ final class EnergyGateDetector {
     /// when calibrating in silence (-60 dBFS)
     private let absoluteMinimumNoiseFloor: Float = 0.001
 
-    /// Minimum segment duration in seconds — segments shorter than this are dropped
-    private let minimumSegmentDuration: Float = 0.2
+    /// Minimum segment duration in seconds — segments shorter than this are dropped.
+    /// 0.3s filters noise bursts while keeping short interjections ("yeah", "mm-hmm").
+    private let minimumSegmentDuration: Float = 0.3
 
     // MARK: - State
 

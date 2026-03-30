@@ -16,7 +16,7 @@ public final class DiarizationPipeline: @unchecked Sendable {
     ///   - windowDuration: Processing window length in seconds
     ///   - clusteringThreshold: Cosine similarity threshold for speaker clustering (0–1)
     public init(sortformerModelPath: String, embModelPath: String,
-                windowDuration: Double = 10.0, clusteringThreshold: Float = 0.72) throws {
+                windowDuration: Double = 10.0, clusteringThreshold: Float = 0.30) throws {
 
         let sortformerURL = URL(fileURLWithPath: sortformerModelPath)
         let embURL = URL(fileURLWithPath: embModelPath)

@@ -67,7 +67,7 @@ class DiarizationManager: ObservableObject {
 
     init(isEnabled: Bool = true,
          enableRealTimeProcessing: Bool = false,
-         clusteringThreshold: Float = 0.5,
+         clusteringThreshold: Float = 0.30,
          maxSpeakers: Int? = nil,
          minSpeechDuration: Float = 1.0) {
 
@@ -333,7 +333,7 @@ class DiarizationManager: ObservableObject {
     func matchAgainstCache(embedding: [Float]) -> String? {
         guard let activeSession = session else { return nil }
         // Use Axii's built-in speaker matching
-        if let match = activeSession.matchSpeaker(embedding: embedding, threshold: 0.80) {
+        if let match = activeSession.matchSpeaker(embedding: embedding, threshold: 0.30) {
             return match.id
         }
         return nil
