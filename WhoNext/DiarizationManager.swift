@@ -16,7 +16,7 @@ import AxiiDiarization
 /// SimpleRecordingEngine, RecordingWindow, VoiceTrainingRecorder, etc.
 #if canImport(AxiiDiarization)
 @MainActor
-class DiarizationManager: ObservableObject {
+class DiarizationManager: ObservableObject, DiarizationEngine {
 
     // MARK: - Properties
 

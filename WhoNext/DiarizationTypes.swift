@@ -1,11 +1,33 @@
 import Foundation
+import AVFoundation
 
 // MARK: - WhoNext Diarization Bridge Types
 //
 // Engine-agnostic types used throughout the app for diarization results.
 // Decouples SegmentAligner, MeetingTypeDetector, EnergyGateDetector,
 // SpeakerStabilizer, LiveMeeting, and all UI code from any specific
-// any specific diarization engine.
+// diarization engine.
+
+// MARK: - Diarization Engine Protocol
+
+/// Abstraction over diarization backends (AxiiDiarization, FluidAudio, etc.).
+/// SimpleRecordingEngine talks to this protocol, not concrete backends.
+@MainActor
+protocol DiarizationEngine: AnyObject {
+    var lastResult: DiarizationResult? { get }
+    var currentSpeakers: [String] { get }
+    var totalSpeakerCount: Int { get }
+    var userSpeakerId: String? { get }
+    var lastError: Error? { get }
+
+    func initialize() async throws
+    func processAudioBuffer(_ buffer: AVAudioPCMBuffer) async
+    func finishProcessing() async -> DiarizationResult?
+    func matchAgainstCache(embedding: [Float]) -> String?
+    func preloadKnownSpeakers(_ knownSpeakers: [(id: String, name: String, embedding: [Float])])
+    func mergeCacheSpeakers(sourceId: String, destinationId: String) -> [Float]?
+    func reset()
+}
 
 /// A time-bounded speaker segment with optional embedding.
 struct TimedSpeakerSegment: Sendable {

@@ -751,6 +751,29 @@ extension SettingsView {
                         .help("Identify different speakers in the conversation")
                     
                     if recordingConfig.transcriptionSettings.speakerDiarizationEnabled {
+                        // Diarization Backend Selector
+                        VStack(alignment: .leading, spacing: 8) {
+                            HStack {
+                                Text("Diarization Backend")
+                                Spacer()
+                                Picker("", selection: $recordingConfig.transcriptionSettings.diarizationBackend) {
+                                    ForEach(DiarizationBackendType.allCases, id: \.self) { backend in
+                                        Text(backend.displayName).tag(backend)
+                                    }
+                                }
+                                .pickerStyle(.menu)
+                                .frame(width: 220)
+                            }
+
+                            HStack {
+                                Spacer()
+                                Text(recordingConfig.transcriptionSettings.diarizationBackend.description)
+                                    .font(.caption2)
+                                    .foregroundColor(.secondary)
+                            }
+                            .padding(.leading, 20)
+                        }
+
                         DisclosureGroup("Advanced Speaker Settings") {
                             VStack(alignment: .leading, spacing: 8) {
                                 HStack {
