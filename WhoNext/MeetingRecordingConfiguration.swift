@@ -269,6 +269,26 @@ enum TranscriptionEngineType: String, Codable, CaseIterable {
     }
 }
 
+/// Speaker diarization backend selection.
+enum DiarizationBackendType: String, Codable, CaseIterable {
+    case axiiDiarization = "axii"
+    case fluidAudio = "fluidaudio"
+
+    var displayName: String {
+        switch self {
+        case .axiiDiarization: return "Axii (Sortformer + AHC)"
+        case .fluidAudio: return "FluidAudio (pyannote + VBx)"
+        }
+    }
+
+    var description: String {
+        switch self {
+        case .axiiDiarization: return "Sortformer v2.1 segmentation with agglomerative clustering"
+        case .fluidAudio: return "pyannote segmentation with WeSpeaker embeddings and smart speaker tracking"
+        }
+    }
+}
+
 // MARK: - Transcription Settings
 
 struct TranscriptionSettings: Codable {
@@ -281,8 +301,11 @@ struct TranscriptionSettings: Codable {
     var profanityFilterEnabled: Bool = false
     var whisperModel: String = "base.en"  // WhisperKit model: tiny.en, base.en, small.en, large-v3
 
-    // Transcription engine selection (NEW)
+    // Transcription engine selection
     var transcriptionEngine: TranscriptionEngineType = .parakeet  // Default to Parakeet for speed
+
+    // Diarization backend selection
+    var diarizationBackend: DiarizationBackendType = .fluidAudio  // Default to FluidAudio (better clustering)
     
     mutating func loadFromUserDefaults() {
         if let data = UserDefaults.standard.data(forKey: "transcriptionSettings"),
