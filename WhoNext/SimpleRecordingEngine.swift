@@ -955,7 +955,7 @@ class SimpleRecordingEngine: ObservableObject {
 
         for (speakerId, clusterEmbedding) in db {
             let similarity = cosineSimilarity(userEmbedding, clusterEmbedding)
-            if similarity > 0.80 {
+            if similarity > 0.45 {
                 debugLog("[SimpleRecordingEngine] 🔇 Suppressing system cluster '\(speakerId)' — cosine similarity \(String(format: "%.3f", similarity)) to local user voice")
                 // Remove this cluster's segments from the aligner
                 segmentAligner.removeSystemSpeaker("sys_\(speakerId)")
@@ -1304,7 +1304,7 @@ class SimpleRecordingEngine: ObservableObject {
                 if let embedding = result.speakerDatabase?[rawId] {
                     if let match = await voicePrintManager.findMatchingPerson(for: embedding),
                        let matchedPerson = match.0,
-                       match.1 > 0.80 {
+                       match.1 > 0.35 {
                         participant.name = matchedPerson.wrappedName
                         participant.namingMode = .suggestedByVoice
                         participant.personRecord = matchedPerson
