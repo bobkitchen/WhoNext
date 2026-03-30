@@ -66,7 +66,7 @@ final class EnergyGateDetector {
     private var hangoverCounter = 0
 
     /// Current speech state after smoothing + hangover
-    private var isSpeaking = false
+    private(set) var isSpeaking = false
 
     /// Tracking for segment generation
     private var speechStartTime: TimeInterval?

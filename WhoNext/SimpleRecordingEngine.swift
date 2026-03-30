@@ -339,24 +339,16 @@ class SimpleRecordingEngine: ObservableObject {
             debugLog("[SimpleRecordingEngine] Stream labeling mode: no diarizers created")
 
         case .streamLabelingNoAEC:
-            // 1:1 without AEC: energy gate on mic, diarizer on system (constrained to 1 remote speaker)
+            // 1:1 without AEC: energy gate on mic, simple VAD on system.
+            // NO diarizer — a diarizer on mixed mono system audio creates phantom speakers
+            // because voice variation over 30+ minutes causes embedding drift.
+            // Instead, use binary classification: energy gate = You, system VAD = Remote Speaker.
             energyGateDetector = EnergyGateDetector()
             currentSystemRMS = 0
 
-            systemDiarizationManager = createDiarizationEngine(maxSpeakers: 1)
-            do {
-                try await systemDiarizationManager.initialize()
-                let backendName = MeetingRecordingConfiguration.shared.transcriptionSettings.diarizationBackend.displayName
-                debugLog("[SimpleRecordingEngine] System diarization initialized (streamLabelingNoAEC, \(backendName), maxSpeakers: 1)")
-            } catch {
-                debugLog("[SimpleRecordingEngine] System diarization init failed: \(error)")
-            }
-
-            await preloadKnownSpeakersForMeeting()
-
             hasRemoteAudio = true
             detectedSpeakerCount = 2
-            debugLog("[SimpleRecordingEngine] 1:1 no-AEC mode: energy gate on mic, diarizer on system")
+            debugLog("[SimpleRecordingEngine] 1:1 no-AEC mode: energy gate on mic, VAD-only on system (no diarizer)")
 
         case .groupStreaming:
             // Group: energy gate on mic, diarizer on system (auto-detect N remote speakers)
@@ -482,7 +474,18 @@ class SimpleRecordingEngine: ObservableObject {
             // No diarization to flush — VAD-only mode
             break
 
-        case .streamLabelingNoAEC, .groupStreaming:
+        case .streamLabelingNoAEC:
+            // No diarizer to flush — just flush energy gate
+            if let finalSegment = energyGateDetector?.flush(at: recordingDuration) {
+                let result = DiarizationResult(
+                    segments: [finalSegment],
+                    speakerEmbeddings: nil
+                )
+                segmentAligner.updateDiarizationResults(result)
+            }
+            energyGateDetector?.reset()
+
+        case .groupStreaming:
             // Flush system diarization
             if let (finalSysDiarChunk, sysStartTime) = await systemDiarizationBuffer.flush() {
                 await processSystemDiarizationChunk(finalSysDiarChunk, startTime: sysStartTime)
@@ -561,8 +564,12 @@ class SimpleRecordingEngine: ObservableObject {
                         // AEC 1:1: mic = local speaker. VAD only.
                         await self.processMicVAD(audioBuffer)
 
-                    case .streamLabelingNoAEC, .groupStreaming:
-                        // No AEC: energy gate detects local speech vs system bleed
+                    case .streamLabelingNoAEC:
+                        // 1:1 no-AEC: energy gate detects local speech
+                        await self.processEnergyGateMic(audioBuffer)
+
+                    case .groupStreaming:
+                        // Group: energy gate detects local speech vs system bleed
                         await self.processEnergyGateMic(audioBuffer)
                     }
                 }
@@ -583,8 +590,13 @@ class SimpleRecordingEngine: ObservableObject {
                         // AEC 1:1: system = remote speaker. VAD only.
                         await self.processSystemVAD(audioBuffer)
 
-                    case .streamLabelingNoAEC, .groupStreaming:
-                        // No AEC: feed system audio to Axii diarizer for remote speaker(s)
+                    case .streamLabelingNoAEC:
+                        // 1:1 no-AEC: simple VAD on system, suppressed when energy gate says local speaker is talking.
+                        // No diarizer — binary classification avoids phantom speaker creation.
+                        await self.processSystemVADNoAEC(audioBuffer)
+
+                    case .groupStreaming:
+                        // Group: feed system audio to diarizer for remote speaker(s)
                         await self.processSystemDiarization(audioBuffer, systemDiarBuffer: systemDiarBuffer)
                     }
                 }
@@ -746,11 +758,9 @@ class SimpleRecordingEngine: ObservableObject {
             // Cross-stream deduplication: suppress system clusters matching local user voice
             deduplicateLocalFromSystemClusters()
 
-            // Auto-upgrade: if streamLabelingNoAEC and Axii detects >1 remote speaker, upgrade
-            if diarizationStrategy == .streamLabelingNoAEC && systemSpeakers > 1 {
-                debugLog("[SimpleRecordingEngine] 🔄 Auto-upgrading: streamLabelingNoAEC → groupStreaming (detected \(systemSpeakers) remote speakers)")
-                diarizationStrategy = .groupStreaming
-            }
+            // Note: auto-upgrade from streamLabelingNoAEC is no longer triggered here.
+            // streamLabelingNoAEC now uses VAD-only (no diarizer), so this method
+            // is only called in groupStreaming mode.
 
             await updateParticipants(from: result)
 
@@ -849,7 +859,77 @@ class SimpleRecordingEngine: ObservableObject {
         trackSystemSpeechEnergy(rms)
     }
 
-    // MARK: - Energy Gate + Axii Processing
+    /// Process system audio in 1:1 no-AEC mode: VAD-only, no diarizer.
+    /// Labels all system audio as "remote_1" UNLESS the energy gate says the local speaker
+    /// is currently talking — in that case, suppress attribution because the system audio
+    /// is likely voice bleed from the local speaker, not the remote participant.
+    private func processSystemVADNoAEC(_ buffer: AVAudioPCMBuffer) async {
+        let rms = calculateRMS(buffer)
+
+        // Always update system RMS for energy gate cross-reference
+        currentSystemRMS = rms
+
+        // Track system buffers for diagnostics
+        let frameCount = Int(buffer.frameLength)
+        await MainActor.run {
+            DiarizationDiagnostics.shared.counters.systemBuffersReceived += 1
+            DiarizationDiagnostics.shared.counters.systemTotalFrames += frameCount
+        }
+
+        // Write to disk for offline re-diarization
+        if let writer = systemAudioWriter {
+            do {
+                try writeBufferToWAV(buffer, writer: writer)
+                await MainActor.run { DiarizationDiagnostics.shared.counters.wavFramesWritten += frameCount }
+            } catch {
+                debugLog("[SimpleRecordingEngine] Failed to write system audio to file: \(error)")
+            }
+        }
+
+        // Buffer system audio for potential group-mode catch-up
+        bufferSystemAudioForCatchUp(buffer)
+
+        guard rms > vadRMSThreshold else { return }  // Silence — skip
+
+        // KEY FIX: If energy gate says local speaker is talking, this system audio
+        // is likely voice bleed — suppress remote speaker attribution.
+        if energyGateDetector?.isSpeaking == true {
+            return
+        }
+
+        let elapsed = recordingDuration
+        let duration = Double(buffer.frameLength) / 16000.0
+
+        let segment = TimedSpeakerSegment(
+            speakerId: "remote_1",
+            embedding: [],
+            startTimeSeconds: Float(elapsed - duration),
+            endTimeSeconds: Float(elapsed),
+            qualityScore: min(rms * 10, 1.0)
+        )
+
+        let result = DiarizationResult(
+            segments: [segment],
+            speakerDatabase: nil,
+            timings: nil
+        )
+        segmentAligner.updateSystemDiarizationResults(result)
+
+        // Ensure remote participant exists
+        if let meeting = currentMeeting,
+           !meeting.identifiedParticipants.contains(where: { $0.speakerID == "sys_remote_1" }) {
+            let participant = IdentifiedParticipant()
+            participant.speakerID = "sys_remote_1"
+            participant.isCurrentUser = false
+            meeting.identifiedParticipants.append(participant)
+            debugLog("[SimpleRecordingEngine] 👤 No-AEC VAD: added remote speaker participant")
+        }
+
+        // Feed energy to multi-speaker detector (for potential group upgrade)
+        trackSystemSpeechEnergy(rms)
+    }
+
+    // MARK: - Energy Gate + Diarizer Processing
 
     /// Process mic audio via energy gate: detects local speech without diarization.
     private func processEnergyGateMic(_ buffer: AVAudioPCMBuffer) async {
@@ -1087,12 +1167,12 @@ class SimpleRecordingEngine: ObservableObject {
 
     // MARK: - Dynamic Strategy Upgrade
 
-    /// Upgrade from streamLabeling (AEC 1:1) to groupStreaming if multiple remote speakers detected.
+    /// Upgrade from streamLabeling or streamLabelingNoAEC to groupStreaming if multiple remote speakers detected.
     /// Called automatically by multi-speaker energy detection or explicitly when attendee count changes.
     func upgradeToGroupStreaming() async {
-        guard diarizationStrategy == .streamLabeling else { return }
+        guard diarizationStrategy == .streamLabeling || diarizationStrategy == .streamLabelingNoAEC else { return }
 
-        debugLog("[SimpleRecordingEngine] 🔄 Upgrading strategy: streamLabeling → groupStreaming")
+        debugLog("[SimpleRecordingEngine] 🔄 Upgrading strategy: \(diarizationStrategy.rawValue) → groupStreaming")
         diarizationStrategy = .groupStreaming
 
         // Initialize system diarizer and energy gate on-the-fly
