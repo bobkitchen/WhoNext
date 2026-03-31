@@ -212,6 +212,7 @@
 				7AABCDEE2DBC09000089D3DA /* FluidAudio */,
 				7AWHISPER2F150001008468EA /* WhisperKit */,
 				7AAXII022F1A0002008468EA /* AxiiDiarization */,
+				7ASPEEX002F1B0001008468EA /* speex */,
 			);
 			productName = WhoNext;
 			productReference = 7AA52C322D97D8E700C2B563 /* WhoNext.app */;
@@ -326,6 +327,7 @@
 				7AABCDED2DBC09000089D3DA /* XCRemoteSwiftPackageReference "FluidAudio" */,
 				7AWHISPER2F150000008468EA /* XCRemoteSwiftPackageReference "WhisperKit" */,
 				7AAXII002F1A0000008468EA /* XCLocalSwiftPackageReference "AxiiDiarization" */,
+				7ASPEEX002F1B0000008468EA /* XCRemoteSwiftPackageReference "CSpeex" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 7AA52C332D97D8E700C2B563 /* Products */;
@@ -875,6 +877,14 @@
 				minimumVersion = 0.9.0;
 			};
 		};
+		7ASPEEX002F1B0000008468EA /* XCRemoteSwiftPackageReference "CSpeex" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/sbooth/CSpeex.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.0.0;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -901,6 +911,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 7AWHISPER2F150000008468EA /* XCRemoteSwiftPackageReference "WhisperKit" */;
 			productName = WhisperKit;
+		};
+		7ASPEEX002F1B0001008468EA /* speex */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 7ASPEEX002F1B0000008468EA /* XCRemoteSwiftPackageReference "CSpeex" */;
+			productName = speex;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

@@ -25,13 +25,24 @@ class AudioCapturer: NSObject, ObservableObject {
 
     // MARK: - Audio Streams
 
-    /// Microphone audio stream (16kHz mono)
+    /// Microphone audio stream (16kHz mono) — raw mic including echo
     private(set) var micStream: AsyncStream<AVAudioPCMBuffer>!
     private var micContinuation: AsyncStream<AVAudioPCMBuffer>.Continuation?
 
     /// System audio stream (16kHz mono)
     private(set) var systemStream: AsyncStream<AVAudioPCMBuffer>!
     private var systemContinuation: AsyncStream<AVAudioPCMBuffer>.Continuation?
+
+    /// Echo-cancelled mic stream (16kHz mono) — local voice only, echo removed.
+    /// Available when `isEchoCancellationActive == true`. Used for diarization
+    /// so that stream identity = speaker identity (mic = local, system = remote).
+    private(set) var cleanMicStream: AsyncStream<AVAudioPCMBuffer>!
+    private var cleanMicContinuation: AsyncStream<AVAudioPCMBuffer>.Continuation?
+
+    // MARK: - Echo Cancellation
+
+    /// SpeexDSP echo canceller — removes system audio echo from mic signal
+    private let echoCanceller = EchoCanceller()
 
     // MARK: - Private Properties
 
@@ -52,7 +63,7 @@ class AudioCapturer: NSObject, ObservableObject {
     }
 
     private func setupStreams() {
-        // Create mic stream
+        // Create mic stream (raw, includes echo)
         micStream = AsyncStream { [weak self] continuation in
             self?.micContinuation = continuation
         }
@@ -60,6 +71,11 @@ class AudioCapturer: NSObject, ObservableObject {
         // Create system stream
         systemStream = AsyncStream { [weak self] continuation in
             self?.systemContinuation = continuation
+        }
+
+        // Create echo-cancelled mic stream
+        cleanMicStream = AsyncStream { [weak self] continuation in
+            self?.cleanMicContinuation = continuation
         }
     }
 
@@ -76,11 +92,16 @@ class AudioCapturer: NSObject, ObservableObject {
         // Start mic capture
         try await startMicrophoneCapture()
 
+        // Reset echo canceller for new session
+        echoCanceller.reset()
+
         // Try to start system audio capture (may fail without permission)
         do {
             try await startSystemAudioCapture()
             captureMode = .full
-            debugLog("[AudioCapturer] Full audio capture (mic + system)")
+            // AEC is active when we have both mic + system streams
+            isEchoCancellationActive = echoCanceller.isAvailable
+            debugLog("[AudioCapturer] Full audio capture (mic + system), AEC: \(isEchoCancellationActive)")
         } catch {
             // Log the ACTUAL error — don't assume it's always permission denial
             let nsError = error as NSError
@@ -97,7 +118,8 @@ class AudioCapturer: NSObject, ObservableObject {
                 try await Task.sleep(for: .milliseconds(500))
                 try await startSystemAudioCapture()
                 captureMode = .full
-                debugLog("[AudioCapturer] Full audio capture (mic + system) — succeeded on retry")
+                isEchoCancellationActive = echoCanceller.isAvailable
+                debugLog("[AudioCapturer] Full audio capture (mic + system) — succeeded on retry, AEC: \(isEchoCancellationActive)")
             } catch {
                 captureMode = .microphoneOnly
                 let retryError = error as NSError
@@ -133,7 +155,10 @@ class AudioCapturer: NSObject, ObservableObject {
         // Finish streams
         micContinuation?.finish()
         systemContinuation?.finish()
+        cleanMicContinuation?.finish()
 
+        // Reset echo canceller
+        echoCanceller.reset()
         isEchoCancellationActive = false
         isCapturing = false
         debugLog("[AudioCapturer] Capture stopped")
@@ -145,10 +170,9 @@ class AudioCapturer: NSObject, ObservableObject {
         let engine = AVAudioEngine()
         let inputNode = engine.inputNode
 
-        // Voice Processing disabled — causes persistent DSP fault state on macOS,
-        // crushing mic to silence (RMS 0.0000). Mic format reverts to native device format.
-        isEchoCancellationActive = false
-        debugLog("[AudioCapturer] Voice Processing disabled (AEC off)")
+        // Apple's Voice Processing disabled — causes persistent DSP fault state on macOS
+        // because Zoom/Teams own the audio output. Using SpeexDSP AEC instead.
+        debugLog("[AudioCapturer] Apple Voice Processing disabled — SpeexDSP AEC active")
 
         // Get input format
         let inputFormat = inputNode.outputFormat(forBus: 0)
@@ -181,8 +205,22 @@ class AudioCapturer: NSObject, ObservableObject {
                         self.micLevel = level
                     }
 
-                    // Yield to stream
+                    // Yield raw mic to stream (for transcription — includes all speech)
                     self.micContinuation?.yield(copy)
+
+                    // Echo cancellation: feed mic to AEC and yield cleaned output
+                    if self.echoCanceller.isAvailable,
+                       let channelData = copy.floatChannelData {
+                        let frameCount = Int(copy.frameLength)
+                        let micSamples = Array(UnsafeBufferPointer(start: channelData[0], count: frameCount))
+
+                        let cleanedSamples = self.echoCanceller.cancelEcho(micSamples)
+
+                        if !cleanedSamples.isEmpty,
+                           let cleanBuffer = self.createBuffer(from: cleanedSamples, format: targetFormat) {
+                            self.cleanMicContinuation?.yield(cleanBuffer)
+                        }
+                    }
                 }
             }
         }
@@ -235,6 +273,14 @@ class AudioCapturer: NSObject, ObservableObject {
 
                 // Yield to stream
                 self.systemContinuation?.yield(copy)
+
+                // Feed system audio to echo canceller as far-end reference
+                if self.echoCanceller.isAvailable,
+                   let channelData = copy.floatChannelData {
+                    let frameCount = Int(copy.frameLength)
+                    let systemSamples = Array(UnsafeBufferPointer(start: channelData[0], count: frameCount))
+                    self.echoCanceller.feedFarEnd(systemSamples)
+                }
             }
         }
         self.streamOutput = output
@@ -303,6 +349,23 @@ class AudioCapturer: NSObject, ObservableObject {
         }
 
         return copy
+    }
+
+    // MARK: - Buffer Creation
+
+    /// Create an AVAudioPCMBuffer from a Float array (for echo-cancelled output)
+    private func createBuffer(from samples: [Float], format: AVAudioFormat) -> AVAudioPCMBuffer? {
+        let frameCount = AVAudioFrameCount(samples.count)
+        guard let buffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: frameCount) else {
+            return nil
+        }
+        buffer.frameLength = frameCount
+        if let channelData = buffer.floatChannelData {
+            samples.withUnsafeBufferPointer { srcPtr in
+                memcpy(channelData[0], srcPtr.baseAddress!, samples.count * MemoryLayout<Float>.size)
+            }
+        }
+        return buffer
     }
 
     // MARK: - Audio Analysis

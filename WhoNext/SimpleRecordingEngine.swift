@@ -323,10 +323,12 @@ class SimpleRecordingEngine: ObservableObject {
 
         if aecAvailable && attendeeCount <= 2 {
             diarizationStrategy = .streamLabeling
+        } else if aecAvailable && attendeeCount > 2 {
+            diarizationStrategy = .groupStreaming  // Group with AEC — clean system audio for diarization
         } else if attendeeCount <= 2 {
             diarizationStrategy = .streamLabelingNoAEC
         } else {
-            diarizationStrategy = .groupStreaming
+            diarizationStrategy = .groupStreaming  // Group without AEC — fallback
         }
         debugLog("[SimpleRecordingEngine] 🎯 Strategy: \(diarizationStrategy.rawValue) (AEC: \(aecAvailable), attendees: \(attendeeCount))")
 
