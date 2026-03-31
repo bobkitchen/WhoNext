@@ -25,6 +25,11 @@ func createDiarizationEngine(enableRealTimeProcessing: Bool = true, maxSpeakers:
             enableRealTimeProcessing: enableRealTimeProcessing,
             maxSpeakers: maxSpeakers
         )
+    case .centroidClustering:
+        debugLog("[DiarizationFactory] Creating CentroidClusterer backend")
+        return CentroidClusterer(
+            maxSpeakers: maxSpeakers ?? 6
+        )
     }
 }
 
@@ -116,6 +121,16 @@ class SimpleRecordingEngine: ObservableObject {
     private let systemDiarizationBuffer = DiarizationBuffer()
     private let segmentAligner = SegmentAligner()
     private let voicePrintManager = VoicePrintManager()
+
+    // MARK: - Auto-Enrollment (Voice Profile)
+
+    /// Accumulates clean mic audio for extracting the local user's voice embedding.
+    /// Used during the first ~15 seconds of a recording to auto-enroll the speaker.
+    private var enrollmentSamples: [Float] = []
+    /// Target sample count for enrollment (15 seconds at 16kHz)
+    private let enrollmentTargetSamples = 15 * 16000
+    /// Whether enrollment has been completed for this session
+    private var enrollmentComplete = false
 
     // MARK: - Asymmetric Dual-Stream Components
 
@@ -382,6 +397,10 @@ class SimpleRecordingEngine: ObservableObject {
         multiSpeakerEvidenceCount = 0
         systemAudioCatchUpBuffer.removeAll()
         catchUpBufferFrameCount = 0
+
+        // Reset auto-enrollment
+        enrollmentSamples.removeAll()
+        enrollmentComplete = false
     }
 
     // MARK: - Guided Diarization Helpers
@@ -786,6 +805,17 @@ class SimpleRecordingEngine: ObservableObject {
         let elapsed = recordingDuration
         let duration = Double(buffer.frameLength) / 16000.0
 
+        // Auto-enrollment: accumulate clean mic audio for voice profile extraction
+        if !enrollmentComplete, let channelData = buffer.floatChannelData {
+            let frameCount = Int(buffer.frameLength)
+            let samples = Array(UnsafeBufferPointer(start: channelData[0], count: frameCount))
+            enrollmentSamples.append(contentsOf: samples)
+
+            if enrollmentSamples.count >= enrollmentTargetSamples {
+                await performAutoEnrollment()
+            }
+        }
+
         // Create a synthetic diarization segment for the local speaker
         let segment = TimedSpeakerSegment(
             speakerId: "local_1",
@@ -816,6 +846,63 @@ class SimpleRecordingEngine: ObservableObject {
             meeting.identifiedParticipants.append(participant)
             debugLog("[SimpleRecordingEngine] 👤 Stream labeling: added local speaker participant")
         }
+    }
+
+    /// Extract a voice embedding from accumulated clean mic audio and save as the user's profile.
+    /// Called once during the first ~15 seconds of recording when enough speech is captured.
+    private func performAutoEnrollment() async {
+        guard !enrollmentComplete else { return }
+        enrollmentComplete = true
+
+        debugLog("[SimpleRecordingEngine] 🎤 Auto-enrollment: extracting voice embedding from \(enrollmentSamples.count) samples")
+
+        // Use FluidAudio's embedding extractor if available via the diarization backend
+        // For now, feed the enrollment audio through the diarization engine to get an embedding
+        do {
+            // Create a temporary diarizer just for embedding extraction
+            let tempDiarizer = createDiarizationEngine(maxSpeakers: 1)
+            try await tempDiarizer.initialize()
+
+            // Convert samples to AVAudioPCMBuffer
+            guard let format = AVAudioFormat(standardFormatWithSampleRate: 16000, channels: 1),
+                  let buffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: AVAudioFrameCount(enrollmentSamples.count)) else {
+                debugLog("[SimpleRecordingEngine] ⚠️ Auto-enrollment: failed to create buffer")
+                return
+            }
+            buffer.frameLength = AVAudioFrameCount(enrollmentSamples.count)
+            if let channelData = buffer.floatChannelData {
+                enrollmentSamples.withUnsafeBufferPointer { srcPtr in
+                    memcpy(channelData[0], srcPtr.baseAddress!, enrollmentSamples.count * MemoryLayout<Float>.size)
+                }
+            }
+
+            await tempDiarizer.processAudioBuffer(buffer)
+            let result = await tempDiarizer.finishProcessing()
+
+            // Extract the dominant speaker's embedding
+            if let embeddings = result?.speakerEmbeddings,
+               let (speakerId, embedding) = embeddings.first,
+               !embedding.isEmpty {
+
+                // Save to UserProfile for cross-session persistence
+                UserProfile.shared.voiceEmbedding = embedding
+                debugLog("[SimpleRecordingEngine] ✅ Auto-enrollment: saved voice embedding (\(embedding.count)-dim) from speaker \(speakerId)")
+
+                // Also feed to the active diarizer as a known speaker anchor
+                let userName = UserProfile.shared.displayName
+                systemDiarizationManager.preloadKnownSpeakers([
+                    (id: "local_user", name: userName.isEmpty ? "You" : userName, embedding: embedding)
+                ])
+                debugLog("[SimpleRecordingEngine] 🎯 Auto-enrollment: anchored local user in diarizer")
+            } else {
+                debugLog("[SimpleRecordingEngine] ⚠️ Auto-enrollment: no embedding extracted from \(enrollmentSamples.count) samples")
+            }
+        } catch {
+            debugLog("[SimpleRecordingEngine] ⚠️ Auto-enrollment failed: \(error)")
+        }
+
+        // Free memory regardless
+        enrollmentSamples.removeAll()
     }
 
     /// Process system audio in stream labeling mode: VAD only, label as remote speaker.

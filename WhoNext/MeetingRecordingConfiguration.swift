@@ -273,11 +273,13 @@ enum TranscriptionEngineType: String, Codable, CaseIterable {
 enum DiarizationBackendType: String, Codable, CaseIterable {
     case axiiDiarization = "axii"
     case fluidAudio = "fluidaudio"
+    case centroidClustering = "centroid"
 
     var displayName: String {
         switch self {
         case .axiiDiarization: return "Axii (Sortformer + AHC)"
         case .fluidAudio: return "FluidAudio (pyannote + VBx)"
+        case .centroidClustering: return "Centroid (Online Clustering)"
         }
     }
 
@@ -285,6 +287,7 @@ enum DiarizationBackendType: String, Codable, CaseIterable {
         switch self {
         case .axiiDiarization: return "Sortformer v2.1 segmentation with agglomerative clustering"
         case .fluidAudio: return "pyannote segmentation with WeSpeaker embeddings and smart speaker tracking"
+        case .centroidClustering: return "Online centroid tracking with EMA updates — scales to long meetings without speaker multiplication"
         }
     }
 }

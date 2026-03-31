@@ -1,7 +1,5 @@
 import Foundation
-#if canImport(AxiiDiarization)
 import AxiiDiarization
-#endif
 
 // MARK: - Word-Level Speaker Attribution Types
 
@@ -27,7 +25,6 @@ class SegmentAligner {
 
     // MARK: - Properties
 
-    #if canImport(AxiiDiarization)
     /// Accumulated diarization segments from microphone audio
     private var micSegments: [TimedSpeakerSegment] = []
 
@@ -42,7 +39,6 @@ class SegmentAligner {
 
     /// Track last returned speaker for stabilizer continuity
     private var lastReturnedSpeaker: String?
-    #endif
 
     /// Lock for thread-safe access
     private let lock = NSLock()
@@ -54,8 +50,6 @@ class SegmentAligner {
     }
 
     // MARK: - Public Interface
-
-    #if canImport(AxiiDiarization)
 
     /// Prefix speaker IDs to distinguish mic vs system audio sources
     private static func prefixSegments(_ segments: [TimedSpeakerSegment], prefix: String) -> [TimedSpeakerSegment] {
@@ -310,20 +304,17 @@ class SegmentAligner {
 
         return groups
     }
-    #endif
 
     /// Reset all accumulated data
     func reset() {
         lock.lock()
         defer { lock.unlock() }
 
-        #if canImport(AxiiDiarization)
         micSegments.removeAll()
         systemSegments.removeAll()
         knownSpeakers.removeAll()
         stabilizer.reset()
         lastReturnedSpeaker = nil
-        #endif
 
         debugLog("[SegmentAligner] Reset")
     }
@@ -377,7 +368,6 @@ extension SegmentAligner {
         lock.lock()
         defer { lock.unlock() }
 
-        #if canImport(AxiiDiarization)
         let speakerCount = knownSpeakers.count
         let allSegments = micSegments + systemSegments
         let segmentCount = allSegments.count
@@ -404,14 +394,6 @@ extension SegmentAligner {
             totalSpeakingDuration: totalDuration,
             timeRange: (earliestTime, latestTime)
         )
-        #else
-        return SegmentAlignerStats(
-            speakerCount: 0,
-            segmentCount: 0,
-            totalSpeakingDuration: 0,
-            timeRange: (0, 0)
-        )
-        #endif
     }
 }
 
