@@ -1,25 +1,28 @@
 import Foundation
 @preconcurrency import AVFoundation
 
-// Selective SpeakerKit imports — avoid importing DiarizationResult
-// which conflicts with WhoNext's bridge type of the same name.
-import class SpeakerKit.SpeakerKit
-import class SpeakerKit.SpeakerKitConfig
-import class SpeakerKit.PyannoteConfig
+// Selective SpeechVAD imports — avoid importing DiarizationResult and DiarizedSegment
+// which conflict with WhoNext's bridge types of the same name.
+import class SpeechVAD.PyannoteDiarizationPipeline
+import struct SpeechVAD.DiarizationConfig
+import class SpeechVAD.WeSpeakerModel
+import enum SpeechVAD.WeSpeakerEngine
 
-/// Diarization backend using WhisperKit's SpeakerKit (Pyannote v4 segmentation + CoreML).
+/// Diarization backend using speech-swift's PyannoteDiarizationPipeline + WeSpeaker.
 ///
-/// Key advantages:
+/// Key advantages over other backends:
 /// - Pyannote v4 segmentation (latest, most accurate)
-/// - CoreML-based — fully on-device, no MLX dependency
-/// - Ships with WhisperKit — no extra dependency
-/// - MIT licensed
+/// - WeSpeaker 256-dim speaker embeddings for voice enrollment
+/// - extractSpeaker() — find a specific person's segments by reference voice
+/// - CoreML embedding engine (Neural Engine, frees GPU)
+/// - MLX segmentation engine (GPU-accelerated via Metal)
 ///
-/// Limitations vs FluidAudio:
-/// - Does NOT expose speaker embeddings (no voice enrollment support)
-/// - `matchAgainstCache()` and `preloadKnownSpeakers()` are no-ops
+/// Full feature set:
+/// - matchAgainstCache: ✅ (via WeSpeaker cosine similarity)
+/// - preloadKnownSpeakers: ✅ (stores reference embeddings)
+/// - mergeCacheSpeakers: ✅ (relabels segments + merges embeddings)
 @MainActor
-final class SpeakerKitDiarizationBackend: ObservableObject, DiarizationEngine {
+final class SpeechSwiftDiarizationBackend: ObservableObject, DiarizationEngine {
 
     // MARK: - Published State
 
@@ -32,7 +35,7 @@ final class SpeakerKitDiarizationBackend: ObservableObject, DiarizationEngine {
 
     // MARK: - Pipeline State
 
-    private var speakerKit: SpeakerKit?
+    private var pipeline: PyannoteDiarizationPipeline?
     private var isInitialized = false
     private var audioBuffer: [Float] = []
     private let sampleRate: Float = 16000.0
@@ -42,13 +45,18 @@ final class SpeakerKitDiarizationBackend: ObservableObject, DiarizationEngine {
     private var resamplingSourceFormat: AVAudioFormat?
 
     // Configuration
+    private let clusteringThreshold: Float
     private let maxSpeakers: Int?
+    private let embeddingEngine: WeSpeakerEngine
 
-    // Chunk management — SpeakerKit processes whole arrays, so we accumulate
-    // larger chunks for better clustering accuracy
+    // Chunk management — larger chunks give better clustering accuracy
     private let chunkDuration: TimeInterval = 30.0
     private var streamPosition: TimeInterval = 0.0
     private var allSegments: [TimedSpeakerSegment] = []
+    private var allSpeakerEmbeddings: [String: [Float]] = [:]
+
+    // Known speaker cache for voice matching
+    private var knownSpeakers: [(id: String, name: String, embedding: [Float])] = []
 
     // Logging
     private var logCounter = 0
@@ -57,34 +65,39 @@ final class SpeakerKitDiarizationBackend: ObservableObject, DiarizationEngine {
     // MARK: - Init
 
     init(clusteringThreshold: Float = 0.715,
-         maxSpeakers: Int? = nil) {
+         maxSpeakers: Int? = nil,
+         embeddingEngine: WeSpeakerEngine = .coreml) {
+        self.clusteringThreshold = clusteringThreshold
         self.maxSpeakers = maxSpeakers
+        self.embeddingEngine = embeddingEngine
 
-        debugLog("[SpeakerKitBackend] Initialized:")
+        debugLog("[SpeechSwiftBackend] Initialized:")
+        debugLog("   - Clustering threshold: \(clusteringThreshold)")
         debugLog("   - Max speakers: \(maxSpeakers.map(String.init) ?? "auto")")
+        debugLog("   - Embedding engine: \(embeddingEngine)")
     }
 
     // MARK: - Setup
 
     func initialize() async throws {
         guard !isInitialized else {
-            debugLog("[SpeakerKitBackend] Already initialized")
+            debugLog("[SpeechSwiftBackend] Already initialized")
             return
         }
 
-        debugLog("[SpeakerKitBackend] Initializing SpeakerKit (Pyannote v4 CoreML)...")
+        debugLog("[SpeechSwiftBackend] Initializing Pyannote v4 + WeSpeaker pipeline...")
 
         do {
-            let config = PyannoteConfig()
-            speakerKit = try await SpeakerKit(config)
-
-            // Ensure models are downloaded and loaded
-            try await speakerKit?.ensureModelsLoaded()
+            // Load Pyannote segmentation (MLX) + WeSpeaker embedding (CoreML by default)
+            // Models are auto-downloaded from HuggingFace on first use, then cached.
+            pipeline = try await PyannoteDiarizationPipeline.fromPretrained(
+                embeddingEngine: embeddingEngine
+            )
 
             isInitialized = true
-            debugLog("[SpeakerKitBackend] Pipeline initialized — Pyannote v4 segmentation via CoreML")
+            debugLog("[SpeechSwiftBackend] Pipeline initialized — Pyannote v4 (MLX) + WeSpeaker (\(embeddingEngine))")
         } catch {
-            debugLog("[SpeakerKitBackend] Failed to initialize: \(error)")
+            debugLog("[SpeechSwiftBackend] Failed to initialize: \(error)")
             lastError = error
             throw DiarizationError.initializationFailed(error.localizedDescription)
         }
@@ -96,7 +109,7 @@ final class SpeakerKitDiarizationBackend: ObservableObject, DiarizationEngine {
         guard isInitialized else { return }
 
         guard let floatSamples = convertBufferToFloatArray(buffer) else {
-            debugLog("[SpeakerKitBackend] Failed to convert audio buffer")
+            debugLog("[SpeechSwiftBackend] Failed to convert audio buffer")
             return
         }
 
@@ -114,85 +127,106 @@ final class SpeakerKitDiarizationBackend: ObservableObject, DiarizationEngine {
     }
 
     private func processChunk(_ audioSamples: [Float], at position: TimeInterval) async {
-        guard let speakerKit = speakerKit else { return }
+        guard let pipeline = pipeline else { return }
 
         let startTime = Date()
+        let threshold = clusteringThreshold
 
-        do {
-            // SpeakerKit.diarize returns SpeakerKit.DiarizationResult (not ours)
-            let skResult = try await speakerKit.diarize(audioArray: audioSamples)
+        // PyannoteDiarizationPipeline.diarize() is synchronous and CPU/GPU-intensive.
+        // Dispatch off main actor to avoid blocking UI.
+        let config = DiarizationConfig(clusteringThreshold: threshold)
+        let sampleRateInt = Int(sampleRate)
 
-            let processingTime = Date().timeIntervalSince(startTime)
+        let chunkResult: (segments: [(speakerId: Int, startTime: Float, endTime: Float)],
+                          numSpeakers: Int,
+                          speakerEmbeddings: [[Float]])
 
-            // Convert SpeakerKit segments to WhoNext TimedSpeakerSegments.
-            // SpeakerSegment has: speaker (SpeakerInfo), startTime (Float), endTime (Float)
-            // SpeakerInfo is: .noMatch, .speakerId(Int), .multiple([Int])
-            let bridgeSegments = skResult.segments.compactMap { seg -> TimedSpeakerSegment? in
-                let speakerLabel: String
-                switch seg.speaker {
-                case .speakerId(let id):
-                    speakerLabel = "speaker_\(id)"
-                case .multiple(let ids):
-                    // Overlapping speech — attribute to first speaker
-                    guard let first = ids.first else { return nil }
-                    speakerLabel = "speaker_\(first)"
-                case .noMatch:
-                    speakerLabel = "speaker_unknown"
-                @unknown default:
-                    speakerLabel = "speaker_unknown"
-                }
-
-                return TimedSpeakerSegment(
-                    speakerId: speakerLabel,
-                    embedding: [],  // SpeakerKit doesn't expose embeddings
-                    startTimeSeconds: Float(position) + seg.startTime,
-                    endTimeSeconds: Float(position) + seg.endTime,
-                    qualityScore: 1.0
-                )
-            }
-
-            // Accumulate segments
-            allSegments.append(contentsOf: bridgeSegments)
-
-            // Cap segment history
-            if allSegments.count > 2000 {
-                allSegments = Array(allSegments.suffix(1500))
-            }
-
-            let uniqueSpeakers = Set(allSegments.map { $0.speakerId })
-            totalSpeakerCount = uniqueSpeakers.count
-
-            // Logging
-            logCounter += 1
-            if logCounter >= logInterval {
-                logCounter = 0
-                debugLog("[SpeakerKitBackend] Chunk at \(String(format: "%.1f", position))s in \(String(format: "%.2f", processingTime))s — \(uniqueSpeakers.count) speakers, \(bridgeSegments.count) new segments")
-            }
-
-            // Diagnostic event
-            let rawIds = Array(uniqueSpeakers).sorted()
-            DiarizationDiagnostics.shared.logRawDiarizationOutput(
-                chunkPosition: position,
-                rawSpeakerCount: uniqueSpeakers.count,
-                rawSpeakerIds: rawIds,
-                segmentCount: allSegments.count,
-                speakerDatabase: nil  // No embeddings available from SpeakerKit
-            )
-            DiarizationDiagnostics.shared.counters.diarizationChunksProcessed += 1
-
-            // Update published state
-            let diarResult = DiarizationResult(
-                segments: allSegments,
-                speakerEmbeddings: nil  // SpeakerKit doesn't expose embeddings
+        chunkResult = await Task.detached(priority: .userInitiated) {
+            // speech-swift returns its own DiarizationResult type (AudioCommon.DiarizationResult)
+            // We destructure it here to avoid bringing the conflicting type onto MainActor.
+            let result = pipeline.diarize(
+                audio: audioSamples,
+                sampleRate: sampleRateInt,
+                config: config
             )
 
-            lastResult = diarResult
-            currentSpeakers = Array(uniqueSpeakers).sorted()
+            let segments = result.segments.map { seg in
+                (speakerId: seg.speakerId, startTime: seg.startTime, endTime: seg.endTime)
+            }
 
-        } catch {
-            debugLog("[SpeakerKitBackend] Chunk processing failed: \(error)")
-            lastError = error
+            return (segments: segments,
+                    numSpeakers: result.numSpeakers,
+                    speakerEmbeddings: result.speakerEmbeddings)
+        }.value
+
+        let processingTime = Date().timeIntervalSince(startTime)
+
+        // Convert to WhoNext TimedSpeakerSegment bridge types.
+        // speech-swift uses Int speaker IDs (0-based); we convert to "speaker_N" strings.
+        let bridgeSegments = chunkResult.segments.map { seg in
+            let speakerLabel = "speaker_\(seg.speakerId)"
+
+            // Attach the speaker's embedding if available
+            let embedding: [Float]
+            if seg.speakerId < chunkResult.speakerEmbeddings.count {
+                embedding = chunkResult.speakerEmbeddings[seg.speakerId]
+            } else {
+                embedding = []
+            }
+
+            return TimedSpeakerSegment(
+                speakerId: speakerLabel,
+                embedding: embedding,
+                startTimeSeconds: Float(position) + seg.startTime,
+                endTimeSeconds: Float(position) + seg.endTime,
+                qualityScore: 1.0
+            )
         }
+
+        // Store per-speaker embeddings
+        for (idx, emb) in chunkResult.speakerEmbeddings.enumerated() {
+            let label = "speaker_\(idx)"
+            allSpeakerEmbeddings[label] = emb
+        }
+
+        // Accumulate segments
+        allSegments.append(contentsOf: bridgeSegments)
+
+        // Cap segment history
+        if allSegments.count > 2000 {
+            allSegments = Array(allSegments.suffix(1500))
+        }
+
+        let uniqueSpeakers = Set(allSegments.map { $0.speakerId })
+        totalSpeakerCount = uniqueSpeakers.count
+
+        // Logging
+        logCounter += 1
+        if logCounter >= logInterval {
+            logCounter = 0
+            debugLog("[SpeechSwiftBackend] Chunk at \(String(format: "%.1f", position))s in \(String(format: "%.2f", processingTime))s — \(chunkResult.numSpeakers) speakers, \(bridgeSegments.count) segments, \(chunkResult.speakerEmbeddings.count) embeddings")
+        }
+
+        // Diagnostic event
+        let rawIds = Array(uniqueSpeakers).sorted()
+        DiarizationDiagnostics.shared.logRawDiarizationOutput(
+            chunkPosition: position,
+            rawSpeakerCount: uniqueSpeakers.count,
+            rawSpeakerIds: rawIds,
+            segmentCount: allSegments.count,
+            speakerDatabase: allSpeakerEmbeddings.isEmpty ? nil : allSpeakerEmbeddings
+        )
+        DiarizationDiagnostics.shared.counters.diarizationChunksProcessed += 1
+
+        // Update published state
+        let diarResult = DiarizationResult(
+            segments: allSegments,
+            speakerEmbeddings: allSpeakerEmbeddings.isEmpty ? nil : allSpeakerEmbeddings
+        )
+
+        identifyUserSpeaker(in: diarResult)
+        lastResult = diarResult
+        currentSpeakers = Array(uniqueSpeakers).sorted()
     }
 
     // MARK: - Finish Processing
@@ -209,26 +243,51 @@ final class SpeakerKitDiarizationBackend: ObservableObject, DiarizationEngine {
             audioBuffer.removeAll()
         }
 
-        debugLog("[SpeakerKitBackend] Finalized: \(totalSpeakerCount) speakers, \(allSegments.count) segments")
+        debugLog("[SpeechSwiftBackend] Finalized: \(totalSpeakerCount) speakers, \(allSegments.count) segments, \(allSpeakerEmbeddings.count) embeddings")
         return lastResult
     }
 
-    // MARK: - Speaker Management (limited — SpeakerKit doesn't expose embeddings)
+    // MARK: - Speaker Management (full support via WeSpeaker embeddings)
 
     func matchAgainstCache(embedding: [Float]) -> String? {
-        // SpeakerKit doesn't expose speaker embeddings, so cache matching is unavailable.
-        return nil
+        guard !embedding.isEmpty else { return nil }
+
+        // Compare against all known speaker embeddings using cosine similarity
+        var bestMatch: String?
+        var bestSimilarity: Float = -1.0
+        let threshold: Float = 0.65  // Cosine similarity threshold for a positive match
+
+        for (speakerId, speakerEmb) in allSpeakerEmbeddings {
+            guard !speakerEmb.isEmpty else { continue }
+            let similarity = WeSpeakerModel.cosineSimilarity(embedding, speakerEmb)
+            if similarity > threshold && similarity > bestSimilarity {
+                bestSimilarity = similarity
+                bestMatch = speakerId
+            }
+        }
+
+        if let match = bestMatch {
+            debugLog("[SpeechSwiftBackend] Cache match: \(match) (similarity: \(String(format: "%.3f", bestSimilarity)))")
+        }
+        return bestMatch
     }
 
-    func preloadKnownSpeakers(_ knownSpeakers: [(id: String, name: String, embedding: [Float])]) {
-        // SpeakerKit doesn't support pre-loading known speakers.
+    func preloadKnownSpeakers(_ speakers: [(id: String, name: String, embedding: [Float])]) {
+        knownSpeakers = speakers.filter { !$0.embedding.isEmpty }
+
         if !knownSpeakers.isEmpty {
-            debugLog("[SpeakerKitBackend] preloadKnownSpeakers called with \(knownSpeakers.count) speakers — not supported by SpeakerKit (no embedding API)")
+            // Pre-populate the embeddings cache so matchAgainstCache works immediately
+            for speaker in knownSpeakers {
+                allSpeakerEmbeddings[speaker.id] = speaker.embedding
+            }
+            debugLog("[SpeechSwiftBackend] Pre-loaded \(knownSpeakers.count) known speakers with voice embeddings")
         }
     }
 
     func mergeCacheSpeakers(sourceId: String, destinationId: String) -> [Float]? {
-        // Merge segments locally (relabel source → destination)
+        let sourceEmbedding = allSpeakerEmbeddings[sourceId]
+
+        // Relabel segments
         allSegments = allSegments.map { seg in
             guard seg.speakerId == sourceId else { return seg }
             return TimedSpeakerSegment(
@@ -240,11 +299,20 @@ final class SpeakerKitDiarizationBackend: ObservableObject, DiarizationEngine {
             )
         }
 
+        // Merge embeddings: average the two if both exist
+        if let srcEmb = allSpeakerEmbeddings[sourceId],
+           let dstEmb = allSpeakerEmbeddings[destinationId],
+           srcEmb.count == dstEmb.count {
+            let merged = zip(srcEmb, dstEmb).map { ($0 + $1) / 2.0 }
+            allSpeakerEmbeddings[destinationId] = merged
+        }
+
+        allSpeakerEmbeddings.removeValue(forKey: sourceId)
         currentSpeakers.removeAll { $0 == sourceId }
         totalSpeakerCount = Set(allSegments.map { $0.speakerId }).count
 
-        debugLog("[SpeakerKitBackend] Merged speaker '\(sourceId)' -> '\(destinationId)'")
-        return nil  // No embeddings to return
+        debugLog("[SpeechSwiftBackend] Merged speaker '\(sourceId)' -> '\(destinationId)'")
+        return sourceEmbedding
     }
 
     // MARK: - Reset
@@ -252,6 +320,8 @@ final class SpeakerKitDiarizationBackend: ObservableObject, DiarizationEngine {
     func reset() {
         audioBuffer.removeAll()
         allSegments.removeAll()
+        allSpeakerEmbeddings.removeAll()
+        knownSpeakers.removeAll()
         lastResult = nil
         lastError = nil
         isProcessing = false
@@ -263,14 +333,27 @@ final class SpeakerKitDiarizationBackend: ObservableObject, DiarizationEngine {
         resamplingConverter = nil
         resamplingSourceFormat = nil
 
-        Task {
-            await speakerKit?.unloadModels()
-        }
-
-        debugLog("[SpeakerKitBackend] Reset complete")
+        debugLog("[SpeechSwiftBackend] Reset complete")
     }
 
     // MARK: - Private Helpers
+
+    private func identifyUserSpeaker(in result: DiarizationResult) {
+        guard UserProfile.shared.hasVoiceProfile,
+              let userEmb = UserProfile.shared.voiceEmbedding else { return }
+        guard userSpeakerId == nil else { return }
+
+        // Match user's voice profile against detected speaker embeddings
+        for (speakerId, speakerEmb) in allSpeakerEmbeddings {
+            guard !speakerEmb.isEmpty else { continue }
+            let similarity = WeSpeakerModel.cosineSimilarity(userEmb, speakerEmb)
+            if similarity > 0.7 {
+                userSpeakerId = speakerId
+                debugLog("[SpeechSwiftBackend] IDENTIFIED USER as \(speakerId) (cosine similarity: \(String(format: "%.3f", similarity)))")
+                break
+            }
+        }
+    }
 
     private func convertBufferToFloatArray(_ buffer: AVAudioPCMBuffer) -> [Float]? {
         guard let channelData = buffer.floatChannelData else { return nil }
