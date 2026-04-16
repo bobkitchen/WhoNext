@@ -11,7 +11,14 @@ import speex.dsp
 /// - Float32 ↔ Int16 conversion (our pipeline uses Float32)
 /// - Frame-based processing (accumulates samples into fixed-size frames)
 /// - Far-end ring buffer with delay compensation
-/// - Noise suppression via Speex preprocessor
+/// - Noise suppression via Speex preprocessor (standalone, NOT linked to echo state)
+///
+/// Architecture note: The preprocessor runs STANDALONE (not linked to the echo
+/// state). Linking via SPEEX_PREPROCESS_SET_ECHO_STATE causes the preprocessor
+/// to call speex_echo_get_residual → spx_fft, which crashes with EXC_BAD_ACCESS
+/// due to NULL FFT table pointers in the CSpeex SPM package. Echo removal is
+/// handled by speex_echo_cancellation alone; the preprocessor adds noise
+/// suppression and dereverb on top.
 ///
 /// Usage:
 ///   1. Feed system audio (far-end) via `feedFarEnd(_:)` — call frequently
@@ -35,7 +42,7 @@ final class EchoCanceller: @unchecked Sendable {
     /// Opaque echo canceller state
     private var echoState: OpaquePointer?
 
-    /// Opaque preprocessor state (noise suppression + dereverb)
+    /// Opaque preprocessor state (noise suppression + dereverb, standalone)
     private var preprocessState: OpaquePointer?
 
     // MARK: - Buffers
@@ -61,10 +68,16 @@ final class EchoCanceller: @unchecked Sendable {
     /// Thread safety
     private let lock = NSLock()
 
-    // MARK: - Diagnostics
+    // MARK: - Diagnostics & Safety
 
     private var framesProcessed: Int = 0
+    private var echoFramesProcessed: Int = 0
+    private var passthroughFrames: Int = 0
     private var logInterval: Int = 100
+
+    /// Self-disabling flag: if Speex produces garbage, bypass it
+    private var disabled: Bool = false
+    private var disableReason: String?
 
     // MARK: - Init
 
@@ -85,35 +98,48 @@ final class EchoCanceller: @unchecked Sendable {
         self.delayFrames = delayMs / frameDurationMs           // 4 frames at 40ms/10ms
         self.maxFarEndFrames = sampleRate * 200 / 1000 / frameSize // ~200ms worth of frames
 
+        debugLog("[EchoCanceller] Config: frameSize=\(frameSize), filterLength=\(filterLength), delayFrames=\(delayFrames), maxFarEndFrames=\(maxFarEndFrames)")
+
         // Create echo canceller
         echoState = speex_echo_state_init(Int32(frameSize), Int32(filterLength))
 
-        // Set sample rate
-        if let state = echoState {
+        if echoState == nil {
+            debugLog("[EchoCanceller] ERROR: speex_echo_state_init returned NULL!")
+            disabled = true
+            disableReason = "speex_echo_state_init failed"
+        } else {
+            debugLog("[EchoCanceller] Echo state created: \(echoState!)")
+
+            // Set sample rate
             var rate = Int32(sampleRate)
-            speex_echo_ctl(state, SPEEX_ECHO_SET_SAMPLING_RATE, &rate)
+            speex_echo_ctl(echoState!, SPEEX_ECHO_SET_SAMPLING_RATE, &rate)
         }
 
-        // Create preprocessor for noise suppression
+        // Create STANDALONE preprocessor for noise suppression + dereverb.
+        // NOT linked to echo state — linking causes crashes in speex_echo_get_residual.
         preprocessState = speex_preprocess_state_init(Int32(frameSize), Int32(sampleRate))
 
-        if let ppState = preprocessState, let ecState = echoState {
-            // Link preprocessor to echo canceller
-            var ecStatePtr = ecState
-            speex_preprocess_ctl(ppState, SPEEX_PREPROCESS_SET_ECHO_STATE, &ecStatePtr)
+        if preprocessState == nil {
+            debugLog("[EchoCanceller] WARNING: speex_preprocess_state_init returned NULL — noise suppression disabled")
+        } else {
+            debugLog("[EchoCanceller] Preprocessor created (standalone, no echo state link)")
 
             // Enable noise suppression (-25 dB)
             var denoise: Int32 = 1
-            speex_preprocess_ctl(ppState, SPEEX_PREPROCESS_SET_DENOISE, &denoise)
+            speex_preprocess_ctl(preprocessState!, SPEEX_PREPROCESS_SET_DENOISE, &denoise)
             var noiseSuppress: Int32 = -25
-            speex_preprocess_ctl(ppState, SPEEX_PREPROCESS_SET_NOISE_SUPPRESS, &noiseSuppress)
+            speex_preprocess_ctl(preprocessState!, SPEEX_PREPROCESS_SET_NOISE_SUPPRESS, &noiseSuppress)
 
             // Enable dereverb
             var dereverb: Int32 = 1
-            speex_preprocess_ctl(ppState, SPEEX_PREPROCESS_SET_DEREVERB, &dereverb)
+            speex_preprocess_ctl(preprocessState!, SPEEX_PREPROCESS_SET_DEREVERB, &dereverb)
+
+            // DO NOT link to echo state:
+            // speex_preprocess_ctl(ppState, SPEEX_PREPROCESS_SET_ECHO_STATE, &ecStatePtr)
+            // This causes crashes in spx_fft via speex_echo_get_residual with NULL table pointers.
         }
 
-        debugLog("[EchoCanceller] Initialized: frameSize=\(frameSize), filterLength=\(filterLength), delayFrames=\(delayFrames)")
+        debugLog("[EchoCanceller] Initialized: echo=\(echoState != nil), preprocess=\(preprocessState != nil), disabled=\(disabled)")
     }
 
     deinit {
@@ -140,6 +166,8 @@ final class EchoCanceller: @unchecked Sendable {
         lock.lock()
         defer { lock.unlock() }
 
+        guard !disabled else { return }
+
         farEndAccumulator.append(contentsOf: samples)
 
         // Process complete frames into the ring buffer
@@ -155,6 +183,11 @@ final class EchoCanceller: @unchecked Sendable {
                 farEndRingBuffer.removeFirst()
             }
         }
+
+        // Log far-end buffering progress at startup
+        if farEndRingBuffer.count > 0 && farEndRingBuffer.count <= 5 {
+            debugLog("[EchoCanceller] Far-end buffer growing: \(farEndRingBuffer.count) frames (need >\(delayFrames) for AEC)")
+        }
     }
 
     /// Cancel echo from mic (near-end) audio. Returns cleaned audio with echo removed.
@@ -163,7 +196,12 @@ final class EchoCanceller: @unchecked Sendable {
         lock.lock()
         defer { lock.unlock() }
 
-        guard let ecState = echoState else { return micSamples }
+        // If disabled, pass through unchanged
+        guard !disabled else { return micSamples }
+        guard let ecState = echoState else {
+            debugLog("[EchoCanceller] cancelEcho called but echoState is nil — passing through")
+            return micSamples
+        }
 
         micAccumulator.append(contentsOf: micSamples)
         outputAccumulator.removeAll()
@@ -180,7 +218,12 @@ final class EchoCanceller: @unchecked Sendable {
             if farEndRingBuffer.count > delayFrames {
                 let farEndFrame = farEndRingBuffer.removeFirst()
 
-                // Run echo cancellation
+                // Log first echo cancellation frame
+                if echoFramesProcessed == 0 {
+                    debugLog("[EchoCanceller] First AEC frame — far-end buffer had \(farEndRingBuffer.count + 1) frames, delay=\(delayFrames)")
+                }
+
+                // Run echo cancellation (speex_echo_cancellation is safe — no FFT table issue)
                 micInt16.withUnsafeBufferPointer { micPtr in
                     farEndFrame.withUnsafeBufferPointer { farPtr in
                         outputInt16.withUnsafeMutableBufferPointer { outPtr in
@@ -194,21 +237,24 @@ final class EchoCanceller: @unchecked Sendable {
                     }
                 }
 
-                // Run preprocessor (noise suppression + dereverb)
-                // IMPORTANT: Only safe to call AFTER speex_echo_cancellation, because
-                // the preprocessor accesses the echo state's internal buffers
-                // (via speex_echo_get_residual). Calling it without a prior echo
-                // cancellation frame causes EXC_BAD_ACCESS on uninitialized st->last_y.
+                echoFramesProcessed += 1
+
+                // Run standalone preprocessor (noise suppression + dereverb)
+                // Safe because preprocessor is NOT linked to echo state
                 if let ppState = preprocessState {
                     outputInt16.withUnsafeMutableBufferPointer { outPtr in
                         speex_preprocess_run(ppState, outPtr.baseAddress)
                     }
                 }
             } else {
-                // No far-end reference available — pass through mic unchanged.
-                // Do NOT run the preprocessor here: it's linked to the echo state
-                // and will crash accessing uninitialized echo residual buffers.
+                // No far-end reference available — pass through mic unchanged
                 outputInt16 = micInt16
+                passthroughFrames += 1
+
+                // Log passthrough at startup
+                if passthroughFrames <= 3 {
+                    debugLog("[EchoCanceller] Passthrough frame #\(passthroughFrames) — waiting for far-end buffer (\(farEndRingBuffer.count)/\(delayFrames + 1) frames)")
+                }
             }
 
             // Convert back to Float32
@@ -218,7 +264,7 @@ final class EchoCanceller: @unchecked Sendable {
             framesProcessed += 1
             if framesProcessed % logInterval == 0 {
                 let farEndBuffered = farEndRingBuffer.count
-                debugLog("[EchoCanceller] Processed \(framesProcessed) frames, far-end buffer: \(farEndBuffered) frames")
+                debugLog("[EchoCanceller] Stats: \(framesProcessed) total, \(echoFramesProcessed) AEC, \(passthroughFrames) passthrough, far-end buffer: \(farEndBuffered) frames")
             }
         }
 
@@ -234,8 +280,9 @@ final class EchoCanceller: @unchecked Sendable {
         let frameDurationMs = frameSize * 1000 / sampleRate
         let newDelayFrames = max(0, ms / frameDurationMs)
         if newDelayFrames != delayFrames {
+            let oldDelay = delayFrames
             delayFrames = newDelayFrames
-            debugLog("[EchoCanceller] Delay updated to \(ms)ms (\(delayFrames) frames)")
+            debugLog("[EchoCanceller] Delay updated: \(oldDelay) -> \(delayFrames) frames (\(ms)ms)")
         }
     }
 
@@ -253,13 +300,22 @@ final class EchoCanceller: @unchecked Sendable {
         farEndRingBuffer.removeAll()
         outputAccumulator.removeAll()
         framesProcessed = 0
+        echoFramesProcessed = 0
+        passthroughFrames = 0
 
-        debugLog("[EchoCanceller] Reset")
+        // Re-enable if previously disabled (new session, fresh start)
+        if disabled {
+            debugLog("[EchoCanceller] Reset: was disabled (\(disableReason ?? "unknown")), re-enabling")
+            disabled = false
+            disableReason = nil
+        }
+
+        debugLog("[EchoCanceller] Reset complete — ready for new session")
     }
 
     /// Whether the echo canceller is operational
     var isAvailable: Bool {
-        echoState != nil
+        echoState != nil && !disabled
     }
 
     // MARK: - Private Helpers
