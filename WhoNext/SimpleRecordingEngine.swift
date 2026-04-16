@@ -852,6 +852,13 @@ class SimpleRecordingEngine: ObservableObject {
             meeting.identifiedParticipants.append(participant)
             debugLog("[SimpleRecordingEngine] 👤 Stream labeling: added local speaker participant")
         }
+
+        // Update speaking time from accumulated segments
+        if let meeting = currentMeeting,
+           let participant = meeting.identifiedParticipants.first(where: { $0.speakerID == "mic_local_1" }) {
+            let speakingTimes = segmentAligner.getSpeakingTimes()
+            participant.totalSpeakingTime = speakingTimes["mic_local_1"] ?? 0
+        }
     }
 
     /// Extract a voice embedding from accumulated clean mic audio and save as the user's profile.
@@ -950,6 +957,13 @@ class SimpleRecordingEngine: ObservableObject {
             debugLog("[SimpleRecordingEngine] 👤 Stream labeling: added remote speaker participant")
         }
 
+        // Update speaking time from accumulated segments
+        if let meeting = currentMeeting,
+           let participant = meeting.identifiedParticipants.first(where: { $0.speakerID == "sys_remote_1" }) {
+            let speakingTimes = segmentAligner.getSpeakingTimes()
+            participant.totalSpeakingTime = speakingTimes["sys_remote_1"] ?? 0
+        }
+
         // Feed energy to multi-speaker detector
         trackSystemSpeechEnergy(rms)
     }
@@ -1020,6 +1034,13 @@ class SimpleRecordingEngine: ObservableObject {
             debugLog("[SimpleRecordingEngine] 👤 No-AEC VAD: added remote speaker participant")
         }
 
+        // Update speaking time from accumulated segments
+        if let meeting = currentMeeting,
+           let participant = meeting.identifiedParticipants.first(where: { $0.speakerID == "sys_remote_1" }) {
+            let speakingTimes = segmentAligner.getSpeakingTimes()
+            participant.totalSpeakingTime = speakingTimes["sys_remote_1"] ?? 0
+        }
+
         // Feed energy to multi-speaker detector (for potential group upgrade)
         trackSystemSpeechEnergy(rms)
     }
@@ -1074,6 +1095,13 @@ class SimpleRecordingEngine: ObservableObject {
             }
             meeting.identifiedParticipants.append(participant)
             debugLog("[SimpleRecordingEngine] 👤 Energy gate: added local speaker participant")
+        }
+
+        // Update speaking time from accumulated segments
+        if !segments.isEmpty, let meeting = currentMeeting,
+           let participant = meeting.identifiedParticipants.first(where: { $0.speakerID == "mic_local_1" }) {
+            let speakingTimes = segmentAligner.getSpeakingTimes()
+            participant.totalSpeakingTime = speakingTimes["mic_local_1"] ?? 0
         }
     }
 
