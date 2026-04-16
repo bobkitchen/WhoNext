@@ -806,7 +806,20 @@ class SimpleRecordingEngine: ObservableObject {
     /// No diarization — AEC ensures mic contains only the local speaker's voice.
     private func processMicVAD(_ buffer: AVAudioPCMBuffer) async {
         let rms = calculateRMS(buffer)
-        guard rms > vadRMSThreshold else { return }  // Silence — skip
+
+        // Adaptive threshold: when system audio is active, AEC leaves residual
+        // echo in the mic (~0.005-0.01 RMS). Raise the mic threshold to avoid
+        // creating false mic segments for echo residual. Actual local speech is
+        // much louder (~0.02-0.10 RMS) and still passes the higher threshold.
+        let sysRMS = currentSystemRMS
+        let effectiveThreshold: Float
+        if sysRMS > vadRMSThreshold {
+            // System active — require mic to be clearly above residual echo level
+            effectiveThreshold = max(vadRMSThreshold * 5, 0.015)
+        } else {
+            effectiveThreshold = vadRMSThreshold
+        }
+        guard rms > effectiveThreshold else { return }  // Silence or echo residual — skip
 
         let elapsed = recordingDuration
         let duration = Double(buffer.frameLength) / 16000.0
