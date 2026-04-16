@@ -89,11 +89,12 @@ class AudioCapturer: NSObject, ObservableObject {
         // Reset streams for new capture session
         setupStreams()
 
+        // Reset echo canceller BEFORE starting mic capture to avoid race
+        // where the first mic audio callback hits stale/uninitialized state
+        echoCanceller.reset()
+
         // Start mic capture
         try await startMicrophoneCapture()
-
-        // Reset echo canceller for new session
-        echoCanceller.reset()
 
         // Try to start system audio capture (may fail without permission)
         do {
