@@ -213,7 +213,12 @@ class SegmentAligner {
         lock.lock()
         defer { lock.unlock() }
 
-        let allSegments = micSegments + systemSegments
+        // System segments first: in stream labeling mode, mic captures both local
+        // speaker + acoustic bleed from system audio. System audio only contains the
+        // remote speaker's digital signal, so it's a higher-confidence source.
+        // Checking system segments first ensures remote speech is attributed correctly
+        // rather than being claimed by mic bleed segments.
+        let allSegments = systemSegments + micSegments
         guard !allSegments.isEmpty, !wordTimings.isEmpty else { return [] }
 
         // Convert chunk-relative word times to absolute and assign speakers
@@ -226,7 +231,8 @@ class SegmentAligner {
 
             let wordTiming = WordWithTiming(word: timing.word, startTime: absStart, endTime: absEnd)
 
-            // Strategy 1: Find segment containing the word's midpoint
+            // Strategy 1: Find segment containing the word's midpoint.
+            // System segments are checked first (higher confidence for remote speech).
             var assignedSpeaker: String? = nil
             for seg in allSegments {
                 if Double(seg.startTimeSeconds) <= midpoint && midpoint <= Double(seg.endTimeSeconds) {
@@ -235,7 +241,8 @@ class SegmentAligner {
                 }
             }
 
-            // Strategy 2: Overlap-weighted selection
+            // Strategy 2: Overlap-weighted selection (system segments still prioritized
+            // by position in allSegments — equal overlap goes to first match)
             if assignedSpeaker == nil {
                 var bestOverlap: Double = 0
                 for seg in allSegments {
