@@ -64,52 +64,65 @@ class SegmentAligner {
         }
     }
 
-    /// Update with new diarization results from microphone
+    /// Replace mic segments with new diarization results (for diarizer engines that
+    /// return cumulative results covering the full analyzed window).
     /// - Parameter result: New DiarizationResult from diarization engine
     func updateDiarizationResults(_ result: DiarizationResult) {
         lock.lock()
         defer { lock.unlock() }
 
         micSegments = Self.prefixSegments(result.segments, prefix: "mic")
-
-        // Defensive cap
-        if micSegments.count > 5000 {
-            micSegments = Array(micSegments.suffix(5000))
-            debugLog("[SegmentAligner] ⚠️ Mic segment cap hit: trimmed to 5000")
-        }
-
-        // Track known speakers
-        for segment in micSegments {
-            knownSpeakers.insert(segment.speakerId)
-        }
-
-        // Cap known speakers
-        if knownSpeakers.count > 100 {
-            let allSegments = micSegments + systemSegments
-            let activeIds = Set(allSegments.map { $0.speakerId })
-            knownSpeakers = knownSpeakers.intersection(activeIds)
-            debugLog("[SegmentAligner] ⚠️ Speaker cap hit: pruned to \(knownSpeakers.count) active speakers")
-        }
-
-        debugLog("[SegmentAligner] Updated mic with \(result.segments.count) segments, \(knownSpeakers.count) unique speakers total")
+        capAndTrack(source: "mic")
     }
 
-    /// Update with new diarization results from system audio
+    /// Replace system segments with new diarization results (for diarizer engines that
+    /// return cumulative results covering the full analyzed window).
     /// - Parameter result: New DiarizationResult from diarization engine
     func updateSystemDiarizationResults(_ result: DiarizationResult) {
         lock.lock()
         defer { lock.unlock() }
 
         systemSegments = Self.prefixSegments(result.segments, prefix: "sys")
+        capAndTrack(source: "system")
+    }
 
+    /// Append a mic segment (for VAD/stream labeling mode where each call
+    /// produces a single short segment that must accumulate over time).
+    func appendMicSegment(_ segment: TimedSpeakerSegment) {
+        lock.lock()
+        defer { lock.unlock() }
+
+        let prefixed = Self.prefixSegments([segment], prefix: "mic")
+        micSegments.append(contentsOf: prefixed)
+        capAndTrack(source: "mic")
+    }
+
+    /// Append a system segment (for VAD/stream labeling mode where each call
+    /// produces a single short segment that must accumulate over time).
+    func appendSystemSegment(_ segment: TimedSpeakerSegment) {
+        lock.lock()
+        defer { lock.unlock() }
+
+        let prefixed = Self.prefixSegments([segment], prefix: "sys")
+        systemSegments.append(contentsOf: prefixed)
+        capAndTrack(source: "system")
+    }
+
+    /// Common cap-and-track logic for both update and append paths
+    private func capAndTrack(source: String) {
         // Defensive cap
-        if systemSegments.count > 5000 {
+        if source == "mic" && micSegments.count > 5000 {
+            micSegments = Array(micSegments.suffix(5000))
+            debugLog("[SegmentAligner] ⚠️ Mic segment cap hit: trimmed to 5000")
+        }
+        if source == "system" && systemSegments.count > 5000 {
             systemSegments = Array(systemSegments.suffix(5000))
             debugLog("[SegmentAligner] ⚠️ System segment cap hit: trimmed to 5000")
         }
 
         // Track known speakers
-        for segment in systemSegments {
+        let segments = source == "mic" ? micSegments : systemSegments
+        for segment in segments {
             knownSpeakers.insert(segment.speakerId)
         }
 
@@ -121,7 +134,8 @@ class SegmentAligner {
             debugLog("[SegmentAligner] ⚠️ Speaker cap hit: pruned to \(knownSpeakers.count) active speakers")
         }
 
-        debugLog("[SegmentAligner] Updated system with \(result.segments.count) segments, \(knownSpeakers.count) unique speakers total")
+        let count = source == "mic" ? micSegments.count : systemSegments.count
+        debugLog("[SegmentAligner] Updated \(source) with \(count) segments, \(knownSpeakers.count) unique speakers total")
     }
 
     /// Find the dominant speaker for a transcript time range

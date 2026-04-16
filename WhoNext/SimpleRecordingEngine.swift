@@ -822,7 +822,9 @@ class SimpleRecordingEngine: ObservableObject {
             }
         }
 
-        // Create a synthetic diarization segment for the local speaker
+        // Append a synthetic diarization segment for the local speaker.
+        // Uses appendMicSegment (not updateDiarizationResults) so segments
+        // accumulate over the recording rather than being replaced each call.
         let segment = TimedSpeakerSegment(
             speakerId: "local_1",
             embedding: [],
@@ -830,13 +832,7 @@ class SimpleRecordingEngine: ObservableObject {
             endTimeSeconds: Float(elapsed),
             qualityScore: min(rms * 10, 1.0)  // Normalize RMS to quality estimate
         )
-
-        let result = DiarizationResult(
-            segments: [segment],
-            speakerDatabase: nil,
-            timings: nil
-        )
-        segmentAligner.updateDiarizationResults(result)
+        segmentAligner.appendMicSegment(segment)
 
         // Ensure local participant exists
         if let meeting = currentMeeting,
@@ -932,6 +928,8 @@ class SimpleRecordingEngine: ObservableObject {
         let elapsed = recordingDuration
         let duration = Double(buffer.frameLength) / 16000.0
 
+        // Append a synthetic segment for the remote speaker.
+        // Uses appendSystemSegment so segments accumulate over the recording.
         let segment = TimedSpeakerSegment(
             speakerId: "remote_1",
             embedding: [],
@@ -939,13 +937,7 @@ class SimpleRecordingEngine: ObservableObject {
             endTimeSeconds: Float(elapsed),
             qualityScore: min(rms * 10, 1.0)
         )
-
-        let result = DiarizationResult(
-            segments: [segment],
-            speakerDatabase: nil,
-            timings: nil
-        )
-        segmentAligner.updateSystemDiarizationResults(result)
+        segmentAligner.appendSystemSegment(segment)
 
         // Ensure remote participant exists
         if let meeting = currentMeeting,
@@ -1016,13 +1008,7 @@ class SimpleRecordingEngine: ObservableObject {
             endTimeSeconds: Float(elapsed),
             qualityScore: min(rms * 10, 1.0)
         )
-
-        let result = DiarizationResult(
-            segments: [segment],
-            speakerDatabase: nil,
-            timings: nil
-        )
-        segmentAligner.updateSystemDiarizationResults(result)
+        segmentAligner.appendSystemSegment(segment)
 
         // Ensure remote participant exists
         if let meeting = currentMeeting,
@@ -1074,12 +1060,10 @@ class SimpleRecordingEngine: ObservableObject {
 
         if !segments.isEmpty {
             await MainActor.run { DiarizationDiagnostics.shared.counters.micEnergyGateSegments += segments.count }
-            let result = DiarizationResult(
-                segments: segments,
-                speakerDatabase: nil,
-                timings: nil
-            )
-            segmentAligner.updateDiarizationResults(result)
+            // Append each segment individually so they accumulate
+            for segment in segments {
+                segmentAligner.appendMicSegment(segment)
+            }
         }
 
         // Ensure local participant exists (same pattern as processMicVAD)
