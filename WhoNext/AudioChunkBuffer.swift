@@ -1,8 +1,8 @@
 import Foundation
 import AVFoundation
 
-/// Accumulates audio into 15-second chunks for optimal WhisperKit processing
-/// Handles mic and system audio separately, mixes only when emitting
+/// Accumulates audio into 10-second chunks for WhisperKit processing.
+/// Handles mic and system audio separately, mixes only when emitting.
 actor AudioChunkBuffer {
 
     // MARK: - Configuration
@@ -45,14 +45,14 @@ actor AudioChunkBuffer {
     // MARK: - Public Interface
 
     /// Add microphone audio samples
-    /// - Returns: Mixed audio chunk if 15 seconds accumulated, nil otherwise
+    /// - Returns: Mixed audio chunk if target duration accumulated, nil otherwise
     func addMicAudio(_ samples: [Float]) -> [Float]? {
         micBuffer.append(contentsOf: samples)
         return checkAndEmitChunk()
     }
 
     /// Add system audio samples
-    /// - Returns: Mixed audio chunk if 15 seconds accumulated, nil otherwise
+    /// - Returns: Mixed audio chunk if target duration accumulated, nil otherwise
     func addSystemAudio(_ samples: [Float]) -> [Float]? {
         systemBuffer.append(contentsOf: samples)
         return checkAndEmitChunk()

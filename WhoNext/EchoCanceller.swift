@@ -73,6 +73,8 @@ final class EchoCanceller: @unchecked Sendable {
     private var framesProcessed: Int = 0
     private var echoFramesProcessed: Int = 0
     private var passthroughFrames: Int = 0
+    private var farEndDroppedFrames: Int = 0
+    private var lastDropLogAt: Int = 0
     private var logInterval: Int = 100
 
     /// Self-disabling flag: if Speex produces garbage, bypass it
@@ -178,9 +180,19 @@ final class EchoCanceller: @unchecked Sendable {
             let int16Frame = floatToInt16(frame)
             farEndRingBuffer.append(int16Frame)
 
-            // Cap ring buffer size
+            // Cap ring buffer size — drop oldest frames when far-end outpaces mic.
+            // Chronic drops indicate mic/system stream rate mismatch and will cause
+            // misaligned echo cancellation (filter trained on wrong reference audio).
             if farEndRingBuffer.count > maxFarEndFrames {
                 farEndRingBuffer.removeFirst()
+                farEndDroppedFrames += 1
+
+                // Log the first drop and then every 100 drops — chronic drops
+                // indicate the mic isn't consuming far-end frames fast enough.
+                if farEndDroppedFrames == 1 || farEndDroppedFrames - lastDropLogAt >= 100 {
+                    lastDropLogAt = farEndDroppedFrames
+                    debugLog("[EchoCanceller] ⚠️ Far-end buffer overflow: dropped \(farEndDroppedFrames) frames total (ring cap: \(maxFarEndFrames)). System audio arriving faster than mic consumes — check stream rate alignment.")
+                }
             }
         }
 
@@ -302,6 +314,8 @@ final class EchoCanceller: @unchecked Sendable {
         framesProcessed = 0
         echoFramesProcessed = 0
         passthroughFrames = 0
+        farEndDroppedFrames = 0
+        lastDropLogAt = 0
 
         // Re-enable if previously disabled (new session, fresh start)
         if disabled {
