@@ -1313,8 +1313,14 @@ class SimpleRecordingEngine: ObservableObject {
             multiSpeakerEvidenceCount += 1
             if multiSpeakerEvidenceCount == multiSpeakerEvidenceThreshold {
                 debugLog("[SimpleRecordingEngine] 🔍 Multi-speaker detected on system stream (CV: \(String(format: "%.2f", cv)) > \(energyCVThreshold), evidence: \(multiSpeakerEvidenceCount))")
-                Task {
-                    await upgradeToGroupStreaming()
+                // Only auto-upgrade from streamLabelingNoAEC — energy CV is unreliable
+                // for streamLabeling (AEC active) because varied mono audio (YouTube,
+                // podcasts) produces high CV without actually having multiple speakers.
+                // Explicit upgrades via updateExpectedAttendeeCount() still work for both.
+                if diarizationStrategy == .streamLabelingNoAEC {
+                    Task {
+                        await upgradeToGroupStreaming()
+                    }
                 }
             }
         } else {
@@ -1338,16 +1344,15 @@ class SimpleRecordingEngine: ObservableObject {
 
     // MARK: - Dynamic Strategy Upgrade
 
-    /// Upgrade from streamLabelingNoAEC to groupStreaming if multiple remote speakers detected.
-    /// Called automatically by multi-speaker energy detection or explicitly when attendee count changes.
+    /// Upgrade from streamLabeling/streamLabelingNoAEC to groupStreaming
+    /// when multiple remote speakers are confirmed.
     ///
-    /// NOTE: streamLabeling (AEC active) is NOT upgradeable. In streamLabeling mode,
-    /// stream identity IS speaker identity (mic=local, system=remote) and this is
-    /// highly reliable. Upgrading to groupStreaming replaces the simple VAD segments
-    /// with FluidAudio diarizer output, which uses different speaker IDs, 10s windows,
-    /// and segment replacement — destroying the clean stream-based attribution.
+    /// Called from two paths:
+    /// 1. **Explicit**: `updateExpectedAttendeeCount()` — calendar says 3+ attendees (reliable)
+    /// 2. **Auto-detected**: energy CV analysis — only from streamLabelingNoAEC to avoid
+    ///    false triggers on varied mono audio (YouTube, podcasts etc.)
     func upgradeToGroupStreaming() async {
-        guard diarizationStrategy == .streamLabelingNoAEC else { return }
+        guard diarizationStrategy == .streamLabeling || diarizationStrategy == .streamLabelingNoAEC else { return }
 
         debugLog("[SimpleRecordingEngine] 🔄 Upgrading strategy: \(diarizationStrategy.rawValue) → groupStreaming")
         diarizationStrategy = .groupStreaming
