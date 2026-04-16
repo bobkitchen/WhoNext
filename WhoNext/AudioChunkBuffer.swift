@@ -8,13 +8,13 @@ actor AudioChunkBuffer {
     // MARK: - Configuration
 
     /// Target duration for each chunk.
-    /// Reduced from 15s to 5s for faster speaker switch detection (~4s latency
-    /// instead of ~14s). Parakeet TDT v3 transcribes at 90-140x real-time,
-    /// so 5s chunks process in ~0.05s with negligible quality loss.
-    private let targetDuration: TimeInterval = 5.0
+    /// 10s balances speaker switch latency (~9s) with transcription quality.
+    /// Shorter chunks (5s) made transcription choppy and hard to read.
+    /// Longer chunks (15s) caused 14s speaker switch delay.
+    private let targetDuration: TimeInterval = 10.0
 
     /// Overlap duration for continuity between chunks
-    private let overlapDuration: TimeInterval = 0.5
+    private let overlapDuration: TimeInterval = 1.0
 
     /// Sample rate (16kHz for WhisperKit)
     private let sampleRate: Double = 16000.0
