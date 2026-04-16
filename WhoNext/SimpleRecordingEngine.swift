@@ -189,6 +189,10 @@ class SimpleRecordingEngine: ObservableObject {
     /// Avoids re-scanning already-attributed segments on every diarization update.
     private var backfillCursor: Int = 0
 
+    /// Absolute end time of the last transcribed chunk's content.
+    /// Used to skip words that fall in the 1s overlap region (already transcribed in the previous chunk).
+    private var lastTranscribedChunkEndTime: TimeInterval = 0
+
     // MARK: - Initialization
 
     private init() {
@@ -409,6 +413,7 @@ class SimpleRecordingEngine: ObservableObject {
         await systemDiarizationBuffer.reset()
         segmentAligner.reset()
         backfillCursor = 0
+        lastTranscribedChunkEndTime = 0
 
         // Reset dynamic upgrade detection state
         systemSpeechEnergies.removeAll()
@@ -699,35 +704,61 @@ class SimpleRecordingEngine: ObservableObject {
         // per speaker change (instead of one per entire chunk).
 
         if let timings = result.tokenTimings, !timings.isEmpty {
-            let groups = segmentAligner.alignWords(wordTimings: timings, chunkStartTime: chunkStartTime)
+            // Dedup overlap: drop tokens whose absolute start time is before the
+            // previous chunk's end (the 1s overlap region was already transcribed).
+            // Use a small epsilon (50ms) to allow for tokenization drift at boundaries.
+            let overlapCutoff = lastTranscribedChunkEndTime - 0.05
+            let dedupedTimings = timings.filter { chunkStartTime + $0.startTime >= overlapCutoff }
+            let droppedCount = timings.count - dedupedTimings.count
+            if droppedCount > 0 {
+                debugLog("[SimpleRecordingEngine] Dropped \(droppedCount) overlap tokens (cutoff: \(String(format: "%.2f", overlapCutoff))s)")
+            }
+
+            // Update cutoff for next chunk
+            let chunkEndTime = chunkStartTime + (Double(chunk.count) / 16000.0)
+            lastTranscribedChunkEndTime = chunkEndTime
+
+            let groups = dedupedTimings.isEmpty ? [] : segmentAligner.alignWords(wordTimings: dedupedTimings, chunkStartTime: chunkStartTime)
 
             if !groups.isEmpty {
                 for group in groups {
                     let speakerName = resolveSpeakerName(for: group.speakerId)
+                    let appendText = group.text.trimmingCharacters(in: .whitespacesAndNewlines)
+                    guard !appendText.isEmpty else { continue }
 
                     // Merge with previous segment if same speaker — builds a
                     // continuous, readable transcript instead of choppy per-chunk lines.
                     if let meeting = currentMeeting,
                        let lastIdx = meeting.transcript.indices.last,
                        meeting.transcript[lastIdx].speakerID == group.speakerId {
-                        // Same speaker continues — append text to existing segment
+                        // Same speaker continues — append text to existing segment with a space separator
                         let existing = meeting.transcript[lastIdx]
+                        let existingTrimmed = existing.text.trimmingCharacters(in: .whitespacesAndNewlines)
+                        let joinedText = existingTrimmed.isEmpty ? appendText : "\(existingTrimmed) \(appendText)"
+
+                        // Weighted running confidence using word counts as weights.
+                        // This avoids the 50/50 bias that caused confidence to collapse to the most recent chunk.
+                        let existingWordCount = max(1, existingTrimmed.split(separator: " ").count)
+                        let newWordCount = max(1, group.words.count)
+                        let totalWords = Float(existingWordCount + newWordCount)
+                        let weightedConfidence = (existing.confidence * Float(existingWordCount) + result.confidence * Float(newWordCount)) / totalWords
+
                         meeting.transcript[lastIdx] = TranscriptSegment(
                             id: existing.id,
-                            text: existing.text + group.text,
+                            text: joinedText,
                             timestamp: existing.timestamp,
                             speakerID: existing.speakerID,
                             speakerName: existing.speakerName,
-                            confidence: (existing.confidence + result.confidence) / 2,
+                            confidence: weightedConfidence,
                             isFinalized: true,
                             diarizationSource: existing.diarizationSource
                         )
                         meeting.wordCount += group.words.count
-                        debugLog("[SimpleRecordingEngine] Appended to segment (\(speakerName)): \"\(group.text.prefix(50))\"")
+                        debugLog("[SimpleRecordingEngine] Appended to segment (\(speakerName)): \"\(appendText.prefix(50))\"")
                     } else {
                         // New speaker — create a new segment
                         let segment = TranscriptSegment(
-                            text: group.text,
+                            text: appendText,
                             timestamp: group.startTime,
                             speakerID: group.speakerId,
                             speakerName: speakerName,
@@ -736,7 +767,13 @@ class SimpleRecordingEngine: ObservableObject {
                         )
                         currentMeeting?.transcript.append(segment)
                         currentMeeting?.wordCount += group.words.count
-                        debugLog("[SimpleRecordingEngine] New segment (\(speakerName)): \"\(group.text.prefix(50))\"")
+                        debugLog("[SimpleRecordingEngine] New segment (\(speakerName)): \"\(appendText.prefix(50))\"")
+
+                        // Auto-create a placeholder IdentifiedParticipant for any
+                        // new speaker the aligner introduces. This ensures late-joining
+                        // speakers are correctable in the post-meeting review UI,
+                        // rather than stranded with a generic "Speaker N (Remote)" label.
+                        ensureParticipantExists(for: group.speakerId)
                     }
                 }
                 return
@@ -755,6 +792,22 @@ class SimpleRecordingEngine: ObservableObject {
             return participant.displayName
         }
         return SegmentAligner.formatSpeakerName(speakerId)
+    }
+
+    /// Ensure an IdentifiedParticipant record exists for the given speaker ID.
+    /// Creates a placeholder with a generic name if none exists — so the post-meeting
+    /// review UI can find and rename late-joining speakers.
+    private func ensureParticipantExists(for speakerId: String) {
+        guard let meeting = currentMeeting else { return }
+        guard !meeting.identifiedParticipants.contains(where: { $0.speakerID == speakerId }) else { return }
+
+        let participant = IdentifiedParticipant()
+        participant.speakerID = speakerId
+        participant.isCurrentUser = speakerId.hasPrefix("mic_")
+        participant.name = SegmentAligner.formatSpeakerName(speakerId)
+        participant.namingMode = .unnamed
+        meeting.identifiedParticipants.append(participant)
+        debugLog("[SimpleRecordingEngine] 👤 Auto-created participant for late-joining speaker: \(speakerId)")
     }
 
     /// Create a single TranscriptSegment for the entire chunk (original behavior / fallback).
@@ -1196,7 +1249,10 @@ class SimpleRecordingEngine: ObservableObject {
 
         for (speakerId, clusterEmbedding) in db {
             let similarity = cosineSimilarity(userEmbedding, clusterEmbedding)
-            if similarity > 0.45 {
+            // Threshold 0.60 aligns with the SpeechSwift backend's own cache-match
+            // threshold (0.65). Lower values (0.45) produced false suppressions of
+            // legitimate remote speakers with similar vocal profiles (same gender/accent).
+            if similarity > 0.60 {
                 debugLog("[SimpleRecordingEngine] 🔇 Suppressing system cluster '\(speakerId)' — cosine similarity \(String(format: "%.3f", similarity)) to local user voice")
                 // Remove this cluster's segments from the aligner
                 segmentAligner.removeSystemSpeaker("sys_\(speakerId)")
@@ -1355,7 +1411,15 @@ class SimpleRecordingEngine: ObservableObject {
         guard diarizationStrategy == .streamLabeling || diarizationStrategy == .streamLabelingNoAEC else { return }
 
         debugLog("[SimpleRecordingEngine] 🔄 Upgrading strategy: \(diarizationStrategy.rawValue) → groupStreaming")
+        let previousStrategy = diarizationStrategy
         diarizationStrategy = .groupStreaming
+
+        // Remove stale "sys_remote_1" participant from pre-upgrade stream labeling.
+        // The diarizer will create fresh "sys_N" participants with accurate speaking times.
+        if let meeting = currentMeeting {
+            meeting.identifiedParticipants.removeAll { $0.speakerID == "sys_remote_1" }
+            debugLog("[SimpleRecordingEngine] Removed stale sys_remote_1 participant on upgrade from \(previousStrategy.rawValue)")
+        }
 
         // Initialize system diarizer and energy gate on-the-fly
         energyGateDetector = EnergyGateDetector()
@@ -1406,7 +1470,9 @@ class SimpleRecordingEngine: ObservableObject {
         expectedAttendeeCount = count
         debugLog("[SimpleRecordingEngine] Expected attendee count updated: \(oldCount.map(String.init) ?? "nil") → \(count)")
 
-        if count > 2 && diarizationStrategy == .streamLabeling {
+        // Upgrade from either streamLabeling strategy — a calendar update confirming 3+
+        // attendees is reliable signal regardless of whether AEC is active.
+        if count > 2 && (diarizationStrategy == .streamLabeling || diarizationStrategy == .streamLabelingNoAEC) {
             await upgradeToGroupStreaming()
         }
     }

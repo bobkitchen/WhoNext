@@ -31,14 +31,23 @@ class SegmentAligner {
     /// Accumulated diarization segments from system audio
     private var systemSegments: [TimedSpeakerSegment] = []
 
-    /// Speaker stabilizer to prevent rapid label switching
-    private let stabilizer = SpeakerStabilizer()
+    /// Speaker stabilizer for word-level path (alignWords) — prevents rapid label
+    /// switching within a chunk's word stream.
+    private let wordStabilizer = SpeakerStabilizer()
+
+    /// Speaker stabilizer for segment-level path (dominantSpeaker / addSingleSegment) —
+    /// kept separate from wordStabilizer so hysteresis state in one path cannot
+    /// prematurely commit or reset a pending change in the other.
+    private let segmentStabilizer = SpeakerStabilizer()
 
     /// Track unique speakers seen
     private var knownSpeakers: Set<String> = []
 
-    /// Track last returned speaker for stabilizer continuity
-    private var lastReturnedSpeaker: String?
+    /// Track last returned speaker for the word-level path
+    private var lastReturnedWordSpeaker: String?
+
+    /// Track last returned speaker for the segment-level path
+    private var lastReturnedSegmentSpeaker: String?
 
     /// Lock for thread-safe access
     private let lock = NSLock()
@@ -155,8 +164,8 @@ class SegmentAligner {
         let speaker = result.dominantSpeaker(between: transcriptStart, and: endTime)
 
         if let speaker = speaker {
-            let stabilized = stabilizer.stabilize(rawLabel: speaker, currentLabel: lastReturnedSpeaker)
-            lastReturnedSpeaker = stabilized
+            let stabilized = segmentStabilizer.stabilize(rawLabel: speaker, currentLabel: lastReturnedSegmentSpeaker)
+            lastReturnedSegmentSpeaker = stabilized
             return stabilized
         }
         return nil
@@ -255,11 +264,23 @@ class SegmentAligner {
                 }
             }
 
-            // Strategy 2: Overlap-weighted selection (system segments still prioritized
-            // by position in allSegments — equal overlap goes to first match)
+            // Strategy 2: Overlap-weighted selection. System segments are checked FIRST
+            // and win ties (>=); mic segments only override with strictly greater overlap.
+            // This preserves the system-first priority invariant when overlaps tie.
             if assignedSpeaker == nil {
                 var bestOverlap: Double = 0
-                for seg in allSegments {
+                // First pass: system segments only (ties go to system).
+                for seg in systemSegments {
+                    let segStart = Double(seg.startTimeSeconds)
+                    let segEnd = Double(seg.endTimeSeconds)
+                    let overlap = max(0, min(absEnd, segEnd) - max(absStart, segStart))
+                    if overlap > bestOverlap {
+                        bestOverlap = overlap
+                        assignedSpeaker = seg.speakerId
+                    }
+                }
+                // Second pass: mic segments only beat system with strictly greater overlap.
+                for seg in micSegments {
                     let segStart = Double(seg.startTimeSeconds)
                     let segEnd = Double(seg.endTimeSeconds)
                     let overlap = max(0, min(absEnd, segEnd) - max(absStart, segStart))
@@ -284,11 +305,11 @@ class SegmentAligner {
             }
 
             // Strategy 4: Last returned speaker fallback
-            let speaker = assignedSpeaker ?? lastReturnedSpeaker ?? "unknown"
+            let speaker = assignedSpeaker ?? lastReturnedWordSpeaker ?? "unknown"
 
-            // Apply speaker stabilizer
-            let stabilized = stabilizer.stabilize(rawLabel: speaker, currentLabel: lastReturnedSpeaker)
-            lastReturnedSpeaker = stabilized
+            // Apply speaker stabilizer (word-path — separate from segment-path stabilizer)
+            let stabilized = wordStabilizer.stabilize(rawLabel: speaker, currentLabel: lastReturnedWordSpeaker)
+            lastReturnedWordSpeaker = stabilized
 
             attributedWords.append((word: wordTiming, speakerId: stabilized))
         }
@@ -334,8 +355,10 @@ class SegmentAligner {
         micSegments.removeAll()
         systemSegments.removeAll()
         knownSpeakers.removeAll()
-        stabilizer.reset()
-        lastReturnedSpeaker = nil
+        wordStabilizer.reset()
+        segmentStabilizer.reset()
+        lastReturnedWordSpeaker = nil
+        lastReturnedSegmentSpeaker = nil
 
         debugLog("[SegmentAligner] Reset")
     }

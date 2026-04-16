@@ -55,6 +55,23 @@ final class SpeechSwiftDiarizationBackend: ObservableObject, DiarizationEngine {
     private var allSegments: [TimedSpeakerSegment] = []
     private var allSpeakerEmbeddings: [String: [Float]] = [:]
 
+    /// Monotonically increasing counter used to allocate NEW global speaker labels
+    /// ("speaker_0", "speaker_1", ...) when a chunk-local speaker doesn't match any
+    /// existing global embedding. Never reused during a session.
+    private var nextGlobalSpeakerId: Int = 0
+
+    /// Cosine similarity threshold for matching a chunk-local speaker embedding to
+    /// an existing global speaker. Below this, the local speaker is treated as new.
+    /// Lower than pyannote's within-chunk clustering threshold (0.715) because
+    /// embeddings from the same speaker in different chunks drift more than within
+    /// a single segmentation window.
+    private let chunkMatchThreshold: Float = 0.60
+
+    /// Exponential moving average weight for existing embedding when updating from a new
+    /// chunk match. alpha=0.7 means 70% weight to the running embedding, 30% to the new chunk
+    /// — stable against noisy chunks while still adapting to voice drift.
+    private let embeddingEMAAlpha: Float = 0.7
+
     // Known speaker cache for voice matching
     private var knownSpeakers: [(id: String, name: String, embedding: [Float])] = []
 
@@ -161,14 +178,30 @@ final class SpeechSwiftDiarizationBackend: ObservableObject, DiarizationEngine {
 
         let processingTime = Date().timeIntervalSince(startTime)
 
-        // Convert to WhoNext TimedSpeakerSegment bridge types.
-        // speech-swift uses Int speaker IDs (0-based); we convert to "speaker_N" strings.
-        let bridgeSegments = chunkResult.segments.map { seg in
-            let speakerLabel = "speaker_\(seg.speakerId)"
+        // Map chunk-local speaker indices (0, 1, 2...) to stable GLOBAL speaker labels.
+        //
+        // Pyannote's diarize() returns chunk-local IDs that are only meaningful within the
+        // chunk — "speaker_0" in chunk A and "speaker_0" in chunk B are almost certainly
+        // different people. Without cross-chunk matching we'd either lose all identity
+        // (everyone becomes "speaker_0"/"speaker_1") or inflate speaker count over time.
+        //
+        // Algorithm: compute cosine similarity between each local embedding and every
+        // existing global embedding. Greedy-assign highest similarities first, one-to-one.
+        // Unmatched locals get fresh global IDs. Matched globals get EMA-updated.
+        // Known speakers (pre-loaded with UUID keys) participate naturally.
+        let localToGlobal = mapChunkLocalToGlobalSpeakers(
+            localEmbeddings: chunkResult.speakerEmbeddings
+        )
 
-            // Attach the speaker's embedding if available
+        // Convert to WhoNext TimedSpeakerSegment bridge types using the mapped global labels.
+        let bridgeSegments = chunkResult.segments.map { seg in
+            let speakerLabel = localToGlobal[seg.speakerId] ?? "speaker_unknown_\(seg.speakerId)"
+
+            // Attach the (global) embedding if available
             let embedding: [Float]
-            if seg.speakerId < chunkResult.speakerEmbeddings.count {
+            if let emb = allSpeakerEmbeddings[speakerLabel] {
+                embedding = emb
+            } else if seg.speakerId < chunkResult.speakerEmbeddings.count {
                 embedding = chunkResult.speakerEmbeddings[seg.speakerId]
             } else {
                 embedding = []
@@ -181,12 +214,6 @@ final class SpeechSwiftDiarizationBackend: ObservableObject, DiarizationEngine {
                 endTimeSeconds: Float(position) + seg.endTime,
                 qualityScore: 1.0
             )
-        }
-
-        // Store per-speaker embeddings
-        for (idx, emb) in chunkResult.speakerEmbeddings.enumerated() {
-            let label = "speaker_\(idx)"
-            allSpeakerEmbeddings[label] = emb
         }
 
         // Accumulate segments
@@ -337,6 +364,95 @@ final class SpeechSwiftDiarizationBackend: ObservableObject, DiarizationEngine {
     }
 
     // MARK: - Private Helpers
+
+    /// Match chunk-local speakers to stable global identities via cosine similarity.
+    /// Updates `allSpeakerEmbeddings` (inserts new, EMA-updates matched) and returns the
+    /// mapping from local chunk index -> global speaker label.
+    ///
+    /// Greedy one-to-one assignment: highest cross-similarity first, so the strongest match
+    /// wins regardless of iteration order. If maxSpeakers is set and the global cap has been
+    /// hit, unmatched locals force-match to the closest available global rather than
+    /// allocating new IDs (prevents runaway speaker inflation).
+    private func mapChunkLocalToGlobalSpeakers(localEmbeddings: [[Float]]) -> [Int: String] {
+        var localToGlobal: [Int: String] = [:]
+        var usedGlobals: Set<String> = []
+
+        guard !localEmbeddings.isEmpty else { return localToGlobal }
+
+        // Score all (local, global) candidate pairs above the match threshold.
+        var candidates: [(localIdx: Int, globalLabel: String, similarity: Float)] = []
+        for (localIdx, localEmb) in localEmbeddings.enumerated() {
+            guard !localEmb.isEmpty else { continue }
+            for (globalLabel, globalEmb) in allSpeakerEmbeddings {
+                guard !globalEmb.isEmpty, globalEmb.count == localEmb.count else { continue }
+                let sim = WeSpeakerModel.cosineSimilarity(localEmb, globalEmb)
+                if sim >= chunkMatchThreshold {
+                    candidates.append((localIdx, globalLabel, sim))
+                }
+            }
+        }
+
+        // Greedy: strongest similarities win first.
+        candidates.sort { $0.similarity > $1.similarity }
+        for c in candidates {
+            if localToGlobal[c.localIdx] == nil && !usedGlobals.contains(c.globalLabel) {
+                localToGlobal[c.localIdx] = c.globalLabel
+                usedGlobals.insert(c.globalLabel)
+            }
+        }
+
+        // Handle unmatched local speakers.
+        for (localIdx, localEmb) in localEmbeddings.enumerated() {
+            guard localToGlobal[localIdx] == nil else { continue }
+            guard !localEmb.isEmpty else { continue }
+
+            // If a max speaker cap is configured and we're at the cap, force-match to the
+            // closest unused existing global instead of allocating a new one.
+            if let cap = maxSpeakers, allSpeakerEmbeddings.count >= cap {
+                var best: (label: String, sim: Float)?
+                for (globalLabel, globalEmb) in allSpeakerEmbeddings {
+                    guard !globalEmb.isEmpty, globalEmb.count == localEmb.count else { continue }
+                    guard !usedGlobals.contains(globalLabel) else { continue }
+                    let sim = WeSpeakerModel.cosineSimilarity(localEmb, globalEmb)
+                    if best == nil || sim > best!.sim {
+                        best = (globalLabel, sim)
+                    }
+                }
+                if let b = best {
+                    localToGlobal[localIdx] = b.label
+                    usedGlobals.insert(b.label)
+                    continue
+                }
+            }
+
+            // Allocate a new global speaker ID.
+            let newLabel = "speaker_\(nextGlobalSpeakerId)"
+            nextGlobalSpeakerId += 1
+            localToGlobal[localIdx] = newLabel
+            allSpeakerEmbeddings[newLabel] = localEmb
+            usedGlobals.insert(newLabel)
+        }
+
+        // EMA-update embeddings for matched globals (keeps them fresh without overfitting
+        // to a single chunk). Skip newly allocated labels — their embedding is already set.
+        for (localIdx, globalLabel) in localToGlobal {
+            guard localIdx < localEmbeddings.count else { continue }
+            let localEmb = localEmbeddings[localIdx]
+            guard !localEmb.isEmpty else { continue }
+            guard let existing = allSpeakerEmbeddings[globalLabel],
+                  existing.count == localEmb.count else {
+                allSpeakerEmbeddings[globalLabel] = localEmb
+                continue
+            }
+            // Skip EMA for speakers that were JUST allocated this chunk — their embedding
+            // is already localEmb, no need to re-blend.
+            let alpha = embeddingEMAAlpha
+            let updated = zip(existing, localEmb).map { $0 * alpha + $1 * (1.0 - alpha) }
+            allSpeakerEmbeddings[globalLabel] = updated
+        }
+
+        return localToGlobal
+    }
 
     private func identifyUserSpeaker(in result: DiarizationResult) {
         guard UserProfile.shared.hasVoiceProfile,
