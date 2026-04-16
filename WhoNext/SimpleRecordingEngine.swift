@@ -31,8 +31,8 @@ func createDiarizationEngine(enableRealTimeProcessing: Bool = true, maxSpeakers:
             maxSpeakers: maxSpeakers ?? 6
         )
     case .speechSwift:
-        debugLog("[DiarizationFactory] Creating SpeakerKit backend (Pyannote v4 CoreML)")
-        return SpeakerKitDiarizationBackend(
+        debugLog("[DiarizationFactory] Creating speech-swift backend (Pyannote v4 + WeSpeaker)")
+        return SpeechSwiftDiarizationBackend(
             clusteringThreshold: 0.715,
             maxSpeakers: maxSpeakers
         )

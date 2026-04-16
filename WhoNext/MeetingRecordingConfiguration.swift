@@ -281,7 +281,7 @@ enum DiarizationBackendType: String, Codable, CaseIterable {
         case .axiiDiarization: return "Axii (Sortformer + AHC)"
         case .fluidAudio: return "FluidAudio (pyannote v3)"
         case .centroidClustering: return "Centroid (Online Clustering)"
-        case .speechSwift: return "SpeakerKit (pyannote v4 CoreML)"
+        case .speechSwift: return "speech-swift (Pyannote v4 + WeSpeaker)"
         }
     }
 
@@ -290,7 +290,7 @@ enum DiarizationBackendType: String, Codable, CaseIterable {
         case .axiiDiarization: return "Sortformer v2.1 segmentation with agglomerative clustering"
         case .fluidAudio: return "pyannote v3 segmentation with WeSpeaker embeddings and smart speaker tracking"
         case .centroidClustering: return "Online centroid tracking with EMA updates — scales to long meetings without speaker multiplication"
-        case .speechSwift: return "WhisperKit SpeakerKit — Pyannote v4 segmentation via CoreML, fully on-device"
+        case .speechSwift: return "Pyannote v4 segmentation + WeSpeaker 256-dim embeddings — voice enrollment, speaker extraction, MLX/CoreML on-device"
         }
     }
 }
