@@ -98,10 +98,14 @@ class SimpleRecordingEngine: ObservableObject {
     private let energyWindowSize = 50
     /// Number of consecutive windows where multi-speaker evidence was detected
     private var multiSpeakerEvidenceCount = 0
-    /// Threshold: trigger upgrade after this many consecutive evidence windows
-    private let multiSpeakerEvidenceThreshold = 3
-    /// Coefficient of variation threshold — above this suggests multiple speakers
-    private let energyCVThreshold: Float = 0.6
+    /// Threshold: trigger upgrade after this many consecutive evidence windows.
+    /// Raised from 3 to 10 to prevent false positives from single-source audio
+    /// (e.g., YouTube video with natural energy variation).
+    private let multiSpeakerEvidenceThreshold = 10
+    /// Coefficient of variation threshold — above this suggests multiple speakers.
+    /// Raised from 0.6 to 0.8 because single-speaker audio (YouTube, podcasts)
+    /// regularly produces CV of 0.6-0.7 due to natural speech dynamics.
+    private let energyCVThreshold: Float = 0.8
 
     // MARK: - System Audio Buffer (Strategy Upgrade Catch-Up)
 
@@ -171,6 +175,14 @@ class SimpleRecordingEngine: ObservableObject {
     private var recordingTask: Task<Void, Never>?
     private var durationTimer: Timer?
     private var recordingStartTime: Date?
+
+    /// Precise elapsed recording time using wall clock (sub-ms accuracy).
+    /// Unlike `recordingDuration` (updated by 1-second Timer on MainActor),
+    /// this can be called from any thread at any time.
+    private var preciseElapsed: TimeInterval {
+        guard let start = recordingStartTime else { return 0 }
+        return Date().timeIntervalSince(start)
+    }
     private var cancellables = Set<AnyCancellable>()
 
     /// Cursor tracking the first transcript segment that may still need speaker backfill.
@@ -561,6 +573,13 @@ class SimpleRecordingEngine: ObservableObject {
         debugLog("[SimpleRecordingEngine] Recording stopped")
     }
 
+    /// Thread-safe accessor for the current diarization strategy.
+    /// Used from task group closures that can't directly access @Published properties.
+    @MainActor
+    private func currentStrategy() -> DiarizationStrategy {
+        diarizationStrategy
+    }
+
     // MARK: - Audio Processing
 
     private func processAudioStreams() async {
@@ -570,7 +589,9 @@ class SimpleRecordingEngine: ObservableObject {
         let micStream = audioCapturer.micStream!
         let systemStream = audioCapturer.systemStream!
         let buffer = chunkBuffer
-        let strategy = diarizationStrategy
+        // NOTE: Read diarizationStrategy LIVE in each iteration (via self.diarizationStrategy),
+        // not captured once here. The strategy can upgrade mid-recording (e.g., streamLabeling
+        // → groupStreaming) and the running loop must pick up the change.
 
         let systemDiarBuffer = systemDiarizationBuffer
 
@@ -586,7 +607,9 @@ class SimpleRecordingEngine: ObservableObject {
                         await self.transcribeChunk(chunk)
                     }
 
-                    switch strategy {
+                    // Read strategy live each iteration so mid-recording upgrades take effect
+                    let currentStrategy = await self.currentStrategy()
+                    switch currentStrategy {
                     case .streamLabeling:
                         // AEC 1:1: mic = local speaker. VAD only.
                         await self.processMicVAD(audioBuffer)
@@ -612,7 +635,9 @@ class SimpleRecordingEngine: ObservableObject {
                         await self.transcribeChunk(chunk)
                     }
 
-                    switch strategy {
+                    // Read strategy live each iteration so mid-recording upgrades take effect
+                    let currentStrategy = await self.currentStrategy()
+                    switch currentStrategy {
                     case .streamLabeling:
                         // AEC 1:1: system = remote speaker. VAD only.
                         await self.processSystemVAD(audioBuffer)
@@ -652,9 +677,16 @@ class SimpleRecordingEngine: ObservableObject {
             return
         }
 
+        // Capture chunk start time BEFORE async transcription — using precise wall clock.
+        // If captured after the await, recordingDuration will have advanced by the
+        // transcription latency (2-4s), causing word absolute times to misalign with
+        // segment timestamps and breaking speaker attribution.
+        let chunkDuration = Double(chunk.count) / 16000.0
+        let chunkStartTime = max(0, preciseElapsed - chunkDuration)
+
         // Log chunk stats
         let stats = await chunkBuffer.getStats()
-        debugLog("[SimpleRecordingEngine] Transcribing chunk: \(chunk.count) samples")
+        debugLog("[SimpleRecordingEngine] Transcribing chunk: \(chunk.count) samples, chunkStart=\(String(format: "%.2f", chunkStartTime))s")
         debugLog("[SimpleRecordingEngine] Buffer stats: \(stats.description)")
 
         // Perform heavy transcription work off MainActor
@@ -665,8 +697,6 @@ class SimpleRecordingEngine: ObservableObject {
         // Word-level speaker attribution path: when token timings are available,
         // align individual words to diarization segments and create one TranscriptSegment
         // per speaker change (instead of one per entire chunk).
-        let chunkDuration = Double(chunk.count) / 16000.0
-        let chunkStartTime = max(0, recordingDuration - chunkDuration)
 
         if let timings = result.tokenTimings, !timings.isEmpty {
             let groups = segmentAligner.alignWords(wordTimings: timings, chunkStartTime: chunkStartTime)
@@ -821,7 +851,7 @@ class SimpleRecordingEngine: ObservableObject {
         }
         guard rms > effectiveThreshold else { return }  // Silence or echo residual — skip
 
-        let elapsed = recordingDuration
+        let elapsed = preciseElapsed  // Wall-clock precision (not 1s Timer)
         let duration = Double(buffer.frameLength) / 16000.0
 
         // Auto-enrollment: accumulate clean mic audio for voice profile extraction
@@ -938,7 +968,7 @@ class SimpleRecordingEngine: ObservableObject {
 
         guard rms > vadRMSThreshold else { return }  // Silence — skip
 
-        let elapsed = recordingDuration
+        let elapsed = preciseElapsed  // Wall-clock precision (not 1s Timer)
         let duration = Double(buffer.frameLength) / 16000.0
 
         // Append a synthetic segment for the remote speaker.
@@ -1011,7 +1041,7 @@ class SimpleRecordingEngine: ObservableObject {
             return
         }
 
-        let elapsed = recordingDuration
+        let elapsed = preciseElapsed  // Wall-clock precision (not 1s Timer)
         let duration = Double(buffer.frameLength) / 16000.0
 
         let segment = TimedSpeakerSegment(
@@ -1063,7 +1093,7 @@ class SimpleRecordingEngine: ObservableObject {
         let count = Int(buffer.frameLength)
         let samples = Array(UnsafeBufferPointer(start: channelData[0], count: count))
 
-        let elapsed = recordingDuration
+        let elapsed = preciseElapsed  // Wall-clock precision (not 1s Timer)
         let chunkDuration = Double(count) / 16000.0
         let chunkStartTime = max(0, elapsed - chunkDuration)
 
@@ -1126,7 +1156,7 @@ class SimpleRecordingEngine: ObservableObject {
         }
 
         // Feed to system diarization buffer -> AxiiDiarization
-        let elapsed = recordingDuration
+        let elapsed = preciseElapsed  // Wall-clock precision (not 1s Timer)
         if let (diarChunk, startTime) = await systemDiarBuffer.addBuffer(buffer, recordingElapsed: elapsed) {
             await MainActor.run { DiarizationDiagnostics.shared.counters.systemChunksEmitted += 1 }
             await processSystemDiarizationChunk(diarChunk, startTime: startTime)
