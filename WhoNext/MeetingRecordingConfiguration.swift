@@ -274,20 +274,23 @@ enum DiarizationBackendType: String, Codable, CaseIterable {
     case axiiDiarization = "axii"
     case fluidAudio = "fluidaudio"
     case centroidClustering = "centroid"
+    case speechSwift = "speechswift"
 
     var displayName: String {
         switch self {
         case .axiiDiarization: return "Axii (Sortformer + AHC)"
-        case .fluidAudio: return "FluidAudio (pyannote + VBx)"
+        case .fluidAudio: return "FluidAudio (pyannote v3)"
         case .centroidClustering: return "Centroid (Online Clustering)"
+        case .speechSwift: return "SpeakerKit (pyannote v4 CoreML)"
         }
     }
 
     var description: String {
         switch self {
         case .axiiDiarization: return "Sortformer v2.1 segmentation with agglomerative clustering"
-        case .fluidAudio: return "pyannote segmentation with WeSpeaker embeddings and smart speaker tracking"
+        case .fluidAudio: return "pyannote v3 segmentation with WeSpeaker embeddings and smart speaker tracking"
         case .centroidClustering: return "Online centroid tracking with EMA updates — scales to long meetings without speaker multiplication"
+        case .speechSwift: return "WhisperKit SpeakerKit — Pyannote v4 segmentation via CoreML, fully on-device"
         }
     }
 }
@@ -308,7 +311,7 @@ struct TranscriptionSettings: Codable {
     var transcriptionEngine: TranscriptionEngineType = .parakeet  // Default to Parakeet for speed
 
     // Diarization backend selection
-    var diarizationBackend: DiarizationBackendType = .fluidAudio  // Default to FluidAudio (better clustering)
+    var diarizationBackend: DiarizationBackendType = .speechSwift  // Default to SpeechSwift (pyannote v4 + voice enrollment)
     
     mutating func loadFromUserDefaults() {
         if let data = UserDefaults.standard.data(forKey: "transcriptionSettings"),

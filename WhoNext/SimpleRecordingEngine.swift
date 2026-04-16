@@ -30,6 +30,12 @@ func createDiarizationEngine(enableRealTimeProcessing: Bool = true, maxSpeakers:
         return CentroidClusterer(
             maxSpeakers: maxSpeakers ?? 6
         )
+    case .speechSwift:
+        debugLog("[DiarizationFactory] Creating SpeakerKit backend (Pyannote v4 CoreML)")
+        return SpeakerKitDiarizationBackend(
+            clusteringThreshold: 0.715,
+            maxSpeakers: maxSpeakers
+        )
     }
 }
 

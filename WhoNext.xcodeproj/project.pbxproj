@@ -15,6 +15,7 @@
 		7AA719D62F125CB3008468EA /* WhoNextWidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 7AA719C52F125CB1008468EA /* WhoNextWidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		7AABCDEF2DBC09000089D3DA /* FluidAudio in Frameworks */ = {isa = PBXBuildFile; productRef = 7AABCDEE2DBC09000089D3DA /* FluidAudio */; };
 		7AAXII012F1A0001008468EA /* AxiiDiarization in Frameworks */ = {isa = PBXBuildFile; productRef = 7AAXII022F1A0002008468EA /* AxiiDiarization */; };
+		7A5BAD0C2F200002008468EA /* SpeakerKit in Frameworks */ = {isa = PBXBuildFile; productRef = 7A5BAD0B2F200001008468EA /* SpeakerKit */; };
 		7A5BEE0C2F1B0002008468EA /* speex in Frameworks */ = {isa = PBXBuildFile; productRef = 7A5BEE0B2F1B0001008468EA /* speex */; };
 		7AFD8D3F2F168024005A497C /* WhisperKit in Frameworks */ = {isa = PBXBuildFile; productRef = 7AWHISPER2F150001008468EA /* WhisperKit */; };
 /* End PBXBuildFile section */
@@ -125,6 +126,7 @@
 				7AABCDEF2DBC09000089D3DA /* FluidAudio in Frameworks */,
 				7AAXII012F1A0001008468EA /* AxiiDiarization in Frameworks */,
 				7A5BEE0C2F1B0002008468EA /* speex in Frameworks */,
+				7A5BAD0C2F200002008468EA /* SpeakerKit in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -215,6 +217,7 @@
 				7AWHISPER2F150001008468EA /* WhisperKit */,
 				7AAXII022F1A0002008468EA /* AxiiDiarization */,
 				7A5BEE0B2F1B0001008468EA /* speex */,
+				7A5BAD0B2F200001008468EA /* SpeakerKit */,
 			);
 			productName = WhoNext;
 			productReference = 7AA52C322D97D8E700C2B563 /* WhoNext.app */;
@@ -876,7 +879,7 @@
 			repositoryURL = "https://github.com/argmaxinc/WhisperKit.git";
 			requirement = {
 				kind = upToNextMajorVersion;
-				minimumVersion = 0.9.0;
+				minimumVersion = 0.18.0;
 			};
 		};
 		7A5BEE0A2F1B0000008468EA /* XCRemoteSwiftPackageReference "CSpeex" */ = {
@@ -918,6 +921,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 7A5BEE0A2F1B0000008468EA /* XCRemoteSwiftPackageReference "CSpeex" */;
 			productName = speex;
+		};
+		7A5BAD0B2F200001008468EA /* SpeakerKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 7AWHISPER2F150000008468EA /* XCRemoteSwiftPackageReference "WhisperKit" */;
+			productName = SpeakerKit;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};
