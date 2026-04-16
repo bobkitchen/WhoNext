@@ -705,18 +705,39 @@ class SimpleRecordingEngine: ObservableObject {
                 for group in groups {
                     let speakerName = resolveSpeakerName(for: group.speakerId)
 
-                    let segment = TranscriptSegment(
-                        text: group.text,
-                        timestamp: group.startTime,
-                        speakerID: group.speakerId,
-                        speakerName: speakerName,
-                        confidence: result.confidence,
-                        isFinalized: true
-                    )
-                    currentMeeting?.transcript.append(segment)
-                    currentMeeting?.wordCount += group.words.count
-
-                    debugLog("[SimpleRecordingEngine] Added word-aligned segment (\(speakerName)): \"\(group.text.prefix(50))\"")
+                    // Merge with previous segment if same speaker — builds a
+                    // continuous, readable transcript instead of choppy per-chunk lines.
+                    if let meeting = currentMeeting,
+                       let lastIdx = meeting.transcript.indices.last,
+                       meeting.transcript[lastIdx].speakerID == group.speakerId {
+                        // Same speaker continues — append text to existing segment
+                        let existing = meeting.transcript[lastIdx]
+                        meeting.transcript[lastIdx] = TranscriptSegment(
+                            id: existing.id,
+                            text: existing.text + group.text,
+                            timestamp: existing.timestamp,
+                            speakerID: existing.speakerID,
+                            speakerName: existing.speakerName,
+                            confidence: (existing.confidence + result.confidence) / 2,
+                            isFinalized: true,
+                            diarizationSource: existing.diarizationSource
+                        )
+                        meeting.wordCount += group.words.count
+                        debugLog("[SimpleRecordingEngine] Appended to segment (\(speakerName)): \"\(group.text.prefix(50))\"")
+                    } else {
+                        // New speaker — create a new segment
+                        let segment = TranscriptSegment(
+                            text: group.text,
+                            timestamp: group.startTime,
+                            speakerID: group.speakerId,
+                            speakerName: speakerName,
+                            confidence: result.confidence,
+                            isFinalized: true
+                        )
+                        currentMeeting?.transcript.append(segment)
+                        currentMeeting?.wordCount += group.words.count
+                        debugLog("[SimpleRecordingEngine] New segment (\(speakerName)): \"\(group.text.prefix(50))\"")
+                    }
                 }
                 return
             }
@@ -1317,10 +1338,16 @@ class SimpleRecordingEngine: ObservableObject {
 
     // MARK: - Dynamic Strategy Upgrade
 
-    /// Upgrade from streamLabeling or streamLabelingNoAEC to groupStreaming if multiple remote speakers detected.
+    /// Upgrade from streamLabelingNoAEC to groupStreaming if multiple remote speakers detected.
     /// Called automatically by multi-speaker energy detection or explicitly when attendee count changes.
+    ///
+    /// NOTE: streamLabeling (AEC active) is NOT upgradeable. In streamLabeling mode,
+    /// stream identity IS speaker identity (mic=local, system=remote) and this is
+    /// highly reliable. Upgrading to groupStreaming replaces the simple VAD segments
+    /// with FluidAudio diarizer output, which uses different speaker IDs, 10s windows,
+    /// and segment replacement — destroying the clean stream-based attribution.
     func upgradeToGroupStreaming() async {
-        guard diarizationStrategy == .streamLabeling || diarizationStrategy == .streamLabelingNoAEC else { return }
+        guard diarizationStrategy == .streamLabelingNoAEC else { return }
 
         debugLog("[SimpleRecordingEngine] 🔄 Upgrading strategy: \(diarizationStrategy.rawValue) → groupStreaming")
         diarizationStrategy = .groupStreaming
