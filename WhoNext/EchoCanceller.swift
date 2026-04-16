@@ -117,10 +117,17 @@ final class EchoCanceller: @unchecked Sendable {
     }
 
     deinit {
-        if let state = echoState {
+        lock.lock()
+        let ec = echoState
+        let pp = preprocessState
+        echoState = nil
+        preprocessState = nil
+        lock.unlock()
+
+        if let state = ec {
             speex_echo_state_destroy(state)
         }
-        if let state = preprocessState {
+        if let state = pp {
             speex_preprocess_state_destroy(state)
         }
     }
@@ -188,14 +195,19 @@ final class EchoCanceller: @unchecked Sendable {
                 }
 
                 // Run preprocessor (noise suppression + dereverb)
+                // IMPORTANT: Only safe to call AFTER speex_echo_cancellation, because
+                // the preprocessor accesses the echo state's internal buffers
+                // (via speex_echo_get_residual). Calling it without a prior echo
+                // cancellation frame causes EXC_BAD_ACCESS on uninitialized st->last_y.
                 if let ppState = preprocessState {
                     outputInt16.withUnsafeMutableBufferPointer { outPtr in
                         speex_preprocess_run(ppState, outPtr.baseAddress)
                     }
                 }
             } else {
-                // No far-end reference available — pass through mic unchanged
-                // This happens at startup before enough system audio is buffered
+                // No far-end reference available — pass through mic unchanged.
+                // Do NOT run the preprocessor here: it's linked to the echo state
+                // and will crash accessing uninitialized echo residual buffers.
                 outputInt16 = micInt16
             }
 
