@@ -6,12 +6,19 @@ import AppKit
 struct EnhancedPersonCard: View {
     let person: Person
     @Binding var selectedPerson: Person?
+    // Selection-mode hooks. When `isSelectionMode` is true the card's
+    // primary tap toggles `isMultiSelected` via `onToggleSelection`
+    // instead of setting the detail pane; health indicators and action
+    // buttons are replaced with a checkbox-style selection circle.
+    var isSelectionMode: Bool = false
+    var isMultiSelected: Bool = false
+    var onToggleSelection: (() -> Void)? = nil
     @Environment(\.managedObjectContext) private var viewContext
-    
+
     @State private var isHovered = false
     @State private var showingActions = false
     @State private var isDropTargeted = false
-    
+
     private var isSelected: Bool {
         selectedPerson?.identifier == person.identifier
     }
@@ -117,16 +124,25 @@ struct EnhancedPersonCard: View {
             
             // Right side items
             HStack(spacing: 12) {
-                // Health indicator
-                healthIndicator
-                
-                // Action buttons (visible on hover)
-                if isHovered || isSelected {
-                    actionButtons
-                        .transition(.asymmetric(
-                            insertion: .scale.combined(with: .opacity),
-                            removal: .opacity
-                        ))
+                if isSelectionMode {
+                    // Replace status + action affordances with a single
+                    // toggle so clicks anywhere on the card feel like a
+                    // checkbox tap.
+                    Image(systemName: isMultiSelected ? "checkmark.circle.fill" : "circle")
+                        .font(.system(size: 18))
+                        .foregroundStyle(isMultiSelected ? Color.accentColor : .secondary.opacity(0.6))
+                } else {
+                    // Health indicator
+                    healthIndicator
+
+                    // Action buttons (visible on hover)
+                    if isHovered || isSelected {
+                        actionButtons
+                            .transition(.asymmetric(
+                                insertion: .scale.combined(with: .opacity),
+                                removal: .opacity
+                            ))
+                    }
                 }
             }
         }
@@ -142,8 +158,12 @@ struct EnhancedPersonCard: View {
             }
         }
         .onTapGesture {
-            withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
-                selectedPerson = person
+            if isSelectionMode {
+                onToggleSelection?()
+            } else {
+                withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+                    selectedPerson = person
+                }
             }
         }
         .contextMenu {
@@ -280,9 +300,10 @@ struct EnhancedPersonCard: View {
         RoundedRectangle(cornerRadius: 10)
             .fill(
                 isDropTargeted ? Color.accentColor.opacity(0.15) :
+                (isMultiSelected ? Color.accentColor.opacity(0.12) :
                 (isSelected ?
                 Color.accentColor.opacity(0.08) :
-                (isHovered ? Color(NSColor.controlBackgroundColor) : Color(NSColor.controlBackgroundColor).opacity(0.5)))
+                (isHovered ? Color(NSColor.controlBackgroundColor) : Color(NSColor.controlBackgroundColor).opacity(0.5))))
             )
     }
 
@@ -290,9 +311,10 @@ struct EnhancedPersonCard: View {
         RoundedRectangle(cornerRadius: 10)
             .stroke(
                 isDropTargeted ? Color.accentColor :
+                (isMultiSelected ? Color.accentColor.opacity(0.6) :
                 (isSelected ? Color.accentColor.opacity(0.4) :
-                (isHovered ? Color(NSColor.separatorColor).opacity(0.3) : Color.clear)),
-                lineWidth: isDropTargeted ? 2 : (isSelected ? 1.5 : 1)
+                (isHovered ? Color(NSColor.separatorColor).opacity(0.3) : Color.clear))),
+                lineWidth: isDropTargeted ? 2 : (isMultiSelected || isSelected ? 1.5 : 1)
             )
     }
     
