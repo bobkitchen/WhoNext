@@ -147,7 +147,14 @@ class SegmentAligner {
         debugLog("[SegmentAligner] Updated \(source) with \(count) segments, \(knownSpeakers.count) unique speakers total")
     }
 
-    /// Find the dominant speaker for a transcript time range
+    /// Find the dominant speaker for a transcript time range.
+    ///
+    /// System-first priority (matches `alignWords`): in stream labeling mode, mic
+    /// captures both local speech AND acoustic bleed from system audio (AEC residual
+    /// ~0.015-0.020 RMS). System audio is a clean digital feed containing only the
+    /// remote speaker. When both streams have overlap in the window, system wins
+    /// unless mic overlap is strictly greater — this prevents mic-side bleed segments
+    /// from claiming remote speech.
     /// - Parameters:
     ///   - transcriptStart: Start time of transcript segment (seconds from recording start)
     ///   - duration: Estimated duration of the text segment
@@ -156,12 +163,49 @@ class SegmentAligner {
         lock.lock()
         defer { lock.unlock() }
 
-        let allSegments = micSegments + systemSegments
-        guard !allSegments.isEmpty else { return nil }
+        guard !micSegments.isEmpty || !systemSegments.isEmpty else { return nil }
 
         let endTime = transcriptStart + duration
-        let result = DiarizationResult(segments: allSegments, speakerDatabase: nil, timings: nil)
-        let speaker = result.dominantSpeaker(between: transcriptStart, and: endTime)
+
+        // Pass 1: system segments only.
+        var systemTimes: [String: Double] = [:]
+        for seg in systemSegments {
+            let segStart = Double(seg.startTimeSeconds)
+            let segEnd = Double(seg.endTimeSeconds)
+            let overlap = max(0, min(endTime, segEnd) - max(transcriptStart, segStart))
+            if overlap > 0 {
+                systemTimes[seg.speakerId, default: 0] += overlap
+            }
+        }
+        let systemBest: (speaker: String, overlap: Double)? = systemTimes
+            .max(by: { $0.value < $1.value })
+            .map { ($0.key, $0.value) }
+
+        // Pass 2: mic segments. Mic only beats system with strictly greater overlap.
+        var micTimes: [String: Double] = [:]
+        for seg in micSegments {
+            let segStart = Double(seg.startTimeSeconds)
+            let segEnd = Double(seg.endTimeSeconds)
+            let overlap = max(0, min(endTime, segEnd) - max(transcriptStart, segStart))
+            if overlap > 0 {
+                micTimes[seg.speakerId, default: 0] += overlap
+            }
+        }
+        let micBest: (speaker: String, overlap: Double)? = micTimes
+            .max(by: { $0.value < $1.value })
+            .map { ($0.key, $0.value) }
+
+        let speaker: String?
+        switch (systemBest, micBest) {
+        case (nil, nil):
+            speaker = nil
+        case (.some(let s), nil):
+            speaker = s.speaker
+        case (nil, .some(let m)):
+            speaker = m.speaker
+        case (.some(let s), .some(let m)):
+            speaker = m.overlap > s.overlap ? m.speaker : s.speaker
+        }
 
         if let speaker = speaker {
             let stabilized = segmentStabilizer.stabilize(rawLabel: speaker, currentLabel: lastReturnedSegmentSpeaker)

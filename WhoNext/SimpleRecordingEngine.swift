@@ -912,14 +912,14 @@ class SimpleRecordingEngine: ObservableObject {
         let rms = calculateRMS(buffer)
 
         // Adaptive threshold: when system audio is active, AEC leaves residual
-        // echo in the mic (~0.005-0.01 RMS). Raise the mic threshold to avoid
-        // creating false mic segments for echo residual. Actual local speech is
-        // much louder (~0.02-0.10 RMS) and still passes the higher threshold.
+        // echo in the mic (observed 0.015-0.020 RMS on loud content like videos).
+        // Raise the mic threshold to avoid creating false mic segments for echo
+        // residual — which otherwise claim remote speech as local via dominantSpeaker
+        // overlap sums. Actual local speech is 0.03-0.10 RMS and still passes.
         let sysRMS = currentSystemRMS
         let effectiveThreshold: Float
         if sysRMS > vadRMSThreshold {
-            // System active — require mic to be clearly above residual echo level
-            effectiveThreshold = max(vadRMSThreshold * 5, 0.015)
+            effectiveThreshold = max(vadRMSThreshold * 5, 0.025)
         } else {
             effectiveThreshold = vadRMSThreshold
         }
