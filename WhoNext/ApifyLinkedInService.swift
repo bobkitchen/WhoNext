@@ -19,7 +19,7 @@ enum LinkedInEnrichmentError: LocalizedError {
         case .searchFailed(let msg): return "LinkedIn search failed: \(msg)"
         case .runFailed(let status): return "Apify run failed with status: \(status)"
         case .timeout: return "Apify enrichment timed out. Try again."
-        case .noResults: return "No profile data returned from Apify."
+        case .noResults: return "Apify returned no profile data. LinkedIn likely blocked the scraper — retry in a few minutes, or check the actor's run log on apify.com."
         case .decodingError(let msg): return "Failed to parse profile data: \(msg)"
         }
     }
@@ -247,10 +247,28 @@ class ApifyLinkedInService: ObservableObject {
         let (resultsData, resultsResp) = try await URLSession.shared.data(from: resultsURL)
         try Self.verifyOK(resultsResp, data: resultsData, context: "enrich/results")
 
+        // Always log a body preview — enrich results are small (a few KB) and seeing
+        // the raw payload is the only way to diagnose a scraper that returns a
+        // "successful" run containing just an error stub.
+        let bodyPreview = String(data: resultsData, encoding: .utf8).map { String($0.prefix(800)) } ?? "<non-utf8>"
+        debugLog("🔍 [LinkedIn] enrich/results body: \(bodyPreview)")
+
         let profiles = try Self.decodeJSON([LinkedInProfile].self, from: resultsData, context: "enrich/results")
         guard let profile = profiles.first else {
-            let preview = String(data: resultsData, encoding: .utf8).map { String($0.prefix(800)) } ?? "<non-utf8>"
-            debugLog("🔍 [LinkedIn] Enrich returned empty array. Raw: \(preview)")
+            debugLog("🔍 [LinkedIn] Enrich returned empty array.")
+            throw LinkedInEnrichmentError.noResults
+        }
+
+        // Every LinkedInProfile field is optional, so a response of [{}] or an
+        // error stub like [{"error": "ACCESS_DENIED", "url": "..."}] decodes
+        // successfully with every field nil. Treat that as a failure instead of
+        // silently "succeeding" with empty data that overwrites nothing.
+        let hasData = profile.firstName != nil
+            || profile.lastName != nil
+            || profile.headline != nil
+            || (profile.positions?.isEmpty == false)
+        guard hasData else {
+            debugLog("❌ [LinkedIn] Enrich decoded but profile has no usable fields — likely anti-bot block.")
             throw LinkedInEnrichmentError.noResults
         }
 
