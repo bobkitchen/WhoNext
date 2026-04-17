@@ -346,7 +346,14 @@ struct RecordingWindowView: View {
                     LazyVStack(alignment: .leading, spacing: 8) {
                         if let meeting = recordingEngine.currentMeeting {
                             ForEach(Array(meeting.transcript.suffix(30).enumerated()), id: \.offset) { index, segment in
-                                TranscriptSegmentRow(segment: segment)
+                                TranscriptSegmentRow(
+                                    segment: segment,
+                                    onRenameSpeaker: { speakerID, newName, person in
+                                        // Quill-style: renaming from a live transcript row relabels
+                                        // every prior and future utterance by this speaker.
+                                        meeting.renameSpeaker(speakerID: speakerID, to: newName, person: person)
+                                    }
+                                )
                                     .id(index)
                             }
                         }
@@ -669,14 +676,45 @@ struct ToolbarFormatButton: View {
 
 struct TranscriptSegmentRow: View {
     let segment: TranscriptSegment
+    /// Called when the user picks a new speaker for this segment.
+    /// Passes the segment's speakerID, the new display name, and an optional Person link.
+    /// Parent should propagate the rename to the whole transcript via `LiveMeeting.renameSpeaker`.
+    var onRenameSpeaker: ((_ speakerID: String, _ newName: String, _ person: Person?) -> Void)? = nil
+
+    @State private var showPicker = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 2) {
             if let speaker = segment.speakerName {
-                Text(speaker)
-                    .font(.caption)
-                    .fontWeight(.medium)
-                    .foregroundColor(.blue)
+                HStack(spacing: 4) {
+                    Text(speaker)
+                        .font(.caption)
+                        .fontWeight(.medium)
+                        .foregroundColor(.blue)
+
+                    // Only editable when we have a speakerID to rename against and a callback
+                    if onRenameSpeaker != nil, segment.speakerID != nil {
+                        Button(action: { showPicker = true }) {
+                            Image(systemName: "pencil.circle")
+                                .font(.caption2)
+                                .foregroundColor(.secondary.opacity(0.5))
+                        }
+                        .buttonStyle(.plain)
+                        .help("Change speaker")
+                        .popover(isPresented: $showPicker, arrowEdge: .bottom) {
+                            SpeakerPickerPopover(
+                                currentName: speaker,
+                                onSelect: { newName, person in
+                                    if let speakerID = segment.speakerID {
+                                        onRenameSpeaker?(speakerID, newName, person)
+                                    }
+                                    showPicker = false
+                                },
+                                onCancel: { showPicker = false }
+                            )
+                        }
+                    }
+                }
             }
 
             Text(segment.text)
@@ -684,6 +722,92 @@ struct TranscriptSegmentRow: View {
                 .foregroundColor(.primary)
         }
         .padding(.vertical, 4)
+    }
+}
+
+/// Inline picker shown when the user clicks the pencil next to a speaker name in the live transcript.
+/// Searches existing People records and lets the user pick one, or type a freeform name.
+struct SpeakerPickerPopover: View {
+    let currentName: String
+    let onSelect: (_ newName: String, _ person: Person?) -> Void
+    let onCancel: () -> Void
+
+    @State private var query: String = ""
+    @State private var searchResults: [Person] = []
+    @Environment(\.managedObjectContext) private var viewContext
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Change speaker")
+                .font(.caption)
+                .foregroundColor(.secondary)
+
+            TextField("Search or type a name", text: $query)
+                .textFieldStyle(.roundedBorder)
+                .onChange(of: query) { _, newValue in
+                    search(query: newValue)
+                }
+                .onSubmit {
+                    commitFreeform()
+                }
+
+            if !searchResults.isEmpty {
+                Divider()
+                ForEach(searchResults.prefix(5), id: \.objectID) { person in
+                    Button(action: { onSelect(person.wrappedName, person) }) {
+                        HStack {
+                            Text(person.wrappedName)
+                                .font(.caption)
+                            if let role = person.role, !role.isEmpty {
+                                Text(role)
+                                    .font(.caption2)
+                                    .foregroundColor(.secondary)
+                            }
+                            Spacer()
+                        }
+                        .padding(.vertical, 2)
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+
+            if !query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+               searchResults.isEmpty {
+                Divider()
+                Button(action: commitFreeform) {
+                    HStack {
+                        Image(systemName: "plus.circle")
+                        Text("Use \"\(query.trimmingCharacters(in: .whitespacesAndNewlines))\"")
+                    }
+                    .font(.caption)
+                }
+                .buttonStyle(.plain)
+                .foregroundColor(.blue)
+            }
+        }
+        .padding(12)
+        .frame(width: 240)
+    }
+
+    private func search(query: String) {
+        let trimmed = query.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else {
+            searchResults = []
+            return
+        }
+
+        let request: NSFetchRequest<Person> = Person.fetchRequest()
+        request.predicate = NSPredicate(format: "name CONTAINS[cd] %@", trimmed)
+        request.sortDescriptors = [NSSortDescriptor(keyPath: \Person.name, ascending: true)]
+        request.fetchLimit = 5
+
+        searchResults = (try? viewContext.fetch(request)) ?? []
+    }
+
+    private func commitFreeform() {
+        let trimmed = query.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return }
+        onSelect(trimmed, nil)
     }
 }
 

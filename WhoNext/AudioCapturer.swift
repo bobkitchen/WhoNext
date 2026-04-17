@@ -23,6 +23,15 @@ class AudioCapturer: NSObject, ObservableObject {
     @Published private(set) var captureMode: CaptureMode = .full
     @Published private(set) var isEchoCancellationActive: Bool = false
 
+    /// Which mechanism is currently providing system audio.
+    /// Process tap gives clean per-app audio; screen capture gives the whole system mix.
+    enum SystemAudioSource: Equatable {
+        case none
+        case processTap(appName: String, pid: pid_t)
+        case screenCapture
+    }
+    @Published private(set) var systemAudioSource: SystemAudioSource = .none
+
     // MARK: - Audio Streams
 
     /// Microphone audio stream (16kHz mono) — raw mic including echo
@@ -43,6 +52,12 @@ class AudioCapturer: NSObject, ObservableObject {
 
     /// SpeexDSP echo canceller — removes system audio echo from mic signal
     private let echoCanceller = EchoCanceller()
+
+    // MARK: - Process Tap (preferred path for meeting apps)
+
+    /// Core Audio process tap — captures clean per-app audio from Zoom/Teams/etc.
+    /// When active, the system audio stream contains ONLY the meeting app's output.
+    private let processTapCapturer = ProcessTapCapturer()
 
     // MARK: - Private Properties
 
@@ -143,6 +158,11 @@ class AudioCapturer: NSObject, ObservableObject {
         audioEngine?.inputNode.removeTap(onBus: 0)
         audioEngine = nil
 
+        // Stop process tap (if active)
+        if processTapCapturer.isActive {
+            processTapCapturer.stop()
+        }
+
         // Stop system audio
         scStream?.stopCapture { error in
             if let error {
@@ -152,6 +172,7 @@ class AudioCapturer: NSObject, ObservableObject {
         scStream = nil
         streamOutput = nil
         videoSinkOutput = nil
+        systemAudioSource = .none
 
         // Finish streams
         micContinuation?.finish()
@@ -236,7 +257,45 @@ class AudioCapturer: NSObject, ObservableObject {
 
     // MARK: - System Audio Capture
 
+    /// Common processing for a system-audio buffer: deep-copy, update level,
+    /// yield to `systemStream`, and feed the AEC far-end reference.
+    private func processSystemAudioBuffer(_ buffer: AVAudioPCMBuffer) {
+        // CRITICAL: Deep copy before yielding. Both the SCStream path and the
+        // process-tap path reuse their backing storage between callbacks.
+        guard let copy = self.deepCopy(buffer) else { return }
+
+        let level = self.calculateRMS(copy)
+        Task { @MainActor in
+            self.systemLevel = level
+        }
+
+        self.systemContinuation?.yield(copy)
+
+        if self.echoCanceller.isAvailable,
+           let channelData = copy.floatChannelData {
+            let frameCount = Int(copy.frameLength)
+            let samples = Array(UnsafeBufferPointer(start: channelData[0], count: frameCount))
+            self.echoCanceller.feedFarEnd(samples)
+        }
+    }
+
     private func startSystemAudioCapture() async throws {
+        // Prefer Core Audio process tap (macOS 14.4+): clean per-app audio with no
+        // contamination from music, browser tabs, or notifications. Falls back to
+        // SCStream if no meeting app is running or the tap can't be created.
+        do {
+            let process = try processTapCapturer.start { [weak self] buffer in
+                guard let self else { return }
+                self.processSystemAudioBuffer(buffer)
+            }
+            systemAudioSource = .processTap(appName: process.displayName, pid: process.pid)
+            debugLog("[AudioCapturer] ✅ System audio via process tap: \(process.displayName) (pid=\(process.pid))")
+            return
+        } catch {
+            // Expected when no meeting app is running or permission hasn't been granted yet.
+            debugLog("[AudioCapturer] Process tap unavailable (\(error.localizedDescription)) — falling back to SCStream")
+        }
+
         // Get shareable content
         let content = try await SCShareableContent.excludingDesktopWindows(false, onScreenWindowsOnly: false)
 
@@ -262,27 +321,7 @@ class AudioCapturer: NSObject, ObservableObject {
 
         // Create stream output handler
         let output = AudioStreamOutput { [weak self] buffer in
-            guard let self else { return }
-
-            // CRITICAL: Deep copy before yielding
-            if let copy = self.deepCopy(buffer) {
-                // Calculate level
-                let level = self.calculateRMS(copy)
-                Task { @MainActor in
-                    self.systemLevel = level
-                }
-
-                // Yield to stream
-                self.systemContinuation?.yield(copy)
-
-                // Feed system audio to echo canceller as far-end reference
-                if self.echoCanceller.isAvailable,
-                   let channelData = copy.floatChannelData {
-                    let frameCount = Int(copy.frameLength)
-                    let systemSamples = Array(UnsafeBufferPointer(start: channelData[0], count: frameCount))
-                    self.echoCanceller.feedFarEnd(systemSamples)
-                }
-            }
+            self?.processSystemAudioBuffer(buffer)
         }
         self.streamOutput = output
 
@@ -300,7 +339,8 @@ class AudioCapturer: NSObject, ObservableObject {
         try await stream.startCapture()
 
         self.scStream = stream
-        debugLog("[AudioCapturer] System audio capture started")
+        self.systemAudioSource = .screenCapture
+        debugLog("[AudioCapturer] System audio capture started via SCStream (whole-system mix)")
     }
 
     // MARK: - Buffer Conversion

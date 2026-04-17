@@ -1247,13 +1247,20 @@ class SimpleRecordingEngine: ObservableObject {
         guard let userEmbedding = UserProfile.shared.voiceEmbedding else { return }
         guard let db = systemDiarizationManager.lastResult?.speakerDatabase else { return }
 
+        // When a Core Audio process tap is active, the system stream contains only
+        // the meeting app's output — the user's voice should not be present at all.
+        // Use a stricter threshold so we only suppress obvious duplicates and avoid
+        // nuking legitimate remote speakers who happen to sound similar.
+        let isProcessTapActive: Bool = {
+            if case .processTap = audioCapturer.systemAudioSource { return true }
+            return false
+        }()
+        let suppressionThreshold: Float = isProcessTapActive ? 0.75 : 0.60
+
         for (speakerId, clusterEmbedding) in db {
             let similarity = cosineSimilarity(userEmbedding, clusterEmbedding)
-            // Threshold 0.60 aligns with the SpeechSwift backend's own cache-match
-            // threshold (0.65). Lower values (0.45) produced false suppressions of
-            // legitimate remote speakers with similar vocal profiles (same gender/accent).
-            if similarity > 0.60 {
-                debugLog("[SimpleRecordingEngine] 🔇 Suppressing system cluster '\(speakerId)' — cosine similarity \(String(format: "%.3f", similarity)) to local user voice")
+            if similarity > suppressionThreshold {
+                debugLog("[SimpleRecordingEngine] 🔇 Suppressing system cluster '\(speakerId)' — cosine \(String(format: "%.3f", similarity)) > threshold \(String(format: "%.2f", suppressionThreshold)) (processTap=\(isProcessTapActive))")
                 // Remove this cluster's segments from the aligner
                 segmentAligner.removeSystemSpeaker("sys_\(speakerId)")
                 // Remove from identified participants
@@ -1674,6 +1681,58 @@ class SimpleRecordingEngine: ObservableObject {
                 }
             }
         }
+
+        // Quill-style live voice match: retry identification for participants that are
+        // still unnamed or were matched with low confidence. As the diarizer accumulates
+        // more audio, its embeddings sharpen — a speaker that failed to match in the
+        // first 5 seconds may match confidently after 60 seconds of clean audio.
+        await retryVoiceIdentificationForUnnamedParticipants(result: result, meeting: meeting)
+    }
+
+    /// Re-run voiceprint matching against updated embeddings for existing participants
+    /// whose name is still unknown (or low-confidence auto-guess). Called each time
+    /// diarization produces a result so identity emerges progressively during the call.
+    private func retryVoiceIdentificationForUnnamedParticipants(
+        result: DiarizationResult,
+        meeting: LiveMeeting
+    ) async {
+        guard let db = result.speakerDatabase else { return }
+
+        for participant in meeting.identifiedParticipants {
+            // Skip participants the user has confirmed or explicitly named,
+            // and skip the current user (already handled above).
+            if participant.isCurrentUser { continue }
+            if participant.namingMode == .linkedToPerson { continue }
+            if participant.namingMode == .namedByUser { continue }
+
+            let rawId = participant.speakerID
+                .replacingOccurrences(of: "mic_", with: "")
+                .replacingOccurrences(of: "sys_", with: "")
+            guard let embedding = db[rawId], !embedding.isEmpty else { continue }
+
+            // Only upgrade if the new match beats the existing confidence.
+            let existingConfidence = participant.namingMode == .suggestedByVoice ? participant.confidence : 0
+
+            guard let match = await voicePrintManager.findMatchingPerson(for: embedding),
+                  let person = match.0,
+                  match.1 > 0.35,
+                  match.1 > existingConfidence + 0.02 else { continue }
+
+            let previousName = participant.displayName
+            participant.name = person.wrappedName
+            participant.namingMode = .suggestedByVoice
+            participant.personRecord = person
+            participant.person = person
+            participant.confidence = match.1
+
+            // Backfill transcript labels across in-memory segments.
+            let newName = participant.displayName
+            for i in meeting.transcript.indices where meeting.transcript[i].speakerID == participant.speakerID {
+                meeting.transcript[i].speakerName = newName
+            }
+
+            debugLog("[SimpleRecordingEngine] 🎤 Upgraded \(participant.speakerID): '\(previousName)' → '\(newName)' (confidence \(String(format: "%.0f%%", match.1 * 100)))")
+        }
     }
 
     /// Expose latest diarization result for voice embedding access (e.g., "This is me" feature)
@@ -1706,6 +1765,14 @@ class SimpleRecordingEngine: ObservableObject {
         // Update final duration
         meeting.duration = recordingDuration
         meeting.isRecording = false
+
+        // Post-meeting refinement pass: re-ID unnamed speakers and merge duplicate clusters
+        // using the final (end-of-call) embeddings, which are stronger than the streaming ones.
+        if let embeddings = systemDiarizationManager.lastResult?.speakerDatabase, !embeddings.isEmpty {
+            let refiner = PostMeetingDiarizer(voicePrintManager: voicePrintManager)
+            let refinement = await refiner.refine(meeting: meeting, speakerEmbeddings: embeddings)
+            debugLog("[SimpleRecordingEngine] Post-meeting refinement: \(refinement.reidentifiedCount) re-identified, \(refinement.mergedClusterCount) clusters merged, \(refinement.finalSpeakerCount) final speakers")
+        }
 
         // Store meeting data for in-memory handoff to review UI
         storeMeetingHandoff(meeting)
