@@ -327,17 +327,60 @@ class LiveMeeting: ObservableObject, Identifiable {
         }
     }
 
-    /// Rename a speaker across all transcript segments and update the participant record
+    /// Rename a speaker across all transcript segments and update the participant record.
+    /// Applies to BOTH in-memory segments and flushed on-disk segments so that a rename
+    /// propagates retroactively through the entire transcript (Quill-style: assign a name
+    /// once and every prior utterance by that speaker gets relabelled).
     func renameSpeaker(speakerID: String, to name: String, person: Person?) {
+        var updatedInMemory = 0
         for i in transcript.indices where transcript[i].speakerID == speakerID {
-            transcript[i].speakerName = name
+            transcript[i] = TranscriptSegment(
+                id: transcript[i].id,
+                text: transcript[i].text,
+                timestamp: transcript[i].timestamp,
+                speakerID: transcript[i].speakerID,
+                speakerName: name,
+                confidence: transcript[i].confidence,
+                isFinalized: transcript[i].isFinalized,
+                diarizationSource: .userCorrected
+            )
+            updatedInMemory += 1
         }
+
+        // Also update flushed (on-disk) segments for long meetings.
+        var updatedOnDisk = 0
+        if let filePath = flushFilePath,
+           FileManager.default.fileExists(atPath: filePath.path) {
+            do {
+                let data = try Data(contentsOf: filePath)
+                var flushed = try JSONDecoder().decode([TranscriptSegment].self, from: data)
+                for i in flushed.indices where flushed[i].speakerID == speakerID {
+                    flushed[i] = TranscriptSegment(
+                        id: flushed[i].id,
+                        text: flushed[i].text,
+                        timestamp: flushed[i].timestamp,
+                        speakerID: flushed[i].speakerID,
+                        speakerName: name,
+                        confidence: flushed[i].confidence,
+                        isFinalized: flushed[i].isFinalized,
+                        diarizationSource: .userCorrected
+                    )
+                    updatedOnDisk += 1
+                }
+                try JSONEncoder().encode(flushed).write(to: filePath, options: .atomic)
+            } catch {
+                print("[LiveMeeting] Failed to update flushed segments during rename: \(error)")
+            }
+        }
+
         if let participant = identifiedParticipants.first(where: { $0.speakerID == speakerID }) {
             participant.name = name
             participant.person = person
             participant.personRecord = person
             participant.namingMode = person != nil ? .linkedToPerson : .namedByUser
         }
+
+        debugLog("[LiveMeeting] Renamed speaker '\(speakerID)' → '\(name)': \(updatedInMemory) in-memory + \(updatedOnDisk) on-disk segments relabelled")
     }
 
     /// Merge two speakers: reassign all source speaker's transcript segments to destination,

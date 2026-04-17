@@ -1681,6 +1681,58 @@ class SimpleRecordingEngine: ObservableObject {
                 }
             }
         }
+
+        // Quill-style live voice match: retry identification for participants that are
+        // still unnamed or were matched with low confidence. As the diarizer accumulates
+        // more audio, its embeddings sharpen — a speaker that failed to match in the
+        // first 5 seconds may match confidently after 60 seconds of clean audio.
+        await retryVoiceIdentificationForUnnamedParticipants(result: result, meeting: meeting)
+    }
+
+    /// Re-run voiceprint matching against updated embeddings for existing participants
+    /// whose name is still unknown (or low-confidence auto-guess). Called each time
+    /// diarization produces a result so identity emerges progressively during the call.
+    private func retryVoiceIdentificationForUnnamedParticipants(
+        result: DiarizationResult,
+        meeting: LiveMeeting
+    ) async {
+        guard let db = result.speakerDatabase else { return }
+
+        for participant in meeting.identifiedParticipants {
+            // Skip participants the user has confirmed or explicitly named,
+            // and skip the current user (already handled above).
+            if participant.isCurrentUser { continue }
+            if participant.namingMode == .linkedToPerson { continue }
+            if participant.namingMode == .namedByUser { continue }
+
+            let rawId = participant.speakerID
+                .replacingOccurrences(of: "mic_", with: "")
+                .replacingOccurrences(of: "sys_", with: "")
+            guard let embedding = db[rawId], !embedding.isEmpty else { continue }
+
+            // Only upgrade if the new match beats the existing confidence.
+            let existingConfidence = participant.namingMode == .suggestedByVoice ? participant.confidence : 0
+
+            guard let match = await voicePrintManager.findMatchingPerson(for: embedding),
+                  let person = match.0,
+                  match.1 > 0.35,
+                  match.1 > existingConfidence + 0.02 else { continue }
+
+            let previousName = participant.displayName
+            participant.name = person.wrappedName
+            participant.namingMode = .suggestedByVoice
+            participant.personRecord = person
+            participant.person = person
+            participant.confidence = match.1
+
+            // Backfill transcript labels across in-memory segments.
+            let newName = participant.displayName
+            for i in meeting.transcript.indices where meeting.transcript[i].speakerID == participant.speakerID {
+                meeting.transcript[i].speakerName = newName
+            }
+
+            debugLog("[SimpleRecordingEngine] 🎤 Upgraded \(participant.speakerID): '\(previousName)' → '\(newName)' (confidence \(String(format: "%.0f%%", match.1 * 100)))")
+        }
     }
 
     /// Expose latest diarization result for voice embedding access (e.g., "This is me" feature)
