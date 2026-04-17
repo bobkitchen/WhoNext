@@ -287,12 +287,13 @@ struct PeopleListView: View {
 }
 
 /// Styled row container that replicates LiquidGlassListRow's hover/selection
-/// look but without the inner SwiftUI `Button`. The Button wrapper consumes
-/// clicks at the AppKit layer before SwiftUI's gesture system can apply
-/// modifier-gated filters, so ⌘-click and ⇧-click never reach the handlers.
-/// Using three sibling `TapGesture`s — two modifier-gated, one plain — lets
-/// SwiftUI's gesture exclusivity dispatch to the right handler based on
-/// whichever modifier is (or isn't) held at tap time.
+/// look without a SwiftUI `Button`. Modifier-aware clicks are handled via an
+/// NSView overlay that reads `event.modifierFlags` directly off the mouseDown
+/// event — SwiftUI's `TapGesture().modifiers(...)` is unreliable inside
+/// LazyVStacks, and `NSEvent.modifierFlags` (the class property) can be stale
+/// by the time a SwiftUI gesture callback fires. The overlay's hitTest yields
+/// the trailing edge back to SwiftUI so the inline delete button still works
+/// — but only while the button is actually visible (on hover or selection).
 private struct PersonRowContainer<Content: View>: View {
     let isSelected: Bool
     let isMultiSelected: Bool
@@ -314,17 +315,21 @@ private struct PersonRowContainer<Content: View>: View {
             }
             .contentShape(Rectangle())
             .onHover { hovering in isHovered = hovering }
-            // More-specific modifier-gated gestures first; SwiftUI's
-            // exclusivity rule picks the most restrictive match.
-            .gesture(
-                TapGesture().modifiers(.command)
-                    .onEnded { onCmdClick() }
-            )
-            .gesture(
-                TapGesture().modifiers(.shift)
-                    .onEnded { onShiftClick() }
-            )
-            .onTapGesture { onPlainClick() }
+            .overlay {
+                ModifierClickCatcher(
+                    // Let clicks on the trailing edge fall through to the
+                    // inline delete button, but only while it's visible.
+                    excludeTrailingWidth: (isHovered || isSelected) ? 44 : 0
+                ) { flags in
+                    if flags.contains(.command) {
+                        onCmdClick()
+                    } else if flags.contains(.shift) {
+                        onShiftClick()
+                    } else {
+                        onPlainClick()
+                    }
+                }
+            }
     }
 
     private var backgroundMaterial: AnyShapeStyle {
@@ -335,6 +340,56 @@ private struct PersonRowContainer<Content: View>: View {
         } else {
             return AnyShapeStyle(.clear)
         }
+    }
+}
+
+/// NSView overlay that catches `mouseDown` and reports the event's modifier
+/// flags. Reading `event.modifierFlags` off the event parameter is reliable;
+/// `NSEvent.modifierFlags` (the class property) is a live hardware query that
+/// can read stale by the time a SwiftUI gesture callback runs. SwiftUI's own
+/// `TapGesture().modifiers(.command)` is unreliable inside `LazyVStack` /
+/// `ScrollView` — this is the canonical macOS workaround.
+///
+/// `excludeTrailingWidth` > 0 makes the rightmost slice return `nil` from
+/// `hitTest` so AppKit falls through to whatever's behind (the SwiftUI delete
+/// button, in our case). Setting it to 0 reclaims the full width.
+private struct ModifierClickCatcher: NSViewRepresentable {
+    var excludeTrailingWidth: CGFloat = 0
+    let onClick: (NSEvent.ModifierFlags) -> Void
+
+    func makeNSView(context: Context) -> NSView {
+        let v = CatcherView()
+        v.onClick = onClick
+        v.excludeTrailingWidth = excludeTrailingWidth
+        return v
+    }
+
+    func updateNSView(_ nsView: NSView, context: Context) {
+        guard let v = nsView as? CatcherView else { return }
+        v.onClick = onClick
+        v.excludeTrailingWidth = excludeTrailingWidth
+    }
+
+    final class CatcherView: NSView {
+        var onClick: ((NSEvent.ModifierFlags) -> Void)?
+        var excludeTrailingWidth: CGFloat = 0
+
+        override func hitTest(_ point: NSPoint) -> NSView? {
+            guard bounds.contains(point) else { return nil }
+            if excludeTrailingWidth > 0, point.x > bounds.maxX - excludeTrailingWidth {
+                return nil
+            }
+            return self
+        }
+
+        override func mouseDown(with event: NSEvent) {
+            onClick?(event.modifierFlags)
+        }
+
+        // Register clicks even when our window isn't key yet — avoids a
+        // "click to focus, click to act" double-tap on the People list when
+        // returning from another app.
+        override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }
     }
 }
 
