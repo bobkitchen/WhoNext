@@ -6,6 +6,8 @@
 	<string>26</string>
 	<key>NSScreenCaptureUsageDescription</key>
 	<string>WhoNext needs screen recording permission to capture system audio from meeting applications like Zoom and Teams.</string>
+	<key>NSAudioCaptureUsageDescription</key>
+	<string>WhoNext captures audio directly from meeting applications (Zoom, Teams, FaceTime, etc.) to produce clean transcripts and speaker identification without contamination from other system sounds.</string>
 	<key>NSRemindersUsageDescription</key>
 	<string>WhoNext can create Apple Reminders from action items extracted from your meetings to help you track follow-ups.</string>
 	<key>NSCalendarsUsageDescription</key>
