@@ -1766,6 +1766,14 @@ class SimpleRecordingEngine: ObservableObject {
         meeting.duration = recordingDuration
         meeting.isRecording = false
 
+        // Post-meeting refinement pass: re-ID unnamed speakers and merge duplicate clusters
+        // using the final (end-of-call) embeddings, which are stronger than the streaming ones.
+        if let embeddings = systemDiarizationManager.lastResult?.speakerDatabase, !embeddings.isEmpty {
+            let refiner = PostMeetingDiarizer(voicePrintManager: voicePrintManager)
+            let refinement = await refiner.refine(meeting: meeting, speakerEmbeddings: embeddings)
+            debugLog("[SimpleRecordingEngine] Post-meeting refinement: \(refinement.reidentifiedCount) re-identified, \(refinement.mergedClusterCount) clusters merged, \(refinement.finalSpeakerCount) final speakers")
+        }
+
         // Store meeting data for in-memory handoff to review UI
         storeMeetingHandoff(meeting)
         meeting.cleanupFlushFile()
