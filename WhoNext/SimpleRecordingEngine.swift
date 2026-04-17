@@ -1247,13 +1247,20 @@ class SimpleRecordingEngine: ObservableObject {
         guard let userEmbedding = UserProfile.shared.voiceEmbedding else { return }
         guard let db = systemDiarizationManager.lastResult?.speakerDatabase else { return }
 
+        // When a Core Audio process tap is active, the system stream contains only
+        // the meeting app's output — the user's voice should not be present at all.
+        // Use a stricter threshold so we only suppress obvious duplicates and avoid
+        // nuking legitimate remote speakers who happen to sound similar.
+        let isProcessTapActive: Bool = {
+            if case .processTap = audioCapturer.systemAudioSource { return true }
+            return false
+        }()
+        let suppressionThreshold: Float = isProcessTapActive ? 0.75 : 0.60
+
         for (speakerId, clusterEmbedding) in db {
             let similarity = cosineSimilarity(userEmbedding, clusterEmbedding)
-            // Threshold 0.60 aligns with the SpeechSwift backend's own cache-match
-            // threshold (0.65). Lower values (0.45) produced false suppressions of
-            // legitimate remote speakers with similar vocal profiles (same gender/accent).
-            if similarity > 0.60 {
-                debugLog("[SimpleRecordingEngine] 🔇 Suppressing system cluster '\(speakerId)' — cosine similarity \(String(format: "%.3f", similarity)) to local user voice")
+            if similarity > suppressionThreshold {
+                debugLog("[SimpleRecordingEngine] 🔇 Suppressing system cluster '\(speakerId)' — cosine \(String(format: "%.3f", similarity)) > threshold \(String(format: "%.2f", suppressionThreshold)) (processTap=\(isProcessTapActive))")
                 // Remove this cluster's segments from the aligner
                 segmentAligner.removeSystemSpeaker("sys_\(speakerId)")
                 // Remove from identified participants

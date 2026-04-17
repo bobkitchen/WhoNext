@@ -62,10 +62,11 @@ final class SpeechSwiftDiarizationBackend: ObservableObject, DiarizationEngine {
 
     /// Cosine similarity threshold for matching a chunk-local speaker embedding to
     /// an existing global speaker. Below this, the local speaker is treated as new.
-    /// Lower than pyannote's within-chunk clustering threshold (0.715) because
-    /// embeddings from the same speaker in different chunks drift more than within
-    /// a single segmentation window.
-    private let chunkMatchThreshold: Float = 0.60
+    /// Raised from 0.60 → 0.65 now that clean per-process audio (via process tap)
+    /// produces less embedding drift from session noise. Still below pyannote's
+    /// within-chunk clustering threshold (0.715) because cross-chunk drift exists
+    /// even with clean audio.
+    private let chunkMatchThreshold: Float = 0.65
 
     /// Exponential moving average weight for existing embedding when updating from a new
     /// chunk match. alpha=0.7 means 70% weight to the running embedding, 30% to the new chunk
