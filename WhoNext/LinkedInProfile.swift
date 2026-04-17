@@ -169,10 +169,12 @@ struct LinkedInSkill: Codable, Sendable {
     let name: String?
 }
 
-/// harvestapi returns dates as one of three shapes: `{month: Int, year: Int}`
+/// harvestapi returns dates as one of several shapes: `{month: Int, year: Int}`
 /// for concrete dates, `{text: "Present"}` for ongoing roles, or an empty
-/// object. All-optional fields let `JSONDecoder` handle every shape without
-/// a custom initializer.
+/// object. But the actor also sometimes stringifies numeric fields
+/// (`"month": "5"` instead of `5`) — observed in `experience[].startDate` —
+/// so we decode `month` and `year` flexibly: try Int, fall back to String,
+/// parse either into an Int.
 struct LinkedInDate: Codable, Sendable {
     let month: Int?
     let year: Int?
@@ -192,5 +194,31 @@ struct LinkedInDate: Codable, Sendable {
             return "\(Self.monthNames[month - 1]) \(year)"
         }
         return String(year)
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case month, year, text
+    }
+
+    init(month: Int? = nil, year: Int? = nil, text: String? = nil) {
+        self.month = month
+        self.year = year
+        self.text = text
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        self.month = Self.decodeFlexibleInt(container, forKey: .month)
+        self.year = Self.decodeFlexibleInt(container, forKey: .year)
+        self.text = try container.decodeIfPresent(String.self, forKey: .text)
+    }
+
+    private static func decodeFlexibleInt(
+        _ container: KeyedDecodingContainer<CodingKeys>,
+        forKey key: CodingKeys
+    ) -> Int? {
+        if let i = try? container.decode(Int.self, forKey: key) { return i }
+        if let s = try? container.decode(String.self, forKey: key) { return Int(s) }
+        return nil
     }
 }
