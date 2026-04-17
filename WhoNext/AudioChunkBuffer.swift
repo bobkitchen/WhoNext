@@ -7,11 +7,24 @@ actor AudioChunkBuffer {
 
     // MARK: - Configuration
 
-    /// Target duration for each chunk.
-    /// 10s balances speaker switch latency (~9s) with transcription quality.
-    /// Shorter chunks (5s) made transcription choppy and hard to read.
-    /// Longer chunks (15s) caused 14s speaker switch delay.
+    /// Hard ceiling for chunk duration. Long chunks give the transcriber enough
+    /// acoustic context to produce coherent sentences, but they also bound
+    /// end-to-end latency. We emit at this point no matter what.
     private let targetDuration: TimeInterval = 10.0
+
+    /// Minimum audio accumulated before we'll consider an early emit. Below this,
+    /// a chunk has too little context for Parakeet to transcribe cleanly.
+    private let earlyEmitMinDuration: TimeInterval = 4.0
+
+    /// If the trailing portion of both streams has been silent for at least this
+    /// long, a natural pause (likely a speaker boundary) has occurred and we flush
+    /// early. This is what cuts perceived speaker-switch latency roughly in half
+    /// without splitting words — pauses are already sentence boundaries.
+    private let silenceTailDuration: TimeInterval = 0.8
+
+    /// RMS threshold below which audio is considered silent (voice VAD).
+    /// Tuned against post-AEC mic floor; system stream noise floor is lower still.
+    private let silenceRMSThreshold: Float = 0.005
 
     /// Overlap duration for continuity between chunks
     private let overlapDuration: TimeInterval = 1.0
@@ -90,24 +103,53 @@ actor AudioChunkBuffer {
     // MARK: - Private Methods
 
     private func checkAndEmitChunk() -> [Float]? {
-        // Need at least targetDuration from either source
         let maxDuration = max(micDuration, systemDuration)
 
-        guard maxDuration >= targetDuration else {
-            return nil
+        // Hard ceiling: always emit at the target duration to cap latency.
+        if maxDuration >= targetDuration {
+            return emit(reason: "target duration")
         }
 
-        // Mix and emit
+        // Early emit on silence boundary: when we have enough audio for the
+        // transcriber to work with AND both streams are silent at the tail, a
+        // speaker has likely finished. Flushing here cuts perceived latency at
+        // speaker transitions (the times the user actually notices).
+        if maxDuration >= earlyEmitMinDuration, hasSilentTailOnBothStreams() {
+            return emit(reason: "silence boundary")
+        }
+
+        return nil
+    }
+
+    private func emit(reason: String) -> [Float] {
         let chunk = mixBuffers()
-
-        // Keep overlap for continuity
         trimBuffers()
-
-        // Log emission
         let chunkDuration = Double(chunk.count) / sampleRate
-        debugLog("[AudioChunkBuffer] Emitting \(String(format: "%.1f", chunkDuration))s chunk (\(chunk.count) samples)")
-
+        debugLog("[AudioChunkBuffer] Emitting \(String(format: "%.1f", chunkDuration))s chunk — \(reason)")
         return chunk
+    }
+
+    /// True iff the trailing `silenceTailDuration` of both mic and system buffers
+    /// is below the RMS silence threshold. A stream with no audio buffered at all
+    /// is considered silent (it can't be producing speech).
+    private func hasSilentTailOnBothStreams() -> Bool {
+        let tailSamples = Int(silenceTailDuration * sampleRate)
+        return isTailSilent(micBuffer, tailSamples: tailSamples) &&
+               isTailSilent(systemBuffer, tailSamples: tailSamples)
+    }
+
+    private func isTailSilent(_ buffer: [Float], tailSamples: Int) -> Bool {
+        guard buffer.count >= tailSamples else {
+            // Not enough samples yet — treat as silent (no recent activity on this stream).
+            return true
+        }
+        let start = buffer.count - tailSamples
+        var sumSquares: Float = 0
+        for i in start..<buffer.count {
+            sumSquares += buffer[i] * buffer[i]
+        }
+        let rms = sqrt(sumSquares / Float(tailSamples))
+        return rms < silenceRMSThreshold
     }
 
     private func mixBuffers() -> [Float] {
