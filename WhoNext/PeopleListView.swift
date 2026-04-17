@@ -1,5 +1,6 @@
 import SwiftUI
 import CoreData
+import AppKit
 
 struct PeopleListView: View {
     @Binding var selectedPerson: Person?
@@ -10,6 +11,14 @@ struct PeopleListView: View {
         predicate: NSPredicate(format: "isSoftDeleted == false"),
         animation: nil
     ) private var allPeople: FetchedResults<Person>
+
+    // Multi-select state. `multiSelectedIDs` is the set of Person.identifier
+    // values currently marked for bulk action (via ⌘-click or ⇧-click).
+    // `shiftAnchorID` is the last plain/⌘-click target, used as the origin for
+    // a subsequent ⇧-click range select (Finder-style).
+    @State private var multiSelectedIDs: Set<UUID> = []
+    @State private var shiftAnchorID: UUID?
+    @State private var showDeleteConfirmation = false
 
     // Filter out current user from People directory
     private var people: [Person] {
@@ -95,13 +104,15 @@ struct PeopleListView: View {
                 ScrollView(.vertical, showsIndicators: false) {
                     LazyVStack(spacing: 2) {
                         ForEach(people, id: \.identifier) { person in
+                            let isMulti = person.identifier.map { multiSelectedIDs.contains($0) } ?? false
                             LiquidGlassListRow(
-                                isSelected: selectedPerson == person,
-                                action: { selectedPerson = person }
+                                isSelected: selectedPerson == person || isMulti,
+                                action: { handleClick(on: person) }
                             ) {
                                 PersonRowView(
                                     person: person,
                                     isSelected: selectedPerson == person,
+                                    isMultiSelected: isMulti,
                                     onDelete: { deletePerson(person) }
                                 )
                             }
@@ -109,8 +120,19 @@ struct PeopleListView: View {
                     }
                     .padding(.horizontal, 8)
                     .padding(.vertical, 8)
+                    // Leave room at the bottom for the floating action bar so
+                    // the last row isn't hidden beneath it.
+                    .padding(.bottom, multiSelectedIDs.isEmpty ? 0 : 72)
                 }
                 .background(.background.opacity(0.1))
+                .overlay(alignment: .bottom) {
+                    if !multiSelectedIDs.isEmpty {
+                        multiSelectActionBar
+                            .padding(12)
+                            .transition(.move(edge: .bottom).combined(with: .opacity))
+                    }
+                }
+                .animation(.liquidGlassFast, value: multiSelectedIDs.isEmpty)
             }
         }
         .onAppear {
@@ -142,11 +164,121 @@ struct PeopleListView: View {
         viewContext.delete(person)
         try? viewContext.save()
     }
+
+    // MARK: - Multi-select handling
+
+    /// Click dispatch:
+    /// - ⌘-click: toggle this person in the multi-select set, don't touch the
+    ///   detail view selection.
+    /// - ⇧-click (with a prior anchor): select the contiguous range between
+    ///   the anchor and this person, Finder-style.
+    /// - Plain click: single-select (existing behavior) and clear the
+    ///   multi-select set.
+    private func handleClick(on person: Person) {
+        let flags = NSEvent.modifierFlags
+        guard let id = person.identifier else {
+            // No identifier — can't participate in multi-select; fall back.
+            selectedPerson = person
+            multiSelectedIDs.removeAll()
+            return
+        }
+
+        if flags.contains(.command) {
+            if multiSelectedIDs.contains(id) {
+                multiSelectedIDs.remove(id)
+            } else {
+                multiSelectedIDs.insert(id)
+            }
+            shiftAnchorID = id
+        } else if flags.contains(.shift),
+                  let anchor = shiftAnchorID,
+                  let anchorIdx = people.firstIndex(where: { $0.identifier == anchor }),
+                  let curIdx = people.firstIndex(where: { $0.identifier == id }) {
+            let range = min(anchorIdx, curIdx)...max(anchorIdx, curIdx)
+            for p in people[range] {
+                if let pid = p.identifier { multiSelectedIDs.insert(pid) }
+            }
+        } else {
+            selectedPerson = person
+            multiSelectedIDs.removeAll()
+            shiftAnchorID = id
+        }
+    }
+
+    private var multiSelectActionBar: some View {
+        HStack(spacing: 12) {
+            Image(systemName: "checkmark.circle.fill")
+                .foregroundStyle(Color.accentColor)
+            Text("\(multiSelectedIDs.count) selected")
+                .font(.system(size: 13, weight: .medium))
+
+            Spacer()
+
+            Button("Cancel") {
+                multiSelectedIDs.removeAll()
+            }
+            .buttonStyle(.plain)
+            .keyboardShortcut(.escape, modifiers: [])
+
+            Button {
+                showDeleteConfirmation = true
+            } label: {
+                Label("Delete", systemImage: "trash")
+                    .font(.system(size: 13, weight: .medium))
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 6)
+                    .background(Color.red.opacity(0.9))
+                    .foregroundStyle(.white)
+                    .clipShape(RoundedRectangle(cornerRadius: 6))
+            }
+            .buttonStyle(.plain)
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 10)
+        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
+        .overlay(
+            RoundedRectangle(cornerRadius: 12)
+                .stroke(.primary.opacity(0.1), lineWidth: 0.5)
+        )
+        .shadow(color: .black.opacity(0.15), radius: 8, y: 2)
+        .confirmationDialog(
+            "Delete \(multiSelectedIDs.count) \(multiSelectedIDs.count == 1 ? "person" : "people")?",
+            isPresented: $showDeleteConfirmation,
+            titleVisibility: .visible
+        ) {
+            Button("Delete", role: .destructive) {
+                deleteSelectedPeople()
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("Their conversations and meetings will remain but become unassigned. This cannot be undone.")
+        }
+    }
+
+    private func deleteSelectedPeople() {
+        let toDelete = people.filter { p in
+            guard let id = p.identifier else { return false }
+            return multiSelectedIDs.contains(id)
+        }
+        guard !toDelete.isEmpty else { return }
+
+        if let current = selectedPerson, toDelete.contains(current) {
+            selectedPerson = nil
+        }
+
+        for person in toDelete {
+            viewContext.delete(person)
+        }
+        multiSelectedIDs.removeAll()
+        shiftAnchorID = nil
+        try? viewContext.save()
+    }
 }
 
 struct PersonRowView: View {
     let person: Person
     let isSelected: Bool
+    var isMultiSelected: Bool = false
     let onDelete: () -> Void
     @State private var isHovered = false
     
@@ -202,39 +334,49 @@ struct PersonRowView: View {
             
             // Status indicators
             HStack(spacing: 8) {
-                // Conversation count indicator
-                if let conversationCount = person.conversations?.count, conversationCount > 0 {
-                    Text("\(conversationCount)")
-                        .font(.system(size: 10, weight: .medium, design: .rounded))
-                        .foregroundStyle(.secondary)
-                        .padding(.horizontal, 6)
-                        .padding(.vertical, 2)
-                        .background {
-                            Capsule()
-                                .fill(.secondary.opacity(0.1))
-                        }
-                }
-                
-                // Delete button (appears on hover or selection)
-                if isSelected || isHovered {
-                    Button(action: onDelete) {
-                        Image(systemName: "trash")
-                            .font(.system(size: 11, weight: .regular))
+                if isMultiSelected {
+                    // When this row is part of a multi-select batch, replace
+                    // the conversation count + trash affordance with a single
+                    // filled checkmark so the selected state is unambiguous.
+                    Image(systemName: "checkmark.circle.fill")
+                        .font(.system(size: 16))
+                        .foregroundStyle(Color.accentColor)
+                        .transition(.opacity.combined(with: .scale(scale: 0.8)))
+                } else {
+                    // Conversation count indicator
+                    if let conversationCount = person.conversations?.count, conversationCount > 0 {
+                        Text("\(conversationCount)")
+                            .font(.system(size: 10, weight: .medium, design: .rounded))
                             .foregroundStyle(.secondary)
-                            .frame(width: 16, height: 16)
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 2)
+                            .background {
+                                Capsule()
+                                    .fill(.secondary.opacity(0.1))
+                            }
                     }
-                    .buttonStyle(.plain)
-                    .opacity(0.6)
-                    .transition(.opacity.combined(with: .scale(scale: 0.8)))
-                    .animation(.liquidGlassFast, value: isSelected || isHovered)
-                    .accessibilityLabel("Delete \(person.name ?? "person")")
-                    .onHover { hovering in
-                        // Subtle hover effect on the delete button itself
+
+                    // Delete button (appears on hover or selection)
+                    if isSelected || isHovered {
+                        Button(action: onDelete) {
+                            Image(systemName: "trash")
+                                .font(.system(size: 11, weight: .regular))
+                                .foregroundStyle(.secondary)
+                                .frame(width: 16, height: 16)
+                        }
+                        .buttonStyle(.plain)
+                        .opacity(0.6)
+                        .transition(.opacity.combined(with: .scale(scale: 0.8)))
+                        .animation(.liquidGlassFast, value: isSelected || isHovered)
+                        .accessibilityLabel("Delete \(person.name ?? "person")")
+                        .onHover { hovering in
+                            // Subtle hover effect on the delete button itself
+                        }
                     }
                 }
             }
-            .opacity(isSelected || isHovered ? 1.0 : 0.7)
-            .animation(.liquidGlassFast, value: isSelected || isHovered)
+            .opacity(isMultiSelected || isSelected || isHovered ? 1.0 : 0.7)
+            .animation(.liquidGlassFast, value: isSelected || isHovered || isMultiSelected)
         }
         .onHover { hovering in
             isHovered = hovering
