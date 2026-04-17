@@ -3,6 +3,7 @@ import AppKit
 
 enum LinkedInEnrichmentError: LocalizedError {
     case noApifyToken
+    case httpError(Int, String)
     case searchFailed(String)
     case runFailed(String)
     case timeout
@@ -12,6 +13,9 @@ enum LinkedInEnrichmentError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .noApifyToken: return "Apify API token not configured. Set it in Settings."
+        case .httpError(let code, let body):
+            let preview = body.isEmpty ? "<empty body>" : String(body.prefix(300))
+            return "Apify HTTP \(code): \(preview)"
         case .searchFailed(let msg): return "LinkedIn search failed: \(msg)"
         case .runFailed(let status): return "Apify run failed with status: \(status)"
         case .timeout: return "Apify enrichment timed out. Try again."
@@ -36,6 +40,33 @@ class ApifyLinkedInService: ObservableObject {
 
     var hasToken: Bool {
         !apifyToken.isEmpty
+    }
+
+    // MARK: - Diagnostic helpers
+
+    /// Throws `.httpError` if the response isn't 2xx, logging the full body so a user
+    /// pasting a log can tell 401 (token invalid) apart from 402 (credits), 404
+    /// (actor gone), or a schema change.
+    nonisolated private static func verifyOK(_ response: URLResponse, data: Data, context: String) throws {
+        guard let http = response as? HTTPURLResponse else { return }
+        if !(200..<300).contains(http.statusCode) {
+            let body = String(data: data, encoding: .utf8) ?? "<non-utf8 body>"
+            debugLog("❌ [LinkedIn] \(context) HTTP \(http.statusCode): \(body.prefix(500))")
+            throw LinkedInEnrichmentError.httpError(http.statusCode, body)
+        }
+        debugLog("🔍 [LinkedIn] \(context) HTTP \(http.statusCode), \(data.count) bytes")
+    }
+
+    /// Decode, or log the body preview alongside the decoder error so a silent
+    /// schema drift at Apify is visible in the log immediately.
+    nonisolated private static func decodeJSON<T: Decodable>(_ type: T.Type, from data: Data, context: String) throws -> T {
+        do {
+            return try JSONDecoder().decode(type, from: data)
+        } catch {
+            let preview = String(data: data, encoding: .utf8).map { String($0.prefix(500)) } ?? "<non-utf8 body>"
+            debugLog("❌ [LinkedIn] \(context) decode failed: \(error). Body: \(preview)")
+            throw LinkedInEnrichmentError.decodingError("\(context): \(error.localizedDescription). Response: \(preview)")
+        }
     }
 
     // MARK: - Search via Apify Google Search
@@ -67,7 +98,8 @@ class ApifyLinkedInService: ObservableObject {
         ]
         startRequest.httpBody = try JSONSerialization.data(withJSONObject: searchInput)
 
-        let (startData, _) = try await URLSession.shared.data(for: startRequest)
+        let (startData, startResp) = try await URLSession.shared.data(for: startRequest)
+        try Self.verifyOK(startResp, data: startData, context: "search/start")
 
         struct ApifyRunResponse: Codable {
             struct RunData: Codable {
@@ -77,7 +109,7 @@ class ApifyLinkedInService: ObservableObject {
             let data: RunData
         }
 
-        let runResponse = try JSONDecoder().decode(ApifyRunResponse.self, from: startData)
+        let runResponse = try Self.decodeJSON(ApifyRunResponse.self, from: startData, context: "search/start")
         let runId = runResponse.data.id
         let datasetId = runResponse.data.defaultDatasetId
 
@@ -93,7 +125,8 @@ class ApifyLinkedInService: ObservableObject {
             }
 
             let pollURL = URL(string: "\(Self.apifyBase)/acts/\(Self.searchActor)/runs/\(runId)?token=\(token)")!
-            let (pollData, _) = try await URLSession.shared.data(from: pollURL)
+            let (pollData, pollResp) = try await URLSession.shared.data(from: pollURL)
+            try Self.verifyOK(pollResp, data: pollData, context: "search/poll")
 
             struct PollResponse: Codable {
                 struct PollData: Codable {
@@ -102,7 +135,7 @@ class ApifyLinkedInService: ObservableObject {
                 let data: PollData
             }
 
-            let pollResponse = try JSONDecoder().decode(PollResponse.self, from: pollData)
+            let pollResponse = try Self.decodeJSON(PollResponse.self, from: pollData, context: "search/poll")
             let status = pollResponse.data.status
 
             debugLog("🔍 [LinkedIn] Search poll: \(status)")
@@ -115,10 +148,11 @@ class ApifyLinkedInService: ObservableObject {
 
         // Step 3: Fetch results
         let resultsURL = URL(string: "\(Self.apifyBase)/datasets/\(datasetId)/items?token=\(token)")!
-        let (resultsData, _) = try await URLSession.shared.data(from: resultsURL)
+        let (resultsData, resultsResp) = try await URLSession.shared.data(from: resultsURL)
+        try Self.verifyOK(resultsResp, data: resultsData, context: "search/results")
 
         // Parse Apify Google Search response
-        let searchResults = try JSONDecoder().decode([GoogleSearchPage].self, from: resultsData)
+        let searchResults = try Self.decodeJSON([GoogleSearchPage].self, from: resultsData, context: "search/results")
         var candidates: [LinkedInCandidate] = []
 
         for page in searchResults {
@@ -133,6 +167,12 @@ class ApifyLinkedInService: ObservableObject {
         }
 
         debugLog("🔍 [LinkedIn] Found \(candidates.count) candidates")
+        if candidates.isEmpty {
+            // Empty candidates with a successful run usually means the scraper's
+            // response shape shifted. Log enough of the body to diff against code.
+            let preview = String(data: resultsData, encoding: .utf8).map { String($0.prefix(800)) } ?? "<non-utf8>"
+            debugLog("🔍 [LinkedIn] Zero candidates. Raw results preview: \(preview)")
+        }
         for (i, c) in candidates.enumerated() {
             debugLog("🔍 [LinkedIn]   [\(i)] \(c.name) — \(c.url)")
         }
@@ -154,7 +194,8 @@ class ApifyLinkedInService: ObservableObject {
         startRequest.setValue("application/json", forHTTPHeaderField: "Content-Type")
         startRequest.httpBody = try JSONEncoder().encode(["urls": [url]])
 
-        let (startData, _) = try await URLSession.shared.data(for: startRequest)
+        let (startData, startResp) = try await URLSession.shared.data(for: startRequest)
+        try Self.verifyOK(startResp, data: startData, context: "enrich/start")
 
         struct ApifyRunResponse: Codable {
             struct RunData: Codable {
@@ -164,9 +205,11 @@ class ApifyLinkedInService: ObservableObject {
             let data: RunData
         }
 
-        let runResponse = try JSONDecoder().decode(ApifyRunResponse.self, from: startData)
+        let runResponse = try Self.decodeJSON(ApifyRunResponse.self, from: startData, context: "enrich/start")
         let runId = runResponse.data.id
         let datasetId = runResponse.data.defaultDatasetId
+
+        debugLog("🔍 [LinkedIn] Enrich run started: \(runId)")
 
         // Step 2: Poll for completion
         let startTime = Date()
@@ -178,7 +221,8 @@ class ApifyLinkedInService: ObservableObject {
             }
 
             let pollURL = URL(string: "\(Self.apifyBase)/acts/\(Self.actor)/runs/\(runId)?token=\(token)")!
-            let (pollData, _) = try await URLSession.shared.data(from: pollURL)
+            let (pollData, pollResp) = try await URLSession.shared.data(from: pollURL)
+            try Self.verifyOK(pollResp, data: pollData, context: "enrich/poll")
 
             struct PollResponse: Codable {
                 struct PollData: Codable {
@@ -187,8 +231,10 @@ class ApifyLinkedInService: ObservableObject {
                 let data: PollData
             }
 
-            let pollResponse = try JSONDecoder().decode(PollResponse.self, from: pollData)
+            let pollResponse = try Self.decodeJSON(PollResponse.self, from: pollData, context: "enrich/poll")
             let status = pollResponse.data.status
+
+            debugLog("🔍 [LinkedIn] Enrich poll: \(status)")
 
             if status == "SUCCEEDED" { break }
             if status != "RUNNING" && status != "READY" {
@@ -198,10 +244,13 @@ class ApifyLinkedInService: ObservableObject {
 
         // Step 3: Fetch results
         let resultsURL = URL(string: "\(Self.apifyBase)/datasets/\(datasetId)/items?token=\(token)")!
-        let (resultsData, _) = try await URLSession.shared.data(from: resultsURL)
+        let (resultsData, resultsResp) = try await URLSession.shared.data(from: resultsURL)
+        try Self.verifyOK(resultsResp, data: resultsData, context: "enrich/results")
 
-        let profiles = try JSONDecoder().decode([LinkedInProfile].self, from: resultsData)
+        let profiles = try Self.decodeJSON([LinkedInProfile].self, from: resultsData, context: "enrich/results")
         guard let profile = profiles.first else {
+            let preview = String(data: resultsData, encoding: .utf8).map { String($0.prefix(800)) } ?? "<non-utf8>"
+            debugLog("🔍 [LinkedIn] Enrich returned empty array. Raw: \(preview)")
             throw LinkedInEnrichmentError.noResults
         }
 
