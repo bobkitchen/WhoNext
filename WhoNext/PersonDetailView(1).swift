@@ -871,7 +871,7 @@ struct PersonDetailView: View {
             do {
                 let profile = try await ApifyLinkedInService.shared.enrichProfile(url: url, token: token)
                 let photoData: Data?
-                if let photoUrl = profile.picture {
+                if let photoUrl = profile.photo {
                     photoData = try? await ApifyLinkedInService.shared.downloadPhoto(from: photoUrl)
                 } else {
                     photoData = nil
@@ -899,7 +899,7 @@ struct PersonDetailView: View {
             do {
                 let profile = try await ApifyLinkedInService.shared.enrichProfile(url: candidate.url, token: token)
                 let photoData: Data?
-                if let photoUrl = profile.picture {
+                if let photoUrl = profile.photo {
                     photoData = try? await ApifyLinkedInService.shared.downloadPhoto(from: photoUrl)
                 } else {
                     photoData = nil

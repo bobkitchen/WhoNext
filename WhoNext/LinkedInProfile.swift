@@ -9,157 +9,188 @@ struct LinkedInCandidate: Identifiable, Sendable {
     let headline: String
 }
 
-// MARK: - Apify Response
+// MARK: - Apify Response (harvestapi~linkedin-profile-scraper)
 
 struct LinkedInProfile: Codable, Sendable {
     let firstName: String?
     let lastName: String?
     let headline: String?
-    let locationName: String?
+    let about: String?
     let publicIdentifier: String?
-    let positions: [LinkedInPosition]?
-    let educations: [LinkedInEducation]?
+    let linkedinUrl: String?
+    let photo: String?
+    let location: LinkedInLocation?
+    let experience: [LinkedInExperience]?
+    let education: [LinkedInEducation]?
     let skills: [LinkedInSkill]?
-    let summary: String?
-    let followerCount: Int?
-    let connectionCount: Int?
-    let picture: String?
 
     var fullName: String {
         [firstName, lastName].compactMap { $0 }.joined(separator: " ")
     }
 
-    var currentPosition: LinkedInPosition? {
-        positions?.first(where: { $0.current == true }) ?? positions?.first
+    var locationText: String? {
+        location?.linkedinText ?? location?.parsed?.text
+    }
+
+    /// harvestapi has no explicit `current` flag. Prefer a role whose endDate is
+    /// "Present" or missing; fall back to the first one in the array.
+    var currentPosition: LinkedInExperience? {
+        experience?.first(where: { $0.isCurrent }) ?? experience?.first
     }
 
     func formattedMarkdown() -> String {
         var lines: [String] = []
 
-        // Header
         let name = fullName.isEmpty ? "Unknown" : fullName
         lines.append("**\(name)**")
         if let headline = headline {
             lines.append(headline)
         }
-        if let location = locationName {
-            lines.append("📍 \(location)")
+        if let loc = locationText {
+            lines.append("📍 \(loc)")
         }
 
-        // About
-        if let summary = summary, !summary.isEmpty {
+        if let about = about, !about.isEmpty {
             lines.append("")
             lines.append("## About")
-            lines.append(summary)
+            lines.append(about)
         }
 
-        // Experience
-        if let positions = positions, !positions.isEmpty {
+        if let experience = experience, !experience.isEmpty {
             lines.append("")
             lines.append("## Experience")
-            for pos in positions {
-                let title = pos.title ?? "Unknown Role"
-                let company = pos.companyName ?? "Unknown Company"
+            for exp in experience {
+                let title = exp.position ?? "Unknown Role"
+                let company = exp.companyName ?? "Unknown Company"
                 lines.append("**\(title)** — \(company)")
 
-                var dateRange = pos.formattedDateRange()
-                if let duration = pos.formattedDuration() {
-                    dateRange += " (\(duration))"
+                var range = exp.formattedDateRange()
+                if let duration = exp.duration, !duration.isEmpty {
+                    if range.isEmpty {
+                        range = duration
+                    } else {
+                        range += " (\(duration))"
+                    }
                 }
-                if !dateRange.isEmpty {
-                    lines.append(dateRange)
+                if !range.isEmpty {
+                    lines.append(range)
                 }
 
-                if let desc = pos.description, !desc.isEmpty {
+                if let desc = exp.description, !desc.isEmpty {
                     lines.append(desc)
                 }
                 lines.append("")
             }
         }
 
-        // Education
-        if let educations = educations, !educations.isEmpty {
+        if let educations = education, !educations.isEmpty {
             lines.append("## Education")
             for edu in educations {
                 let school = edu.schoolName ?? "Unknown School"
                 var detail = "**\(school)**"
-                let qualParts = [edu.degreeName, edu.fieldOfStudy].compactMap { $0 }
+                let qualParts = [edu.degree, edu.fieldOfStudy].compactMap { $0 }
                 if !qualParts.isEmpty {
                     detail += " — \(qualParts.joined(separator: ", "))"
                 }
                 lines.append(detail)
 
-                if let start = edu.startYear {
-                    let end = edu.endYear.map { String($0) } ?? "Present"
-                    lines.append("\(start) – \(end)")
+                let range = edu.formattedDateRange()
+                if !range.isEmpty {
+                    lines.append(range)
                 }
                 lines.append("")
             }
         }
 
-        // Skills
         if let skills = skills, !skills.isEmpty {
-            lines.append("## Skills")
-            lines.append(skills.map(\.skillName).joined(separator: ", "))
+            let names = skills.compactMap { $0.name }.filter { !$0.isEmpty }
+            if !names.isEmpty {
+                lines.append("## Skills")
+                lines.append(names.joined(separator: ", "))
+            }
         }
 
         return lines.joined(separator: "\n")
     }
 }
 
-struct LinkedInPosition: Codable, Sendable {
-    let title: String?
+struct LinkedInLocation: Codable, Sendable {
+    let linkedinText: String?
+    let countryCode: String?
+    let parsed: ParsedLocation?
+
+    struct ParsedLocation: Codable, Sendable {
+        let text: String?
+        let city: String?
+        let state: String?
+        let country: String?
+    }
+}
+
+struct LinkedInExperience: Codable, Sendable {
+    let position: String?
     let companyName: String?
-    let companyUrl: String?
-    let startYear: Int?
-    let startMonth: Int?
-    let endYear: Int?
-    let endMonth: Int?
-    let durationYear: Int?
-    let durationMonth: Int?
-    let current: Bool?
+    let companyLinkedinUrl: String?
+    let duration: String?
     let description: String?
+    let startDate: LinkedInDate?
+    let endDate: LinkedInDate?
 
-    private static let monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun",
-                                      "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
-
-    func formattedDateRange() -> String {
-        guard let startYear = startYear else { return "" }
-        let startMonthStr = startMonth.flatMap { m in
-            (1...12).contains(m) ? Self.monthNames[m - 1] : nil
-        }
-        let start = [startMonthStr, String(startYear)].compactMap { $0 }.joined(separator: " ")
-
-        let end: String
-        if current == true || endYear == nil {
-            end = "Present"
-        } else {
-            let endMonthStr = endMonth.flatMap { m in
-                (1...12).contains(m) ? Self.monthNames[m - 1] : nil
-            }
-            end = [endMonthStr, endYear.map { String($0) }].compactMap { $0 }.joined(separator: " ")
-        }
-
-        return "\(start) – \(end)"
+    var isCurrent: Bool {
+        endDate?.isPresent ?? (endDate == nil && startDate != nil)
     }
 
-    func formattedDuration() -> String? {
-        guard let years = durationYear, let months = durationMonth else { return nil }
-        var parts: [String] = []
-        if years > 0 { parts.append("\(years) yr\(years == 1 ? "" : "s")") }
-        if months > 0 { parts.append("\(months) mo\(months == 1 ? "" : "s")") }
-        return parts.isEmpty ? nil : parts.joined(separator: " ")
+    func formattedDateRange() -> String {
+        let start = startDate?.formatted() ?? ""
+        if start.isEmpty { return "" }
+        let end = endDate?.formatted() ?? "Present"
+        return "\(start) – \(end)"
     }
 }
 
 struct LinkedInEducation: Codable, Sendable {
     let schoolName: String?
-    let degreeName: String?
+    let degree: String?
     let fieldOfStudy: String?
-    let startYear: Int?
-    let endYear: Int?
+    let startDate: LinkedInDate?
+    let endDate: LinkedInDate?
+
+    func formattedDateRange() -> String {
+        let start = startDate?.formatted() ?? ""
+        let end = endDate?.formatted() ?? ""
+        if start.isEmpty && end.isEmpty { return "" }
+        if start.isEmpty { return end }
+        if end.isEmpty { return start }
+        return "\(start) – \(end)"
+    }
 }
 
 struct LinkedInSkill: Codable, Sendable {
-    let skillName: String
+    let name: String?
+}
+
+/// harvestapi returns dates as one of three shapes: `{month: Int, year: Int}`
+/// for concrete dates, `{text: "Present"}` for ongoing roles, or an empty
+/// object. All-optional fields let `JSONDecoder` handle every shape without
+/// a custom initializer.
+struct LinkedInDate: Codable, Sendable {
+    let month: Int?
+    let year: Int?
+    let text: String?
+
+    private static let monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun",
+                                     "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+
+    var isPresent: Bool {
+        (text?.lowercased() ?? "") == "present"
+    }
+
+    func formatted() -> String? {
+        if let text = text, !text.isEmpty { return text }
+        guard let year = year else { return nil }
+        if let month = month, (1...12).contains(month) {
+            return "\(Self.monthNames[month - 1]) \(year)"
+        }
+        return String(year)
+    }
 }

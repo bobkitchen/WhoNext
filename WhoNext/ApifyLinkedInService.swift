@@ -30,7 +30,11 @@ class ApifyLinkedInService: ObservableObject {
     static let shared = ApifyLinkedInService()
 
     private static let apifyBase = "https://api.apify.com/v2"
-    private static let actor = "dataweave~linkedin-profile-scraper"
+    // The prior `dataweave~linkedin-profile-scraper` actor started returning
+    // `{"error": "API returned status 401: ..."}` for every profile in late
+    // April 2026, likely because its upstream credentials lapsed. harvestapi's
+    // scraper is actively maintained and uses its own LinkedIn session pool.
+    private static let actor = "harvestapi~linkedin-profile-scraper"
     private static let pollInterval: TimeInterval = 3
     private static let maxPollDuration: TimeInterval = 60
 
@@ -52,9 +56,14 @@ class ApifyLinkedInService: ObservableObject {
         if !(200..<300).contains(http.statusCode) {
             let body = String(data: data, encoding: .utf8) ?? "<non-utf8 body>"
             debugLog("❌ [LinkedIn] \(context) HTTP \(http.statusCode): \(body.prefix(500))")
+            SessionLog.shared.flush()
             throw LinkedInEnrichmentError.httpError(http.statusCode, body)
         }
         debugLog("🔍 [LinkedIn] \(context) HTTP \(http.statusCode), \(data.count) bytes")
+        // Flush so diagnostic output hits disk mid-flow — the 200-entry buffer
+        // threshold is useless when the user opens the log file while we're
+        // still stuck in the poll loop.
+        SessionLog.shared.flush()
     }
 
     /// Decode, or log the body preview alongside the decoder error so a silent
@@ -65,6 +74,7 @@ class ApifyLinkedInService: ObservableObject {
         } catch {
             let preview = String(data: data, encoding: .utf8).map { String($0.prefix(500)) } ?? "<non-utf8 body>"
             debugLog("❌ [LinkedIn] \(context) decode failed: \(error). Body: \(preview)")
+            SessionLog.shared.flush()
             throw LinkedInEnrichmentError.decodingError("\(context): \(error.localizedDescription). Response: \(preview)")
         }
     }
@@ -192,7 +202,15 @@ class ApifyLinkedInService: ObservableObject {
         var startRequest = URLRequest(url: startURL)
         startRequest.httpMethod = "POST"
         startRequest.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        startRequest.httpBody = try JSONEncoder().encode(["urls": [url]])
+        // harvestapi's input shape: `queries` takes either a search term or a
+        // full linkedin.com/in/ URL; `profileScraperMode` selects the billing
+        // tier. The "no email" tier is cheapest and returns all the fields we
+        // map into Person.
+        let enrichInput: [String: Any] = [
+            "profileScraperMode": "Profile details no email ($4 per 1k)",
+            "queries": [url]
+        ]
+        startRequest.httpBody = try JSONSerialization.data(withJSONObject: enrichInput)
 
         let (startData, startResp) = try await URLSession.shared.data(for: startRequest)
         try Self.verifyOK(startResp, data: startData, context: "enrich/start")
@@ -266,7 +284,7 @@ class ApifyLinkedInService: ObservableObject {
         let hasData = profile.firstName != nil
             || profile.lastName != nil
             || profile.headline != nil
-            || (profile.positions?.isEmpty == false)
+            || (profile.experience?.isEmpty == false)
         guard hasData else {
             debugLog("❌ [LinkedIn] Enrich decoded but profile has no usable fields — likely anti-bot block.")
             throw LinkedInEnrichmentError.noResults
@@ -310,7 +328,7 @@ class ApifyLinkedInService: ObservableObject {
     func applyProfile(_ profile: LinkedInProfile, to person: Person, linkedinUrl: String, photoData: Data?, isReEnrich: Bool = false) {
         // Current position — only set if empty (don't clobber manual edits)
         if let current = profile.currentPosition {
-            if let title = current.title, person.role?.isEmpty ?? true {
+            if let title = current.position, person.role?.isEmpty ?? true {
                 person.role = title
             }
             if let company = current.companyName, person.company?.isEmpty ?? true {
@@ -327,7 +345,7 @@ class ApifyLinkedInService: ObservableObject {
         }
 
         // Timezone from location (skip if mapper returns UTC and person already has one)
-        if let location = profile.locationName {
+        if let location = profile.locationText {
             let mapped = TimezoneMapper.mapLocationToTimezone(location)
             if mapped != "UTC" || (person.timezone?.isEmpty ?? true) || person.timezone == "UTC" {
                 person.timezone = mapped
