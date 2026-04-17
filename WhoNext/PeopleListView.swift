@@ -107,7 +107,7 @@ struct PeopleListView: View {
                             let isMulti = person.identifier.map { multiSelectedIDs.contains($0) } ?? false
                             LiquidGlassListRow(
                                 isSelected: selectedPerson == person || isMulti,
-                                action: { handleClick(on: person) }
+                                action: { handlePlainClick(on: person) }
                             ) {
                                 PersonRowView(
                                     person: person,
@@ -116,23 +116,31 @@ struct PeopleListView: View {
                                     onDelete: { deletePerson(person) }
                                 )
                             }
+                            // Cmd/Shift clicks are caught *before* they reach
+                            // the inner SwiftUI Button. Using modifier-gated
+                            // TapGestures means the OS decides what matched —
+                            // we never read NSEvent.modifierFlags, which is
+                            // unreliable inside async Button actions.
+                            .highPriorityGesture(
+                                TapGesture().modifiers(.command)
+                                    .onEnded { handleCmdClick(on: person) }
+                            )
+                            .highPriorityGesture(
+                                TapGesture().modifiers(.shift)
+                                    .onEnded { handleShiftClick(on: person) }
+                            )
                         }
                     }
                     .padding(.horizontal, 8)
                     .padding(.vertical, 8)
-                    // Leave room at the bottom for the floating action bar so
-                    // the last row isn't hidden beneath it.
-                    .padding(.bottom, multiSelectedIDs.isEmpty ? 0 : 72)
                 }
                 .background(.background.opacity(0.1))
-                .overlay(alignment: .bottom) {
+                .safeAreaInset(edge: .bottom, spacing: 0) {
                     if !multiSelectedIDs.isEmpty {
                         multiSelectActionBar
                             .padding(12)
-                            .transition(.move(edge: .bottom).combined(with: .opacity))
                     }
                 }
-                .animation(.liquidGlassFast, value: multiSelectedIDs.isEmpty)
             }
         }
         .onAppear {
@@ -167,41 +175,49 @@ struct PeopleListView: View {
 
     // MARK: - Multi-select handling
 
-    /// Click dispatch:
-    /// - ⌘-click: toggle this person in the multi-select set, don't touch the
-    ///   detail view selection.
-    /// - ⇧-click (with a prior anchor): select the contiguous range between
-    ///   the anchor and this person, Finder-style.
-    /// - Plain click: single-select (existing behavior) and clear the
-    ///   multi-select set.
-    private func handleClick(on person: Person) {
-        let flags = NSEvent.modifierFlags
+    /// Plain click: single-select (existing behavior) and clear the
+    /// multi-select set. Dispatched from the inner Button's action.
+    private func handlePlainClick(on person: Person) {
+        selectedPerson = person
+        multiSelectedIDs.removeAll()
+        shiftAnchorID = person.identifier
+    }
+
+    /// ⌘-click: toggle this person in the multi-select set. The detail view
+    /// selection stays untouched so the user can compare what they're about
+    /// to delete against the visible detail pane.
+    private func handleCmdClick(on person: Person) {
         guard let id = person.identifier else {
             // No identifier — can't participate in multi-select; fall back.
-            selectedPerson = person
-            multiSelectedIDs.removeAll()
+            handlePlainClick(on: person)
             return
         }
-
-        if flags.contains(.command) {
-            if multiSelectedIDs.contains(id) {
-                multiSelectedIDs.remove(id)
-            } else {
-                multiSelectedIDs.insert(id)
-            }
-            shiftAnchorID = id
-        } else if flags.contains(.shift),
-                  let anchor = shiftAnchorID,
-                  let anchorIdx = people.firstIndex(where: { $0.identifier == anchor }),
-                  let curIdx = people.firstIndex(where: { $0.identifier == id }) {
-            let range = min(anchorIdx, curIdx)...max(anchorIdx, curIdx)
-            for p in people[range] {
-                if let pid = p.identifier { multiSelectedIDs.insert(pid) }
-            }
+        if multiSelectedIDs.contains(id) {
+            multiSelectedIDs.remove(id)
         } else {
-            selectedPerson = person
-            multiSelectedIDs.removeAll()
+            multiSelectedIDs.insert(id)
+        }
+        shiftAnchorID = id
+    }
+
+    /// ⇧-click: select the contiguous range between the last anchor and this
+    /// row, Finder-style. Without an anchor, falls back to toggling this row.
+    private func handleShiftClick(on person: Person) {
+        guard let id = person.identifier else {
+            handlePlainClick(on: person)
+            return
+        }
+        guard let anchor = shiftAnchorID,
+              let anchorIdx = people.firstIndex(where: { $0.identifier == anchor }),
+              let curIdx = people.firstIndex(where: { $0.identifier == id })
+        else {
+            multiSelectedIDs.insert(id)
             shiftAnchorID = id
+            return
+        }
+        let range = min(anchorIdx, curIdx)...max(anchorIdx, curIdx)
+        for p in people[range] {
+            if let pid = p.identifier { multiSelectedIDs.insert(pid) }
         }
     }
 
