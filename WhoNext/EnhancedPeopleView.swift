@@ -18,6 +18,13 @@ struct EnhancedPeopleView: View {
     @State private var isInboxExpanded = true
     @State private var selectedInboxItem: InboxEntry?
 
+    // Multi-select state. Tap "Select" in the header to enter selection
+    // mode; each card click toggles its identifier in `multiSelectedIDs`
+    // rather than setting the detail pane.
+    @State private var isSelectionMode = false
+    @State private var multiSelectedIDs: Set<UUID> = []
+    @State private var showDeleteConfirmation = false
+
     // Fetch request for people
     @FetchRequest(
         sortDescriptors: [NSSortDescriptor(keyPath: \Person.name, ascending: true)],
@@ -124,6 +131,11 @@ struct EnhancedPeopleView: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .safeAreaInset(edge: .bottom, spacing: 0) {
+            if isSelectionMode {
+                multiSelectActionBar.padding(12)
+            }
+        }
         .onChange(of: selectedPerson) { _, newValue in
             if newValue != nil {
                 selectedInboxItem = nil
@@ -175,24 +187,38 @@ struct EnhancedPeopleView: View {
                 .cornerRadius(6)
                 
                 Spacer()
-                
-                // Add button
-                Button(action: {
-                    let windowController = AddPersonWindowController(
-                        onSave: {
-                            // Person will be saved automatically
-                        },
-                        onCancel: {
-                            // Nothing to do on cancel
-                        }
-                    )
-                    windowController.showWindow()
-                }) {
-                    Image(systemName: "plus")
-                        .font(.system(size: 12, weight: .medium))
+
+                if isSelectionMode {
+                    Button("Done") { exitSelectionMode() }
+                        .buttonStyle(.borderedProminent)
+                        .controlSize(.small)
+                } else {
+                    // Select button — enters multi-select mode. Hidden when
+                    // the list is empty because there's nothing to pick.
+                    if !filteredPeople.isEmpty {
+                        Button("Select") { enterSelectionMode() }
+                            .buttonStyle(.bordered)
+                            .controlSize(.small)
+                    }
+
+                    // Add button
+                    Button(action: {
+                        let windowController = AddPersonWindowController(
+                            onSave: {
+                                // Person will be saved automatically
+                            },
+                            onCancel: {
+                                // Nothing to do on cancel
+                            }
+                        )
+                        windowController.showWindow()
+                    }) {
+                        Image(systemName: "plus")
+                            .font(.system(size: 12, weight: .medium))
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .controlSize(.small)
                 }
-                .buttonStyle(.borderedProminent)
-                .controlSize(.small)
             }
             .padding(.horizontal, 20)
             .padding(.vertical, 12)
@@ -261,16 +287,13 @@ struct EnhancedPeopleView: View {
                             
                             LazyVStack(spacing: 6) {
                                 ForEach(directReports, id: \.identifier) { person in
-                                    EnhancedPersonCard(
-                                        person: person,
-                                        selectedPerson: $selectedPerson
-                                    )
-                                    .padding(.horizontal, 20)
+                                    selectableCard(for: person)
+                                        .padding(.horizontal, 20)
                                 }
                             }
                         }
                     }
-                    
+
                     // Recently contacted section
                     if !recentlyContacted.isEmpty && recentlyContacted != directReports {
                         VStack(alignment: .leading, spacing: 8) {
@@ -279,24 +302,21 @@ struct EnhancedPeopleView: View {
                                 count: recentlyContacted.count,
                                 icon: "clock.fill"
                             )
-                            
+
                             LazyVStack(spacing: 8) {
                                 ForEach(recentlyContacted.filter { !directReports.contains($0) }, id: \.identifier) { person in
-                                    EnhancedPersonCard(
-                                        person: person,
-                                        selectedPerson: $selectedPerson
-                                    )
-                                    .padding(.horizontal, 16)
+                                    selectableCard(for: person)
+                                        .padding(.horizontal, 16)
                                 }
                             }
                         }
                     }
-                    
+
                     // All people section
-                    let remainingPeople = filteredPeople.filter { 
+                    let remainingPeople = filteredPeople.filter {
                         !directReports.contains($0) && !recentlyContacted.contains($0)
                     }
-                    
+
                     if !remainingPeople.isEmpty {
                         VStack(alignment: .leading, spacing: 8) {
                             PersonSectionHeader(
@@ -304,14 +324,11 @@ struct EnhancedPeopleView: View {
                                 count: remainingPeople.count,
                                 icon: "person.2.fill"
                             )
-                            
+
                             LazyVStack(spacing: 8) {
                                 ForEach(remainingPeople, id: \.identifier) { person in
-                                    EnhancedPersonCard(
-                                        person: person,
-                                        selectedPerson: $selectedPerson
-                                    )
-                                    .padding(.horizontal, 16)
+                                    selectableCard(for: person)
+                                        .padding(.horizontal, 16)
                                 }
                             }
                         }
@@ -516,6 +533,99 @@ struct EnhancedPeopleView: View {
         }
     }
     
+    // MARK: - Selection Mode
+
+    @ViewBuilder
+    private func selectableCard(for person: Person) -> some View {
+        let isMulti = person.identifier.map { multiSelectedIDs.contains($0) } ?? false
+        EnhancedPersonCard(
+            person: person,
+            selectedPerson: $selectedPerson,
+            isSelectionMode: isSelectionMode,
+            isMultiSelected: isMulti,
+            onToggleSelection: { toggleSelection(for: person) }
+        )
+    }
+
+    private func enterSelectionMode() {
+        isSelectionMode = true
+        multiSelectedIDs.removeAll()
+    }
+
+    private func exitSelectionMode() {
+        isSelectionMode = false
+        multiSelectedIDs.removeAll()
+    }
+
+    private func toggleSelection(for person: Person) {
+        guard let id = person.identifier else { return }
+        if multiSelectedIDs.contains(id) {
+            multiSelectedIDs.remove(id)
+        } else {
+            multiSelectedIDs.insert(id)
+        }
+    }
+
+    private var multiSelectActionBar: some View {
+        HStack(spacing: 12) {
+            Image(systemName: multiSelectedIDs.isEmpty ? "circle" : "checkmark.circle.fill")
+                .foregroundStyle(multiSelectedIDs.isEmpty ? .secondary : Color.accentColor)
+            Text(multiSelectedIDs.isEmpty ? "Tap rows to select" : "\(multiSelectedIDs.count) selected")
+                .font(.system(size: 13, weight: .medium))
+                .foregroundStyle(multiSelectedIDs.isEmpty ? .secondary : .primary)
+
+            Spacer()
+
+            Button {
+                showDeleteConfirmation = true
+            } label: {
+                Label("Delete", systemImage: "trash")
+                    .font(.system(size: 13, weight: .medium))
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 6)
+                    .background(multiSelectedIDs.isEmpty ? Color.red.opacity(0.3) : Color.red.opacity(0.9))
+                    .foregroundStyle(.white)
+                    .clipShape(RoundedRectangle(cornerRadius: 6))
+            }
+            .buttonStyle(.plain)
+            .disabled(multiSelectedIDs.isEmpty)
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 10)
+        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
+        .overlay(
+            RoundedRectangle(cornerRadius: 12)
+                .stroke(.primary.opacity(0.1), lineWidth: 0.5)
+        )
+        .shadow(color: .black.opacity(0.15), radius: 8, y: 2)
+        .confirmationDialog(
+            "Delete \(multiSelectedIDs.count) \(multiSelectedIDs.count == 1 ? "person" : "people")?",
+            isPresented: $showDeleteConfirmation,
+            titleVisibility: .visible
+        ) {
+            Button("Delete", role: .destructive) { deleteSelectedPeople() }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("Their conversations and meetings will remain but become unassigned. This cannot be undone.")
+        }
+    }
+
+    private func deleteSelectedPeople() {
+        let toDelete = allPeople.filter { p in
+            guard let id = p.identifier else { return false }
+            return multiSelectedIDs.contains(id)
+        }
+        guard !toDelete.isEmpty else { return }
+        if let current = selectedPerson, toDelete.contains(current) {
+            selectedPerson = nil
+        }
+        for person in toDelete {
+            viewContext.delete(person)
+        }
+        try? viewContext.save()
+        exitSelectionMode()
+    }
+
     private func sortPeople(_ people: [Person], by option: PersonSortOption) -> [Person] {
         switch option {
         case .name:
