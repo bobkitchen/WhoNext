@@ -215,6 +215,20 @@ enum MeetingProcessDetector {
             return nil
         }
 
+        // Reject idle candidates. Core Audio's kAudioProcessPropertyIsRunning reflects
+        // active audio I/O — when false the app is launched but not producing sound
+        // (e.g. Teams open with no call). Tapping an idle process yields a silent
+        // system stream, so instead we return nil and let the caller fall back to
+        // SCStream, which captures whatever IS making noise (YouTube in a browser,
+        // music apps, etc.). This avoids the "everything attributed to Me" failure
+        // mode where mic-only audio masquerades as a full conversation.
+        let audioActive = candidates.filter(\.isAudioActive)
+        guard !audioActive.isEmpty else {
+            let names = candidates.map { "\($0.app.displayName) (idle)" }.joined(separator: ", ")
+            debugLog("[ProcessTap] No audio-active meeting apps — candidates: \(names). Falling back to SCStream.")
+            return nil
+        }
+
         // Priority order: dedicated meeting apps first, then browsers.
         let priority: [MeetingProcess.App] = [
             .zoom, .teamsNew, .teamsLegacy, .facetime, .webex,
@@ -224,12 +238,8 @@ enum MeetingProcessDetector {
             uniqueKeysWithValues: priority.enumerated().map { ($1, $0) }
         )
 
-        // Prefer audio-active, then by priority.
-        let best = candidates
-            .sorted { a, b in
-                if a.isAudioActive != b.isAudioActive { return a.isAudioActive }
-                return (rank[a.app] ?? Int.max) < (rank[b.app] ?? Int.max)
-            }
+        let best = audioActive
+            .sorted { (rank[$0.app] ?? Int.max) < (rank[$1.app] ?? Int.max) }
             .first!
 
         return MeetingProcess(
