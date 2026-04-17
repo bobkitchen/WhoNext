@@ -343,11 +343,14 @@ struct RecordingWindowView: View {
 
             ScrollViewReader { proxy in
                 ScrollView {
-                    LazyVStack(alignment: .leading, spacing: 8) {
+                    LazyVStack(alignment: .leading, spacing: 12) {
                         if let meeting = recordingEngine.currentMeeting {
-                            ForEach(Array(meeting.transcript.suffix(30).enumerated()), id: \.offset) { index, segment in
-                                TranscriptSegmentRow(
-                                    segment: segment,
+                            let runs = groupConsecutiveSpeakers(
+                                Array(meeting.transcript.suffix(30))
+                            )
+                            ForEach(Array(runs.enumerated()), id: \.offset) { index, run in
+                                TranscriptSpeakerRunRow(
+                                    run: run,
                                     onRenameSpeaker: { speakerID, newName, person in
                                         // Quill-style: renaming from a live transcript row relabels
                                         // every prior and future utterance by this speaker.
@@ -674,26 +677,62 @@ struct ToolbarFormatButton: View {
 
 // MARK: - Supporting Views
 
-struct TranscriptSegmentRow: View {
-    let segment: TranscriptSegment
-    /// Called when the user picks a new speaker for this segment.
-    /// Passes the segment's speakerID, the new display name, and an optional Person link.
-    /// Parent should propagate the rename to the whole transcript via `LiveMeeting.renameSpeaker`.
+/// Consecutive transcript segments from the same speaker, grouped for display as one flowing block.
+struct SpeakerRun {
+    let speakerID: String?
+    let speakerName: String?
+    var segments: [TranscriptSegment]
+
+    /// Joined text of all segments in the run, separated by single spaces.
+    var joinedText: String {
+        segments.map(\.text)
+            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { !$0.isEmpty }
+            .joined(separator: " ")
+    }
+}
+
+/// Group consecutive segments sharing the same speakerID into runs.
+/// Segments where speakerID is nil are grouped with other nil-speaker segments (shouldn't happen in practice).
+func groupConsecutiveSpeakers(_ segments: [TranscriptSegment]) -> [SpeakerRun] {
+    var runs: [SpeakerRun] = []
+    for segment in segments {
+        if var last = runs.last, last.speakerID == segment.speakerID {
+            last.segments.append(segment)
+            runs[runs.count - 1] = last
+        } else {
+            runs.append(SpeakerRun(
+                speakerID: segment.speakerID,
+                speakerName: segment.speakerName,
+                segments: [segment]
+            ))
+        }
+    }
+    return runs
+}
+
+/// Renders one speaker run: a single speaker label (with rename pencil) followed by
+/// the concatenated text of every consecutive segment from that speaker. This produces
+/// a smooth flow of prose instead of a separate labelled row per chunk.
+struct TranscriptSpeakerRunRow: View {
+    let run: SpeakerRun
+    /// Called when the user picks a new speaker for this run.
+    /// Passes the run's speakerID, the new display name, and an optional Person link.
+    /// Parent propagates the rename to the whole transcript via `LiveMeeting.renameSpeaker`.
     var onRenameSpeaker: ((_ speakerID: String, _ newName: String, _ person: Person?) -> Void)? = nil
 
     @State private var showPicker = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 2) {
-            if let speaker = segment.speakerName {
+            if let speaker = run.speakerName {
                 HStack(spacing: 4) {
                     Text(speaker)
                         .font(.caption)
                         .fontWeight(.medium)
                         .foregroundColor(.blue)
 
-                    // Only editable when we have a speakerID to rename against and a callback
-                    if onRenameSpeaker != nil, segment.speakerID != nil {
+                    if onRenameSpeaker != nil, run.speakerID != nil {
                         Button(action: { showPicker = true }) {
                             Image(systemName: "pencil.circle")
                                 .font(.caption2)
@@ -705,7 +744,7 @@ struct TranscriptSegmentRow: View {
                             SpeakerPickerPopover(
                                 currentName: speaker,
                                 onSelect: { newName, person in
-                                    if let speakerID = segment.speakerID {
+                                    if let speakerID = run.speakerID {
                                         onRenameSpeaker?(speakerID, newName, person)
                                     }
                                     showPicker = false
@@ -717,9 +756,10 @@ struct TranscriptSegmentRow: View {
                 }
             }
 
-            Text(segment.text)
+            Text(run.joinedText)
                 .font(.body)
                 .foregroundColor(.primary)
+                .textSelection(.enabled)
         }
         .padding(.vertical, 4)
     }
