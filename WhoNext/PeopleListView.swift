@@ -105,9 +105,17 @@ struct PeopleListView: View {
                     LazyVStack(spacing: 2) {
                         ForEach(people, id: \.identifier) { person in
                             let isMulti = person.identifier.map { multiSelectedIDs.contains($0) } ?? false
-                            LiquidGlassListRow(
-                                isSelected: selectedPerson == person || isMulti,
-                                action: { handlePlainClick(on: person) }
+                            // Inline row wrapper (no SwiftUI Button) so the
+                            // modifier-gated TapGestures below actually get
+                            // the tap. A Button swallows clicks at the AppKit
+                            // layer before ancestor gestures see them — that's
+                            // why ⌘-click was not multi-selecting.
+                            PersonRowContainer(
+                                isSelected: selectedPerson == person,
+                                isMultiSelected: isMulti,
+                                onPlainClick: { handlePlainClick(on: person) },
+                                onCmdClick: { handleCmdClick(on: person) },
+                                onShiftClick: { handleShiftClick(on: person) }
                             ) {
                                 PersonRowView(
                                     person: person,
@@ -116,19 +124,6 @@ struct PeopleListView: View {
                                     onDelete: { deletePerson(person) }
                                 )
                             }
-                            // Cmd/Shift clicks are caught *before* they reach
-                            // the inner SwiftUI Button. Using modifier-gated
-                            // TapGestures means the OS decides what matched —
-                            // we never read NSEvent.modifierFlags, which is
-                            // unreliable inside async Button actions.
-                            .highPriorityGesture(
-                                TapGesture().modifiers(.command)
-                                    .onEnded { handleCmdClick(on: person) }
-                            )
-                            .highPriorityGesture(
-                                TapGesture().modifiers(.shift)
-                                    .onEnded { handleShiftClick(on: person) }
-                            )
                         }
                     }
                     .padding(.horizontal, 8)
@@ -176,7 +171,7 @@ struct PeopleListView: View {
     // MARK: - Multi-select handling
 
     /// Plain click: single-select (existing behavior) and clear the
-    /// multi-select set. Dispatched from the inner Button's action.
+    /// multi-select set.
     private func handlePlainClick(on person: Person) {
         selectedPerson = person
         multiSelectedIDs.removeAll()
@@ -288,6 +283,58 @@ struct PeopleListView: View {
         multiSelectedIDs.removeAll()
         shiftAnchorID = nil
         try? viewContext.save()
+    }
+}
+
+/// Styled row container that replicates LiquidGlassListRow's hover/selection
+/// look but without the inner SwiftUI `Button`. The Button wrapper consumes
+/// clicks at the AppKit layer before SwiftUI's gesture system can apply
+/// modifier-gated filters, so ⌘-click and ⇧-click never reach the handlers.
+/// Using three sibling `TapGesture`s — two modifier-gated, one plain — lets
+/// SwiftUI's gesture exclusivity dispatch to the right handler based on
+/// whichever modifier is (or isn't) held at tap time.
+private struct PersonRowContainer<Content: View>: View {
+    let isSelected: Bool
+    let isMultiSelected: Bool
+    let onPlainClick: () -> Void
+    let onCmdClick: () -> Void
+    let onShiftClick: () -> Void
+    @ViewBuilder let content: () -> Content
+    @State private var isHovered = false
+
+    var body: some View {
+        content()
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 8)
+            .background {
+                RoundedRectangle(cornerRadius: 8)
+                    .fill(backgroundMaterial)
+                    .animation(.liquidGlassFast, value: isSelected || isHovered || isMultiSelected)
+            }
+            .contentShape(Rectangle())
+            .onHover { hovering in isHovered = hovering }
+            // More-specific modifier-gated gestures first; SwiftUI's
+            // exclusivity rule picks the most restrictive match.
+            .gesture(
+                TapGesture().modifiers(.command)
+                    .onEnded { onCmdClick() }
+            )
+            .gesture(
+                TapGesture().modifiers(.shift)
+                    .onEnded { onShiftClick() }
+            )
+            .onTapGesture { onPlainClick() }
+    }
+
+    private var backgroundMaterial: AnyShapeStyle {
+        if isSelected || isMultiSelected {
+            return AnyShapeStyle(Color.accentColor.opacity(0.15))
+        } else if isHovered {
+            return AnyShapeStyle(.primary.opacity(0.05))
+        } else {
+            return AnyShapeStyle(.clear)
+        }
     }
 }
 
