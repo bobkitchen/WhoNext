@@ -37,8 +37,13 @@ class ConversationStateManager: ObservableObject {
     
     func loadConversations(for person: Person? = nil) {
         isLoading = true
-        
-        let task = Task {
+
+        // Capture the task in a mutable var so the closure can remove itself on completion.
+        // Prevents unbounded growth of loadingTasks (previously only cancelled tasks were pruned).
+        var task: Task<Void, Never>!
+        task = Task { @MainActor [weak self] in
+            defer { self?.loadingTasks.remove(task) }
+            guard let self else { return }
             do {
                 let request = NSFetchRequest<Conversation>(entityName: "Conversation")
                 if let person = person {
@@ -48,25 +53,19 @@ class ConversationStateManager: ObservableObject {
                 // Optimize with prefetching and batch size
                 request.relationshipKeyPathsForPrefetching = ["person"]
                 request.fetchBatchSize = 50
-                
-                let results = try viewContext.fetch(request)
-                
-                // Check if task was cancelled before updating UI
+
+                let results = try self.viewContext.fetch(request)
+
                 guard !Task.isCancelled else { return }
-                
-                await MainActor.run {
-                    self.conversations = results
-                    self.isLoading = false
-                }
+                self.conversations = results
+                self.isLoading = false
             } catch {
                 guard !Task.isCancelled else { return }
-                errorManager.handle(error, context: "Failed to load conversations")
-                await MainActor.run {
-                    self.isLoading = false
-                }
+                self.errorManager.handle(error, context: "Failed to load conversations")
+                self.isLoading = false
             }
         }
-        
+
         loadingTasks.insert(task)
     }
     
@@ -140,6 +139,8 @@ class ConversationStateManager: ObservableObject {
     }
     
     private func cleanupStaleTasks() {
+        // Tasks self-remove via defer in loadConversations; this is a safety net
+        // for any tasks that were cancelled mid-flight and never hit the defer.
         loadingTasks = loadingTasks.filter { !$0.isCancelled }
     }
     

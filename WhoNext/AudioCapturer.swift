@@ -108,8 +108,15 @@ class AudioCapturer: NSObject, ObservableObject {
         // where the first mic audio callback hits stale/uninitialized state
         echoCanceller.reset()
 
-        // Start mic capture
-        try await startMicrophoneCapture()
+        // Start mic capture. If this throws, we must finish the freshly-created
+        // continuations so any existing `for await` loops terminate instead of
+        // hanging forever waiting on a stream that will never produce.
+        do {
+            try await startMicrophoneCapture()
+        } catch {
+            finishStreams()
+            throw error
+        }
 
         // Try to start system audio capture (may fail without permission)
         do {
@@ -174,16 +181,24 @@ class AudioCapturer: NSObject, ObservableObject {
         videoSinkOutput = nil
         systemAudioSource = .none
 
-        // Finish streams
-        micContinuation?.finish()
-        systemContinuation?.finish()
-        cleanMicContinuation?.finish()
+        finishStreams()
 
         // Reset echo canceller
         echoCanceller.reset()
         isEchoCancellationActive = false
         isCapturing = false
         debugLog("[AudioCapturer] Capture stopped")
+    }
+
+    /// Terminate all three AsyncStreams so downstream `for await` loops exit.
+    /// Safe to call multiple times; finishing an already-finished continuation is a no-op.
+    private func finishStreams() {
+        micContinuation?.finish()
+        systemContinuation?.finish()
+        cleanMicContinuation?.finish()
+        micContinuation = nil
+        systemContinuation = nil
+        cleanMicContinuation = nil
     }
 
     // MARK: - Microphone Capture
