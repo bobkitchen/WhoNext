@@ -1,0 +1,12 @@
+// WhoNext global build settings.
+//
+// Why this file exists:
+//   macOS 26 (Tahoe) is Apple-Silicon-only, but some SPM packages we depend on
+//   (speech-swift / Qwen3Speech) declare .macOS("15.0") in their Package.swift.
+//   That causes Xcode to try compiling them for x86_64 during Archive — and
+//   speech-swift uses Float16, which is unavailable on x86_64.
+//
+//   Setting ARCHS at target level did NOT propagate to SPM-synthesized
+//   projects. An xcconfig at project scope does.
+ARCHS = arm64
+EXCLUDED_ARCHS[sdk=macosx*] = x86_64

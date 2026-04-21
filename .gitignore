@@ -20,3 +20,8 @@ CoreMLModels/
 
 # Worktrees
 .worktrees/
+
+# Vendored package build artifacts
+vendor/**/.build/
+vendor/**/.swiftpm/
+vendor/**/.claude/

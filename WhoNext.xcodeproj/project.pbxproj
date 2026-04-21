@@ -9,14 +9,14 @@
 /* Begin PBXBuildFile section */
 		7A1FD56D2DBC07E30089D3DA /* Down in Frameworks */ = {isa = PBXBuildFile; productRef = 7A1FD56C2DBC07E30089D3DA /* Down */; };
 		7A5791692D9940CC0018E162 /* SwiftCSV in Frameworks */ = {isa = PBXBuildFile; productRef = 7A5791682D9940CC0018E162 /* SwiftCSV */; };
+		7A5BAD0C2F200002008468EA /* SpeechVAD in Frameworks */ = {isa = PBXBuildFile; productRef = 7A5BAD0B2F200001008468EA /* SpeechVAD */; };
+		7A5BEE0C2F1B0002008468EA /* speex in Frameworks */ = {isa = PBXBuildFile; productRef = 7A5BEE0B2F1B0001008468EA /* speex */; };
 		7AA712D02F0EA08C008468EA /* CloudKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 7AA712CF2F0EA08C008468EA /* CloudKit.framework */; };
 		7AA719C72F125CB1008468EA /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 7AA719C62F125CB1008468EA /* WidgetKit.framework */; };
 		7AA719C92F125CB1008468EA /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 7AA719C82F125CB1008468EA /* SwiftUI.framework */; };
 		7AA719D62F125CB3008468EA /* WhoNextWidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 7AA719C52F125CB1008468EA /* WhoNextWidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		7AABCDEF2DBC09000089D3DA /* FluidAudio in Frameworks */ = {isa = PBXBuildFile; productRef = 7AABCDEE2DBC09000089D3DA /* FluidAudio */; };
 		7AAXII012F1A0001008468EA /* AxiiDiarization in Frameworks */ = {isa = PBXBuildFile; productRef = 7AAXII022F1A0002008468EA /* AxiiDiarization */; };
-		7A5BAD0C2F200002008468EA /* SpeechVAD in Frameworks */ = {isa = PBXBuildFile; productRef = 7A5BAD0B2F200001008468EA /* SpeechVAD */; };
-		7A5BEE0C2F1B0002008468EA /* speex in Frameworks */ = {isa = PBXBuildFile; productRef = 7A5BEE0B2F1B0001008468EA /* speex */; };
 		7AFD8D3F2F168024005A497C /* WhisperKit in Frameworks */ = {isa = PBXBuildFile; productRef = 7AWHISPER2F150001008468EA /* WhisperKit */; };
 /* End PBXBuildFile section */
 
@@ -66,6 +66,7 @@
 		7AA719C52F125CB1008468EA /* WhoNextWidgetExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = WhoNextWidgetExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		7AA719C62F125CB1008468EA /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
 		7AA719C82F125CB1008468EA /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
+		7AFC0000000000000000001A /* WhoNext/WhoNext.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = WhoNext/WhoNext.xcconfig; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -159,6 +160,7 @@
 		7AA52C292D97D8E700C2B563 = {
 			isa = PBXGroup;
 			children = (
+				7AFC0000000000000000001A /* WhoNext/WhoNext.xcconfig */,
 				7AA52C342D97D8E700C2B563 /* WhoNext */,
 				7AA52C4B2D97D8E800C2B563 /* WhoNextTests */,
 				7AA52C552D97D8E800C2B563 /* WhoNextUITests */,
@@ -333,7 +335,7 @@
 				7AWHISPER2F150000008468EA /* XCRemoteSwiftPackageReference "WhisperKit" */,
 				7AAXII002F1A0000008468EA /* XCLocalSwiftPackageReference "AxiiDiarization" */,
 				7A5BEE0A2F1B0000008468EA /* XCRemoteSwiftPackageReference "CSpeex" */,
-				7A5BEE202F300000008468EA /* XCRemoteSwiftPackageReference "speech-swift" */,
+				7A5BEE202F300000008468EA /* XCLocalSwiftPackageReference "vendor/speech-swift" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 7AA52C332D97D8E700C2B563 /* Products */;
@@ -431,6 +433,7 @@
 /* Begin XCBuildConfiguration section */
 		7AA52C5A2D97D8E800C2B563 /* Debug */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 7AFC0000000000000000001A /* WhoNext/WhoNext.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
@@ -484,10 +487,9 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
-				MACOSX_DEPLOYMENT_TARGET = 15.0;
+				MACOSX_DEPLOYMENT_TARGET = 26.0;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
-				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = macosx;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
@@ -497,6 +499,7 @@
 		};
 		7AA52C5B2D97D8E800C2B563 /* Release */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 7AFC0000000000000000001A /* WhoNext/WhoNext.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
@@ -544,7 +547,7 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
-				MACOSX_DEPLOYMENT_TARGET = 15.0;
+				MACOSX_DEPLOYMENT_TARGET = 26.0;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				SDKROOT = macosx;
@@ -583,6 +586,7 @@
 				ENABLE_USER_SELECTED_FILES = readwrite;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "$(SRCROOT)/WhoNext/Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = WhoNext;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.business";
 				INFOPLIST_KEY_NSAppleEventsUsageDescription = "WhoNext needs access to send emails via Microsoft Outlook.";
 				INFOPLIST_KEY_NSCalendarsUsageDescription = "WhoNext needs read-only access to your calendar to surface upcoming 1:1 meetings.";
@@ -593,7 +597,7 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MACOSX_DEPLOYMENT_TARGET = 15.0;
+				MACOSX_DEPLOYMENT_TARGET = 26.0;
 				MARKETING_VERSION = .8;
 				PRODUCT_BUNDLE_IDENTIFIER = com.bobk.WhoNext;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -633,6 +637,7 @@
 				ENABLE_USER_SELECTED_FILES = readwrite;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "$(SRCROOT)/WhoNext/Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = WhoNext;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.business";
 				INFOPLIST_KEY_NSAppleEventsUsageDescription = "WhoNext needs access to send emails via Microsoft Outlook.";
 				INFOPLIST_KEY_NSCalendarsUsageDescription = "WhoNext needs read-only access to your calendar to surface upcoming 1:1 meetings.";
@@ -643,7 +648,7 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MACOSX_DEPLOYMENT_TARGET = 15.0;
+				MACOSX_DEPLOYMENT_TARGET = 26.0;
 				MARKETING_VERSION = .8;
 				PRODUCT_BUNDLE_IDENTIFIER = com.bobk.WhoNext;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -661,7 +666,7 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEAD_CODE_STRIPPING = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				MACOSX_DEPLOYMENT_TARGET = 15.0;
+				MACOSX_DEPLOYMENT_TARGET = 26.0;
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.bobk.WhoNextTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -679,7 +684,7 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEAD_CODE_STRIPPING = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				MACOSX_DEPLOYMENT_TARGET = 15.0;
+				MACOSX_DEPLOYMENT_TARGET = 26.0;
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.bobk.WhoNextTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -696,7 +701,7 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEAD_CODE_STRIPPING = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				MACOSX_DEPLOYMENT_TARGET = 15.0;
+				MACOSX_DEPLOYMENT_TARGET = 26.0;
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.bobk.WhoNextUITests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -713,7 +718,7 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEAD_CODE_STRIPPING = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				MACOSX_DEPLOYMENT_TARGET = 15.0;
+				MACOSX_DEPLOYMENT_TARGET = 26.0;
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.bobk.WhoNextUITests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -844,6 +849,10 @@
 /* End XCConfigurationList section */
 
 /* Begin XCLocalSwiftPackageReference section */
+		7A5BEE202F300000008468EA /* XCLocalSwiftPackageReference "vendor/speech-swift" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = "vendor/speech-swift";
+		};
 		7AAXII002F1A0000008468EA /* XCLocalSwiftPackageReference "AxiiDiarization" */ = {
 			isa = XCLocalSwiftPackageReference;
 			relativePath = AxiiDiarization;
@@ -867,6 +876,14 @@
 				minimumVersion = 0.10.0;
 			};
 		};
+		7A5BEE0A2F1B0000008468EA /* XCRemoteSwiftPackageReference "CSpeex" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/sbooth/CSpeex.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.0.0;
+			};
+		};
 		7AABCDED2DBC09000089D3DA /* XCRemoteSwiftPackageReference "FluidAudio" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/FluidInference/FluidAudio.git";
@@ -883,22 +900,6 @@
 				minimumVersion = 0.18.0;
 			};
 		};
-		7A5BEE0A2F1B0000008468EA /* XCRemoteSwiftPackageReference "CSpeex" */ = {
-			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/sbooth/CSpeex.git";
-			requirement = {
-				kind = upToNextMajorVersion;
-				minimumVersion = 1.0.0;
-			};
-		};
-		7A5BEE202F300000008468EA /* XCRemoteSwiftPackageReference "speech-swift" */ = {
-			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/soniqo/speech-swift.git";
-			requirement = {
-				kind = revision;
-				revision = bcb41ca44e0789a0343dff9499e243d188516229;
-			};
-		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -911,6 +912,16 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 7A5791672D9940CC0018E162 /* XCRemoteSwiftPackageReference "SwiftCSV" */;
 			productName = SwiftCSV;
+		};
+		7A5BAD0B2F200001008468EA /* SpeechVAD */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 7A5BEE202F300000008468EA /* XCLocalSwiftPackageReference "vendor/speech-swift" */;
+			productName = SpeechVAD;
+		};
+		7A5BEE0B2F1B0001008468EA /* speex */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 7A5BEE0A2F1B0000008468EA /* XCRemoteSwiftPackageReference "CSpeex" */;
+			productName = speex;
 		};
 		7AABCDEE2DBC09000089D3DA /* FluidAudio */ = {
 			isa = XCSwiftPackageProductDependency;
@@ -925,16 +936,6 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 7AWHISPER2F150000008468EA /* XCRemoteSwiftPackageReference "WhisperKit" */;
 			productName = WhisperKit;
-		};
-		7A5BEE0B2F1B0001008468EA /* speex */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = 7A5BEE0A2F1B0000008468EA /* XCRemoteSwiftPackageReference "CSpeex" */;
-			productName = speex;
-		};
-		7A5BAD0B2F200001008468EA /* SpeechVAD */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = 7A5BEE202F300000008468EA /* XCRemoteSwiftPackageReference "speech-swift" */;
-			productName = SpeechVAD;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};
